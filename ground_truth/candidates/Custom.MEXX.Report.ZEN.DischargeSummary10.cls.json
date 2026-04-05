@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary10.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary10.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "Komala S",
+      "source": "Patient Name : Komala S"
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "51",
+      "source": "Age : 51"
+    },
+    "gender": {
+      "value": "Female",
+      "source": "Gender : Female"
+    },
+    "admission_date": {
+      "value": "24/03/2026",
+      "source": "Patient arrival Date : 24/03/2026"
+    },
+    "discharge_date": {
+      "value": "",
+      "source": ""
+    },
+    "chief_complaints": {
+      "value": "Chief Complaints : C/O HEADACHE, NASAL BLOCK SINCE FEW MONTHS",
+      "source": "Chief Complaints : Chief Complaints : C/O HEADACHE, NASAL BLOCK SINCE FEW MONTHS"
+    },
+    "principal_diagnosis": {
+      "value": "?DNS",
+      "source": "Provisional Diagnosis : ?DNS"
+    },
+    "secondary_context": {
+      "value": "Past Medical History : K/C/O HTN , HYPOTHYROID | K/C/O HTN , HYPOTHYROID",
+      "source": "Past History : Past Medical History : K/C/O HTN , HYPOTHYROID || Past Medical History : K/C/O HTN , HYPOTHYROID"
+    },
+    "allergies": {
+      "value": "UNKNOWN",
+      "source": "Any Known Allergies : UNKNOWN"
+    },
+    "current_medications": {
+      "value": "thyronorm 50mcg 1-0-0 | AS PER CHART",
+      "source": "Current Medications : thyronorm 50mcg 1-0-0 || Current medications : AS PER CHART"
+    },
+    "bp": {
+      "value": "110/70",
+      "source": "Blood Pressure(mmHg) : 110/70"
+    },
+    "pulse": {
+      "value": "87",
+      "source": "Pulse Rate: 87"
+    },
+    "temperature_f": {
+      "value": "98",
+      "source": "Temp(F) : 98"
+    },
+    "respiration": {
+      "value": "19",
+      "source": "Respiration: 19"
+    },
+    "spo2": {
+      "value": "99",
+      "source": "Spo2(%) : 99"
+    },
+    "pain_score": {
+      "value": "2",
+      "source": "Pain Score : 2"
+    },
+    "fall_score": {
+      "value": "3",
+      "source": "Total Fall Risk Score(sum of all points per category) : 3"
+    },
+    "fall_risk": {
+      "value": "LOW RISK",
+      "source": "Total Fall Risk Score(sum of all points per category) : 3\nRemarks : LOW RISK"
+    },
+    "pressure_score": {
+      "value": "21",
+      "source": "Pressure score : 21"
+    },
+    "pressure_risk": {
+      "value": "NO RISK",
+      "source": "Pressure score : 21 NO RISK"
+    },
+    "dvt_score": {
+      "value": "2",
+      "source": "DVT Score : 2"
+    },
+    "dvt_risk": {
+      "value": "MODEARTE RISK",
+      "source": "DVT Score : 2 MODEARTE RISK"
+    },
+    "aspiration_score": {
+      "value": "0",
+      "source": "Aspiration score : 0"
+    },
+    "aspiration_risk": {
+      "value": "LOW RISK",
+      "source": "Aspiration score : 0 LOW RISK"
+    },
+    "ews_score": {
+      "value": "1",
+      "source": "EWS Score : 1"
+    }
+  }
+}

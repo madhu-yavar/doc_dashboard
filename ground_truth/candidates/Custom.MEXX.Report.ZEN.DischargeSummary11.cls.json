@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary11.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary11.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "RESHMA R",
+      "source": "Patient Name : RESHMA R"
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "36",
+      "source": "Age : 36"
+    },
+    "gender": {
+      "value": "MALE",
+      "source": "GENDER: MALE"
+    },
+    "admission_date": {
+      "value": "24/03/2026",
+      "source": "Patient Arrival Date : 24/03/2026"
+    },
+    "discharge_date": {
+      "value": "",
+      "source": ""
+    },
+    "chief_complaints": {
+      "value": "G2P1L1 AT 38+4 weeks gestation, previous LSCS",
+      "source": "Chief Complaints : G2P1L1 AT 38+4 weeks gestation, previous LSCS"
+    },
+    "principal_diagnosis": {
+      "value": "G2P1L1 AT 38 WEEKS 4 DAYS OF GESTATION WITH PREVIOUS LSCS, FOR",
+      "source": "Provisional Diagnosis : G2P1L1 AT 38 WEEKS 4 DAYS OF GESTATION WITH PREVIOUS LSCS, FOR"
+    },
+    "secondary_context": {
+      "value": "NIL | H/O GDM IN PREV PREGNANCY | LSCS IN 2023",
+      "source": "Past History : NIL || Past Medical History : H/O GDM IN PREV PREGNANCY || Past Surgical History : LSCS IN 2023"
+    },
+    "allergies": {
+      "value": "UNKNOWN",
+      "source": "Allergy : UNKNOWN"
+    },
+    "current_medications": {
+      "value": "AS PER CHART | NIL",
+      "source": "Current medications : AS PER CHART || Current Medications : NIL"
+    },
+    "bp": {
+      "value": "100/60",
+      "source": "Blood Pressure(mmHg) : 100/60"
+    },
+    "pulse": {
+      "value": "86",
+      "source": "Pulse Rate: 86"
+    },
+    "temperature_f": {
+      "value": "97.2",
+      "source": "Temp F : 97.2"
+    },
+    "respiration": {
+      "value": "20",
+      "source": "Respiration: 20"
+    },
+    "spo2": {
+      "value": "99",
+      "source": "Spo2 : 99"
+    },
+    "pain_score": {
+      "value": "1",
+      "source": "Pain Score : 1"
+    },
+    "fall_score": {
+      "value": "3",
+      "source": "Total Fall Risk Score(sum of all points per category) : 3"
+    },
+    "fall_risk": {
+      "value": "low risk",
+      "source": "Total Fall Risk Score(sum of all points per category) : 3\nRemarks : low risk"
+    },
+    "pressure_score": {
+      "value": "20",
+      "source": "Pressure score : 20"
+    },
+    "pressure_risk": {
+      "value": "NO RISK",
+      "source": "Pressure score : 20 NO RISK"
+    },
+    "dvt_score": {
+      "value": "1",
+      "source": "DVT Score : 1"
+    },
+    "dvt_risk": {
+      "value": "LOW RISK",
+      "source": "DVT Score : 1 LOW RISK"
+    },
+    "aspiration_score": {
+      "value": "0",
+      "source": "Aspiration score : 0"
+    },
+    "aspiration_risk": {
+      "value": "LOW RISK",
+      "source": "Aspiration score : 0 LOW RISK"
+    },
+    "ews_score": {
+      "value": "2",
+      "source": "EWS Score : 2"
+    }
+  }
+}

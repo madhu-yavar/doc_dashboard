@@ -1,0 +1,68 @@
+{
+  "failures": [
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary1.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary2.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary4.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary5.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary6.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary7.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary8.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary9.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary10.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary11.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary14.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary15.cls.pdf",
+      "error": "fetch failed"
+    },
+    {
+      "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary16.cls.pdf",
+      "error": "fetch failed"
+    }
+  ]
+}

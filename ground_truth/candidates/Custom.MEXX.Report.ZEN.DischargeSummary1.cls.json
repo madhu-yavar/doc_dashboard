@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary1.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary1.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "Hema VAISHANAV",
+      "source": "Patient Name : Hema VAISHANAV"
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "44",
+      "source": "Age : 44"
+    },
+    "gender": {
+      "value": "FEMALE",
+      "source": "Gender : FEMALE"
+    },
+    "admission_date": {
+      "value": "24/03/2026",
+      "source": "Patient arrival Date : 24/03/2026"
+    },
+    "discharge_date": {
+      "value": "",
+      "source": ""
+    },
+    "chief_complaints": {
+      "value": "B/L EAR PAIN",
+      "source": "Chief Complaints : B/L EAR PAIN"
+    },
+    "principal_diagnosis": {
+      "value": "LEFT EAR CSOM",
+      "source": "Provisional Diagnosis : LEFT EAR CSOM"
+    },
+    "secondary_context": {
+      "value": "HYPOTHYROIDISM | K/C/O HYPOTHYROIDISM",
+      "source": "Past History : HYPOTHYROIDISM || Past Medical History : K/C/O HYPOTHYROIDISM"
+    },
+    "allergies": {
+      "value": "UNKNOWN",
+      "source": "Any Known Allergies : UNKNOWN"
+    },
+    "current_medications": {
+      "value": "THYRONORM 100MCG 1-0-0 | TAB THYRONORM 100MCG",
+      "source": "Current Medications : THYRONORM 100MCG 1-0-0 || Current medications : TAB THYRONORM 100MCG"
+    },
+    "bp": {
+      "value": "110/70",
+      "source": "Blood Pressure(mmHg) : 110/70"
+    },
+    "pulse": {
+      "value": "75",
+      "source": "Pulse: 75"
+    },
+    "temperature_f": {
+      "value": "97.1",
+      "source": "Temp(F) : 97.1"
+    },
+    "respiration": {
+      "value": "22",
+      "source": "Respiration/min : 22"
+    },
+    "spo2": {
+      "value": "96",
+      "source": "SPO2: 96"
+    },
+    "pain_score": {
+      "value": "1",
+      "source": "Pain Score : 1"
+    },
+    "fall_score": {
+      "value": "1",
+      "source": "Total Fall Risk Score(sum of all points per category) : 1"
+    },
+    "fall_risk": {
+      "value": "LOW RISK",
+      "source": "Total Fall Risk Score(sum of all points per category) : 1\nRemarks : LOW RISK"
+    },
+    "pressure_score": {
+      "value": "23",
+      "source": "Pressure score : 23"
+    },
+    "pressure_risk": {
+      "value": "NO RISK",
+      "source": "Pressure score : 23 NO RISK"
+    },
+    "dvt_score": {
+      "value": "2",
+      "source": "DVT Score : 2"
+    },
+    "dvt_risk": {
+      "value": "MODERATE RISK",
+      "source": "DVT Score : 2 MODERATE RISK"
+    },
+    "aspiration_score": {
+      "value": "0",
+      "source": "Aspiration score : 0"
+    },
+    "aspiration_risk": {
+      "value": "LOW RISK",
+      "source": "Aspiration score : 0 LOW RISK"
+    },
+    "ews_score": {
+      "value": "1",
+      "source": "EWS Score : 1"
+    }
+  }
+}

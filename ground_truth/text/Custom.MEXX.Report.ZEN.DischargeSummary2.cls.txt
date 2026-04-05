@@ -1,0 +1,1944 @@
+INPATIENT RECORD
+Hospital No:
+Name:
+Doctor Name:
+Date:
+
+57233772
+
+Pallor: 02
+Erythema: 02
+Surgical scars: 02
+Rash: 02
+
+Visit No:
+Age/Sex:
+Specialty:
+
+Cyanosis: 02
+Petechiae: 02
+Injury treatment: 02
+
+Jaundice, Neonatal (Appearance): 02
+Oedema: 02
+Burns: 02
+
+Forms
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 10
+Remarks : Moderate Fall Risk
+Age : 70-79 Years - 2
+Medications:
+ON 1 HIGH FALL RISK DRUG - 3
+Patient care Equipment : Two Present - 2
+Mobility : Requires assisstance or supervision for mobility,transfer or ambulation - 2
+Cognition : Altered awareness of immediate physical environment- 1
+Type of Assessment : Initial Assessment
+Pain Assessments
+Score: 1
+Type of Assessment: Initial Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 1
+
+Additional Pain Assessment Details
+Time: With position changes
+
+Skin Examination
+Pallor : No
+Cyanosis : No
+1 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Jaundice : No
+Erythema : No
+Petechiae : No
+Oedema : No
+Rash : No
+Skin Lesions : No
+Surgical scars : No
+Wounds : No
+Burns : No
+Other : REDNESS ON BOTH HANDS
+Hair : Normal
+
+Nails : Normal
+NURSING INITIAL ASSESSMENT - NEW
+Status : Entered
+Score : 0
+Patient Name : DR SHIVARAJ K S
+MRN : MH009742499
+Age : 74 Yrs
+Gender : Male
+Patient arrival Date : 24/03/2026
+Patient Arrival Time : 07:15
+Accompanied by Relative : Yes
+Name of Relative : MR ROSHAN K S
+Relationship with Patient : SON
+Contact Number : 9620550446
+Primary Language Spoken : URDU
+Interpreter Needed : No
+Room Orientation Given : Yes
+Patient Identification Band Fixed : Yes
+If Yes Type Of Band : GREEN ID BAND
+Height(Cm) : ..
+Weight(Kgs) : ..
+Reason Not Able To Check : PATIENT IS ON OXYGEN
+Chief Complaints : BREATHING DIFFICULTY
+Past History : UPPER GI BLEED - S/P OGD SHOWED GE JUNCTION BLEEDING LESION NOTED HEMOCLIP APPLIED [20/11/25]
+HYPERTENSION
+PREDIABETIC
+Vital Assessment
+Temp(F) : 98.3
+Pulse/min : 105
+Blood Pressure(mmHg) : 140/90
+Respiration/min : 23
+Spo2(%) : 96
+2 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+GRBS (mg/dl) : 117
+Skin Integrity : INTACT
+Other Parameters
+EWS Score : 5
+GCS : E4M6V5
+Pain Score : 1
+Valuable handover checklist completed : Yes
+Belongings : No
+Dentures : No
+Hearing Aid : No
+Eye Glasses/Contact Lens : No
+Others : ..
+Vulnerable : Yes
+Any Special Care Given : AGED
+Restraints : No
+If Yes, Type Of Restraint : N/A
+Any Known Allergies : UNKNOWN
+Current Medications : TAB FLUVIR 75 MG P/O 1-0-1
+Informed the Doctor : Yes
+Name of the Doctor : Dr. Ashley Elizabeth Thomas
+Investigations Ordered : ECG, CBC, RP2, ABG, URINE ROUTINE
+RADIOLOGY INVESTIGATIONS: CXR
+Diet : SOFT DIET
+Collected Old records : Yes
+If Yes Document Type : OP FILE
+Is the patient at risk for any of the following? If Yes, complete the risk assessment form.
+Fall : YES
+Pressure Score : YES
+DVT : YES
+Aspiration : YES
+Pain Assessment Score : Acute
+Ability to perform activities of daily living
+Activity
+Bathing : Assisted
+Dressing : Assisted
+Eating : Assisted
+Walking : Assisted
+Toilet Use : Assisted
+Nursing needs(complete Nursing care plan based on the identified needs)
+Actual needs : POSITION
+AIRWAY CLEARENCE TECHNIQUES
+OXYGEN THERAPY
+MEDICATION ADMINISTRATION
+Potential needs : PATIENT EDUCATION
+INFECTION PREVENTIOIN
+FOLLOW UP CARE
+3 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+NUTRITIONAL SUPPORT
+Any other needs : TO PROVIDE PSYCHOLOGICAL SUPPORT
+Assessment Done By : SK Anisuddin
+Rating : 1
+BMI : NaN..
+Fall Score : 10/MODERATE
+Pressure score : 13 Moderate Risk
+DVT Score : 5/HIGHEST
+Aspiration score : 2/LOW
+General Physical Examination:
+Pallor : NO
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+Any Other Findings : ..
+Questionnaires
+Status : Entered
+Date : 24/03/2026
+Patient's Indentification No. : MH009742499
+Sex : Male
+A - Each Risk Factor Represents 1 Point : Sepsis (< 1 month),Medical patient currently at bed rest,Other risk factor
+Total Tickmarks : 3
+Total Score A : 3
+B - Each Risk Factor Represents 2 Point : Age 60 - 74 years
+Total Tickmarks : 1
+Total Score B : 2
+Total Score (A+B+C+D+E) = : 5
+Risk Assessment : : Highest
+5 or More Highest : Highest
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Score : 0
+CATEGORIES
+EATING HABILTS : Low Level of alertness that impairs complete participation in oral intake - 1,Needs assistance
+to eat - 1
+TOTAL SCORE : 2
+COMMENTS : Low Risk
+Adult Pressure Ulcer Braden Scale
+SENSORY PERCEPTION : 4
+4 - No Impairment : Y
+MOISTURE : 3
+3 - Occasionaly Moist : Y
+ACTIVITY : 1
+1 - Bed Bound : Y
+4 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+MOBILITY : 2
+2 - Very Limited : Y
+NUTRITION : 2
+2 - Probably Inadequate : Y
+FRICTION AND SHEAR : 1
+1 - Problem : Y
+TOTAL SCORE : 13 Moderate Risk
+
+Forms
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : No
+Patient Measurable Goal for the day : TO PREVENT RISK OF DVT
+Nursing Diagnosis : Risk for DVT
+Nursing Interventions : a) Educate in proper use and function of assistive devices.
+b) Provide progressive mobilization.
+c) Motivate the patient to gradually increase mobility
+
+Evaluation : Continue,Modify
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : No
+Patient Measurable Goal for the day : TO PREVENT RISK OF PRESSURE ULCER
+Nursing Diagnosis : Risk of pressure ulcer/Injury can cause by lack of mobilization due to pain and
+altered nutritional diet
+Nursing Interventions :
+1. ASSESS THE PATIENT CONDITION
+2. EVERY 2ND HOURLY CHANGE PATIENT POSITION
+3. KEEP SKIN DRY AND CLEAN
+4. APPLY POWDER
+Evaluation : Continue,Modify
+Add Nursing Care Plan
+Status : Entered
+Patient Measurable Goal for the day : to restore normal breathing pattern
+Nursing Diagnosis : Ineffective airway clearance
+Nursing Interventions : a) Monitor respiratory rate, depth, effort, rhythm,
+Breath sounds and cyanosis.
+b) Promote optimal level of activity for best possible lung
+Expansion, elevate the head of the bed by 45 degree.
+c) Encourage cough and the breathing exercise.
+d) Monitor oxygen if required and suction if required.
+Evaluation : Continue,Modify
+
+Forms
+5 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 9
+Remarks : Moderate Fall Risk
+Age : 70-79 Years - 2
+Medications:
+ON 1 HIGH FALL RISK DRUG - 3
+Patient care Equipment : One Present- 1
+Mobility : Requires assisstance or supervision for mobility,transfer or ambulation - 2
+Cognition : Altered awareness of immediate physical environment- 1
+Type of Assessment : Shift Assessment
+Pain Assessments
+Score: 1
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 1
+
+Additional Pain Assessment Details
+
+Skin Examination
+Pallor : No
+Cyanosis : No
+Jaundice : No
+Erythema : No
+Petechiae : No
+Oedema : No
+Rash : No
+Skin Lesions : No
+Surgical scars : No
+Wounds : No
+Burns : No
+Other : REDNESS ON BOTH HANDS
+Hair : Normal
+
+6 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Nails : Normal
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+Total Score :21
+Questionnaires
+Status : Entered
+Date : 24/03/2026
+Patient's Indentification No. : MH009742499
+Sex : Male
+A - Each Risk Factor Represents 1 Point : Medical patient currently at bed rest,Other risk factor
+Total Tickmarks : 2
+Total Score A : 2
+B - Each Risk Factor Represents 2 Point : Age 60 - 74 years
+Total Tickmarks : 1
+Total Score B : 2
+Total Score (A+B+C+D+E) = : 4
+Risk Assessment : : High
+3 - 4 High : High
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Status : Entered
+Score : 0
+CATEGORIES
+EATING HABILTS : Needs assistance to eat - 1
+TOTAL SCORE : 1
+COMMENTS : Low Risk
+Adult Pressure Ulcer Braden Scale
+Status : Entered
+SENSORY PERCEPTION : 4
+4 - No Impairment : Y
+MOISTURE : 3
+3 - Occasionaly Moist : Y
+ACTIVITY : 1
+1 - Bed Bound : Y
+MOBILITY : 2
+2 - Very Limited : Y
+NUTRITION : 2
+2 - Probably Inadequate : Y
+FRICTION AND SHEAR : 2
+2 - Potiential Problem : Y
+TOTAL SCORE : 14
+7 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Status : Entered
+
+Forms
+Nurses Endorsment Checklist
+Status : Entered
+Shift : Transfers
+Situation : Elective,NON MLC,Patient Belongings Handover,Transfer Out
+Comment / Chief Complaints / Diagnosis : C/O BREATHING DIFFICULTY
+Background
+Allergies : No
+Remarks : UNKNOWN.
+Diet : Yes
+Remarks : normal
+Previous Medications : No
+Remarks : nil
+Old reports added to TRAK : No
+Remarks : nil
+Consents : No
+Remarks : nil
+Cross Consultation : No
+Remarks : nil
+Procedures performed before transfer : Yes
+Remarks : IV CANNULATION,
+Vulnerable : Yes
+Remarks : age74
+Past Medical / Surgical History : RAD
+DM
+Intubation : no
+Ventilation Status : ON OXYGEN
+ET Size and Lip Level : no
+Tracheostomy : no
+ICD : no
+Pig Tail : no
+T Piece : no
+Chest Physio : no
+Treated with Inotropes : no
+Blood Transfusion : no
+Level of Consciousness : Oriented
+GCS : E4M6V5
+Vitals -TPR & BP : is stable : No
+Pain Score : 1
+On MET/PET List : No
+Risk For FALL : Yes
+Remarks : 9Moderate Fall Risk
+Risk For Pressure Ulcer : Yes
+Remarks : 14Moderate Fall Risk
+Risk for Aspiration : Yes
+Remarks : 1LOW
+8 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Existence of Pressure Ulcer : No
+O2 Administration : No
+SPO2(Latest reading in the shift) : 96
+DIET : Oral
+On tube feeding : No
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : Yes
+Remarks : VRNFLOWN
+Self Void : No
+Foley's : No
+Drain : No
+Bowel Opened : No
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Next Capillary Blood glucose-checktime : 12:00
+Dressing Present : No
+High Risk medications : Yes
+Remarks : ANTIBIOTIC
+Is Patient on Physiotherapy : No
+Ambulation : Bed Bound
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Remarks : DVT,PRESSURE
+Pupil Reaction : 2MM
+Inotropes : No
+Ventilator : No
+Dialysis : No
+Special Needs : Yes
+Remarks : AUTO CPAP TO BE CONNECT OVERNIGHT
+Patient & Family Education : No
+Transfer : Yes
+Transfer Notes : 506A
+Medications: Yes
+Remarks : ON TRETMENT SHEET
+Planned Procedure : No
+Approved follow-up : Yes
+Remarks : DR ORDERS
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : Yes
+Remarks : CT REPORT
+Critical Value : No
+Pharmacy / Consumables : Charged
+9 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Discharge Plan : No
+Comments : CHECK VITALS,I/O MON ITOR ,GRBC CEHCK ,AUTO CPAP TO BE CONNECT OVERNIGHT
+Hand over by : SK Anisuddin
+Handed over to : Balapdianghun
+Team Lead Hand over By : Abu Haneefa B A
+Team Lead Hand over To : Balapdianghun
+Status : Entered
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : No
+Patient Measurable Goal for the day : TO PREVENT RISK OF PRESSURE ULCER
+Nursing Diagnosis : Risk of pressure ulcer/Injury can cause by lack of mobilization due to pain and
+altered nutritional diet
+Nursing Interventions : 1. ASSESS THE PATIENT CONDITION
+2. EVERY 2ND HOURLY CHANGE PATIENT POSITION
+3. KEEP SKIN DRY AND CLEAN
+4. APPLY POWDER
+Evaluation : Continue,Modify
+Add Nursing Care Plan
+Status : Entered
+Patient Measurable Goal for the day : to restore normal breathing pattern
+Nursing Diagnosis : Ineffective airway clearance
+Nursing Interventions : a) Monitor respiratory rate, depth, effort, rhythm,
+Breath sounds and cyanosis.
+b) Promote optimal level of activity for best possible lung
+Expansion, elevate the head of the bed by 45 degree.
+c) Encourage cough and the breathing exercise.
+d) Monitor oxygen if required and suction if required.
+Evaluation : Continue,Modify
+Add Nursing Care Plan
+Status : Entered
+Patient Measurable Goal for the day : TO PREVENT RISK OF DVT
+Nursing Diagnosis : Risk for DVT
+Nursing Interventions : . a) Educate in proper use and function of assistive devices.
+b) Provide progressive mobilization.
+c) Motivate the patient to gradually increase mobility
+
+Evaluation : Continue,Modify
+IP Initial Assessment
+Status : Entered
+Score : 0
+Patient Arrival Date : 24/03/2026
+Patient Arrival Time : 07:20
+10 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Chief Complaints : Complaints of fever, cough non productive since 2 days
+Complaints of breathlessness increased for a day.
+History of Presenting illness : Dr. Shivaraj K S, aged 74 years, was apparently well till 14/3/26 when he developed
+exacerbation of RAD , was admitted to MHMR for 3 days, he was discharged on 17/3/26 on nebs antibiotics. He had
+fever with chills last night, associated with cough- scanty white sputum, breathlessness for a day, started on oxygen
+concentrator at home . He was brought to ER as he was tachypneic, high grade fever, spo2 room air 88- started on
+niv. Hence was shifted to MICU for further management.
+Allergy : not knoiwn
+Past Medical History : UPPER GI BLEED - S/P OGD SHOWED GE JUNCTION BLEEDING LESION NOTED HEMOCLIP APPLIED [20/11/25]
+HYPERTENSION
+PREDIABETIC
+Past Surgical History : Family History : Social / Personal History : Menstrual History : Previous Pregnancy : Current medications : nebs
+Pulse /min : 80
+Resp Rate/min : 24
+Temp F : 99
+BP mm Hg : 130/80
+on O2 : 2l
+GRBS mg/dL : 114
+Pallor : NO
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+Peripheral Pulse : +
+Others : CVS : s1s2
+RS : reduced air entry lower zones, no wheeze now
+PA : soft
+CNS : gcs 15/15
+Others : Local Examination : Provisional Diagnosis : lrti- sepsis
+rad infective exacerbation
+Care Plan : INJ PAN 40 MG IV 1-0-0
+INJ MAGNEX FORTE 1.5 GM IV 1-0-1
+INJ PARA 1 GM IV 1-1-1
+TAB FLUVIR 75 MG P/O 1-0-1
+11 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+NEB LEVOLIN 0.63MG INH 1-1-1-1
+NEB FORACORT 0.5 MG (INH) 1-0-1(TO GARGLE THE MOUTH AFTER USE )
+NEB NEBZMART G (INH) 1-0-1
+TAB MONTAIR FX P/O 0-0-1
+MONITOR VITALS
+niv sos
+Spo2 : 98
+Diet Plan : oral as tolerated
+Apache II scoring sheet
+A.ACUTE PHYSIOLOGY SCORE : 6
+B.Age : 5
+C.CHRONIC HEALTH POINTS : 5
+APACHEII SCORE="A(ACUTE" PHYSIOLOGY SCORE)+B(AGE POINTS)+C(CHRONIC HEALTH
+POINTS):16
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+Total Score :32
+
+Forms
+Nurses Endorsment Checklist
+Shift : Morning to Evening
+Situation : Elective,NON MLC,Shift Handover
+Comment / Chief Complaints / Diagnosis : C/O BREATHING DIFFICULTY
+Background
+Allergies : No
+Remarks : UNKNOWN.
+Diet : Yes
+Remarks : normal
+Previous Medications : No
+Remarks : nil
+Old reports added to TRAK : No
+Remarks : nil
+Consents : No
+Remarks : nil
+Cross Consultation : No
+Remarks : nil
+Procedures performed before transfer : Yes
+Remarks : IV CANNULATION,
+Vulnerable : Yes
+Remarks : age74
+Past Medical / Surgical History : RAD
+DM
+Intubation : N/A
+Ventilation Status : N/A
+12 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+ET Size and Lip Level : N/A
+Tracheostomy : N/A
+ICD : N/A
+Pig Tail : N/A
+T Piece : N/A
+Chest Physio : N/A
+Treated with Inotropes : N/A
+Blood Transfusion : N/A
+Level of Consciousness : Oriented
+GCS : E4M6V5
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 1/10
+On MET/PET List : No
+Risk For FALL : Yes
+Remarks : 10MODERATE RISK
+Risk For Pressure Ulcer : Yes
+Remarks : 10 HIGH RISK
+Risk for Aspiration : Yes
+Remarks : 4MODERATE RISK
+Existence of Pressure Ulcer : No
+O2 Administration : No
+SPO2(Latest reading in the shift) : 98
+DIET : Oral
+Diet-Specify the type : Diabetic
+On tube feeding : No
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : No
+Self Void : Yes
+Foley's : No
+Drain : No
+Bowel Opened : No
+Fluid Balance : 1245
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Next Capillary Blood glucose-checktime : 18:00
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Bed Bound
+Investigations Sent : No
+Reports Collected : Yes
+Care Plan : Yes
+Inotropes : No
+Ventilator : No
+13 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Dialysis : No
+Special Needs : Yes
+Remarks : MONITOR THE VITALS
+BACK CARE GIVEN
+Patient & Family Education : Yes
+Remarks : ATTENDERS COUNSELING DONE
+Transfer : No
+Medications: Yes
+Remarks : AS PER DOCTORS ORDER GIVEN
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : STRIPS
+Discharge Plan : No
+Comments : BOWEL NOT OPENED D1
+Hand over by : neeraja u
+Handed over to : Miss Sanjukta Bose
+Team Lead Hand over By : neeraja u
+Team Lead Hand over To : S Sree Ram
+Progress Note :
+C/S/B ICU TEAM
+INFECTIVE EXACERBATION OF RAD
+RECENT ADMISSION ON 14/3/2025
+PREDIABETIC
+UPPER GI BLEED - HEMOCLIP
+PATIENT IS CONSCIOUS AND ORINETED
+BP: 125/70
+PR: 80
+SPO2: 94 ON NP 3 LTRS
+WBC:25K
+PLAN
+URINE ROUTINE
+BLOOD & URINE C/S TO SEND
+WATCH FOR DESATURATION / RESPIRATORY DISTRESS
+CST
+Treatment Note :
+SEEN DURING EVENING ROUNDS
+14 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+NO FEVER
+COUGH +
+SPO2 - 95% ON 2L O2
+ADV
+PLAIN CT THORAX STAT
+AUTO CPAP OVERNIGHT
+SHIFT TO WARD
+CONTINUE MONOCEF
+MONITOR VITALS
+REST AS PER CHART
+Consultant Plan Notes :
+74yrs/MALE
+REACTIVE AIRWAY DISEASE WITH ACUTE EXACEBRATION
+VIRAL LOWER RESPIRATORY TRACT INFECTION WITH RESPIRATORY FAILURE
+UPPER GASTROINTESTINAL BLEED - S/P OGD SHOWED GE JUNCTION BLEEDING LESION NOTED HEMOCLIP APPLIED [20/11/2025]
+HYPERTENSION
+CAME WITH C/O BREATHLESSNESS ON AND OFF SINCE 3 DAYS WORSENED SINCE 1 DAY
+H/O FEVER ASSOCIATED WITH COUGH WIH WHEEZE SINCE 2 DAYS
+SPUTUM C/S - Moraxella catarrhalis [15.3.26]
+RECENTLY ADMITTED WITH RAD EXACEBRATION FROM 14/3/26 - 17/3/26
+CONSCIOUS, ORIENTED
+NO FEVER
+COUGH / WHEEZE +
+SPO2 - 96% ON 2L O2
+CHEST CREPTS
+TC 25140, HB 17.7, PLT 344000
+PH 7.480, CO2 33, O2 104
+CR 0.71, N 131, K 4.21
+ADV
+ECHO, PLAIN CT THORAX STAT
+SHIFT TO WARD
+CONTINUE MONOCEF
+MONITOR VITALS
+REST AS PER CHART
+
+FAMILY COUNSELLED IN DETAIL REGARDING CARE PLAN OF TREATMENT
+
+15 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Forms
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 14
+Remarks : high risk.
+Age : 70-79 Years - 2
+Elimination,Bowel and Urine : Incontinence- 2
+Medications:
+ON 2 OR MORE HIGH FALL RISK DRUGS - 5
+Patient care Equipment : One Present- 1
+Mobility : Requires assisstance or supervision for mobility,transfer or ambulation - 2,Unsteady Gait- 2
+Type of Assessment : Shift Assessment
+Pain Assessments
+Score: 2
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 2
+
+Additional Pain Assessment Details
+Type: Not Applicable
+Duration: Not Applicable
+
+Skin Examination
+Pallor : No
+Cyanosis : No
+Skin turgor : Normal turgor
+Jaundice : No
+Erythema : No
+Petechiae : No
+Oedema : No
+Rash : No
+Skin Lesions : No
+16 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Surgical scars : No
+Wounds : No
+Burns : No
+Other : REDNESS ON BOTH HANDS
+Hair : Normal
+
+Nails : Normal
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+Total Score :21
+Questionnaires
+Sex : Male
+A - Each Risk Factor Represents 1 Point : Sepsis (< 1 month),Serious lung disease incl. pneumonia (< 1
+month),Medical patient currently at bed rest,Other risk factor
+Total Tickmarks : 4
+Total Score A : 4
+C - Each Risk Factor Represents 3 Point : Age over 75 years
+Total Tickmarks : 1
+Total Score C : 3
+Total Score (A+B+C+D+E) = : 7
+Risk Assessment : : Highest
+5 or More Highest : highest risk.
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Score : 0
+CATEGORIES
+PHYSICAL CONDITIONS : Difficulty Chewing - 1,Absence of Chewing - 2,Difficulty Swallowing 1
+EATING HABILTS : On Tube feeding 3
+SEATING POSITION : Unable to position appropriately while feeding due to patients health condition - 2
+TOTAL SCORE : 9
+COMMENTS : high risk.
+Adult Pressure Ulcer Braden Scale
+SENSORY PERCEPTION : 3
+3 - Slightly Limited : Y
+MOISTURE : 3
+3 - Occasionaly Moist : Y
+ACTIVITY : 3
+3 - Walks Occasionally : Y
+MOBILITY : 3
+17 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+3 - Slightly Limited : Y
+NUTRITION : 3
+3 - Adequate : Y
+FRICTION AND SHEAR : 2
+2 - Potiential Problem : Y
+TOTAL SCORE : 17- mild risk.
+
+Forms
+Nurses Endorsment Checklist
+Shift : Evening to Night
+Situation : Elective,NON MLC,Shift Handover
+Comment / Chief Complaints / Diagnosis : C/O BREATHING DIFFICULTY
+Background
+Allergies : No
+Remarks : UNKNOWN.
+Diet : Yes
+Remarks : normal
+Previous Medications : No
+Remarks : nil
+Old reports added to TRAK : No
+Remarks : nil
+Consents : No
+Remarks : nil
+Cross Consultation : No
+Remarks : nil
+Procedures performed before transfer : Yes
+Remarks : IV CANNULATION,
+Vulnerable : Yes
+Remarks : age74
+Past Medical / Surgical History : RAD
+DM
+Intubation : NA
+Ventilation Status : ON OXYGEN
+ET Size and Lip Level : NA
+Tracheostomy : NA
+ICD : NA
+Pig Tail : NA
+T Piece : NA
+Chest Physio : NA
+Treated with Inotropes : NA
+Blood Transfusion : NA
+Level of Consciousness : Oriented
+GCS : 15/15
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 2
+On MET/PET List : No
+Risk For FALL : Yes
+Remarks : 14- HIGH RISK.
+18 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Risk For Pressure Ulcer : Yes
+Remarks : 17- MILD RISK.
+Risk for Aspiration : Yes
+Remarks : 9- HIGH RISK.
+Existence of Pressure Ulcer : No
+O2 Administration : Yes
+If Yes mention Litres/min : 2
+SPO2(Latest reading in the shift) : 95
+DIET : Oral
+Diet-Specify the type : Normal
+On tube feeding : No
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : Yes
+Remarks : 18G VENFLON IN LEFT HAND.
+Self Void : Yes
+Foley's : No
+Drain : No
+Bowel Opened : No
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Chair Bound
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Remarks : RESPIRATIONM, FALL.
+Inotropes : No
+Ventilator : No
+Dialysis : No
+Special Needs : Yes
+Patient & Family Education : No
+Transfer : Yes
+Transfer Notes : PLAN WARD SHIFT OUT.
+Medications: Yes
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : CONSUMABLES.
+19 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Discharge Plan : No
+Comments : PATIENT IS ON OXYGEN.
+Hand over by : S Sree Ram
+Handed over to : SK Anisuddin
+Team Lead Hand over By : S Sree Ram
+Team Lead Hand over To : Abu Haneefa B A
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : No
+Patient Measurable Goal for the day : to restore respiratory system.Nursing Diagnosis : Ineffective airway clearance
+Nursing Interventions : - provide head elevation up to 45 degrees high.
+- monitor respiration, spo2, breathing pattern.
+- oxygen administration as per need.
+- encourage patient to do breathing exercise.
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : No
+Patient Measurable Goal for the day : TO PREVENT FROM FALL. Nursing Diagnosis : Risk for fall
+Nursing Interventions : - PROVIDE SIDE RAILS UP.
+- KEEP BED HEIGHT LOW.
+- PROVIDE PILLOW SUPPORT TO AVOID EXCESSIVE MOVEMENTS.
+- PROVIDE CALL BELL FOR ANY HELP.
+Diet Notes :
+THE PATIENT IS ON DM LOW SALT DIET
+ENERGY-1600KCAL
+PROTEIN-65G
+Initial Nutritional Assessment
+Status : Authorised
+ANTHROPOMETRIC MEASUREMENTS
+Height (cms) : NOT RECORDED
+Weight (kgs) : NOT RECORDED
+IBW (kgs) : NaN
+BMI : NaN
+Recent weight loss/gain : None
+GI SYMPTOMS (Recent)
+Food allergies/Intolerance : No
+Subjective Global Assessment rating
+Nutritional intervention proposed/Diet advised : Diabetic diet with 3 meal and 3 snack as advised
+20 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Others : Clinical notes will be updated on change of diet
+Select Type : Assessment
+Evaluation Criteria
+Adults : New onset diabetes mellitus,Cardiac Disease Adult Others: lrti- sepsis rad infective exacerbation
+
+Forms
+HOURLY NURSING ROUND
+Score : 0
+HOURLY NURSING ROUND - DAY
+CHECKPOINTS
+HOURLY NURSING ROUND - NIGHT
+CHECKPOINTS
+Check for Sleep : 01 AM,03 AM
+Comments : Received the patient at 10:30pm
+Ask for pain if any : 11 PM,01 AM,03 AM,05 AM,07 AM
+Ask for Comfort or Position : 11 PM,03 AM,05 AM
+Ask for bathroom needs : 11 PM,01 AM,05 AM,07 AM
+Peripery-move the phone, Call Light, Trashcan, Watercan, Over-Bed Table : 11 PM
+Pump-Syringe pump, Infusion Line, IV Line : 11 PM,03 AM,07 AM
+Nurses Endorsment Checklist
+Status : Entered
+Shift : Night to Morning
+Situation : Elective,Shift Handover
+Comment / Chief Complaints / Diagnosis : C/O BREATHING DIFFICULTY
+Background
+Allergies : No
+Remarks : UNKNOWN.
+Diet : Yes
+Remarks : DM diet
+Previous Medications : No
+Remarks : nil
+Old reports added to TRAK : No
+Remarks : nil
+Consents : No
+Remarks : nil
+Cross Consultation : No
+Remarks : nil
+Procedures performed before transfer : Yes
+Remarks : IV CANNULATION,
+Vulnerable : Yes
+Remarks : age74
+Past Medical / Surgical History : RAD
+DM
+Level of Consciousness : Oriented
+GCS : 15
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 1
+21 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+On MET/PET List : No
+Risk For FALL : Yes
+Remarks : 9 Moderate risk
+Risk For Pressure Ulcer : No
+Risk for Aspiration : No
+Existence of Pressure Ulcer : No
+O2 Administration : No
+SPO2(Latest reading in the shift) : 94
+DIET : Oral
+Diet-Specify the type : Diabetic
+On tube feeding : No
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : Yes
+Remarks : 18g cannula D-2
+Self Void : Yes
+Foley's : No
+Drain : No
+Bowel Opened : No
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Ambulant
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Remarks : fall/pain/dvt
+Special Needs : No
+Patient & Family Education : Yes
+Remarks : Hand hygiene
+Transfer : No
+Medications: Yes
+Remarks : As per chart
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : Consumables
+Discharge Plan : No
+Comments : Monitor spo2
+22 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Hand over by : Balapdianghun
+Handed over to : Rakhi M.T
+Team Lead Hand over By : Balapdianghun
+Team Lead Hand over To : Blessy Mol Babu
+Status : Entered
+
+Forms
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 3
+Remarks : LOW RISK
+Age : 70-79 Years - 2
+Patient care Equipment : One Present- 1
+Type of Assessment : Shift Assessment
+Pain Assessments
+Score: 1
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 1
+
+Additional Pain Assessment Details
+Type: Dull
+Duration: Episodic
+Continuous: Constant
+Time: With position changes
+Onset: Sudden
+
+Associated Symptoms: None
+
+Skin Examination
+Pallor : No
+Cyanosis : No
+Skin turgor : Normal turgor
+Jaundice : No
+Erythema : No
+Petechiae : No
+Purpura : No
+23 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Oedema : No
+Rash : No
+Skin Lesions : No
+Surgical scars : No
+Wounds : No
+Burns : No
+Other : REDNESS ON BOTH HANDS
+Hair : Normal
+
+Nails : Normal
+Questionnaires
+Date : 25/03/2026
+Patient's Indentification No. : MH009742499
+Sex : Male
+A - Each Risk Factor Represents 1 Point : Other risk factor
+Total Tickmarks : 1
+Total Score A : 1
+B - Each Risk Factor Represents 2 Point : Age 60 - 74 years
+Total Tickmarks : 1
+Total Score B : 2
+Total Score (A+B+C+D+E) = : 3
+Risk Assessment : : High
+3 - 4 High : 3 HIGH RISK
+Adult Pressure Ulcer Braden Scale
+SENSORY PERCEPTION : 4
+4 - No Impairment : Y
+MOISTURE : 4
+4 - Rarely Moist : Y
+ACTIVITY : 4
+4 - Walks Frequently : Y
+MOBILITY : 4
+4 - No Limitations : Y
+NUTRITION : 2
+2 - Probably Inadequate : Y
+FRICTION AND SHEAR : 3
+3 - Apparent Problem : Y
+TOTAL SCORE : 21 NO RISK
+
+Forms
+Nurses Endorsment Checklist
+Shift : Morning to Evening
+Situation : Elective,Shift Handover
+Comment / Chief Complaints / Diagnosis : C/O BREATHING DIFFICULTY
+Background
+Allergies : No
+Remarks : UNKNOWN.
+24 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Diet : Yes
+Remarks : DM diet
+Previous Medications : No
+Remarks : nil
+Old reports added to TRAK : No
+Remarks : nil
+Consents : No
+Remarks : nil
+Cross Consultation : No
+Remarks : nil
+Procedures performed before transfer : Yes
+Remarks : IV CANNULATION,
+Vulnerable : Yes
+Remarks : age74
+Past Medical / Surgical History : RAD
+DM
+Level of Consciousness : Oriented
+GCS : 15\15
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 1
+On MET/PET List : No
+Risk For FALL : Yes
+Remarks : 1 low risk
+Risk For Pressure Ulcer : No
+Risk for Aspiration : Yes
+Remarks : 0 low risk
+Existence of Pressure Ulcer : No
+Remarks : skin is intact
+O2 Administration : No
+Remarks : rom air
+SPO2(Latest reading in the shift) : 98
+DIET : Oral
+Diet-Specify the type : Normal
+On tube feeding : No
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : Yes
+Remarks : 20 g
+Self Void : Yes
+Foley's : No
+Drain : No
+Bowel Opened : No
+Fluid Balance : normal
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+25 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Ambulant
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Remarks : fall ,dvt , pain
+Special Needs : No
+Patient & Family Education : Yes
+Remarks : medications
+Transfer : No
+Medications: Yes
+Remarks : as per charts
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : consumables
+Discharge Plan : No
+Comments : cst
+Hand over by : Rakhi M.T
+Handed over to : Miss Meghana G Daddikoppa
+Team Lead Hand over By : Blessy Mol Babu
+Team Lead Hand over To : Priyanka Patari
+HOURLY NURSING ROUND
+Score : 0
+HOURLY NURSING ROUND - DAY
+CHECKPOINTS
+Introduce yourself : 08 AM,02 PM
+Ask for pain if any : 12 NOON,01 PM,02 PM,03 PM,04 PM
+Ask for Comfort or Position : 08 AM,10 AM,12 NOON,02 PM,04 PM
+Ask for bathroom needs : 09 AM,11 AM,01 PM,02 PM,03 PM,04 PM
+Peripery-move the phone, Call Light, Trashcan, Watercan, Over-Bed Table : 08 AM,11 AM,12 NOON,02 PM,04
+PM
+Pump-Syringe pump, Infusion Line, IV Line : 10 AM,01 PM,02 PM,03 PM
+HOURLY NURSING ROUND - NIGHT
+CHECKPOINTS
+Add Nursing Care Plan
+Status : Authorised
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : REDUCE PAIN Nursing Diagnosis : Acute pain ./ or post-operative pain
+Education and comments: : EDUCATED
+26 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Nursing Interventions : monitor characteristics of pain, frequency, precipitating factors and relief factors
+b)eliminate factors that precipitate pain
+c) other analgesics 6th/8th hourly if necessary in accordance with physician orders
+d)provide restful and quit environment.
+d)provide restful and quit environment
+Evaluation : Continue
+Add Nursing Care Plan
+Status : Authorised
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : PREVENT DVT RISK Nursing Diagnosis : Risk for DVT
+Education and comments: : EDUCATED
+Nursing Interventions : Educate in proper use and function of assistive devices.
+b) Provide progressive mobilization.
+c) Motivate the patient to gradually increase mobility.
+Evaluation : Continue
+Add Nursing Care Plan
+Status : Authorised
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : PREVENT FALL RISK Nursing Diagnosis : Risk for fall
+Education and comments: : EDUCATED
+Nursing Interventions : Orient to surroundings on admission.
+b)Provide education on how to use call bell and observe the patient demonstration.
+c)Provide appropriate safety measures like sitter, display vulnerable patient alert.
+d) Lower the height of bed, keep the patient near nurses station
+e)Provide education on safety measures to patient and attender
+Evaluation : Continue
+Patient/Family Health Education
+Status : Authorised
+Date: : 25/03/2026
+Time: : 08:52
+Assessment Type : Reassessment
+Educational Needs : Safe and Effective Use of Medication, side effects and Interactions,Pain Management,Activity/
+Exercise,Health Maintenance,Nutrition,Risk,Falling precaution
+Given Education : Safe and Effective Use of Medication, side effects and Interactions
+Health Maintenance
+Pain Management
+Teaching Method : Lecture
+Teaching Tool : Verbal Instructions
+Evaluation : Applies knowledge/skills
+Child Attends School : Not Applicable
+Does the child has any problem at school : Not Applicable
+Literacy Skills : Yes
+
+27 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Progress Note :
+SEEN DURING EVENING ROUNDS
+NO FEVER
+COUGH BETTER
+TC 16700, HB 16.5 , PLT 327000
+ADV
+TC TOMORROW
+CHEST PHYSIO
+AUTO CPAP OVERNIGHT
+MONITOR VITALS
+REST AS PER CHART
+
+Consultant Plan Notes :
+PATIENT REVIEWED
+DOING WELL
+NO FEVER
+COUGH +
+COMPLIANT TO CPAP
+SPO2 - 95% RA
+CHEST RHONCHI
+ECHO:
+EF - 66%
+PASP - 28
+Normal Chamber Dimensions / Sclerotic Aortic Valve
+No Regional Wall Motion Abnormality
+Normal LV Systolic Function / Grade I LV Diastolic Dysfunction Present
+Normal RV Function
+Trivial Mitral & Tricuspid Regurgitation
+No PAH / Clot / Pericardial Effusion
+CT THORAX S/O Patchy subsegmental consolidation seen in the posterior / lateral basal segments of bilateral
+lower lobes and right apical basal segment. Centriacinar emphysematous changes seen in bilateral lung fields
+with an upper lobar predominance.
+Well defined hypodense lesion seen in the superior pole of the left kidney and the mid / inferior pole of
+right Kidney measuring 21x19mm and 26x22mm respectively - likely simple cysts .Bilateral perinephric fat
+stranding noted .
+ADV
+CBC STAT
+TC TOMORROW
+CHEST PHYSIO
+AUTO CPAP OVERNIGHT
+MONITOR VITALS
+28 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+REST AS PER CHART
+Diet Notes :
+THE PATIENT IS ON LOW SALT DIET
+ENERGY-1600KCAL
+PROTEIN-55G
+
+Forms
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 5
+Remarks : LOW RISK
+Age : 70-79 Years - 2
+Patient care Equipment : One Present- 1
+Mobility : Unsteady Gait- 2
+Type of Assessment : Shift Assessment
+Pain Assessments
+Score: 2
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 2
+
+Additional Pain Assessment Details
+Since: 25/03/2026
+Type: Dull
+Continuous: Variable
+Time: Night,Day
+Onset: Gradual
+
+Associated Symptoms: Decrease activity
+
+Skin Examination
+Pallor : No
+Cyanosis : No
+Skin turgor : Normal turgor
+Jaundice : No
+Erythema : No
+Petechiae : No
+29 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Purpura : No
+Oedema : No
+Rash : No
+Skin Lesions : No
+Surgical scars : No
+Wounds : No
+Burns : No
+Other : REDNESS ON BOTH HANDS
+Hair : Normal
+
+Nails : Normal
+Questionnaires
+Status : Entered
+Date : 25/03/2026
+Patient's Indentification No. : MH009742499
+Sex : Male
+A - Each Risk Factor Represents 1 Point : Abnormal pulmonary function (COPD)
+Total Tickmarks : 1
+Total Score A : 1
+B - Each Risk Factor Represents 2 Point : Age 60 - 74 years
+Total Tickmarks : 1
+Total Score B : 2
+Total Score (A+B+C+D+E) = : 3
+Risk Assessment : : High
+3 - 4 High : 3-HIGH RISK
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Status : Entered
+Score : 0
+CATEGORIES
+TOTAL SCORE : 0
+COMMENTS : LOW RISK
+
+Forms
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO PREVENTED FALLNursing Diagnosis : Risk for fall
+Education and comments: : EDUCATED THE PATIENT REGARDING FALL AND PREVENTION
+Nursing Interventions : - ASSESS THE PATIENT CONDITION
+- PROVIDE BED SIDE RAILS
+- PROVIDE HEALTH EDUCATION FALL AND PREVENTION
+Evaluation : Terminate
+30 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO PREVENT DVTNursing Diagnosis : Risk for DVT
+Education and comments: : EDUCATED THE PATIENT REGARDING DVT AND PREVENTION
+Nursing Interventions : assess the patient condition
+advise the patient regarding mobilization
+provide health education regarding dvt
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO REDUCE PAINNursing Diagnosis : Acute pain ./ or post-operative pain
+Education and comments: : EDUCATED THE PATIENT REGARDING PAIN AND MANAGTEMENT
+Nursing Interventions : -ASSESS THE PATIENT CONDITION
+- MONITORE PAIN SCORE BY USING SCALE
+-PROVIDE COMFORTABLE POSITION
+-ADMINISTERE MEDICATION AS PER DRUGCHART
+Evaluation : Terminate
+Patient/Family Health Education
+Status : Authorised
+Date: : 25/03/2026
+Time: : 15:55
+Assessment Type : Other1
+Educational Needs : Pain Management,Pesonal hygiene and practitioner hand wash,Infection control related
+issues,Care plan and treatment,Health Maintenance,Safety,Lines/drain/catheter reconciliation,Falling
+precaution,Hand hygiene,Medication side effects
+Given Education : HEALTH EDUCATION
+Lines/drain/catheter reconciliationFalling precaution
+Teaching Method : One to One
+Teaching Tool : Verbal Instructions
+Evaluation : Verbalize basic concept with assistance
+Child Attends School : Not Applicable
+Does the child has any problem at school : Not Applicable
+Literacy Skills : Yes
+Investigation Orders
+Laboratory :
+
+- Complete Blood Counts (Automated)
+.
+31 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+MEDICATION ORDERS
+Drug / Generic Item
+Dosage Qty Frequency
+PANTOCID 40 MG/VIAL LYOPHILIZED POWDER FOR
+1 VL
+ONCE
+INJECTION
+
+Instructions/Notes
+
+Duration
+1 DAY(S)
+
+(PANTOPRAZOLE (80007606))
+
+LEVOLIN 063 MG/25 ML RESPULES INHALATION SOLUTION
+
+1 PC
+
+(LEVOSALBUTAMOL (80006235))
+
+AUTOFUSION SET # 14289
+
+1 PC
+
+EVERY 6 HRS(6
+HOURLY (Q6H))
+ONCE
+
+1 DAY(S)
+1 DAY(S)
+
+(IV SET (PHARMACY NON-DRUG))
+
+DIGITAL THERMOMETER, MYCARE
+
+1 NUMBER ONCE
+
+1 DAY(S)
+
+1 CAP
+
+EVERY 8 HRS(8
+HOURLY
+( Q8H))
+1 RESPULE EVERY 8 HRS(8
+HOURLY
+( Q8H))
+1 COATED OD(0-0-1)
+TABLET
+1
+EVERY 8 HRS(8
+SUSPENSIONHOURLY
+( Q8H))
+2 PC
+OD (0-1-0)
+
+1 DAY(S)
+
+3 NUMBER ONCE
+
+1 DAY(S)
+
+1 BT
+
+1 DAY(S)
+
+1 PC
+
+EVERY 8 HRS(8
+HOURLY
+( Q8H))
+ONCE
+
+4 PC
+
+ONCE
+
+1 DAY(S)
+
+1 VL
+
+ONCE
+
+1 DAY(S)
+
+(APPLIANCE (PHARMACY NON-DRUG))
+
+ANTIFLU 75 MG CAPSULE
+(OSELTAMIVIR (80007537))
+
+FORAPRL 0.5 MG/2 ML RESPULE
+(FORMOTEROL~BUDESONIDE)
+
+MONTAIR-FX (10mg, 120mg) coated tablet [10]
+(MONTELUKAST~FEXOFENADINE (80007046))
+
+NEBZMART-GFB SMARTULE SUSP INHALAT 2ML,G
+(GLYCOPYRROLATE (36590))
+
+DIAPERS ADULT (XL)UNISEX B-EAZY 1'S, NUSAAC
+MEDIQUIPTS
+
+1 DAY(S)
+
+1 DAY(S)
+1 DAY(S)
+
+1 DAY(S)
+
+(SURGICALS (NON PHARMA DRUG))
+
+UNDERPAD ABSORABLE MEDICAL(60 X90CM) ULTRACARE
+(UNDERPAD (PHARMACY NON-DRUG))
+
+NORMAL SALINE 0.9% W/V 100 ML AQUA PULSE, DENIS
+(SODIUM CHLORIDE (80009680))
+
+VENTRA LINE 10 CM EXT SETS#GS-3173 KAD,R
+
+1 DAY(S)
+
+(SURGICAL)
+
+SYRINGE 1 CC INSULIN 40 IU DISPOVAN, HMD
+(SYRINGE (PHARMACY NON-DRUG))
+
+KIPINEX FORTE 3 GM INJECTION
+(CEFOPERAZONE~SULBACTAM (80002516))
+
+CEFBACT 1 GM VL INJ
+(CEFTRIAXONE (80002546))
+
+NEO-DROL 40 MG/VIAL POWDER FOR INJECTION
+
+1
+12 HOURLY
+POWDERFORINJECTION
+( Q12H)
+1 VL
+ONCE
+
+1 DAY(S)
+
+1 BT
+
+ONCE
+
+1 DAY(S)
+
+1 RESPULE ONCE
+
+1 DAY(S)
+
+1 TAB
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+2 PC
+1 VL
+
+ONCE
+ONCE
+
+1 DAY(S)
+1 DAY(S)
+
+1 VL
+
+ONCE
+
+1 DAY(S)
+
+2 DAY(S)
+
+(METHYLPREDNISOLONE (80006899))
+
+NORMAL SALINE 0.9% W/V 100 ML AQUA PULSE, DENIS
+(SODIUM CHLORIDE (80009680))
+
+FORAPRL 0.5 MG/2 ML RESPULE
+(FORMOTEROL~BUDESONIDE)
+
+AMLONG 5 MG TABLET 30'S
+(AMLODIPINE (80000465))
+
+BED BATH TOWEL STERIX 320X320, BAPUJI
+(SURGICAL)
+
+MICRO POLYSYTE MONO 10CM # 13345, POLYMED
+(SURGICALS (PHARMACY NON-DRUG))
+
+CUROS DISIN CAP STRP NEEDLESS CONECTR,3M
+PANTOCID 40 MG/VIAL LYOPHILIZED POWDER FOR
+INJECTION
+(PANTOPRAZOLE (80007606))
+
+NEO-DROL 40 MG/VIAL POWDER FOR INJECTION
+(METHYLPREDNISOLONE (80006899))
+
+CEFBACT 1 GM VL INJ
+(CEFTRIAXONE (80002546))
+
+SYRINGE 10 ML WITH NEEDLE DISPOVAN, HMD
+
+1
+12 HOURLY
+POWDERFORINJECTION
+( Q12H)
+4 PC
+ONCE
+
+1 DAY(S)
+1 DAY(S)
+32 of 33
+
+
+Hospital No: 57233772
+Name:
+
+Visit No:
+Doctor Name:
+
+(SYRINGE (PHARMACY NON-DRUG))
+
+AUTOFUSION SET # 14289
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+6 PC
+
+ONCE
+
+1 DAY(S)
+
+1 BT
+
+12 HOURLY
+( Q12H)
+ONCE
+
+1 DAY(S)
+
+OD(0-0-1)
+
+1 DAY(S)
+
+QID (1-1-1-1)
+
+1 DAY(S)
+
+(IV SET (PHARMACY NON-DRUG))
+
+POLYFLUSH PRE-FILLED SYRINGE 5 ML # 90319, POLY
+MEDICURE LTD
+(SYRINGE (PHARMACY NON-DRUG))
+
+NORMAL SALINE 0.9% W/V 100 ML AQUA PULSE, DENIS
+(SODIUM CHLORIDE (80009680))
+
+NEEDLE DISPOSABLE 18G X 1.1/2, DISPOVAN
+
+4 PC
+
+1 DAY(S)
+
+(NEEDLE (PHARMACY NON-DRUG))
+
+MONTAIR-FX (10mg, 120mg) coated tablet [10]
+(MONTELUKAST~FEXOFENADINE (80007046))
+
+LEVOLIN 063 MG/25 ML RESPULES INHALATION SOLUTION
+
+1 COATED
+TABLET
+1 PC
+
+(LEVOSALBUTAMOL (80006235))
+
+FORAPRL 0.5 MG/2 ML RESPULE
+
+1 RESPULE BD (1-0-1)
+
+1 DAY(S)
+
+1
+BD (1-0-1)
+SUSPENSION
+1 TAB
+TID. (1-1-1)
+
+1 DAY(S)
+
+(FORMOTEROL~BUDESONIDE)
+
+NEBZMART-GFB SMARTULE SUSP INHALAT 2ML,G
+(GLYCOPYRROLATE (36590))
+
+MUCINAC 600 MG EFFERVESCENT TABLET
+
+1 DAY(S)
+
+(ACETYLCYSTEINE (80000089))
+
+33 of 33
+
+

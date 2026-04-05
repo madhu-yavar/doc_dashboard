@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary7.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary7.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "MR PAUL PRASANNA KUMAR E",
+      "source": "Patient Name : MR PAUL PRASANNA KUMAR E"
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "3",
+      "source": "Age : 3"
+    },
+    "gender": {
+      "value": "MALE",
+      "source": "Gender : MALE"
+    },
+    "admission_date": {
+      "value": "24/03/2026",
+      "source": "Patient Arrival Date : 24/03/2026"
+    },
+    "discharge_date": {
+      "value": "",
+      "source": ""
+    },
+    "chief_complaints": {
+      "value": "H/O 2 EPISODES OF GTCS (ONE IN HOME AND OTHER ONE AT HOSPITAL GATE)",
+      "source": "Chief Complaints : H/O 2 EPISODES OF GTCS (ONE IN HOME AND OTHER ONE AT HOSPITAL GATE)"
+    },
+    "principal_diagnosis": {
+      "value": "Breakthrough seizures, focal epilepsy",
+      "source": "Provisional Diagnosis : Breakthrough seizures, focal epilepsy"
+    },
+    "secondary_context": {
+      "value": "TB meningitis with multiple seizure | TB meningo-encephalitis with seizures and left hemiparesis | tracheostomy decannulation was done on 17/12/2025",
+      "source": "Past History : TB meningitis with multiple seizure || Past Medical History : TB meningo-encephalitis with seizures and left hemiparesis || Past Surgical History : tracheostomy decannulation was done on 17/12/2025"
+    },
+    "allergies": {
+      "value": "UNKNOWN",
+      "source": "Any Known Allergies : UNKNOWN"
+    },
+    "current_medications": {
+      "value": "CAP. RIFAMPICIN 450MG 1-0-0 BEFORE FOOD | CAP. RIFAMPICIN 450MG 1-0-0",
+      "source": "Current medications : CAP. RIFAMPICIN 450MG 1-0-0 BEFORE FOOD || Current Medications : CAP. RIFAMPICIN 450MG 1-0-0"
+    },
+    "bp": {
+      "value": "110/67",
+      "source": "BP mm Hg : 110/67"
+    },
+    "pulse": {
+      "value": "110",
+      "source": "Pulse Rate: 110"
+    },
+    "temperature_f": {
+      "value": "98",
+      "source": "Temp F : 98"
+    },
+    "respiration": {
+      "value": "24",
+      "source": "Respiration: 24"
+    },
+    "spo2": {
+      "value": "98",
+      "source": "Spo2 : 98"
+    },
+    "pain_score": {
+      "value": "2",
+      "source": "Pain Score : 2"
+    },
+    "fall_score": {
+      "value": "8",
+      "source": "Total Fall Risk Score(sum of all points per category) : 8"
+    },
+    "fall_risk": {
+      "value": "8-moderate fall risk",
+      "source": "Total Fall Risk Score(sum of all points per category) : 8\nRemarks : 8-moderate fall risk"
+    },
+    "pressure_score": {
+      "value": "14",
+      "source": "Pressure score : 14"
+    },
+    "pressure_risk": {
+      "value": "No",
+      "source": "Existence of Pressure Ulcer : No"
+    },
+    "dvt_score": {
+      "value": "8",
+      "source": "DVT Score : 8"
+    },
+    "dvt_risk": {
+      "value": "YES",
+      "source": "DVT : YES"
+    },
+    "aspiration_score": {
+      "value": "1",
+      "source": "Aspiration score : 1"
+    },
+    "aspiration_risk": {
+      "value": "moderate risk",
+      "source": "COMMENTS : moderate risk"
+    },
+    "ews_score": {
+      "value": ".",
+      "source": "EWS Score : ."
+    }
+  }
+}

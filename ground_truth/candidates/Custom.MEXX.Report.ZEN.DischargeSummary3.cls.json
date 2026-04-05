@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "Mr.Priyadarshini PUNJA",
+      "source": "Patient Name : Mr.Priyadarshini PUNJA"
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "60",
+      "source": "Age : 60"
+    },
+    "gender": {
+      "value": "Female",
+      "source": "Gender : Female"
+    },
+    "admission_date": {
+      "value": "24/03/2026",
+      "source": "Patient arrival Date : 24/03/2026"
+    },
+    "discharge_date": {
+      "value": "24/03/2026",
+      "source": "Date of Discharge : 24/03/2026"
+    },
+    "chief_complaints": {
+      "value": "patient came with complain chest pain.",
+      "source": "Chief Complaints : patient came with complain chest pain."
+    },
+    "principal_diagnosis": {
+      "value": "Risk for fall",
+      "source": "Diagnosis : Risk for fall"
+    },
+    "secondary_context": {
+      "value": "HTN.",
+      "source": "Past History : HTN."
+    },
+    "allergies": {
+      "value": "unknown",
+      "source": "Any Known Allergies : unknown"
+    },
+    "current_medications": {
+      "value": "tab-telma 40mg -1-0-0",
+      "source": "Current Medications : tab-telma 40mg -1-0-0"
+    },
+    "bp": {
+      "value": "110/70",
+      "source": "Blood Pressure(mmHg) : 110/70"
+    },
+    "pulse": {
+      "value": "82",
+      "source": "Pulse Rate: 82"
+    },
+    "temperature_f": {
+      "value": "98.6",
+      "source": "Temp :\n98.6"
+    },
+    "respiration": {
+      "value": "20",
+      "source": "Respiration: 20"
+    },
+    "spo2": {
+      "value": "98",
+      "source": "SPO2 : 98"
+    },
+    "pain_score": {
+      "value": "2",
+      "source": "Pain Score : 2"
+    },
+    "fall_score": {
+      "value": "3",
+      "source": "Total Fall Risk Score(sum of all points per category) : 3"
+    },
+    "fall_risk": {
+      "value": "FALL RISK SCORE IS 2",
+      "source": "Total Fall Risk Score(sum of all points per category) : 2\nRemarks : FALL RISK SCORE IS 2"
+    },
+    "pressure_score": {
+      "value": "21",
+      "source": "Pressure score : 21"
+    },
+    "pressure_risk": {
+      "value": "No",
+      "source": "Existence of Pressure Ulcer : No"
+    },
+    "dvt_score": {
+      "value": "2",
+      "source": "DVT Score : 2"
+    },
+    "dvt_risk": {
+      "value": "YES",
+      "source": "DVT : YES"
+    },
+    "aspiration_score": {
+      "value": "0",
+      "source": "Aspiration score : 0"
+    },
+    "aspiration_risk": {
+      "value": "LOW RISK",
+      "source": "COMMENTS : LOW RISK"
+    },
+    "ews_score": {
+      "value": "2",
+      "source": "EWS Score : 2"
+    }
+  }
+}

@@ -1,0 +1,365 @@
+INPATIENT RECORD
+Hospital No:
+Name:
+Doctor Name:
+Date:
+
+57309509
+
+BP Systolic: 120 mmHg
+Respiration: 16 br/min
+Saturation(Oxygen): 98 %
+
+Visit No:
+Age/Sex:
+Specialty:
+
+BP Diastolic: 90 mmHg
+Temperature: 98 °F
+Mean Arterial Pressure-MAP: 100
+mmHg
+
+Pulse Rate: 80 bt/min
+Delivered Oxygen Flow Rate: 0
+Bowel Status: 1
+
+Eye Opening: 4
+
+Forms
+Reassesment Tool(Pre and Post Shift Out)
+Score : 0
+Temperature : 98
+Pulse : 80
+Respiration : 16
+SpO2 : 98
+BP : 120/90
+Shifting : Daycare-Before Discharge
+: Time
+2pm:-Patient came to day care by walk alone, alone known case of Multiple myeloma, currently admitted in day care
+for chemotherapy under Dr. Satish Kumar. visit informed to Dr. Annalakshmi.
+Discharge Checklist MHE
+Status : Authorised
+Score : 0
+Discharge Planning initiated : 24/03/2026
+Reports required by patient on discharge: : yes
+IV Cannula removed : Yes
+Last vital signs documented : Yes
+Discharge Medication or Prescription : Yes
+Investigation results : Yes
+Appointment details : Yes
+Advice/Instructions/Education information : Yes
+ID band removed : Yes
+All personal belongings returned : Not Applicable
+Discharge comments : Report back if back pain , loss of weight/loss of appetite ,abdominal pain , abdominal
+distension , fever ,loose stools > 3 times per day, bleeding manifestations, excessive tiredness, breathing difficulty,
+altered sensorium or SOS in case of any undue symptoms.
+Reports supplied to patients on discharge : 1 op file in that discharge summary-1 blood reports -4 given to patient
+only shantappa
+Home Discharge Planning
+Intravascular Access Lines
+Status : Authorised
+IntraVascular Access Type : Peripheral IV Line
+Peripheral IV Activity : Discontinued
+CVC Site Assesst
+1 of 5
+
+
+Hospital No: 57309509
+Name:
+
+Visit No:
+Doctor Name:
+
+Lumen color : blue
+Central IV TPA Intervention
+Catheter position corrected / withdrawn
+Arterial Line Status
+Peripheral IV Assessment
+NURSING INITIAL ASSESSMENT - NEW
+Status : Entered
+Score : 0
+Patient Name : MR SHANTHAPPA A
+MRN : MH009818238
+Age : 62 Yrs
+Gender : Male
+Patient arrival Date : 24/03/2026
+Patient Arrival Time : 14:10
+Accompanied by Relative : Yes
+Name of Relative : Mr. Shanthappa
+Relationship with Patient : self
+Contact Number : 9341320252
+Primary Language Spoken : Telugu
+Interpreter Needed : No
+Room Orientation Given : Yes
+Patient Identification Band Fixed : Yes
+If Yes Type Of Band : green and orange
+Height(Cm) : 171
+Weight(Kgs) : 72
+Reason Not Able To Check : .
+Chief Complaints : Due For chemotherapy #7
+Past History : Multiple myeloma -IgA kappa monoclonal gammopathy- high risk
+Diabetes
+Hypertension
+Vital Assessment
+Temp(F) : 98
+Pulse/min : 89
+Blood Pressure(mmHg) : 120/90
+Respiration/min : 16
+Spo2(%) : 98
+GRBS (mg/dl) : .
+Skin Integrity : INTACT
+Other Parameters
+EWS Score : 0
+GCS : 15/15
+Pain Score : 0
+2 of 5
+
+
+Hospital No: 57309509
+Name:
+
+Visit No:
+Doctor Name:
+
+Valuable handover checklist completed : Yes
+Belongings : With Patient
+Dentures : No
+Hearing Aid : No
+Eye Glasses/Contact Lens : No
+Others : .
+Vulnerable : Yes
+Any Special Care Given : Near to nurses station, no wet floor, no dark room,
+Restraints : No
+If Yes, Type Of Restraint : NO
+Any Known Allergies : Unknown
+Current Medications : Tab Pan 40 mg SOS on empty stomach for gastritis
+Tab Emeset 4mg SOS for nausea/ vomiting 30mins before food
+Tab Dolo 650mg SOS after food for pain/ fever SOS
+Tab Ultracet 1tab SOS for pain
+Cap Maxgalin Er 75 mg 1-0-1 daily
+Tab Miratz 7.5mg 0-0-1 daily
+Tab Ecosprin 150mg 0-1-0 daily
+Tab Clopilet 75 mg 0-1-0 daily
+Tab Rosuvas 40mg 0-0-1 daily
+Cap Eldopar 2 sos if loose stools
+Syp. Duphalac SOS for constipation
+Informed the Doctor : Yes
+Name of the Doctor : Dr Annalakshmi S
+Investigations Ordered : NIL
+Diet : Low salt diet
+Collected Old records : Yes
+If Yes Document Type : 1 OP FILE
+Is the patient at risk for any of the following? If Yes, complete the risk assessment form.
+Fall : YES
+Pressure Score : NO
+DVT : YES
+Aspiration : YES
+Pain Assessment Score : Not Applicable
+Ability to perform activities of daily living
+Activity
+Bathing : Independent
+Dressing : Independent
+Eating : Independent
+Walking : Independent
+Toilet Use : Independent
+Nursing needs(complete Nursing care plan based on the identified needs)
+Actual needs : To control the growth of cancer cells
+– Palliation.
+– make a tumor smaller before surgery/ radiation therapy
+– destroy cancer cells that may remain after surgery or radiation therapy
+– help other treatments work better
+3 of 5
+
+
+Hospital No: 57309509
+Name:
+
+Visit No:
+Doctor Name:
+
+– kill cancer cells that have returned or spread to other parts of your body
+Potential needs : To control the growth of cancer cells
+– Palliation.
+– make a tumor smaller before surgery/ radiation therapy
+– destroy cancer cells that may remain after surgery or radiation therapy
+– help other treatments work better
+– kill cancer cells that have returned or spread to other parts of your body
+Any other needs : .
+Assessment Done By : Ankitha D.S
+Rating : 0
+BMI : 24.62
+Fall Score : 3-LOW RISK
+Pressure score : 23-NO RISK
+DVT Score : 4-HIGH RISK
+Aspiration score : 0-LOW RISK
+General Physical Examination:
+Pallor : NO
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+Any Other Findings : .
+
+Forms
+Patient/Family Health Education
+Status : Authorised
+Date: : 24/03/2026
+Time: : 18:05
+Assessment Type : Inital Assessment
+Educational Needs : Safe and effective use of medcial equipment,Pain Management,Community resources,Discharge
+Instruction of continuing care,Patients Rights and Responsibilities,Pesonal hygiene and practitioner
+hand wash,Infection control related issues,Care plan and treatment,Home Instruction,Other (specify in
+comments),Activity/Exercise,Health Maintenance,Social Services,Nutrition,Safety,Lines/drain/catheter
+reconciliation,Hand hygiene,Isolation precaution,Other1
+Given Education : 1.Maintain body and oral hygiene (Chlorhexidine mouth wash daily)
+2.Avoid contact with sick people (fever ,cough, running nose )
+3.Avoid going in crowded places.
+4.Avoid exposure to dust
+1.Avoid stale food
+2.Avoid food from outside (except for packed bread ,packed biscuits)
+3.Avoid eating raw vegetables and fruits
+4.Drink boiled and cooled water or direct filter water
+Teaching Method : One to One
+Teaching Tool : Verbal Instructions
+Evaluation : Applies knowledge/skills
+Child Attends School : No
+4 of 5
+
+
+Hospital No: 57309509
+Name:
+
+Visit No:
+Doctor Name:
+
+Does the child has any problem at school : No
+Literacy Skills : No
+Plan and Comments : Report back if back pain , loss of weight/loss of appetite ,abdominal pain , abdominal
+distension , fever ,loose stools > 3 times per day, bleeding manifestations, excessive tiredness, breathing difficulty,
+altered sensorium or SOS in case of any undue symptoms.
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : To reduce the risk of dvt and their complication Nursing Diagnosis : Risk for
+DVT
+Nursing Interventions : a) Educate in proper use and function of assistive devices.
+b) Provide progressive mobilization.
+c) Motivate the patient to gradually increase mobility.
+Evaluation : Continue
+Drug / Generic Item
+NORMAL SALINE 09% W/V AQUA PULSE 500 ML
+
+MEDICATION ORDERS
+Dosage Qty Frequency
+3 BT
+ONCE
+
+Instructions/Notes
+
+Duration
+1 DAY(S)
+
+(SODIUM CHLORIDE (80009680))
+
+NORMAL SALINE 0.9% W/V 100 ML AQUA PULSE, DENIS
+
+1 BT
+
+ONCE
+
+1 DAY(S)
+
+3 VL
+
+ONCE
+
+1 DAY(S)
+
+1 VL
+
+ONCE
+
+1 DAY(S)
+
+2 AMP
+
+ONCE
+
+1 DAY(S)
+
+1 VL
+
+ONCE
+
+1 DAY(S)
+
+1 BT
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+3 PC
+
+ONCE
+ONCE
+
+1 DAY(S)
+1 DAY(S)
+
+2 PC
+
+ONCE
+
+1 DAY(S)
+
+(SODIUM CHLORIDE (80009680))
+
+DECMAX (8mg) solution for injections [2ml]
+(DEXAMETHASONE (80003419))
+
+PANTOCID 40 MG/VIAL LYOPHILIZED POWDER FOR
+INJECTION
+(PANTOPRAZOLE (80007606))
+
+MEDISET 4mg / 2 ML AMP INJ
+(ONDANSETRON (80007494))
+
+CARFIZOME 60 MG/VIAL LYOPHILIZED INJECTION
+(CARFILZOMIB 60 MG INJ)
+
+DEXTROSE 5% W/V 250 ML GLASS BOTTLE SOLUTION FOR
+INFUSION
+(GLUCOSE (80005042))
+
+AUTOFUSION SET # 14289
+(IV SET (PHARMACY NON-DRUG))
+
+22G VENFLON(OHMEDA)
+(CANNULA (PHARMACY NON-DRUG))
+
+TEGADERM VELFIX EDGE 7CMX9CM #5502A,DATT
+SYRINGE 2 ML WITH NEEDLE DISPOVAN, HMD )
+(SYRINGE (PHARMACY NON-DRUG))
+
+SYRINGE 5 ML WITH NEEDLE DISPOVAN, HMD
+(SYRINGE (PHARMACY NON-DRUG))
+
+5 of 5
+
+

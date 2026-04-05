@@ -1,0 +1,1242 @@
+INPATIENT RECORD
+Hospital No:
+Name:
+Doctor Name:
+Date:
+
+67046989
+
+Pulse Rate: 128 bt/min
+Delivered Oxygen Flow Rate: 0
+Estimated Date of Delivery: 67653
+
+Visit No:
+Age/Sex:
+Specialty:
+
+Respiration: 48 br/min
+Temperature: 98 °F
+Saturation(Oxygen): 98 %
+AVPU Conscious level: AVPU03A
+Hourly urine Output: 20 millilitres per Bowel Status: 2
+hour
+
+Eye Opening (P): 4
+
+Forms
+Pain Assessments
+Score: 1
+Type of Assessment: Initial Assessment
+Pain Assessment Scale: Cries (Neonates 0-6 Months)
+Crying: No Cry or Cry that is not high pitched
+Requires Oxygen: No O2 required
+Increased Vital Signs: Both Heart Rate and Blood Pressure unchanged and stays at baseline
+Expressions: No grimace present
+Sleepless: Awake frequent intervals
+
+Additional Pain Assessment Details
+Since: 24/03/2026
+Type: Not Applicable
+Duration: Not Applicable
+Continuous: Not Applicable
+Time: Not Applicable
+Onset: Gradual
+
+Associated Symptoms: None
+
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+Total Score :8
+NEONATE - ASPIRATION RISK ASSESSMENT TOOL
+Status : Entered
+Score : 0
+1 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+CATEGORIES
+TOTAL SCORE : 0
+COMMENTS : LOW RISK
+NURSING INITIAL ASSESSMENT - NEONATAL
+Status : Entered
+Score : 0
+Gestational Age : 38+5 WEEKS
+Date of birth : 24/03/2026
+Time of birth : 08:33
+Birth Weight : 3.07 kg
+Delivered By
+: LSCS
+First impression
+: looks well
+Heart rate
+: 126
+Respiratory rate : 48
+Spo2 : 98
+On room air : Y
+Color : Pink
+Breathing pattern : comfortably breathing
+1Min : 8/10
+5Min : 9/10
+Blood glucose : 69 mg\dl
+Head circumference
+:Length : Cord Gas
+: Not Done
+Inj.Vit.k
+: Given
+Done : Y
+Any Findings/Dysmorphism : normal
+Any other concern : nil
+Seen By Doctor/At time : DR SHALINI
+Impression : NEWBORN
+
+Forms
+Nurses Endorsment Checklist
+Status : Entered
+Shift : Morning to Evening
+Situation : Elective,Shift Handover
+Comment / Chief Complaints / Diagnosis : NEWBORN
+Background
+Allergies : No
+Diet : No
+Remarks : DBF
+Previous Medications : No
+Old reports added to TRAK : No
+Consents : No
+Cross Consultation : No
+Procedures performed before transfer : No
+Vulnerable : Yes
+2 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Remarks : ORANGE
+Past Medical / Surgical History : NIL
+Level of Consciousness : Oriented
+GCS : ACTIVE
+Vitals -TPR & BP : is stable : Yes
+On MET/PET List : No
+Risk For FALL : No
+Risk For Pressure Ulcer : No
+Risk for Aspiration : Yes
+Remarks : 0-LOW RISK
+Existence of Pressure Ulcer : No
+Remarks : SKIN INTACT
+O2 Administration : No
+Remarks : ROOM AIR
+SPO2(Latest reading in the shift) : 99
+DIET : Oral
+Diet-Specify the type : Normal
+On tube feeding : No
+Remarks : DBF
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : No
+Self Void : Yes
+Remarks : 2 TIMES
+Foley's : No
+Drain : No
+Bowel Opened : No
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Bed Bound
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Remarks : RISK FOR FALL
+Special Needs : No
+Patient & Family Education : Yes
+Remarks : BREAST FEEDING
+Transfer : No
+Medications: No
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+3 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : USED CONSUMBLES
+Discharge Plan : No
+Hand over by : Athira Prasad
+Handed over to : Monika Rai
+Team Lead Hand over By : Miss Priyadarshini Murugan
+Team Lead Hand over To : Monika Rai
+Status : Entered
+Patient/Family Health Education
+Status : Entered
+Date: : 24/03/2026
+Time: : 10:53
+Assessment Type : Inital Assessment
+Educational Needs : Disease process,Safe and Effective Use of Medication, side effects and Interactions,Safe and
+effective use of medcial equipment,When and how to obtain further treatment,Infection control related issues,Health
+Maintenance,Risk,Lines/drain/catheter reconciliation,Hand hygiene
+Given Education : HEALTH EDUCATION GIVEN TO THE MOTHER REGARDING FALL,BREAST FEEDING
+Teaching Method : One to One
+Teaching Tool : Verbal Instructions
+Evaluation : Verbalize basic concept with assistance,Applies knowledge/skills
+Child Attends School : No
+Does the child has any problem at school : Yes
+Literacy Skills : Yes
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO MAINTAIN THE BODY TEMPERATURE Nursing Diagnosis :
+Hyperthermia
+Education and comments: : HEALTH EDUCATION GIVEN TO THE MOTHER
+Nursing Interventions : -ASSESSMENT
+-MONITOR VITAL SIGNS
+-ON CRADLE CARE
+-MINIMAL HANDLING
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Authorised
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO PREVENT FROM FALL Nursing Diagnosis : Risk for fall
+Education and comments: : HEALTH EDUCATION GIVEN TO THE MOTHER
+Nursing Interventions : Provide appropriate safety measures like sitter, display vulnerable patient alert
+B) Lower the height of bed, keep the patient near nurses station.
+4 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+C) Orient to surroundings
+D) Provide education on how to use call bell and observe the findings on admission
+Evaluation : Terminate
+HOURLY NURSING ROUND
+Score : 0
+HOURLY NURSING ROUND - DAY
+CHECKPOINTS
+Introduce yourself : 08 PM
+Ask for pain if any : 02 PM,03 PM,04 PM,05 PM,06 PM,07 PM
+Ask for Comfort or Position : 09 AM,10 AM,11 AM,12 NOON,01 PM,02 PM,03 PM,04 PM,05 PM,06 PM,07
+PM,08 PM
+Ask for bathroom needs : 09 AM,10 AM,11 AM,12 NOON,01 PM,02 PM,03 PM,04 PM,05 PM,06 PM,07 PM,08
+PM
+Peripery-move the phone, Call Light, Trashcan, Watercan, Over-Bed Table : 02 PM,03 PM,04 PM,05 PM,06 PM,07
+PM,08 PM
+HOURLY NURSING ROUND - NIGHT
+CHECKPOINTS
+Check for Sleep : 09 PM,11 PM,01 AM,03 AM,05 AM,07 AM
+Ask for Comfort or Position : 09 PM,11 PM,01 AM,03 AM,05 AM,07 AM
+Ask for bathroom needs : 09 PM,11 PM,01 AM,03 AM,05 AM,07 AM
+Consultant Plan Notes :
+Term/AGA/Male , born to G2P1L1 mother at 38+5 weeks of gestation
+Baby breathed and cried at birth , no resuscitation required.
+Born at 8:33 am, Apgar 8/10/ 9/10 . Birth weight - 3.07 kg
+Vitals stable, General physical and systemic examination normal
+OBserved in NICU for 1 hr, no respiratory distress/ oxygen required.
+Shifted to mothers side.
+GRBS at 1 hr of life normal
+Advised - Recheck spo2 1 hr after feeding
+Vaccination today
+DBF ad lib
+Warm care, at mother's side.
+Residents Notes :
+A live term male baby delivered to G2P2L1 mother with 38+5 weeks gestation by LSCS (Previous 1 lscs) on
+24/03/2026 at 8:33AM with birth weight of 3.07kg. Baby cried immediately after birth with APGAR at 1' - 8/10, 5' 9/10 respectively. Delayed cord clamping was done. Shifted to mother side and DBF was initiated
+Antenatal history:
+G2P2L1, spontaneous conception
+Maternal age: 35 years
+G1: LSCS female baby 3.06kg weight now 2.8yrs
+G2: present
+pregnancy
+LMP: 26/6/2025; EDD:
+3/4/2026
+5 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Mother's blood group B
+positive
+Normotensive and
+normoglycemic
+Antenatal scans:
+Normal
+HIV, HbSAg, VDRL, HCV negative
+Received TT - 2 doses, influenza vaccine
+
+Inj. Vitamin K, given
+Inj. Hp B given
+O/E: Vitals
+stable
+AF - at
+level
+Umbilicus - healthy, 2A +1V
+noted
+No facial
+dysmorphism
+No cleft lip / palate / choanal atresia /
+TEF
+B/L femoral well
+felt
+B/L hips
+normal
+Spine normal
+Genitalia - normal, male
+type
+Anus patent
+RS: B/L air entry equal. No respiratory
+distress
+CVS: S1 S2 normal. No
+murmurs
+P/A: soft, no
+distension
+CNS: cry/tone/activity / reflexes - normal
+Adv: Continue DBF f/b
+burping
+warm
+care
+To do CHD screening, red reflex and
+6 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+OAE
+vaccinations to be
+done
+To do blood group, TSH, serum bilirubin and newborn screening 48 hours of life
+
+Forms
+Pain Assessments
+Score: 1
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Cries (Neonates 0-6 Months)
+Crying: No Cry or Cry that is not high pitched
+Requires Oxygen: No O2 required
+Increased Vital Signs: Both Heart Rate and Blood Pressure unchanged and stays at baseline
+Expressions: No grimace present
+Sleepless: Awake frequent intervals
+
+Additional Pain Assessment Details
+Since: 24/03/2026
+Type: Not Applicable
+Duration: Not Applicable
+Continuous: Not Applicable
+Time: Not Applicable
+Onset: Gradual
+
+Associated Symptoms: None
+
+Baby Daily Check
+Status : Entered
+Namebands X2 : Y
+Temperature : 97
+Eyes : Clear
+Mouth : Tongue clean
+Head : Fontanelles normal
+Skin : Pink
+Cord : Cord clamp on
+Type of feeding : Breast feeding
+Feeding : 2nd hourly
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+
+7 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Total Score :4
+NEONATE - ASPIRATION RISK ASSESSMENT TOOL
+Status : Entered
+Score : 0
+CATEGORIES
+TOTAL SCORE : 0
+COMMENTS : 0-low risk
+
+Forms
+Nurses Endorsment Checklist
+Status : Entered
+Shift : Evening to Night
+Situation : Shift Handover
+Comment / Chief Complaints / Diagnosis : NEWBORN
+Background
+Allergies : No
+Diet : No
+Remarks : DBF
+Previous Medications : No
+Old reports added to TRAK : No
+Consents : No
+Cross Consultation : No
+Procedures performed before transfer : No
+Vulnerable : Yes
+Remarks : ORANGE
+Past Medical / Surgical History : NIL
+Level of Consciousness : Oriented
+GCS : 15
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 2
+On MET/PET List : No
+Risk For FALL : No
+Risk For Pressure Ulcer : No
+Risk for Aspiration : No
+Existence of Pressure Ulcer : No
+O2 Administration : No
+SPO2(Latest reading in the shift) : 98
+DIET : Oral
+On tube feeding : No
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : No
+Self Void : Yes
+Remarks : 2 TIMES
+Foley's : No
+8 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Drain : No
+Bowel Opened : Yes
+Remarks : 1- TIME
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Bed Bound
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Remarks : to prevent fall
+Special Needs : Yes
+Remarks : SIDE RAILS
+Patient & Family Education : Yes
+Remarks : health education given to patient and attender
+Transfer : No
+Medications: No
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : CONSUMABLES
+Discharge Plan : No
+Comments : MONITOR VITALS
+Hand over by : Anju George
+Handed over to : Hijam Chinglembi Devi
+Team Lead Hand over By : Monika Rai
+Team Lead Hand over To : Shilpa B.V
+Comments by Team Lead : VACCINATION DONE
+Status : Entered
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : to maintain normal blood glucose. Nursing Diagnosis : Risk for unstable blood
+glucose level
+Education and comments: : health education given to mother
+Nursing Interventions : -3rd hourly dbf + top feed palada given .
+- grbs sos .
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Entered
+9 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : to maintain normal body temperature. Nursing Diagnosis : Hyperthermia
+Education and comments: : health education given to patient and attender
+Nursing Interventions : a) Monitor temperature every hourly till the temperature comes down.
+b) Ensure room temperature between 21 and 23 degree
+c) Encourage fluids when indicated.
+d) Remove excess clothing/blankets.
+e) Provide fan or on AC.
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : to prevent fall Nursing Diagnosis : Risk for fall
+Education and comments: : health education given to patient and attender
+Nursing Interventions : A) Provide appropriate safety measures like sitter, display vulnerable patient alert
+B) Lower the height of bed, keep the patient near nurses station.
+C) Orient to surroundings
+D) Provide education on how to use call bell and observe the findings on admission
+
+Evaluation : Terminate
+Patient/Family Health Education
+Status : Entered
+Date: : 24/03/2026
+Time: : 14:51
+Assessment Type : Other1
+Educational Needs : Pesonal hygiene and practitioner hand wash,Health Maintenance,Safety
+Given Education : Pesonal hygiene and practitioner hand wash
+Teaching Method : One to One
+Teaching Tool : Verbal Instructions
+Evaluation : Applies knowledge/skills
+Child Attends School : Not Applicable
+Does the child has any problem at school : Not Applicable
+Literacy Skills : Yes
+Plan and Comments : health education given to patient and attender
+Progress Note :
+Baby reviewed at 8 hours of lie
+Accepting DBF well
+Noisy breathing+
+O/E: Vitals stable
+Nose block+
+Peripheral pulses well felt
+10 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+cry/tone/activity - normal
+Adv: COntinue DBF ad lib
+warm care
+Nasoclear nasal drops (normal saline) 2 drops sos for nose block
+TO give Inj BCG, OPV
+Monitor vitals
+
+Forms
+Pain Assessments
+Score: 1
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Cries (Neonates 0-6 Months)
+Crying: No Cry or Cry that is not high pitched
+Requires Oxygen: No O2 required
+Increased Vital Signs: Both Heart Rate and Blood Pressure unchanged and stays at baseline
+Expressions: No grimace present
+Sleepless: Awake frequent intervals
+
+Additional Pain Assessment Details
+Since: 24/03/2026
+Time: Night
+
+NEONATE - ASPIRATION RISK ASSESSMENT TOOL
+Status : Entered
+Score : 0
+CATEGORIES
+TOTAL SCORE : 0
+COMMENTS : LOW RISK
+
+Forms
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO MAINTAINED NORMAL BABY BODY TEMPERATURENursing
+Diagnosis : Risk for ineffective thermoregulation
+Education and comments: : EDUCATION GIVEN TO MOTHER AND ATTENDER
+Nursing Interventions : -ASSESSMENT
+-MONITOR VITALS SIGN
+-WRAP THE BABY PROPERLY
+11 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+-KEPT THE BABY WARM
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO PREVENT FROM FALLNursing Diagnosis : Risk for fall
+Education and comments: : EDUCATION GIVEN TO MOTHER AND ATTENDER
+Nursing Interventions : >Assess the condition of the patient
+>Implemented safety measures like : bed side rails raised up and call bell kept within reach.
+>Provided assistance with mobility
+>Reviewed the medications that may increase fall risk.
+>Educated the patient and family on fall prevention strategies.
+Evaluation : Terminate
+Patient/Family Health Education
+Status : Entered
+Date: : 24/03/2026
+Time: : 22:55
+Assessment Type : Reassessment
+Educational Needs : Disease process,Infection control related issues,Risk,Safety,Falling precaution,Hand hygiene
+Given Education : EDUCATION GIVEN REGARDING DISEASE PROCESS,RISK,SAFETY,HAND
+HYGIENE,INFECTION CONTROL ,FALL PRECAUTION
+Teaching Method : One to One
+Teaching Tool : Verbal Instructions
+Evaluation : Verbalize basic concept without assistance
+Child Attends School : Not Applicable
+Does the child has any problem at school : Not Applicable
+Literacy Skills : Yes
+Plan and Comments : EDUCATION GIVEN TO MOTHER AND ATTENDER
+
+Forms
+Nurses Endorsment Checklist
+Status : Entered
+Shift : Night to Morning
+Situation : Shift Handover
+Comment / Chief Complaints / Diagnosis : NEWBORN
+Background
+Allergies : No
+Diet : No
+Remarks : DBF
+Previous Medications : No
+Old reports added to TRAK : No
+Consents : No
+Cross Consultation : No
+Procedures performed before transfer : No
+Vulnerable : Yes
+12 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Remarks : ORANGE
+Past Medical / Surgical History : NIL
+Level of Consciousness : Oriented
+GCS : ACTIVE AND ALERT
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 1
+On MET/PET List : No
+Risk For FALL : Yes
+Remarks : NEWBORN
+Risk For Pressure Ulcer : No
+Risk for Aspiration : No
+Existence of Pressure Ulcer : No
+Remarks : SKIN INTACT
+O2 Administration : No
+Remarks : ROOM AIR
+SPO2(Latest reading in the shift) : 95
+DIET : Oral
+Diet-Specify the type : Others
+On tube feeding : No
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : No
+Self Void : Yes
+Remarks : 3 TIMES
+Foley's : No
+Drain : No
+Bowel Opened : Yes
+Remarks : 1 TIME
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Bed Bound
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Remarks : FALL PRECAUTION
+Special Needs : Yes
+Remarks : NEWBORN
+Patient & Family Education : Yes
+Remarks : DISEASE PROCESS,RISK,HAND HYGIENE,SAFETY
+Transfer : No
+Medications: No
+Planned Procedure : No
+13 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Approved follow-up : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : CONSUMABLES
+Discharge Plan : No
+Comments : MONITOR VITALS SIGN
+Hand over by : Hijam Chinglembi Devi
+Handed over to : Nasrin Sultana
+Team Lead Hand over By : Shilpa B.V
+Team Lead Hand over To : Miss Priyadarshini Murugan
+Comments by Team Lead : MONITOR VITALS SIGN
+Status : Entered
+Residents Notes :
+Term/male/ 38+5 weeks/ birth weight of 3.07kg
+Issue- Noisy breathing
+Birth weight- 3.07kg
+Todays weight- 2.9kg (5.5%)
+Feeding well, passed urine and meconium
+Vaccinations done
+O/E: Vitals stable
+Nose block+
+SpO2- 96%
+Peripheral pulses well felt
+cry/tone/activity - normal
+Adv:
+Continue DBF ad lib
+warm care
+Nasoclear nasal drops (normal saline) 2 drops sos for nose block
+OAE, CCHD screening,Red reflex today
+Monitor vitals
+
+Forms
+Pain Assessments
+Score: 0
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Cries (Neonates 0-6 Months)
+Crying: No Cry or Cry that is not high pitched
+Requires Oxygen: No O2 required
+Increased Vital Signs: Both Heart Rate and Blood Pressure unchanged and stays at baseline
+Expressions: No grimace present
+Sleepless: Continuously asleep
+14 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Additional Pain Assessment Details
+Type: Dull
+Duration: Not Applicable
+Continuous: Not Applicable
+Time: Not Applicable
+
+Associated Symptoms: None
+
+NEONATE - ASPIRATION RISK ASSESSMENT TOOL
+Status : Entered
+Score : 0
+CATEGORIES
+TOTAL SCORE : 0
+COMMENTS : LOW RISK
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+Total Score :6
+
+Forms
+Nurses Endorsment Checklist
+Status : Entered
+Shift : Night to Morning
+Situation : Shift Handover
+Comment / Chief Complaints / Diagnosis : NEWBORN
+Background
+Allergies : No
+Diet : No
+Remarks : DBF
+Previous Medications : No
+Old reports added to TRAK : No
+Consents : No
+Cross Consultation : No
+Procedures performed before transfer : No
+Vulnerable : Yes
+Remarks : ORANGE
+Past Medical / Surgical History : NIL
+15 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Level of Consciousness : Oriented
+GCS : ACTIVE AND ALERT
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 1
+On MET/PET List : No
+Risk For FALL : Yes
+Remarks : NEWBORN
+Risk For Pressure Ulcer : No
+Risk for Aspiration : No
+Existence of Pressure Ulcer : No
+Remarks : SKIN INTACT
+O2 Administration : No
+Remarks : ROOM AIR
+SPO2(Latest reading in the shift) : 95
+DIET : Oral
+Diet-Specify the type : Others
+On tube feeding : No
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : No
+Self Void : Yes
+Remarks : 3 TIMES
+Foley's : No
+Drain : No
+Bowel Opened : Yes
+Remarks : 1 TIME
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Bed Bound
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Remarks : FALL PRECAUTION
+Special Needs : Yes
+Remarks : NEWBORN
+Patient & Family Education : Yes
+Remarks : DISEASE PROCESS,RISK,HAND HYGIENE,SAFETY
+Transfer : No
+Medications: No
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+16 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : CONSUMABLES
+Discharge Plan : No
+Comments : MONITOR VITALS SIGN
+Hand over by : Hijam Chinglembi Devi
+Handed over to : Nasrin Sultana
+Team Lead Hand over By : Shilpa B.V
+Team Lead Hand over To : Miss Priyadarshini Murugan
+Comments by Team Lead : MONITOR VITALS SIGN
+Status : Entered
+Nurses Endorsment Checklist
+Status : Entered
+Shift : Morning to Evening
+Situation : Elective,Shift Handover
+Comment / Chief Complaints / Diagnosis : NEWBORN
+Background
+Allergies : No
+Diet : No
+Remarks : DBF
+Previous Medications : No
+Old reports added to TRAK : No
+Consents : No
+Cross Consultation : No
+Procedures performed before transfer : No
+Vulnerable : Yes
+Remarks : ORANGE
+Past Medical / Surgical History : NIL
+Level of Consciousness : Oriented
+GCS : 15/15
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 2/10
+On MET/PET List : No
+Risk For FALL : No
+Risk For Pressure Ulcer : No
+Risk for Aspiration : No
+Existence of Pressure Ulcer : No
+Remarks : skin intact
+O2 Administration : No
+Remarks : ROOM AIR
+SPO2(Latest reading in the shift) : 98
+DIET : Oral
+Diet-Specify the type : Others
+On tube feeding : No
+Remarks : ORAL
+17 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : No
+Self Void : Yes
+Remarks : 2 TIMES
+Foley's : No
+Drain : No
+Bowel Opened : Yes
+Remarks : 1 TIMES
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Ambulant
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Remarks : FALL
+PAIN
+Special Needs : No
+Patient & Family Education : Yes
+Remarks : HEALTH EDUCATION GIVEN TO ATTENDER
+Transfer : No
+Medications: No
+Planned Procedure : No
+Approved follow-up : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : Consumables
+Discharge Plan : No
+Comments : MONITOR VITALS
+Hand over by : Nasrin Sultana
+Handed over to : P. Kavitha
+Team Lead Hand over By : Miss Priyadarshini Murugan
+Team Lead Hand over To : C. Jamuna
+Status : Entered
+Patient/Family Health Education
+Status : Authorised
+Date: : 25/03/2026
+Time: : 12:14
+Assessment Type : Other1
+
+18 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Educational Needs : Safe and Effective Use of Medication, side effects and Interactions,Pesonal hygiene and
+practitioner hand wash,Risk,Safety,Hand hygiene
+Given Education : HEALTH EDUCATION GIVEN TO ATTENDER
+Teaching Method : Group teaching
+Teaching Tool : Verbal Instructions
+Evaluation : Applies knowledge/skills
+Child Attends School : Not Applicable
+Does the child has any problem at school : Not Applicable
+Literacy Skills : Yes
+HOURLY NURSING ROUND
+Score : 0
+HOURLY NURSING ROUND - DAY
+CHECKPOINTS
+Introduce yourself : 08 AM
+Ask for Comfort or Position : 08 AM,09 AM,10 AM,11 AM,12 NOON,01 PM
+Ask for bathroom needs : 08 AM,09 AM,10 AM,11 AM,12 NOON,01 PM
+HOURLY NURSING ROUND - NIGHT
+CHECKPOINTS
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO MAINTAIN NORMAL BODY TEMPERATURE Nursing Diagnosis :
+Risk of dehydration related to elevated body temperature
+Education and comments: : HEALTH EDUCATION GIVEN TO ATTENDER
+Nursing Interventions : -PROVIDE SUITABLE CLOTHING
+-ENCOURAGE TO GIVE ADEQUATE FEED TO THE BABY
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO PREVENT FROM FALL Nursing Diagnosis : Risk for fall
+Education and comments: : HEALTH EDUCATION GIVEN TO ATTENDER
+Nursing Interventions : A) Provide appropriate safety measures like sitter, display vulnerable patient alert
+B) Lower the height of bed, keep the patient near nurses station.
+C) Orient to surroundings
+D) Provide education on how to use call bell and observe the findings on admission
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO REDUCE PAIN Nursing Diagnosis : Acute pain ./ or post-operative pain
+Education and comments: : HEALTH EDUCATION GIVEN TO ATTENDER
+
+19 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Nursing Interventions : a) Monitor characteristics of pain (Location, severity using appropriate pain scale),
+frequency, precipitating factors and relief factors.
+b) Eliminate factors that precipitate pain.
+c) Other analgesic 6th/8th hourly if necessary in accordance with physician orders
+d) Provide restful and quiet environment.
+Evaluation : Terminate
+Residents Notes :
+C/S/B Dr Shalini maam
+Term/male/ 38+5 weeks/ birth weight of 3.07kg
+Issue- Noisy breathing
+Birth weight- 3.07kg
+Todays weight- 2.9kg (5.5%)
+Feeding well, passed urine and meconium
+Vaccinations done
+O/E: Vitals stable
+Nose block+
+SpO2- 96%
+Peripheral pulses well felt
+cry/tone/activity - normal
+Adv:
+Continue DBF ad lib
+warm care
+Parents counselled
+Nasoclear nasal drops (normal saline) 1 drop in each nostril before each feed
+OAE, CCHD screening,Red reflex today
+Monitor vitals
+48 hour investigations to be sent at 6am on 26/3/26. Serum bilirubin, TSH, NBS, Blood group
+Progress Note :
+Baby reviewed
+Accepting feeds well
+Passed urine and meconium
+No concerns
+OAE - B/L pass
+O/E: Vitals stable
+Peripheral pulses well felt
+cry/tone/activity normal
+Plan
+DBF ad lib / q 2-3 hourly
+warm care
+20 of 22
+
+
+Hospital No: 67046989
+Name:
+
+Visit No:
+Doctor Name:
+
+Monitor vitals
+TO do CCHD screen, check red reflex
+To do newborn screening, SBR, blood group, TSH tomorrow morning as planned
+Residents Notes :
+Term/male/ 38+5 weeks/ birth weight of 3.07kg
+CCHD screening
+Right upper limb 96%
+Left upper limb 99%
+Red reflex-Bilateral present
+O/E: Vitals stable
+S/Ecry/tone/activity - normal
+Adv:
+Continue DBF ad lib
+warm care
+Parents counselled
+Nasoclear nasal drops (normal saline) 1 drop in each nostril before each feed
+OAE, CCHD screening,Red reflex today
+Monitor vitals
+48 hour investigations to be sent at 6am on 26/3/26. Serum bilirubin, TSH, NBS, Blood group
+Drug / Generic Item
+SYRINGE 2 ML WITH NEEDLE DISPOVAN, HMD )
+
+MEDICATION ORDERS
+Dosage Qty Frequency
+5 PC
+ONCE
+
+Instructions/Notes
+
+Duration
+1 DAY(S)
+
+(SYRINGE (PHARMACY NON-DRUG))
+
+SYRINGE 5 ML WITH NEEDLE DISPOVAN, HMD
+
+3 PC
+
+ONCE
+
+1 DAY(S)
+
+1 VL
+
+ONCE
+
+1 DAY(S)
+
+2 DROPS
+
+ONCE
+
+1 DAY(S)
+
+2 PC
+
+ONCE
+
+1 DAY(S)
+
+1
+ONCE
+SOLUTION
+FOR
+INJECTIONS
+1 PC
+ONCE
+
+1 DAY(S)
+
+2 PC
+1 PC
+2 PAR
+
+ONCE
+ONCE
+ONCE
+
+1 DAY(S)
+1 DAY(S)
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1
+ONCE
+SOLUTION
+
+1 DAY(S)
+
+(SYRINGE (PHARMACY NON-DRUG))
+
+TUBERVAC 1 ML VIAL 0.1 ML/DOSE FREEZE-DRIED POWDER
+FOR INTRADERMAL INJ
+(MYCOBACTERIUM BOVIS (80007101))
+
+BIOPOLIO VACCINE 20 DOSES ORAL DROPS
+(POLIOMYELITIS VIRUS (80008134))
+
+BABY WIPES 20 CM X 14 CM, # JB0063
+( WIPES (PHARMACY NON-DRUG) )
+
+GENEVAC-B PAEDIATRIC 10 MCG/05 ML SINGLE DOSE VIAL
+SOLUTION FOR INJECTION
+(HEPATITIS B SURFACE ANTIGEN (80005289))
+
+OTRIVIN PAEDIATRIC 0.05% W/V NASAL SPRAY 10 ML
+
+1 DAY(S)
+
+(XYLOMETAZOLINE~SORBITOL (80011655))
+
+DIAPERS BABY EXTRA SMALL 5'S {FLUFFY}
+SUCTION CATHETER NO.08 FG #20012,POLYMED
+GLOVES 6.5 STERILE PF ENCORE LATEX MICRO
+DERMASHIELD #5787002, ANSELL
+(PHARMACY NON-DRUG GENERIC)
+
+DISPOSABLE GLOVES 6.5 INCH
+(GLOVES (PHARMACY NON-DRUG))
+
+VITA K 3 10MG
+(VITAMIN K (80011525))
+
+21 of 22
+
+
+Hospital No: 67046989
+Name:
+
+SUCTION CATHETER NO. 6 FG, ROMSONS
+SUCTION CATHETER NO.08 FG, ROMSON
+SUCTION CATHETER NO. 6 FG, ROMSONS
+
+Visit No:
+Doctor Name:
+
+FOR
+INJECTIONS
+1 PC
+ONCE
+1 PC
+ONCE
+1 PC
+ONCE
+
+1 DAY(S)
+1 DAY(S)
+1 DAY(S)
+
+22 of 22
+
+

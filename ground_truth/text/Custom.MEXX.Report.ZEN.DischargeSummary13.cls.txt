@@ -1,0 +1,1104 @@
+INPATIENT RECORD
+Hospital No:
+Name:
+Doctor Name:
+Date:
+
+63877165
+
+Visit No:
+Age/Sex:
+Specialty:
+
+BP Systolic: 120 mmHg
+BP Diastolic: 80 mmHg
+Temperature: 97.2 °F
+Oxygen Delivery Device: RA
+Mean Arterial Pressure-MAP: 93
+Blood Glucose Level: 130
+mmHg
+Infusion Rate: 500
+NURSING INITIAL ASSESSMENT - NEW
+Status : Entered
+Score : 0
+Patient Name : Prakriti MUKHOPADHYAY
+MRN : MH015053864
+Age : 55
+Gender : female
+Patient arrival Date : 25/03/2026
+Patient Arrival Time : 10:10
+Accompanied by Relative : No
+Interpreter Needed : No
+Room Orientation Given : Yes
+Patient Identification Band Fixed : Yes
+If Yes Type Of Band : white
+Height(Cm) : 149
+Weight(Kgs) : 58.8
+Reason Not Able To Check : checked
+Chief Complaints : Ganglionic swelling left hand Middle finger DIP joint
+Past History : htn
+Vital Assessment
+Temp(F) : 97.6
+Pulse/min : 88
+Blood Pressure(mmHg) : 120/80
+Respiration/min : 20
+Spo2(%) : 97.6
+GRBS (mg/dl) : 130
+Skin Integrity : dry
+Other Parameters
+Valuable handover checklist completed : No
+Belongings : No
+Dentures : No
+Hearing Aid : No
+Eye Glasses/Contact Lens : No
+Vulnerable : Yes
+Any Special Care Given : close observation
+Restraints : No
+If Yes, Type Of Restraint : na
+Any Known Allergies : not known
+
+Pulse Rate: 88 bt/min
+Saturation(Oxygen): 97 %
+Passed Urine in Toilet: 01
+
+1 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Current Medications : as per order
+Informed the Doctor : Yes
+Name of the Doctor : Dr Abdul Karim Ansari
+Investigations Ordered : as per order
+Diet : npm
+Collected Old records : Yes
+Is the patient at risk for any of the following? If Yes, complete the risk assessment form.
+Fall : NO
+Pressure Score : NO
+DVT : NO
+Aspiration : NO
+Ability to perform activities of daily living
+Activity
+Bathing : Independent
+Dressing : Independent
+Eating : Independent
+Walking : Independent
+Toilet Use : Independent
+Nursing needs(complete Nursing care plan based on the identified needs)
+Actual needs : close observation
+Potential needs : medication given
+Assessment Done By : PIYALI DEY
+BMI : 26.12
+General Physical Examination:
+Pallor : NO
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+Questionnaires
+Date : 25/03/2026
+Sex : Female
+A - Each Risk Factor Represents 1 Point : Age 41 - 60 years,Other risk factor
+Total Tickmarks : 2
+Total Score A : 2
+Total Score (A+B+C+D+E) = : 2
+Adult Pressure Ulcer Braden Scale
+SENSORY PERCEPTION : 3
+3 - Slightly Limited : Y
+MOISTURE : 3
+3 - Occasionaly Moist : Y
+ACTIVITY : 3
+3 - Walks Occasionally : Y
+MOBILITY : 3
+3 - Slightly Limited : Y
+NUTRITION : 3
+2 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+3 - Adequate : Y
+FRICTION AND SHEAR : 3
+3 - Apparent Problem : Y
+TOTAL SCORE : 18
+IP Initial Assessment
+Status : Entered
+Score : 0
+Patient Arrival Date : 25/03/2026
+Patient Arrival Time : 10:30
+Chief Complaints : C/O Swelling over DIP joint middle finger left hand
+History of Presenting illness : C/O Swelling over DIP joint middle finger left hand noted for last 1 year.
+Allergy : No known allergen
+Past Medical History : HTN, DM
+Past Surgical History : Nothing significant.
+Family History : Nothing significant.
+Social / Personal History : Nothing significant.
+Current medications : TAB TELVAS BETA 50 BD
+TAB DAPAGLIFOZOLIN 10 OD
+TAB STATOR 10 OD
+Pulse /min : 88
+Resp Rate/min : 20
+Temp F : 97.2
+BP mm Hg : 120/80
+Room Air : Y
+GRBS mg/dL : 130
+Pallor : NO
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+CVS : S1S2 Audible
+RS : B/L VBS +
+PA : Soft Non tender
+CNS : WNL
+Others : Firm to hard lump less than 1 cm in size, distal DIP Joint (Extensor Aspect of left Middle finger).
+Provisional Diagnosis :
+Ganglionic cyst left hand Middle finger DIP joint
+Care Plan : Review PAC
+Ganglion excision.
+Spo2 : 97
+Diet Plan : Salt restricted Diabetic diet.
+
+Forms
+Fall Risk Assessment Tool
+
+3 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Total Fall Risk Score(sum of all points per category) : 4
+Age : Below 60 Years - 0
+Elimination,Bowel and Urine : Incontinence- 2
+Patient care Equipment : One Present- 1
+Cognition : Altered awareness of immediate physical environment- 1
+Type of Assessment : Shift Assessment
+Pain Assessments
+Score: 1
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 1
+
+Additional Pain Assessment Details
+Type: Not Applicable
+Duration: Not Applicable
+Continuous: Not Applicable
+Time: Not Applicable
+
+Associated Symptoms: None
+
+Surgical Site Infection Prevention Bundle
+Status : Entered
+Booked procedure : Excisional Biopsy
+Name of surgeon : DR Vikrant Sinha Roy
+Actual procedure : Excisional Biopsy
+Theatre No: : CARDIO-01
+Date of procedure : 25/03/2026
+Time of procedure: From : 12:25
+To : 13:05
+Pre-operative chlorhexidine bath supplied : Yes
+Bath taken night prior to surgery : No
+Bath taken on the day of surgery : Yes
+Type of hair removal : Other
+Antibiotic prophylaxis given : N/A
+Skin antisepsis done with : Chlorhexidine,Alcohol,Providone-Iodine
+Type of surgery : Clean
+4 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Blood glucose level controlled : N/A
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Status : Entered
+Score : 0
+CATEGORIES
+TOTAL SCORE : 3
+No Risk - 0 : Y
+
+Forms
+Pre-Op Check List(N)
+Status : Entered
+Score : 0
+ID Band correct and in place : Yes
+ID Band correct and in place OT : Yes
+Valid consent signed OT : Yes
+Premed given and recorded : No
+Premed given and recorded OT : No
+Nursing Discharge Summary Completed : Own scans on PACS
+X-Rays OT : Films with Pat.
+Procedural area prepared/marked : No
+Procedural area prepared/marked OT : Yes
+Prosthesis/Hearing aid : No
+Prosthesis/Hearing aid OT : N/A
+Dentures OT : Own teeth
+Dentures removed/insitu OT : Insitu
+Hair clips/make up/nail varnish removed : No
+Hair clips/ make up/ nail varnish removed OT : Yes
+Last food : 25/03/2026
+Last food at date OT : 25/03/2026
+Last voided : 25/03/2026
+Last voided date OT : 25/03/2026
+Jewelery removed/taped : No
+Jewelery removed/taped OT : Yes
+Contact lenses/glasses removed : No
+Contact lenses/glasses removed OT : N/A
+Last fluid : 25/03/2026
+Last fluid date OT : 25/03/2026
+Multi resistant organism : No
+Multi resistant organism OT : N/A
+CJD Assessment : No
+CJD Assessment OT : N/A
+ECG Attended : No
+ECG Attended OT : Yes
+Blood results available : No
+Blood results available OT : Yes
+Blood available : No
+Blood available OT : No
+5 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Valid blood consent signed : No
+Valid blood consent signed OT : No
+Allergies recorded : No
+Allergies recorded : No
+Proposed Operation : Excisional Biopsy
+Observation Group
+
+Ward Check
+OT Check
+Shaved : No
+Shaved OP : Yes
+Bowels last opened : 25/03/2026
+Bowels last opened : 25/03/2026
+Patient´s Xray available
+Antibiotic prescribed : No
+Antibiotic given : No
+Antithrombotic prescribed : No
+Antithrombotic given : No
+Has a pregnancy test been performed? : No
+Is the patient pregnant? : No
+Pacemaker : No
+Pacemaker OT : N/A
+Defibrillator : No
+Defibrillator OT : No
+Suitable clothing : No
+Suitable clothing OT : Yes
+Is clotting normal : No
+Is clotting normal : Yes
+Anti-coagulant checked : No
+Anti-coagulant checked : Yes
+Platelets checked : No
+Platelets checked : Yes
+Group and Save requested : No
+Group and Save requested : Yes
+Cross match : No
+Cross match : No
+Routine medication : No
+Gowned, underwear removed : No
+Anti-embolism stockings on patient and correctly fitted : No
+Are there any pressure areas or areas of frail skin need to be considered when positioning patient : No
+Nursing / Care assessment
+Additional information (Anxiety, Dementia, Mobility, Communication, Pre-existing medical conditions)
+Ward Staff Name : BIDISHA DAS
+OT Nurse Name : MANGALI MURMU
+Ward Nurse
+OT Nurse
+6 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Team Lead Hand over By : REENA MITRA
+Team Lead Hand over To : MUNMUN DAS
+OT MOVEMENTS
+Status : Entered
+Score : 0
+Operation Date : 25/03/2026
+Area in Date : 25/03/2026
+Area in Time : 12:15
+Theatre In Date : 25/03/2026
+Theatre In Time : 12:25
+Theatre Out Date : 25/03/2026
+Theatre Out Time : 13:05
+Area Out Date : 25/03/2026
+Area In update user : Mangali Murmu
+Date & Time : 25/03/2026 13:01
+Theatre In Update user : Mangali Murmu
+Date & time : 25/03/2026 13:01
+Theatre out update user : Bikram Das
+Date & time : 25/03/2026 13:26
+Area Out update user : Mangali Murmu
+Date & Time : 25/03/2026 12:58
+Area In
+Theatre In
+Theatre Out
+Area Out
+Theatre Location : CARDIO 1
+Incision Time : 12:35
+Closure Time : 12:55
+Incision Date : 25/03/2026
+Closure Date : 25/03/2026
+Incision Time Updated User : Mangali Murmu
+IT Updated Date and Time : 25/03/2026 13:02
+CT Updated User Name : Mangali Murmu
+CT Updated Date and Time : 25/03/2026 13:03
+Surgery cat : Elective
+Shower with chlorhexidine : NO
+Additional dose of antibiotic given if surgery continues for > 4hrs : NO
+Hair removed with clipper on the surgery site : NO
+DM : NO
+Scheduled Start Time : 12:00
+Scheduled Date : 25/03/2026
+Antibiotic
+Antibiotic name :
+CETIL1.5GM
+Date :
+25/03/2026
+Time : 12:25
+7 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Pre OP Glucose : 130
+Wound Classification : Clean
+Aseptic Technique Has Benn Followed If There Is Excess Wound Leakage And Need For A Dressing Change : Not
+Done
+Scrub Staff : BIKRAM
+Floor Staff : MANGALI
+Post Op Staff : MANISHA
+OT Technician : ANUPAM
+Site prepared with povidone Iodine or 2% chlorhexedine gluconate: : YES
+Has the antiseptic site preparation dried before skin incision : YES
+Ward Updated User : Bidisha Das
+Ward Date & Time : 25/03/2026 11:06
+Intra Updated User : Mangali Murmu
+Intra Date & Time : 25/03/2026 12:57
+Post Updated User : Bikram Das
+Post Date & Time : 25/03/2026 13:26
+HOURLY NURSING ROUND
+Score : 0
+HOURLY NURSING ROUND - DAY
+CHECKPOINTS
+Introduce yourself : 08 AM,02 PM
+Ask for pain if any : 08 AM,09 AM,11 AM,12 NOON,01 PM,02 PM
+Ask for Comfort or Position : 08 AM,09 AM,10 AM,11 AM,12 NOON,01 PM,02 PM
+Ask for bathroom needs : 08 AM,09 AM,10 AM,11 AM,12 NOON,02 PM
+Peripery-move the phone, Call Light, Trashcan, Watercan, Over-Bed Table : 08 AM,10 AM
+HOURLY NURSING ROUND - NIGHT
+CHECKPOINTS
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : No
+Patient Measurable Goal for the day : TO REDUCE PAINNursing Diagnosis : Anxiety
+Education and comments: : MAINTAIN HAND HYGIENE
+Nursing Interventions : CHECKED VITALS
+Evaluation : Modify
+
+Forms
+Nurses Endorsment Checklist
+Shift : Morning to Evening
+Background
+Level of Consciousness : Oriented
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 2
+On MET/PET List : No
+Risk For FALL : No
+Risk For Pressure Ulcer : No
+Risk for Aspiration : No
+8 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Existence of Pressure Ulcer : No
+O2 Administration : No
+DIET : Oral
+On tube feeding : No
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : No
+Self Void : Yes
+Foley's : No
+Drain : No
+Bowel Opened : Yes
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Ambulant
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Special Needs : No
+Patient & Family Education : Yes
+Transfer : No
+Medications: Yes
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Discharge Plan : No
+Hand over by : PIYALI DEY
+Handed over to : RAJSWARI BERA
+Team Lead Hand over By : REENA MITRA
+Team Lead Hand over To : DEBOLINA DEY
+
+Forms
+Operation Report MHE
+Status : Entered
+Surgery Start Date : 25/03/2026 Surgery End Date 25/03/2026
+Surgery Start Time : 12:25 Surgery End Time 13:00
+Surgeon : DR Vikrant Sinha Roy
+Assistant : Dr Ashutosh
+Mop Count Check Yes
+Anaesthetist : DR. SUMAN NASKAR
+9 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Anaesthesia : General Anaesthetic
+Skin Preparation : Betadine
+Incision : Longitudinal Incision
+Procedure : Under GA> Incision given> soft tissue dissection>bony mass located>bony mass removed>bone edges
+smoothened>tendon preserved> soft tissue reapproximated>wash>closure> finger tip pink
+Biopsy sent.
+Operations : Removal of bony mass from left hand middle finger DIP Joint.
+Post Operative Orders : Diet - Immediate sips of water, liquid diet after 2 hr
+normal diet after that
+Monitor : Vitals
+SpO2 of the operated digit.
+AdviceMedicine as per chart
+Removal of sutures 14 days after surgery.
+Discharge Today.
+
+Status : Entered
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+Total Score :16
+
+Operations
+GANGLION EXCISION (LGEN) Surgeon: DR Vikrant Sinha Roy
+Start: 25/03/2026 12:25 End: 13:00
+Operation No O0000932075 linked to Anaesthesia No. A0000788199
+Forms
+Fall Risk Assessment Tool
+
+Age : Below 60 Years - 0
+Type of Assessment : Shift Assessment
+Pain Assessments
+Score: 1
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 1
+
+10 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Additional Pain Assessment Details
+Type: Oppresive
+Duration: Rhythmic
+Continuous: Variable
+Time: Night,Day,With position changes
+
+Questionnaires
+Status : Entered
+Date : 25/03/2026
+Patient's Indentification No. : MH015053864
+Sex : Female
+Total Score (A+B+C+D+E) = : 0
+Adult Pressure Ulcer Braden Scale
+Status : Entered
+SENSORY PERCEPTION : 4
+4 - No Impairment : Y
+MOISTURE : 4
+4 - Rarely Moist : Y
+ACTIVITY : 4
+4 - Walks Frequently : Y
+MOBILITY : 4
+4 - No Limitations : Y
+NUTRITION : 4
+4 - Excellent : Y
+FRICTION AND SHEAR : 3
+3 - Apparent Problem : Y
+TOTAL SCORE : 23
+Status : Entered
+Intravascular Access Lines
+Status : Entered
+IntraVascular Access Type : Peripheral IV Line
+Peripheral IV Activity : Site assessed
+CVC Site Assesst
+Lumen color : pink
+Central IV TPA Intervention
+Catheter position corrected / withdrawn
+11 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Arterial Line Status
+Peripheral IV Assessment
+Need Assessment :
+Yes
+Care : Cap(s)
+changed
+Site Details : No
+complications
+Dressing Type / Appearance :
+Dry
+Peripheral IV Patency : No complications
+
+Forms
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : No
+Patient Measurable Goal for the day : to reduce painNursing Diagnosis : Acute pain ./ or post-operative pain
+Education and comments: : maintain hygiene
+Nursing Interventions : medications given
+monitor vitals
+Evaluation : Continue
+Intravascular Access Lines
+Status : Entered
+IntraVascular Access Type : Peripheral IV Line
+Peripheral IV Activity : New insertion
+Peripheral IV Insertion Date : 25/03/2026
+Peripheral IV Catheter Type : IV Cannula
+Peripheral IV Location : Right
+Peripheral IV Site : Hand
+Peripheral IV Gauge : 22 Gauge
+Peripheral IV Procedure Preparation : Handwashing observed,Hand hygiene performed,Skin prepared with sterile
+solution
+Peripheral IV Insertion Indication : IV hydration / medication
+Peripheral IV Procedure Result : Successful insertion
+Peripheral IV Equipment used : Manual
+Referred To IV Nurse : No
+CVC Site Assesst
+Lumen color : BLUE
+Central IV TPA Intervention
+Catheter position corrected / withdrawn
+Arterial Line Status
+12 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Peripheral IV Assessment
+
+Forms
+Surgical Safety Checklist(New)
+Status : Entered
+Score : 0
+Before Induction of Anaesthesia
+Sign in : 25/03/2026
+Identity : Y
+Procedure : Y
+Consent : Y
+Site Marked : Yes
+Pulse oximeter on patient and functioning : Yes
+Essential equipment/assistance available : Yes
+Does patient have known allergy? : Unknown
+Difficult airway/aspiration risk? : No
+Risk Of >500ML blood loss (7ml/kg in children)? : No
+Before skin incision
+Time Out : 25/03/2026
+Confirm all Team members have introduced themselves by Name and Role : Y
+Correct Patient : Y
+Correct Site : Y
+Correct Procedure : Y
+Essential imaging is available : Yes
+Before patient leaves operation room
+Sign Out : 25/03/2026
+The Nurse has confirmed the name of the procedure (s) with the Surgeon and Anesthetist : Yes
+All items counts are correct : Yes
+Specimen(s) is/are correctly labelled (including Patient URN): : No
+Are there any equipment issues to be addressed? : No
+Surgeon, Anesthetist and Nurse have reviewed any and all key concerns for the recovery and management of the
+Patient : Yes
+Sign In Time : 12:25
+Time Out Time : 12:35
+Surgical team review:
+Are there any equipment issues or concerns to be addressed : No
+Sign Out time : 13:00
+Are there any patient-specific concerns? : No
+Nursing Team Review:
+Site : Y
+Anesthesia safety check completed : Y
+Sign In Nurse : MANGALI MURMU
+Correct Position : Y
+Has sterility (including indicator result) been confirmed? : Yes
+Are there any equipment issues or concerns? : No
+Time Out Nurse : MANGALI MURMU
+13 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Sign Out Nurse : MANGALI MURMU
+Anaesthesia Team Review:
+Time Out Surgeon : DR Vikrant Sinha Roy
+Time Out Anesthetist : DR. SUMAN NASKAR
+
+Forms
+OT Checklist & Instrument Count
+Score : 0
+OT CHECKLIST AND INSTRUMENT COUNT
+SCRUB NURSE : BIKRAM DAS
+SURGEON : DR Vikrant Sinha Roy
+CIRCULATING NURSE : MANGALI MURMU
+ANESTHETIST : DR. SUMAN NASKAR
+DATE : 25/03/2026
+OT NUMBER : ctvs
+NEEDLES, BLADES & SWABS
+ITEM
+INITIAL/ START COUNT
+CAVITY/ SECOND COUNT
+CLOSING/ THIRD COUNT
+ADDED COUNT
+FINAL COUNT
+Gauze 4x4 : 10
+Gauze 4x4 : 10
+Gauze 4x4 : 10
+Gauze 4x4 : 10
+Sponge 12x12 : 05
+Sponge 12x12 : 05
+Sponge 12x12 : 05
+Sponge 12x12 : 05
+INSTRUMENTS
+INSTRUMENT
+INITIAL/ START COUNT
+CAVITY/ SECOND COUNT
+CLOSING/ THIRD COUNT
+ADDED COUNT
+FINAL COUNT
+COUNT STATUS AND DISCREPANCY RESOLUTION
+Post-Anaesthesia Care Unit Record (PACU)
+Level of Consciousness Score
+Awake and oriented :Y
+Physical activity
+Able to move all extremities on command :Y
+Haemodynamic stability
+Blood pressure <15% below baseline MAP value :Y
+Haemodynamic stability
+Able to breathe deeply :Y
+14 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Oxygen saturation
+Maintenance value >90% on room air :Y
+Post operative pain assessment
+None or mild discomfort :Y
+Post operative emetic symptoms
+None or mild nausea with a active vomitting :Y
+FINAL SCORE :
+Post Op-Anaesthesia Note
+Post-Anesthetic Discharge Scoring System (PADSS) : For Day Care Patient
+Vital Signs
+Ambulation
+Nausea & vomiting
+Pain
+Surgical Bleeding
+ANAESTHESIA MONITORING RECORD
+Status : Entered
+Immediate Pre-Operative Re-evaluation:
+Recent Investigation Checked: : Yes
+Salient Features : HTN, DM
+BP : 136/88
+SPO2 : 100
+Plan : MAC with sedation + Digital Block
+Pulse : 76
+RR : 16
+Surgeon : DR Vikrant Sinha Roy
+Anaesthetist : DR. SUMAN NASKAR
+Pre-Anaesthetic State:
+Awake : Y
+Calm : Y
+Patient Safety:
+Anaes Machine Checked : Y
+Pressure Points Checked : Y
+Eye Care : Y
+General Anaesthetic Technique:
+Induction:
+Airway Management:
+Airway:
+Cormack & Lehane:
+Endo Tracheal Tube:
+LMA:
+Mask Anaesthesia:
+Nasal Cannula : Y
+Throat Pack Inserted:
+Throat Pack Removed:
+Naso gastric:
+Oro gastric:
+Maintenance:
+15 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Position:
+Supine : Y
+Vascular Access:
+REGIONAL ANAESTHESIA /ANALGESIA
+Position:
+Central Blocks:
+Regional Block:
+Upper Limb:
+Lower Limb:
+Anterior Abdominal Wall field block:
+Intercostal Nerve Block:
+Drugs Detail:
+Monitoring:
+ECG : Y
+NIBP : Y
+Pulse Oximetry : Y
+Neuromuscular Monitoring:
+Total fluids administered:
+Intra-operative:
+Diagnosis:
+Ganglionic cyst left hand Middle finger DIP joint
+Procedure : Removal of bony mass from left middle finger DIP Joint
+Incision Time : 12.35
+End of Surgery : 13.00
+Anaesthesia End Time : 13:05
+Premedication
+Opioid
+Medications: Pentazocin
+Dose (mg/µg) : 30
+Route : IV
+Given Time : 12:30
+Antibiotic Prophylaxis
+Antibiotic Prophylaxis : INJ
+CETIL
+Given Time :
+12:25
+Dose : 1.5GM
+Pre-operative Vitals:
+Induction agents:
+Ventilation
+16 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Inhalation agents
+Maintenance
+Gases:
+O2 : Y
+Muscle relaxants
+Analgesics
+Inotropes
+Infusions
+Fluids
+Colloids
+Crystalloids
+Blood & Blood products
+ABG Observation
+Intra-Op Investigations
+Intra Operative Vitals:
+Reversal:
+Tourniquent:
+Vitals during shifting to recovery:
+Pulse: : 70
+BP:mmhg : 130/74
+ECG : NSR
+SPO2 : 100
+TEMP : N
+Post Operative Advice: : 1)NPM for 2 hours, then allow liquid diet
+2)Continue IV Fluids
+3)Monitor vitals
+4)Inform SOS
+Anaesthesia Start Time : 12:30
+Modification Of Anaesthesia Plan : NO
+Unplanned ICU admission: : NO
+Adverse event : No
+Anaesthesia related Mortality: : No
+Critical incident:
+RECOVERY ROOM OBSERVATION
+Patient Received Date & Time : 25/03/2026
+17 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Time : 13:10
+Patient Shifted Date & Time : 25/03/2026
+Time : 13:40
+Post-Operative events
+Transferred to: : Ward
+Vitals at shifting
+Pulse : 74
+SBP : 129
+DBP : 76
+Spo2 : 100
+USER:
+APFEL Score : 1(20%)
+GCS : 15/15
+Via Tracheostomy Details : 2L/MIN
+Peripheral lines
+Site :
+HAND
+Size G :
+22
+Side :
+Left
+Location : OT
+Central Line
+Arterial Line
+Premedication
+Medications: INJ
+MIDAZOLAM
+Dose (mg/µg) :
+1MG
+Route :
+IV
+Medications: INJ GLYCOP
+Dose (mg/µg) :
+0.2MG
+Route :
+IV
+Medications: INJ
+ONDEM
+Dose (mg/µg) :
+4MG
+Route : IV
+Opioid
+18 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Medications:
+Pentazocin
+Dose (mg/µg) :
+30
+Route :
+IV
+Given Time : 12:30
+Induction Agents
+Agent :
+Propofol
+Dosage (mg) :
+100
+Route :
+IV
+Given Time : 12:30
+Inhalation Agents
+Muscular Relaxants
+Analgesics
+Inotropes
+IV Infusions
+Fluids : Crystalloids
+Fluids type
+Type :
+NS
+Quantity :
+500ML
+Route : IV
+Blood & Blood Products
+Reversal
+Total Fluids Administered : 300ML
+Type of surgery : Intermediate
+ASA Grading : ASA II
+PONV Prophylaxis : INJ Ondansetron
+Pain Management Plan : Regional/Nerve Block
+Tourniquet
+Critical Incident
+19 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+Anaesthesia Method : Monitored Anaesthesia care,Sedation
+Additional Drugs
+Intra Operative Vitals
+Pulse/Min :
+76
+BP:mmhg :
+146/88
+SPO2:% :
+100
+TEMP :
+N
+Time :
+12:25
+Stage of Anaesthesia : Start of Regional
+Anaesthesia
+Pulse/Min :
+72
+BP:mmhg :
+136/80
+SPO2:% :
+100
+TEMP :
+N
+Time :
+12:30
+Stage of Anaesthesia :
+Induction
+Pulse/Min :
+70
+BP:mmhg :
+128/74
+SPO2:% :
+100
+TEMP :
+N
+Time :
+12:40
+Stage of Anaesthesia :
+Maintanance
+Pulse/Min :
+73
+BP:mmhg :
+125/75
+SPO2:% :
+100
+20 of 21
+
+
+Hospital No: 63877165
+Name:
+
+Visit No:
+Doctor Name:
+
+TEMP :
+N
+Time :
+12:50
+Stage of Anaesthesia :
+Maintanance
+Pulse/Min :
+69
+BP:mmhg :
+120/68
+SPO2:% :
+100
+TEMP :
+N
+Time :
+13:00
+Stage of Anaesthesia : End of
+Surgery
+Pulse/Min :
+70
+BP:mmhg :
+124/73
+SPO2:% :
+100
+TEMP :
+N
+Time :
+13:05
+Stage of Anaesthesia : Theatre Out
+Duration : 00:35
+Anaesthetist Technician : MR ARPAN
+Locations of Anaesthesia Services : Cardiac Operating Theatre 1
+Date of Surgery : 25/03/2026
+Status : Entered
+Investigation Orders
+Laboratory :
+
+- Small Biopsy
+.
+
+21 of 21
+
+

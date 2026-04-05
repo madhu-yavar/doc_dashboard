@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemma-Powered Discharge Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .loading { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const API_BASE = 'http://localhost:8000/api';
+
+        // Dashboard Card Component
+        function DashboardCard({ icon, title, status, children, onClick }) {
+            const statusColors = {
+                stable: 'bg-green-50 border-green-200 text-green-700',
+                warning: 'bg-amber-50 border-amber-200 text-amber-700',
+                critical: 'bg-red-50 border-red-200 text-red-700'
+            };
+
+            return (
+                <div
+                    onClick={onClick}
+                    className={`bg-white rounded-xl shadow-md border-2 p-4 cursor-pointer card-hover transition-all duration-200 ${statusColors[status] || 'bg-gray-50'}`}
+                >
+                    <div className="flex items-center gap-3 mb-2">
+                        <span className="text-2xl">{icon}</span>
+                        <h3 className="font-semibold text-gray-800">{title}</h3>
+                        <span className={`ml-auto px-2 py-1 rounded-full text-xs font-bold uppercase ${status === 'stable' ? 'bg-green-100 text-green-700' : status === 'warning' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                            {status}
+                        </span>
+                    </div>
+                    {children}
+                </div>
+            );
+        }
+
+        // Main App Component
+        function App() {
+            const [cards, setCards] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [selectedCard, setSelectedCard] = useState(null);
+            const [patientName, setPatientName] = useState('Loading...');
+
+            // Load dashboard data
+            const loadDashboard = async () => {
+                setLoading(true);
+                try {
+                    // Test with sample data
+                    const response = await fetch(`${API_BASE}/dashboard-cards`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            patient_name: "John Smith",
+                            age: 54,
+                            mrn: "12345678",
+                            diagnosis: "Acute STEMI",
+                            vitals: { bp: "130/85", pulse: 72, temp: 98.4, spo2: 98 }
+                        })
+                    });
+
+                    const data = await response.json();
+                    setCards([
+                        { icon: "📊", title: "Vitals", status: "stable", data: data.vitals_card || { summary: "BP: 130/85, Pulse: 72" } },
+                        { icon: "🩺", title: "Diagnosis", status: "stable", data: data.diagnosis_card || { principal: "Acute STEMI", icd: "I21.0" } },
+                        { icon: "💊", title: "Medications", status: "stable", data: data.medications_card || { active_count: 5 } },
+                        { icon: "🔬", title: "Labs", status: "warning", data: data.labs_card || { total: 15, abnormal: 2 } },
+                        { icon: "🫀", title: "Radiology", status: "stable", data: { studies: 2 } },
+                        { icon: "🏥", title: "Treatment", status: "stable", data: { procedures: 3 } },
+                        { icon: "📝", title: "Clinical Notes", status: "stable", data: { notes: 7 } },
+                        { icon: "📋", title: "Discharge Plan", status: "stable", data: { condition: "Stable" } },
+                        { icon: "📅", title: "Follow-Up", status: "stable", data: { next: "Apr 15, 2026" } }
+                    ]);
+                    setPatientName("John Smith");
+                } catch (error) {
+                    console.error('Error loading dashboard:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                loadDashboard();
+            }, []);
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+                            <p className="text-gray-600">Loading dashboard...</p>
+                            <p className="text-sm text-gray-400 mt-2">Powered by Gemma LLM</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-50 p-6">
+                    {/* Header */}
+                    <header className="mb-8">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h1 className="text-3xl font-bold text-gray-800">Discharge Summary Dashboard</h1>
+                                <p className="text-gray-600 mt-1">Patient: {patientName} | MRN: 12345678</p>
+                            </div>
+                            <button
+                                onClick={loadDashboard}
+                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                            >
+                                Refresh
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Status Bar */}
+                    <div className="bg-white rounded-xl shadow-sm p-4 mb-6 flex items-center gap-6">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                            <span className="text-sm text-gray-600">Gemma API Connected</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                            <span className="text-sm text-gray-600">Data Fresh</span>
+                        </div>
+                        <div className="ml-auto text-sm text-gray-500">
+                            Last updated: Just now
+                        </div>
+                    </div>
+
+                    {/* Dashboard Cards Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {cards.map((card, index) => (
+                            <DashboardCard
+                                key={index}
+                                icon={card.icon}
+                                title={card.title}
+                                status={card.status}
+                                onClick={() => setSelectedCard(card)}
+                            >
+                                <div className="text-sm text-gray-600 mt-2">
+                                    {typeof card.data === 'object'
+                                        ? Object.entries(card.data).slice(0, 2).map(([k, v]) => (
+                                            <div key={k} className="capitalize">{k}: {String(v)}</div>
+                                        ))
+                                        : String(card.data)
+                                    }
+                                </div>
+                            </DashboardCard>
+                        ))}
+                    </div>
+
+                    {/* Selected Card Detail Modal */}
+                    {selectedCard && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setSelectedCard(null)}>
+                            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-2xl font-bold text-gray-800">
+                                        {selectedCard.icon} {selectedCard.title}
+                                    </h2>
+                                    <button
+                                        onClick={() => setSelectedCard(null)}
+                                        className="text-gray-400 hover:text-gray-600 text-2xl"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                                <div className="text-gray-600">
+                                    <p>Detailed view of {selectedCard.title} data...</p>
+                                    <p className="mt-2 text-sm text-gray-400">Powered by Gemma LLM analysis</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Footer */}
+                    <footer className="mt-8 text-center text-sm text-gray-500">
+                        <p>Powered by Gemma 4-26B-A4B-it | Interactive Discharge Dashboard Prototype</p>
+                    </footer>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

@@ -1,0 +1,274 @@
+INPATIENT RECORD
+Hospital No:
+Name:
+Doctor Name:
+Date:
+
+67044887
+
+Visit No:
+Age/Sex:
+Specialty:
+
+BP Systolic: 100 mmHg
+BP Diastolic: 60 mmHg
+Pulse Rate: 78 bt/min
+Respiration: 20 br/min
+Temperature: 96.2 °F
+Saturation(Oxygen): 99 %
+Mean Arterial Pressure-MAP: 73
+Oral Intake: 300 millilitre
+Total Fluid Balance (Progressive): 300
+mmHg
+millilitre
+Total Fluid Balance (Progressive) last 1
+hr: 300 millilitre
+NURSING INITIAL ASSESSMENT - NEW
+Status : Entered
+Score : 0
+MRN : MH018139669
+Patient arrival Date : 25/03/2026
+Patient Arrival Time : 12:00
+Room Orientation Given : Yes
+Patient Identification Band Fixed : Yes
+If Yes Type Of Band : white
+Height(Cm) : 155
+Weight(Kgs) : 59.8
+Reason Not Able To Check : na
+Chief Complaints : ANEMIA UNDER EVALUATION
+Past History : NO COMORBIDITIES
+Vital Assessment
+Temp(F) : 96.2
+Pulse/min : 78
+Blood Pressure(mmHg) : 100/60
+Respiration/min : 20
+Spo2(%) : 99
+GRBS (mg/dl) : 107
+Skin Integrity : INTACT
+Other Parameters
+Belongings : No
+Dentures : No
+Hearing Aid : No
+Eye Glasses/Contact Lens : No
+Vulnerable : No
+Any Special Care Given : SIDE RAILS APPLIED
+Restraints : No
+If Yes, Type Of Restraint : NA
+Any Known Allergies : NOT KNOWN
+Current Medications : T.PAN 40
+Informed the Doctor : Yes
+Name of the Doctor : Dr Jinia Pal
+Diet : NORMAL
+Is the patient at risk for any of the following? If Yes, complete the risk assessment form.
+1 of 4
+
+
+Hospital No: 67044887
+Name:
+
+Visit No:
+Doctor Name:
+
+Fall : NO
+Pressure Score : NO
+DVT : NO
+Aspiration : NO
+Ability to perform activities of daily living
+Activity
+Bathing : Independent
+Dressing : Assisted
+Eating : Independent
+Walking : Independent
+Toilet Use : Independent
+Nursing needs(complete Nursing care plan based on the identified needs)
+Actual needs : SUPPORTIVE CARE
+Potential needs : CHEMOTHERAPY
+Assessment Done By : REENA SOJAN
+Rating : 1/10
+BMI : 24.56
+General Physical Examination:
+Discharge Checklist MHE
+Status : Entered
+Score : 0
+Discharge Planning initiated : 25/03/2026
+Reports required by patient on discharge: : Nill
+IV Cannula removed : Yes
+Last vital signs documented : Yes
+Discharge Medication or Prescription : Yes
+Investigation results : Not Applicable
+Appointment details : Yes
+Advice/Instructions/Education information : Yes
+ID band removed : Yes
+All personal belongings returned : Yes
+Discharge comments : No due
+Reports supplied to patients on discharge : Blood Grouping
+Home Discharge Planning
+
+Forms
+BLOOD TRANSFUSION MONITORING CHART KMC
+Blood Component Type : Packed Red Cells
+date of trnsfusion : 25/03/2026
+transfusion end date : 25/03/2026
+blood unit number : MDK26-B00947
+transfusion sart time : 16:10
+TRANFUSION STATUS : In-Progress
+UNIT EXPIRY DATE : 25/03/2026
+BLOOD GROUP : O+ (O positive)
+Pulse : 80
+BP : 120/70
+Temp : 98
+2 of 4
+
+
+Hospital No: 67044887
+Name:
+
+Visit No:
+Doctor Name:
+
+SPo2 : 98
+Respitratory Rate : 20
+IP Initial Assessment
+Status : Entered
+Score : 0
+Patient Arrival Date : 25/03/2026
+Patient Arrival Time : 13:00
+Chief Complaints : ANAEMIA UNDER EVALUATION
+ADMIITED FOR 2 UNITS PRBC TRANSFUSION
+History of Presenting illness : Exertional dysponoea & weakness
+Menorrhagia
+Prolonged bleeding after injury
+Mother of 2 children -- pregnancy uneventful
+Mixed diet
+Hb 5.3 TLC 4300 Plt 204,000 MCV 62
+Allergy : NOT KNOWN
+Past Medical History : NOT KNOWN
+Current medications : HOME MEDS
+Pulse /min : 78
+Resp Rate/min : 23
+Temp F : 98
+BP mm Hg : 120/70
+Room Air : Y
+GRBS mg/dL : 126
+Pallor : YES
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+CVS : S1S2+
+RS : B/L VBS+
+PA : SOFT
+CNS : GCS 15/15
+Others : NO MOTOR DEFICITS
+Provisional Diagnosis : ANAEMIA UNDER EVALUATION
+Care Plan : ADMIITED FOR 2 UNITS PRBC TRANSFUSION
+Spo2 : 98
+Residents Notes :
+1 UNIT PRBC HAS BEEN TRASNFUSED.
+UNIT NO - MDK26-B00947
+SEGMENT NO - 53KK0773
+DOC - 17/03/26
+DOE - 27/04/26
+BLOOD GRP - O+VE
+3 of 4
+
+
+Hospital No: 67044887
+Name:
+
+Visit No:
+Doctor Name:
+
+IN CASE OF ANY REACTION, STOP TRANSFUSION.
+RIGOR - TAB PCM (650) 1 TAB PO STAT
+RASH - INJ HYDROCORT (100) IV STAT
+BP =110/70
+SPO2 = 96% RA
+Investigation Orders
+Laboratory :
+
+- Blood Grouping & Rh Typing (1)
+- Packed Red cells (PRBC) - Reserve/Crossmatch (1)
+- Packed Red Blood Cells (PRBC) - Issue (1)
+.
+
+MEDICATION ORDERS
+Drug / Generic Item
+Dosage Qty Frequency
+NS 09% W/V 100 ML GLASS BOTTLE SOLUTION FOR INFUSION 2 BT
+ONCE
+
+Instructions/Notes
+
+Duration
+1 DAY(S)
+
+(NORMAL SALINE)
+
+CANNULA 20 G VENFLON (REF #391492), BD
+1 PC
+BLOOD ADMISTRATION SET LUERLOCK SANGOFIX AIR 180
+1 PC
+CM #REF - 4080187, B BRAUN
+EXTENSION TUBING 10 CM WITH 3WAY STOPCOCK, POLYMED 1 PC
+
+ONCE
+ONCE
+
+1 DAY(S)
+1 DAY(S)
+
+ONCE
+
+1 DAY(S)
+
+ONCE
+
+1 DAY(S)
+
+ONCE
+
+1 DAY(S)
+
+4 NUMBER ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+(SURGICALS (PHARMACY NON-DRUG))
+
+GLOVES 7" STERILE PF ENCORE LATEX MICRO DERMASHIELD 1 PAR
+#5787003, ANSELL
+(GLOVES (PHARMACY NON-DRUG))
+
+POLYFLUSH PRE-FILLED SYRINGE 5 ML # 90319, POLY
+MEDICURE LTD
+
+3 PC
+
+(SYRINGE (PHARMACY NON-DRUG))
+
+ALCOHOL SWAB - ROMSONS
+(SURGICALS (PHARMACY NON-DRUG))
+
+SYRINGE 10 ML WITH NEEDLE DISPOVAN, HMD
+(SYRINGE (PHARMACY NON-DRUG))
+
+20ML SYRINGE WITH NEEDLE DISPOVAN
+(SYRINGE (PHARMACY NON-DRUG))
+
+4 of 4
+
+
