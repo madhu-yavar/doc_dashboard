@@ -1094,9 +1094,15 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
       const validationSummaryText = `Confidence: ${(citationSummary.overallConfidence * 100).toFixed(0)}% | Fields reviewed: ${citationSummary.fieldsReviewed}/${citationSummary.totalFields}`;
 
       // Calculate max output tokens based on input size
-      // Increased minimum to 1500 to ensure complete SOAP sections (4 sections ~ 350-400 tokens each)
+      // Model has 16384 token max context - leave room for output
+      const MAX_CONTEXT = 16384;
+      const MIN_OUTPUT = 1000;
+      const MAX_OUTPUT = 2000;
       const inputSize = (JSON.stringify(extractedData).length + JSON.stringify(validationResult.data.citations).length) / 4;
-      const maxOutputTokens = Math.max(1500, Math.min(3000, 24000 - Math.floor(inputSize)));
+      // Reserve 500 tokens for safety margin
+      const maxOutputTokens = Math.max(MIN_OUTPUT, Math.min(MAX_OUTPUT, MAX_CONTEXT - inputSize - 500));
+
+      console.log(`Token budget: input=${Math.floor(inputSize)}, output=${maxOutputTokens}, total=${Math.floor(inputSize) + maxOutputTokens}/${MAX_CONTEXT}`);
 
       const prompt = promptBuilder.build("chart_note_composer", {
         extractedData: JSON.stringify(extractedData, null, 2),
@@ -1164,7 +1170,7 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
 
     try {
       const yavarLogo = await fs.readFile(yavarLogoPath);
-      doc.image(yavarLogo, 500, 42, { width: 60 });
+      doc.image(yavarLogo, 500, 42, { width: 40 });
     } catch (e) {}
 
     // Title
@@ -1233,37 +1239,131 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
       "DISCHARGE PLAN": "DISCHARGE PLAN"
     };
 
+    // Page height for A4 is ~842 points, footer at 750
+    const MAX_Y = 750;
+    const PAGE_MARGIN = 50;
+
+    const checkPageBreak = (requiredSpace = 30) => {
+      if (yPosition + requiredSpace > MAX_Y) {
+        doc.addPage();
+        yPosition = PAGE_MARGIN;
+        return true;
+      }
+      return false;
+    };
+
     const renderSection = (title, content) => {
       if (content.length === 0) return;
+
+      // Check if we need a new page for section header
+      checkPageBreak(50);
 
       // Section header
       doc.roundedRect(leftMargin, yPosition, contentWidth, 22, 3).fillAndStroke(primaryColor, primaryColor);
       doc.fontSize(11).font("Helvetica-Bold").fillColor("white").text(title, leftMargin + 10, yPosition + 6);
       yPosition += 28;
 
-      // Content background
-      const contentHeight = content.length * 14 + 10;
-      doc.roundedRect(leftMargin, yPosition, contentWidth, Math.min(contentHeight, 200), 3).fillAndStroke("#ffffff", borderColor);
-      yPosition += 8;
+      // Content area with subtle background
+      const sectionStartY = yPosition;
+      const textIndent = 12;
 
-      // Render content lines
-      doc.fontSize(9).font("Helvetica").fillColor("#374151");
-      content.forEach((line) => {
-        if (line.trim()) {
-          const lines_needed = doc.heightOfString(line, { width: contentWidth - 20 });
-          doc.text(line, leftMargin + 10, yPosition, { width: contentWidth - 20 });
-          yPosition += lines_needed + 4;
+      // Render content with consistent spacing
+      let prevWasBullet = false;
+      let prevWasHeader = false;
+
+      content.forEach((line, index) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          // Skip empty lines but add a small gap if next line is not a bullet
+          if (index + 1 < content.length) {
+            const nextLine = content[index + 1].trim();
+            const nextIsBullet = /^[\*\-\••]\s+|^(\d+[\.\)])\s+/.test(nextLine);
+            if (!nextIsBullet && !prevWasBullet) {
+              yPosition += 8; // Paragraph break
+            }
+          }
+          return;
+        }
+
+        // Check if current line fits on page
+        checkPageBreak(25);
+
+        // Detect content type
+        const isBullet = /^[\*\-\••]\s+|^(\d+[\.\)])\s+/.test(trimmed);
+        const isSubsection = /^\*\*[^*]+\*\*:?$/.test(trimmed);
+        const isBoldHeader = /^.+:\s*$/.test(trimmed) && trimmed.length < 60;
+
+        if (isSubsection) {
+          prevWasBullet = false;
+          prevWasHeader = true;
+          yPosition += 6;
+
+          const headerText = trimmed.replace(/\*\*/g, '').replace(/:$/, '');
+          doc.fontSize(9).font("Helvetica-Bold").fillColor("#1f2937");
+          doc.text(headerText, leftMargin + textIndent, yPosition);
+          yPosition += doc.heightOfString(headerText) + 3;
+        } else if (isBoldHeader) {
+          prevWasBullet = false;
+          prevWasHeader = true;
+          yPosition += 6;
+
+          doc.fontSize(9).font("Helvetica-Bold").fillColor("#374151");
+          doc.text(trimmed.replace(/:$/, ''), leftMargin + textIndent, yPosition);
+          yPosition += doc.heightOfString(trimmed.replace(/:$/, '')) + 3;
+        } else if (isBullet) {
+          // Bullet item
+          if (!prevWasBullet) {
+            yPosition += 4; // Space before bullet list starts
+          }
+          prevWasBullet = true;
+          prevWasHeader = false;
+
+          const bulletText = trimmed.replace(/^[\*\-\••]\s+|^(\d+[\.\)])\s+/, '');
+          const bulletNum = trimmed.match(/^(\d+)[\.\)]/);
+          const bulletChar = bulletNum ? `${bulletNum[1]}.` : '•';
+
+          // Draw bullet in green
+          doc.fillColor("#059669").fontSize(9).font("ZapfDingbats").text(bulletChar, leftMargin + textIndent, yPosition);
+          // Draw text
+          doc.fillColor("#4b5563").fontSize(9).font("Helvetica").text(bulletText, leftMargin + textIndent + 10, yPosition, {
+            width: contentWidth - textIndent * 2 - 15
+          });
+
+          yPosition += Math.max(doc.heightOfString(bulletText, { width: contentWidth - textIndent * 2 - 15 }), 12) + 2;
+        } else {
+          // Regular paragraph text
+          if (prevWasBullet || prevWasHeader) {
+            yPosition += 4; // Space after bullets/headers
+          }
+          prevWasBullet = false;
+          prevWasHeader = false;
+
+          doc.fontSize(9).font("Helvetica").fillColor("#374151");
+          const options = {
+            width: contentWidth - textIndent * 2,
+            align: 'justify',
+            lineGap: 1.5
+          };
+          doc.text(trimmed, leftMargin + textIndent, yPosition, options);
+          yPosition += doc.heightOfString(trimmed, options) + 6;
         }
       });
-      yPosition += 8;
+
+      yPosition += 12;
     };
 
     for (const line of lines) {
       const trimmed = line.trim();
 
-      // Check for section headers (various formats)
-      if (trimmed.match(/^(HISTORY & PRESENTATION|CLINICAL FINDINGS|DIAGNOSIS|DISCHARGE PLAN)/i) ||
-          trimmed.match(/^(S - SUBJECTIVE|O - OBJECTIVE|A - ASSESSMENT|P - PLAN)/i)) {
+      // Check for section headers - support multiple formats
+      // Matches: "SUBJECTIVE - ...", "OBJECTIVE - ...", "ASSESSMENT - ...", "PLAN - ..."
+      // Also matches: "S - SUBJECTIVE", "O - OBJECTIVE", etc.
+      const isSubjective = trimmed.match(/^SUBJECTIVE|^S - SUBJECTIVE|HISTORY & PRESENTATION/i);
+      const isObjective = trimmed.match(/^OBJECTIVE|^O - OBJECTIVE|CLINICAL FINDINGS/i);
+      const isAssessment = trimmed.match(/^ASSESSMENT|^A - ASSESSMENT|^DIAGNOSIS/i);
+      const isPlan = trimmed.match(/^PLAN|^P - PLAN|^DISCHARGE PLAN/i);
+
+      if (isSubjective || isObjective || isAssessment || isPlan) {
 
         // Render previous section
         if (currentSection && sectionContent.length > 0) {
@@ -1272,14 +1372,13 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
         }
 
         // Determine proper section title
-        const upperLine = trimmed.toUpperCase();
-        if (upperLine.includes("HISTORY") || upperLine.includes("SUBJECTIVE")) {
+        if (isSubjective) {
           currentSection = "HISTORY & PRESENTATION";
-        } else if (upperLine.includes("CLINICAL") || upperLine.includes("OBJECTIVE")) {
+        } else if (isObjective) {
           currentSection = "CLINICAL FINDINGS";
-        } else if (upperLine.includes("DIAGNOSIS") || upperLine.includes("ASSESSMENT")) {
+        } else if (isAssessment) {
           currentSection = "DIAGNOSIS & ASSESSMENT";
-        } else if (upperLine.includes("PLAN") || upperLine.includes("DISCHARGE")) {
+        } else if (isPlan) {
           currentSection = "DISCHARGE PLAN";
         }
         continue;
