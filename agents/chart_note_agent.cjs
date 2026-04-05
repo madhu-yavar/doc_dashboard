@@ -529,39 +529,86 @@ PLAN: [Quality rating and brief feedback]`;
     const patient = sections.extractedData.patient || {};
     const admission = sections.extractedData.admission || {};
 
+    // Ensure sections have content, provide fallback if empty
+    const subjective = sections.subjective?.trim() || this.generateFallbackSubjective(sections.extractedData);
+    const objective = sections.objective?.trim() || this.generateFallbackObjective(sections.extractedData);
+    const assessment = sections.assessment?.trim() || this.generateFallbackAssessment(sections.extractedData);
+    const plan = sections.plan?.trim() || this.generateFallbackPlan(sections.extractedData);
+
+    console.log("  📋 Final chart note compiled:", {
+      totalLength: subjective.length + objective.length + assessment.length + plan.length,
+      sections: {
+        subjective: subjective.length || 0,
+        objective: objective.length || 0,
+        assessment: assessment.length || 0,
+        plan: plan.length || 0
+      }
+    });
+
     const finalNote = `DISCHARGE SUMMARY CHART NOTE
 
 Patient: ${patient.name || 'Not documented'} | MRN: ${patient.mrn || 'N/A'} | Age: ${patient.age || 'N/A'} ${patient.gender || ''}
 Admission: ${admission.admission_date || 'Not documented'} | Discharge: ${admission.discharge_date || 'Not documented'}
 
 SUBJECTIVE - HISTORY & PRESENTATION
-${sections.subjective}
+${subjective}
 
 OBJECTIVE - CLINICAL FINDINGS
-${sections.objective}
+${objective}
 
 ASSESSMENT - DIAGNOSIS & CLINICAL JUDGMENT
-${sections.assessment}
+${assessment}
 
 PLAN - DISCHARGE PLAN & RECOMMENDATIONS
-${sections.plan}
+${plan}
 
 _________________________
 Generated: ${new Date().toLocaleString()}
 Note: This chart note was automatically generated from the discharge summary document. Clinician review and signature required.
 Validation Summary: ${sections.validationSummary}`;
 
-    console.log("  📋 Final chart note compiled:", {
-      totalLength: finalNote.length,
-      sections: {
-        subjective: sections.subjective?.length || 0,
-        objective: sections.objective?.length || 0,
-        assessment: sections.assessment?.length || 0,
-        plan: sections.plan?.length || 0
-      }
-    });
-
     return finalNote;
+  }
+
+  /**
+   * Fallback generators for when LLM doesn't return content
+   */
+  generateFallbackSubjective(data) {
+    const diagnosis = data.diagnosis?.principal || "Not documented";
+    const patient = data.patient || {};
+    return `Patient is a ${patient.age || 'XX'}-year-old ${patient.gender || 'individual'} admitted with ${diagnosis}.`;
+  }
+
+  generateFallbackObjective(data) {
+    const vitals = data.vitals || data.latest || {};
+    const risks = data.risk_scores || {};
+    let content = "Vital Signs: ";
+    if (vitals.bp) content += `BP ${vitals.bp.systolic || 'N/A'}/${vitals.bp.diastolic || 'N/A'} mmHg `;
+    if (vitals.pulse) content += `Pulse ${vitals.pulse.value || vitals.pulse || 'N/A'} bpm `;
+    if (vitals.spo2) content += `SpO2 ${vitals.spo2.value || vitals.spo2 || 'N/A'}%`;
+    if (risks.fall_risk) content += `\nFall Risk: ${risks.fall_risk.score || 'N/A'} (${risks.fall_risk.level || 'N/A'})`;
+    return content || "Clinical findings not available.";
+  }
+
+  generateFallbackAssessment(data) {
+    const diagnosis = data.diagnosis?.principal || "Not documented";
+    const secondary = data.diagnosis?.secondary?.length > 0
+      ? data.diagnosis.secondary.slice(0, 3).join(", ")
+      : "None documented";
+    return `Principal Diagnosis: ${diagnosis}\nSecondary Diagnoses: ${secondary}`;
+  }
+
+  generateFallbackPlan(data) {
+    const meds = data.medications || [];
+    let content = "Discharge Medications:\n";
+    if (meds.length > 0) {
+      meds.slice(0, 5).forEach(med => {
+        content += `- ${med.name || med} ${med.dose || ''} ${med.frequency || ''} ${med.route || ''}\n`;
+      });
+    } else {
+      content += "No medications documented.\n";
+    }
+    return content;
   }
 
   /**
@@ -578,8 +625,38 @@ Validation Summary: ${sections.validationSummary}`;
    */
   extractAfter(content, marker) {
     const index = content.indexOf(marker);
-    if (index === -1) return content;
-    return content.substring(index + marker.length).trim();
+    if (index === -1) {
+      // Marker not found - try to extract meaningful content
+      console.log(`    ⚠️ Marker "${marker}" not found, attempting fallback extraction`);
+      // Return content after THOUGHT section if it exists
+      const thoughtIndex = content.indexOf("THOUGHT:");
+      if (thoughtIndex !== -1) {
+        const afterThought = content.substring(thoughtIndex + 8).trim();
+        // Find the next line after THOUGHT content
+        const lines = afterThought.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].trim() && !lines[i].startsWith('THOUGHT')) {
+            // Found actual content
+            return lines.slice(i).join('\n').trim();
+          }
+        }
+      }
+      return content;
+    }
+    const extracted = content.substring(index + marker.length).trim();
+    if (!extracted) {
+      console.log(`    ⚠️ Empty content after marker "${marker}"`);
+      return content; // Fallback to full content
+    }
+    // Remove any remaining section markers that might appear after
+    const lines = extracted.split('\n');
+    const cleaned = [];
+    for (const line of lines) {
+      // Stop if we hit another major section marker
+      if (line.match(/^(OBJECTIVE|ASSESSMENT|PLAN|REVIEW):/i)) break;
+      cleaned.push(line);
+    }
+    return cleaned.join('\n').trim();
   }
 
   /**
