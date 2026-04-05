@@ -199,21 +199,89 @@ export const patientData = {
       { name: "Cardiac Catheterization", date: "March 16, 2026", physician: "Dr. Williams", details: "Diagnostic angiography via right radial approach" },
       { name: "Echocardiogram", date: "March 16, 2026", physician: "Dr. Johnson", details: "2D transthoracic echocardiography" },
     ],
+    activeManagement: [
+      {
+        title: "Post-PCI Medical Management",
+        details: "Continue aspirin, statin, beta blocker, ACE inhibitor, and diabetic medications with discharge counseling.",
+        source: "Discharge summary",
+      },
+      {
+        title: "Rehabilitation Plan",
+        details: "Cardiac rehabilitation referral completed and early mobilization advised.",
+        source: "Progress notes",
+      },
+    ],
+    currentApproach: "Post-procedure medical stabilization",
     response: "Good",
+    responseDocumented: true,
     complications: 0,
+    complicationsDocumented: true,
+    complicationsLabel: "None documented",
   },
   clinicalNotes: {
     totalNotes: 7,
     lastUpdate: "2026-03-20T12:00:00Z",
     notes: [
-      { date: "Mar 20, 12:00", author: "Dr. Smith", type: "Discharge Note", summary: "Patient stable for discharge. All medications reconciled." },
-      { date: "Mar 19, 14:00", author: "Dr. Smith", type: "Progress Note", summary: "Cardiac rehab consult completed. Patient education on lifestyle modifications." },
-      { date: "Mar 18, 09:00", author: "Dr. Smith", type: "Progress Note", summary: "Troponin trending down. Vitals stable. Continue current management." },
-      { date: "Mar 17, 08:00", author: "Dr. Johnson", type: "Cardiology Consult", summary: "Post-PCI: Stent patent. No complications. Plan for early mobilization." },
-      { date: "Mar 16, 16:00", author: "Dr. Williams", type: "Procedure Note", summary: "Successful PCI with DES to mid-LAD. TIMI 3 flow restored." },
-      { date: "Mar 15, 18:00", author: "Dr. Smith", type: "Admission Note", summary: "54M presenting with acute STEMI. Emergent catheterization planned." },
-      { date: "Mar 15, 09:00", author: "ER Physician", type: "ER Assessment", summary: "Acute chest pain, ECG changes. Cardiology consulted." },
+      { date: "Mar 20, 12:00", author: "Dr. Smith", type: "Discharge Note", summary: "Patient stable for discharge. All medications reconciled.", situation: "", background: "", assessment: "Stable for discharge.", recommendations: "Continue discharge medications and scheduled follow-up.", pending_items: [], risk_flags: [], handed_over_by: "", handed_over_to: "", source_excerpt: [] },
+      { date: "Mar 19, 14:00", author: "Dr. Smith", type: "Progress Note", summary: "Cardiac rehab consult completed. Patient education on lifestyle modifications.", situation: "", background: "", assessment: "Recovery progressing with rehab planning.", recommendations: "Lifestyle modification counseling completed.", pending_items: [], risk_flags: [], handed_over_by: "", handed_over_to: "", source_excerpt: [] },
+      { date: "Mar 18, 09:00", author: "Dr. Smith", type: "Progress Note", summary: "Troponin trending down. Vitals stable. Continue current management.", situation: "", background: "", assessment: "Troponin improving and vitals stable.", recommendations: "Continue current management.", pending_items: [], risk_flags: [], handed_over_by: "", handed_over_to: "", source_excerpt: [] },
+      { date: "Mar 17, 08:00", author: "Dr. Johnson", type: "Cardiology Consult", summary: "Post-PCI: Stent patent. No complications. Plan for early mobilization.", situation: "", background: "Post-PCI status review.", assessment: "Stent patent without complication.", recommendations: "Early mobilization.", pending_items: [], risk_flags: [], handed_over_by: "", handed_over_to: "", source_excerpt: [] },
+      { date: "Mar 16, 16:00", author: "Dr. Williams", type: "Procedure Note", summary: "Successful PCI with DES to mid-LAD. TIMI 3 flow restored.", situation: "", background: "", assessment: "Successful PCI.", recommendations: "Routine post-procedure monitoring.", pending_items: [], risk_flags: [], handed_over_by: "", handed_over_to: "", source_excerpt: [] },
+      { date: "Mar 15, 18:00", author: "Dr. Smith", type: "Admission Note", summary: "54M presenting with acute STEMI. Emergent catheterization planned.", situation: "Acute chest pain presentation.", background: "", assessment: "Acute STEMI.", recommendations: "Emergent catheterization.", pending_items: [], risk_flags: [], handed_over_by: "", handed_over_to: "", source_excerpt: [] },
+      { date: "Mar 15, 09:00", author: "ER Physician", type: "ER Assessment", summary: "Acute chest pain, ECG changes. Cardiology consulted.", situation: "Acute chest pain in ER.", background: "", assessment: "ECG changes concerning for STEMI.", recommendations: "Cardiology consultation.", pending_items: [], risk_flags: [], handed_over_by: "", handed_over_to: "", source_excerpt: [] },
     ],
+    handover: {
+      overview: "54-year-old male admitted with acute STEMI, treated with PCI, clinically stable for discharge, and requiring cardiology follow-up.",
+      sections: [
+        {
+          title: "Presentation",
+          tone: "normal",
+          items: [
+            "Presented with chest pain for 4 hours with radiation to the left arm.",
+            "ECG changes and elevated troponin supported acute STEMI.",
+          ],
+        },
+        {
+          title: "Assessment",
+          tone: "normal",
+          items: [
+            "Primary diagnosis is acute STEMI with secondary hypertension and diabetes.",
+            "Post-PCI recovery was uncomplicated and hemodynamics stabilized before discharge.",
+          ],
+        },
+        {
+          title: "Active Plan",
+          tone: "normal",
+          items: [
+            "Continue aspirin, metoprolol, atorvastatin, ramipril, and metformin.",
+            "Cardiac rehabilitation and lifestyle modification counseling completed.",
+          ],
+        },
+        {
+          title: "Risks To Watch",
+          tone: "warning",
+          items: [
+            "Monitor for recurrent chest pain, dyspnea, arrhythmia, or fluid overload.",
+          ],
+        },
+        {
+          title: "Pending / Follow-up",
+          tone: "normal",
+          items: [
+            "Cardiology follow-up booked for April 15, 2026.",
+            "Endocrinology review planned for glycemic management.",
+          ],
+        },
+        {
+          title: "Source Notes",
+          tone: "normal",
+          items: [
+            "Discharge note by Dr. Smith confirms discharge readiness and medication reconciliation.",
+            "Procedure and consult notes remain available below for traceability.",
+          ],
+        },
+      ],
+    },
   },
   dischargePlan: {
     condition: "Stable",
@@ -237,6 +305,10 @@ export const patientData = {
       duration: "2 weeks",
       afterRestriction: "Gradually increase activity. Cardiac rehab recommended.",
     },
+    pendingItems: [
+      "Cardiology review as scheduled",
+      "Medication adherence check at follow-up",
+    ],
     redFlags: [
       "Chest pain or pressure that doesn't go away with rest",
       "Shortness of breath at rest or with minimal activity",
@@ -249,4 +321,240 @@ export const patientData = {
     { department: "Endocrinology", physician: "Dr. Patel", date: "April 20, 2026", time: "2:00 PM", purpose: "Diabetes management, HbA1c review" },
     { department: "Cardiac Rehab", physician: "Cardiac Rehab Team", date: "April 1, 2026", time: "9:00 AM", purpose: "Phase II cardiac rehabilitation assessment" },
   ],
+  presentation: {
+    summaryCards: {
+      vitals: {
+        section: "vitals",
+        title: "Vitals",
+        headlineMetric: "130/85 mmHg",
+        secondaryLine: "Pulse 72 bpm",
+        supportingPoints: ["SpO2 98%", "Temp 98.4°F · RR 16 /min"],
+        status: "normal",
+        provenanceStatus: "source_backed",
+      },
+      diagnosis: {
+        section: "diagnosis",
+        title: "Diagnosis",
+        headlineMetric: "Acute ST-Elevation Myocardial Infarction (STEMI)",
+        secondaryLine: "ICD-10 I21.0",
+        supportingPoints: ["+2 secondary"],
+        status: "neutral",
+        provenanceStatus: "source_backed",
+      },
+      medications: {
+        section: "medications",
+        title: "Medications",
+        headlineMetric: "5",
+        secondaryLine: "active medications",
+        supportingPoints: ["Aspirin", "Metoprolol Tartrate"],
+        status: "warning",
+        provenanceStatus: "source_backed",
+      },
+      labs: {
+        section: "labs",
+        title: "Lab Results",
+        headlineMetric: "24",
+        secondaryLine: "tests completed",
+        supportingPoints: ["3 abnormal", "1 critical"],
+        status: "critical",
+        provenanceStatus: "source_backed",
+      },
+      radiology: {
+        section: "radiology",
+        title: "Radiology",
+        headlineMetric: "3",
+        secondaryLine: "findings",
+        supportingPoints: ["1 pending/documented"],
+        status: "critical",
+        provenanceStatus: "source_backed",
+      },
+      treatment: {
+        section: "treatment",
+        title: "Treatment",
+        headlineMetric: "2",
+        secondaryLine: "plan items",
+        supportingPoints: ["Post-procedure medical stabilization", "None documented"],
+        status: "normal",
+        provenanceStatus: "source_backed",
+      },
+    },
+    notesRail: [
+      {
+        title: "Discharge Note",
+        author: "Dr. Smith",
+        timestamp: "Mar 20, 12:00",
+        body: "Patient stable for discharge. All medications reconciled.",
+        priority: "normal",
+        category: "doctor",
+        provenance: [
+          {
+            value: "Patient stable for discharge. All medications reconciled.",
+            sourceSection: "Discharge Note",
+            sourceExcerpt: "Patient stable for discharge. All medications reconciled.",
+            sourcePage: 4,
+            confidence: 0.9,
+            provenanceType: "normalized",
+          },
+        ],
+      },
+      {
+        title: "Cardiology Consult",
+        author: "Dr. Johnson",
+        timestamp: "Mar 17, 08:00",
+        body: "Post-PCI: Stent patent. No complications. Plan for early mobilization.",
+        priority: "warning",
+        category: "doctor",
+        provenance: [
+          {
+            value: "Post-PCI: Stent patent. No complications. Plan for early mobilization.",
+            sourceSection: "Cardiology Consult",
+            sourceExcerpt: "Post-PCI: Stent patent. No complications. Plan for early mobilization.",
+            sourcePage: 3,
+            confidence: 0.88,
+            provenanceType: "normalized",
+          },
+        ],
+      },
+    ],
+  },
+  provenance: {
+    sections: {
+      vitals: {
+        status: "source_backed",
+        hasRaw: true,
+        items: [
+          {
+            value: "Systolic BP 130 mmHg",
+            sourceSection: "Vital Signs",
+            sourceExcerpt: "BP 130/85 mmHg",
+            sourcePage: 1,
+            confidence: 0.92,
+            provenanceType: "normalized",
+          },
+        ],
+      },
+      diagnosis: {
+        status: "source_backed",
+        hasRaw: true,
+        items: [
+          {
+            value: "Acute ST-Elevation Myocardial Infarction (STEMI)",
+            sourceSection: "Diagnosis",
+            sourceExcerpt: "Acute ST-Elevation Myocardial Infarction (STEMI)",
+            sourcePage: 1,
+            confidence: 0.95,
+            provenanceType: "quoted",
+          },
+        ],
+      },
+      medications: {
+        status: "source_backed",
+        hasRaw: true,
+        items: [
+          {
+            value: "Aspirin",
+            sourceSection: "Medication List",
+            sourceExcerpt: "Aspirin 100mg OD",
+            sourcePage: 2,
+            confidence: 0.92,
+            provenanceType: "normalized",
+          },
+        ],
+      },
+      labs: {
+        status: "source_backed",
+        hasRaw: true,
+        items: [
+          {
+            value: "Troponin I",
+            sourceSection: "Laboratory Results",
+            sourceExcerpt: "Troponin I: Peak 2.5 ng/mL",
+            sourcePage: 2,
+            confidence: 0.91,
+            provenanceType: "normalized",
+          },
+        ],
+      },
+      radiology: {
+        status: "source_backed",
+        hasRaw: true,
+        items: [
+          {
+            value: "Coronary Angiography",
+            sourceSection: "Radiology Findings",
+            sourceExcerpt: "LAD: 60% stenosis in mid-segment",
+            sourcePage: 3,
+            confidence: 0.9,
+            provenanceType: "normalized",
+          },
+        ],
+      },
+      treatment: {
+        status: "source_backed",
+        hasRaw: true,
+        items: [
+          {
+            value: "Post-procedure medical stabilization",
+            sourceSection: "Treatment / Management",
+            sourceExcerpt: "Continue aspirin, statin, beta blocker, ACE inhibitor, and diabetic medications.",
+            sourcePage: 3,
+            confidence: 0.88,
+            provenanceType: "normalized",
+          },
+        ],
+      },
+      handover: {
+        status: "mixed",
+        hasRaw: true,
+        items: [
+          {
+            value: "54-year-old male admitted with acute STEMI, treated with PCI, clinically stable for discharge, and requiring cardiology follow-up.",
+            sourceSection: "Clinical Handover",
+            sourceExcerpt: "Acute STEMI. Successful PCI. Stable for discharge.",
+            sourcePage: 3,
+            confidence: 0.8,
+            provenanceType: "derived",
+          },
+          {
+            value: "Discharge Note: Patient stable for discharge. All medications reconciled.",
+            sourceSection: "Discharge Note",
+            sourceExcerpt: "Patient stable for discharge. All medications reconciled.",
+            sourcePage: 4,
+            confidence: 0.9,
+            provenanceType: "normalized",
+          },
+        ],
+      },
+      followup: {
+        status: "source_backed",
+        hasRaw: true,
+        items: [
+          {
+            value: "Cardiology follow-up booked for April 15, 2026.",
+            sourceSection: "Follow-up / Review",
+            sourceExcerpt: "Cardiology follow-up booked for April 15, 2026.",
+            sourcePage: 4,
+            confidence: 0.87,
+            provenanceType: "normalized",
+          },
+        ],
+      },
+      discharge: {
+        status: "source_backed",
+        hasRaw: true,
+        items: [
+          {
+            value: "Heart-healthy, low-sodium diet",
+            sourceSection: "Discharge Instructions",
+            sourceExcerpt: "Heart-healthy, low-sodium diet",
+            sourcePage: 4,
+            confidence: 0.9,
+            provenanceType: "normalized",
+          },
+        ],
+      },
+    },
+  },
 };
+
+export type DashboardPatientData = typeof patientData;

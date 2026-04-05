@@ -1,0 +1,234 @@
+{
+  "sample": "Summary1 - Simple (Ear Pain)",
+  "expected": {
+    "patient": "Hema VAISHANAV",
+    "diagnosis": "B/L EAR PAIN",
+    "complexity": "Simple"
+  },
+  "optionA": {
+    "method": "Option A (Single-Shot)",
+    "latency_ms": 35685,
+    "tokens_used": 3647,
+    "data": {
+      "patient": {
+        "name": "Hema VAISHANAV",
+        "mrn": "MH001294157",
+        "age": 44,
+        "gender": "FEMALE"
+      },
+      "vitals": {
+        "bp": "110/70",
+        "pulse": 89,
+        "temp": "97.1",
+        "spo2": 97,
+        "resp_rate": 22,
+        "pain_score": 1,
+        "grbs": "NIL",
+        "ews_score": 1
+      },
+      "risk_scores": {
+        "fall_risk_score": 1,
+        "fall_risk_level": "LOW RISK",
+        "dvt_score": 2,
+        "dvt_level": "MODERATE RISK",
+        "pressure_ulcer_score": 23,
+        "pressure_level": "NO RISK",
+        "aspiration_score": 0,
+        "aspiration_level": "LOW RISK"
+      },
+      "functional_status": {
+        "bathing": "Independent",
+        "dressing": "Independent",
+        "eating": "Independent",
+        "walking": "Independent",
+        "toilet_use": "Independent"
+      },
+      "gcs": {
+        "eyes": null,
+        "motor": null,
+        "verbal": null,
+        "total": 15
+      },
+      "diagnosis": {
+        "principal": "B/L EAR PAIN",
+        "icd_code": null,
+        "secondary": [
+          "HYPOTHYROIDISM"
+        ]
+      },
+      "allergies": [
+        "UNKNOWN"
+      ],
+      "medications": [
+        "THYRONORM 100MCG 1-0-0",
+        "inj augmentin 1.2gm"
+      ],
+      "investigations_ordered": [],
+      "nursing_needs": [
+        "TO RESTORE THE NORMAL HEALTH STATUS OF THE PATIENT",
+        "PREVENT FALL"
+      ],
+      "diet": "NPO",
+      "summary": "Patient Hema VAISHANAV, 44F, presented with bilateral ear pain and a history of hypothyroidism. Vital signs were stable. Patient is NPO for surgery. Surgical site preparation included chlorhexidine bath and prophylactic antibiotics (inj augmentin). Patient is low risk for falls and aspiration, but moderate risk for DVT."
+    },
+    "raw_response": "{\n  \"patient\": {\n    \"name\": \"Hema VAISHANAV\",\n    \"mrn\": \"MH001294157\",\n    \"age\": 44,\n    \"gender\": \"FEMALE\"\n  },\n  \"vitals\": {\n    \"bp\": \"110/70\",\n    \"pulse\": 89,\n    \"temp\": \"97.1\",\n    \"spo2\": 97,\n    \"resp_rate\": 22,\n    \"pain_score\": 1,\n    \"grbs\": \"NIL\",\n    \"ews_score\": 1\n  },\n  \"risk_scores\": {\n    \"fall_risk_score\": 1,\n    \"fall_risk_level\": \"LOW RISK\",\n    \"dvt_score\": 2,\n    \"dvt_level\": \"MODERATE RISK\",\n    \"pressure_ulcer_score\": 23,\n    \"pressure_level\": \"NO RISK\",\n    \"aspiration_score\": 0,\n    \"aspiration_level\": \"LOW RISK\"\n  },\n  \"functional_status\": {\n    \"bathing\": \"Independent\",\n    \"dressing\": \"Independent\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Independent\",\n    \"toilet_use\": \"Independent\"\n  },\n  \"gcs\": {\n    \"eyes\": null,\n    \"motor\": null,\n    \"verbal\": null,\n    \"total\": 15\n  },\n  \"diagnosis\": {\n    \"principal\": \"B/L EAR PAIN\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"HYPOTHYROIDISM\"\n    ]\n  },\n  \"allergies\": [\n    \"UNKNOWN\"\n  ],\n  \"medications\": [\n    \"THYRONORM 100MCG 1-0-0\",\n    \"inj augmentin 1.2gm\"\n  ],\n  \"investigations_ordered\": [],\n  \"nursing_needs\": [\n    \"TO RESTORE THE NORMAL HEALTH STATUS OF THE PATIENT\",\n    \"PREVENT FALL\"\n  ],\n  \"diet\": \"NPO\",\n  \"summary\": \"Patient Hema VAISHANAV, 44F, presented with bilateral ear pain and a history of hypothyroidism. Vital signs were stable. Patient is NPO for surgery. Surgical site preparation included chlorhexidine bath and prophylactic antibiotics (inj augmentin). Patient is low risk for falls and aspiration, but moderate risk for DVT.\"\n}",
+    "score": 61,
+    "scoreDetails": {
+      "patient_name": "10/10",
+      "mrn": "5/5",
+      "vitals_complete": "2/4 fields",
+      "risk_scores_complete": "0/5 fields",
+      "risk_scores_accurate": "N/A (no ground truth)",
+      "functional_status": "5/5 ADL fields",
+      "diagnosis": "10/10",
+      "allergies": "5/5",
+      "medications": "5/5",
+      "clinical_reasoning": "0/5 (N/A for Option A)"
+    }
+  },
+  "optionB": {
+    "method": "Option B (Thinking/ReAct)",
+    "latency_ms": 150178,
+    "tokens_used": 17719,
+    "steps": [
+      {
+        "step": "Step 1: Document Analysis",
+        "tokens": 2148
+      },
+      {
+        "step": "Step 2: Demographics Extraction",
+        "tokens": 2201
+      },
+      {
+        "step": "Step 3: Risk Scores Extraction (with validation)",
+        "tokens": 3250
+      },
+      {
+        "step": "Step 4: Vitals Extraction (with clinical interpretation)",
+        "tokens": 2420
+      },
+      {
+        "step": "Step 5: Functional Status Extraction",
+        "tokens": 2188
+      },
+      {
+        "step": "Step 6: Clinical Data Extraction",
+        "tokens": 3007
+      },
+      {
+        "step": "Step 7: Final Assembly & Validation",
+        "tokens": 2505
+      }
+    ],
+    "data": {
+      "patient": {
+        "name": "Hema VAISHANAV",
+        "mrn": "MH001294157",
+        "age": 44,
+        "gender": "FEMALE"
+      },
+      "vitals": {
+        "bp": {
+          "systolic": 110,
+          "diastolic": 70
+        },
+        "pulse": 89,
+        "temperature": "97.1 F",
+        "spo2": 97,
+        "resp_rate": 22,
+        "pain_score": 1,
+        "grbs": 0
+      },
+      "risk_scores": {
+        "fall_risk": {
+          "score": 1,
+          "level": "LOW RISK"
+        },
+        "dvt_risk": {
+          "score": 2,
+          "level": "MODERATE RISK"
+        },
+        "pressure_ulcer_risk": {
+          "score": 23,
+          "level": "NO RISK"
+        },
+        "aspiration_risk": {
+          "score": 0,
+          "level": "LOW RISK"
+        },
+        "ews_score": 1,
+        "gcs": {
+          "eyes": null,
+          "motor": null,
+          "verbal": null,
+          "total": 15
+        }
+      },
+      "functional_status": {
+        "bathing": "Independent",
+        "dressing": "Independent",
+        "eating": "Independent",
+        "walking": "Independent",
+        "toilet_use": "Independent",
+        "overall_assistance": "None"
+      },
+      "diagnosis": {
+        "principal": "B/L EAR PAIN",
+        "icd_code": null,
+        "secondary": [
+          "HYPOTHYROIDISM"
+        ]
+      },
+      "allergies": [
+        "UNKNOWN"
+      ],
+      "medications": [
+        {
+          "name": "THYRONORM",
+          "dose": "100MCG",
+          "frequency": "1-0-0"
+        },
+        {
+          "name": "inj augmentin",
+          "dose": "1.2gm",
+          "frequency": "Not specified"
+        }
+      ],
+      "investigations": [],
+      "nursing_needs": [
+        "TO RESTORE THE NORMAL HEALTH STATUS OF THE PATIENT",
+        "PREVENT FALL",
+        "ANXIETY",
+        "ACTIVITY",
+        "MOBILIZATION"
+      ],
+      "validation_summary": {
+        "confidence_level": "high",
+        "inconsistencies_found": [
+          "Age range (41-60) mentioned in risk assessment vs specific age (44) in demographics; specific age prioritized."
+        ],
+        "missing_critical_fields": [
+          "GCS individual component scores (Eyes, Motor, Verbal)",
+          "ICD code for principal diagnosis",
+          "Specific frequency for inj augmentin"
+        ],
+        "data_quality_notes": "All risk scores were cross-verified and found consistent across sections. Vitals and functional status are clearly defined. GCS total is provided but components are absent from the source text."
+      }
+    },
+    "raw_thinking": "Step 1: Document Analysis:\n{\n  \"document_type\": \"Inpatient Nursing Initial Assessment / Medical Record\",\n  \"sections_identified\": [\n    \"Administrative Header\",\n    \"Pain Assessment\",\n    \"Fall Risk Assessment\",\n    \"Patient Acuity Tool\",\n    \"Surgical Site Infection Prevention Bundle\",\n    \"Nursing Initial Assessment\",\n    \"Vital Assessment\",\n    \"Functional Assessment (ADLs)\",\n    \"Nursing Care Plan/Needs\",\n    \"Risk Assessment Scores (DVT, Aspiration, Pressure)\",\n    \"General Physical Examination\",\n    \"Braden Scale (Pressure Ulcer Assessment)\"\n  ],\n  \"confidence\": \"high\",\n  \"extraction_strategy\": \"Use a key-value pair extraction approach. Since the document uses a structured form format, identify section headers first, then parse the subsequent lines for labels (e.g., 'Age :', 'BP :') and their corresponding values. For risk scores, target specific named scales like 'Braden Scale' or 'Fall Score' to ensure accuracy.\"\n}\n\n---\n\nStep 2: Demographics Extraction:\n{\n  \"name\": \"Hema VAISHANAV\",\n  \"mrn\": \"MH001294157\",\n  \"age\": 44,\n  \"gender\": \"FEMALE\",\n  \"confidence_notes\": \"Extracted name, MRN, age, and gender from the 'NURSING INITIAL ASSESSMENT - NEW' section. Age was explicitly listed as 44 in the assessment section, though a risk assessment questionnaire later mentioned a range (41-60). The specific age 44 is the most precise value provided.\",\n  \"sources\": [\n    \"NURSING INITIAL ASSESSMENT - NEW (Patient Name, MRN, Age, Gender)\"\n  ]\n}\n\n---\n\nStep 3: Risk Scores Extraction (with validation):\n{\n  \"fall_risk\": {\n    \"score\": 1,\n    \"level\": \"LOW RISK\",\n    \"verified\": true\n  },\n  \"dvt_risk\": {\n    \"score\": 2,\n    \"level\": \"MODERATE RISK\",\n    \"verified\": true\n  },\n  \"pressure_ulcer_risk\": {\n    \"score\": 23,\n    \"level\": \"NO RISK\",\n    \"verified\": true\n  },\n  \"aspiration_risk\": {\n    \"score\": 0,\n    \"level\": \"LOW RISK\",\n    \"verified\": true\n  },\n  \"ews_score\": 1,\n  \"gcs\": {\n    \"eyes\": null,\n    \"motor\": null,\n    \"verbal\": null,\n    \"total\": 15\n  },\n  \"validation_notes\": \"GCS total of 15 is explicitly stated, but individual E, M, V components are not provided in the text. All other risk scores (Fall, DVT, Pressure Ulcer, Aspiration) were cross-verified across different sections of the document and are consistent.\"\n}\n\n---\n\nStep 4: Vitals Extraction (with clinical interpretation):\n{\n  \"bp\": {\n    \"systolic\": 110,\n    \"diastolic\": 70,\n    \"status\": \"normal\"\n  },\n  \"pulse\": {\n    \"value\": 89,\n    \"status\": \"normal\"\n  },\n  \"temperature\": {\n    \"value\": 97.1,\n    \"unit\": \"F\"\n  },\n  \"resp_rate\": 22,\n  \"spo2\": {\n    \"value\": 97,\n    \"status\": \"normal\"\n  },\n  \"pain_score\": {\n    \"value\": 1,\n    \"scale\": 10\n  },\n  \"grbs\": {\n    \"value\": 0,\n    \"interpretation\": \"normal\"\n  },\n  \"abnormal_flags\": []\n}\n\n---\n\nStep 5: Functional Status Extraction:\n{\n  \"functional_status\": {\n    \"bathing\": \"Independent\",\n    \"dressing\": \"Independent\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Independent\",\n    \"toilet_use\": \"Independent\"\n  },\n  \"overall_assistance_needs\": \"None\",\n  \"mobility_notes\": \"Ambulant; Braden Scale Activity score indicates 'Walks Frequently'; Fall risk noted as Low Risk.\"\n}\n\n---\n\nStep 6: Clinical Data Extraction:\n{\n  \"diagnosis\": {\n    \"principal\": \"B/L EAR PAIN\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"HYPOTHYROIDISM\"\n    ]\n  },\n  \"allergies\": [\n    \"UNKNOWN\"\n  ],\n  \"medications\": [\n    {\n      \"name\": \"THYRONORM\",\n      \"dose\": \"100MCG\",\n      \"frequency\": \"1-0-0\"\n    },\n    {\n      \"name\": \"inj augmentin\",\n      \"dose\": \"1.2gm\",\n      \"frequency\": \"Not specified\"\n    }\n  ],\n  \"investigations\": [],\n  \"nursing_needs\": [\n    \"TO RESTORE THE NORMAL HEALTH STATUS OF THE PATIENT\",\n    \"PREVENT FALL\",\n    \"ANXIETY\",\n    \"ACTIVITY\",\n    \"MOBILIZATION\"\n  ]\n}\n\n---\n\nStep 7: Final Assembly & Validation:\n{\n  \"patient\": {\n    \"name\": \"Hema VAISHANAV\",\n    \"mrn\": \"MH001294157\",\n    \"age\": 44,\n    \"gender\": \"FEMALE\"\n  },\n  \"vitals\": {\n    \"bp\": {\n      \"systolic\": 110,\n      \"diastolic\": 70\n    },\n    \"pulse\": 89,\n    \"temperature\": \"97.1 F\",\n    \"spo2\": 97,\n    \"resp_rate\": 22,\n    \"pain_score\": 1,\n    \"grbs\": 0\n  },\n  \"risk_scores\": {\n    \"fall_risk\": {\n      \"score\": 1,\n      \"level\": \"LOW RISK\"\n    },\n    \"dvt_risk\": {\n      \"score\": 2,\n      \"level\": \"MODERATE RISK\"\n    },\n    \"pressure_ulcer_risk\": {\n      \"score\": 23,\n      \"level\": \"NO RISK\"\n    },\n    \"aspiration_risk\": {\n      \"score\": 0,\n      \"level\": \"LOW RISK\"\n    },\n    \"ews_score\": 1,\n    \"gcs\": {\n      \"eyes\": null,\n      \"motor\": null,\n      \"verbal\": null,\n      \"total\": 15\n    }\n  },\n  \"functional_status\": {\n    \"bathing\": \"Independent\",\n    \"dressing\": \"Independent\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Independent\",\n    \"toilet_use\": \"Independent\",\n    \"overall_assistance\": \"None\"\n  },\n  \"diagnosis\": {\n    \"principal\": \"B/L EAR PAIN\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"HYPOTHYROIDISM\"\n    ]\n  },\n  \"allergies\": [\n    \"UNKNOWN\"\n  ],\n  \"medications\": [\n    {\n      \"name\": \"THYRONORM\",\n      \"dose\": \"100MCG\",\n      \"frequency\": \"1-0-0\"\n    },\n    {\n      \"name\": \"inj augmentin\",\n      \"dose\": \"1.2gm\",\n      \"frequency\": \"Not specified\"\n    }\n  ],\n  \"investigations\": [],\n  \"nursing_needs\": [\n    \"TO RESTORE THE NORMAL HEALTH STATUS OF THE PATIENT\",\n    \"PREVENT FALL\",\n    \"ANXIETY\",\n    \"ACTIVITY\",\n    \"MOBILIZATION\"\n  ],\n  \"validation_summary\": {\n    \"confidence_level\": \"high\",\n    \"inconsistencies_found\": [\n      \"Age range (41-60) mentioned in risk assessment vs specific age (44) in demographics; specific age prioritized.\"\n    ],\n    \"missing_critical_fields\": [\n      \"GCS individual component scores (Eyes, Motor, Verbal)\",\n      \"ICD code for principal diagnosis\",\n      \"Specific frequency for inj augmentin\"\n    ],\n    \"data_quality_notes\": \"All risk scores were cross-verified and found consistent across sections. Vitals and functional status are clearly defined. GCS total is provided but components are absent from the source text.\"\n  }\n}",
+    "score": 89,
+    "scoreDetails": {
+      "patient_name": "10/10",
+      "mrn": "5/5",
+      "vitals_complete": "4/4 fields",
+      "risk_scores_complete": "4/5 fields",
+      "risk_scores_accurate": "N/A (no ground truth)",
+      "functional_status": "5/5 ADL fields",
+      "diagnosis": "10/10",
+      "allergies": "5/5",
+      "medications": "5/5",
+      "clinical_reasoning": "5/5"
+    }
+  },
+  "winner": "B"
+}

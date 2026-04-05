@@ -1,70 +1,77 @@
-import { patientData } from "@/data/patientData";
-import { User, Phone, Mail, AlertCircle, Calendar, Building2, Stethoscope } from "lucide-react";
+import type { DashboardPatientData } from "@/data/patientData";
+import { User, Calendar, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-const PatientHeader = () => {
-  const { patient, admission } = patientData;
+const PatientHeader = ({ data }: { data: DashboardPatientData }) => {
+  const { patient, admission } = data;
+
+  const formatDate = (value: string) => {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+
+    return parsed.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
 
   return (
-    <div className="bg-card rounded-xl border p-6 shadow-sm">
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Avatar */}
-        <div className="flex-shrink-0">
-          <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center">
-            <User className="w-10 h-10 text-primary" />
+    <div className="overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_8px_22px_rgba(15,23,42,0.035)]">
+      <div className="flex flex-col gap-3 px-5 py-3.5">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-slate-50">
+              <User className="h-6 w-6 text-primary" />
+            </div>
+
+            <div className="min-w-0">
+              <div className="mb-0.5 flex flex-wrap items-center gap-2">
+                <h1 className="truncate text-[24px] font-semibold leading-none text-slate-900">{patient.name}</h1>
+                <Badge variant="outline" className="h-6 rounded-md border-blue-200 bg-blue-50 px-2 font-mono text-[11px] text-blue-700">
+                  {patient.mrn}
+                </Badge>
+                <Badge className="h-6 rounded-md bg-amber-50 px-2 text-[11px] font-medium text-amber-700 hover:bg-amber-50">
+                  Active
+                </Badge>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-slate-500">
+                <span>{patient.age}y</span>
+                <span>•</span>
+                <span>{patient.gender}</span>
+                <span>•</span>
+                <span>{admission.department}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-5 rounded-xl bg-slate-50/80 px-4 py-2.5 xl:w-auto">
+            <div className="min-w-[66px]">
+              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">Admitted</p>
+              <p className="mt-0.5 text-[16px] font-semibold text-slate-800">{formatDate(admission.admissionDate)}</p>
+            </div>
+            <div className="min-w-[66px]">
+              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">Ward</p>
+              <p className="mt-0.5 text-[16px] font-semibold text-slate-800">{admission.ward || "Ward"}</p>
+            </div>
+            <div className="min-w-[66px]">
+              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-slate-400">Stay</p>
+              <p className="mt-0.5 text-[16px] font-semibold text-slate-800">{admission.lengthOfStay} days</p>
+            </div>
           </div>
         </div>
 
-        {/* Patient Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold text-foreground">{patient.name}</h1>
-            <Badge variant="outline" className="font-mono text-xs">MRN: {patient.mrn}</Badge>
-            <Badge className="bg-primary text-primary-foreground">{patient.bloodGroup}</Badge>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-slate-500">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-3.5 w-3.5 text-slate-400" />
+            <span>{admission.dischargeDate ? `Discharged ${formatDate(admission.dischargeDate)}` : "Not discharged yet"}</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <User className="w-3.5 h-3.5" />
-              <span>{patient.age} years, {patient.gender}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Building2 className="w-3.5 h-3.5" />
-              <span>{admission.department} · Ward {admission.ward}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Stethoscope className="w-3.5 h-3.5" />
-              <span>{admission.attendingPhysician.name}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{admission.lengthOfStay} days stay</span>
-            </div>
+          <div className="flex items-center gap-2">
+            <Building2 className="h-3.5 w-3.5 text-slate-400" />
+            <span>{admission.department} · {admission.ward || "Ward"}</span>
           </div>
         </div>
-
-        {/* Quick Info */}
-        <div className="flex-shrink-0 flex flex-col gap-2 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Phone className="w-3.5 h-3.5" />
-            <span>{patient.contact.phone}</span>
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Mail className="w-3.5 h-3.5" />
-            <span>{patient.contact.email}</span>
-          </div>
-          <div className="flex items-center gap-2 text-status-critical">
-            <AlertCircle className="w-3.5 h-3.5" />
-            <span className="text-xs">{admission.admissionType}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Admission Bar */}
-      <div className="mt-4 pt-4 border-t flex flex-wrap gap-6 text-xs text-muted-foreground">
-        <span><strong className="text-foreground">Admitted:</strong> Mar 15, 2026 08:30</span>
-        <span><strong className="text-foreground">Discharged:</strong> Mar 20, 2026 14:00</span>
-        <span><strong className="text-foreground">Admission Dx:</strong> {admission.admissionDiagnosis}</span>
-        <span><strong className="text-foreground">Report ID:</strong> {patientData.meta.reportId}</span>
       </div>
     </div>
   );

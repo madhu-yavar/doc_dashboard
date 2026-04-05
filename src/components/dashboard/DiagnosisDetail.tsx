@@ -1,13 +1,25 @@
-import { patientData } from "@/data/patientData";
+import type { DashboardPatientData } from "@/data/patientData";
 import StatusBadge from "./StatusBadge";
 import { ArrowLeft } from "lucide-react";
+import ProvenancePanel from "./ProvenancePanel";
+import SectionProvenanceBadge from "./SectionProvenanceBadge";
 
 interface DiagnosisDetailProps {
   onBack: () => void;
+  data: DashboardPatientData;
 }
 
-const DiagnosisDetail = ({ onBack }: DiagnosisDetailProps) => {
-  const { diagnosis } = patientData;
+const isGenericPrincipalDiagnosis = (value?: string) =>
+  /^(?:newborn|neonate|baby|infant|patient)$/i.test(String(value || "").trim());
+
+const DiagnosisDetail = ({ onBack, data }: DiagnosisDetailProps) => {
+  const { diagnosis } = data;
+  const genericPrincipal = isGenericPrincipalDiagnosis(diagnosis.principal.description);
+  const footerBits = [
+    diagnosis.principal.treatingPhysician ? `Clinician: ${diagnosis.principal.treatingPhysician}` : "",
+    diagnosis.principal.confirmedDate ? `Documented: ${diagnosis.principal.confirmedDate}` : "",
+  ].filter(Boolean);
+  const diagnosisProvenance = data.provenance.sections.diagnosis;
 
   return (
     <div className="space-y-6">
@@ -18,60 +30,89 @@ const DiagnosisDetail = ({ onBack }: DiagnosisDetailProps) => {
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-section-diagnosis/10 flex items-center justify-center text-lg">🩺</div>
         <h2 className="text-xl font-bold text-foreground">Diagnosis — Detailed View</h2>
+        <SectionProvenanceBadge status={diagnosisProvenance.status} />
       </div>
+
+      <ProvenancePanel status={diagnosisProvenance.status} items={diagnosisProvenance.items} />
 
       {/* Principal */}
       <div className="bg-card rounded-xl border p-5">
-        <h3 className="font-semibold text-sm mb-1 text-foreground">Principal Diagnosis</h3>
+        <h3 className="font-semibold text-sm mb-1 text-foreground">{genericPrincipal ? "Recorded Impression" : "Principal Diagnosis"}</h3>
         <p className="text-lg font-bold text-foreground mb-1">{diagnosis.principal.description}</p>
-        <p className="text-sm font-mono text-muted-foreground mb-4">ICD-10: {diagnosis.principal.code}</p>
+        {diagnosis.principal.code ? (
+          <p className="text-sm font-mono text-muted-foreground mb-4">ICD-10: {diagnosis.principal.code}</p>
+        ) : null}
 
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Clinical Presentation</h4>
-            <ul className="space-y-1.5 text-sm text-foreground">
-              {diagnosis.principal.presentation.map((p, i) => (
-                <li key={i} className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-status-critical" />{p}</li>
-              ))}
-            </ul>
+            {diagnosis.principal.presentation.length > 0 ? (
+              <ul className="space-y-1.5 text-sm text-foreground">
+                {diagnosis.principal.presentation.map((p, i) => (
+                  <li key={i} className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-status-critical" />{p}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">Not documented.</p>
+            )}
           </div>
           <div>
             <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Diagnostic Confirmation</h4>
-            <ul className="space-y-1.5 text-sm text-foreground">
-              {diagnosis.principal.confirmation.map((c, i) => (
-                <li key={i} className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-status-info" />{c}</li>
-              ))}
-            </ul>
+            {diagnosis.principal.confirmation.length > 0 ? (
+              <ul className="space-y-1.5 text-sm text-foreground">
+                {diagnosis.principal.confirmation.map((c, i) => (
+                  <li key={i} className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-status-info" />{c}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">Not documented.</p>
+            )}
           </div>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">Treating Physician: {diagnosis.principal.treatingPhysician} · Confirmed: {diagnosis.principal.confirmedDate}</p>
+        {footerBits.length > 0 ? (
+          <p className="mt-3 text-xs text-muted-foreground">{footerBits.join(" · ")}</p>
+        ) : null}
       </div>
 
       {/* Secondary */}
       <div className="bg-card rounded-xl border p-5">
         <h3 className="font-semibold text-sm mb-4 text-foreground">Secondary Diagnoses</h3>
-        <div className="space-y-4">
-          {diagnosis.secondary.map((d, i) => (
-            <div key={i} className="p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="font-semibold text-sm text-foreground">{i + 1}. {d.description}</span>
-                <span className="font-mono text-xs text-muted-foreground">ICD-10: {d.code}</span>
+        {diagnosis.secondary.length > 0 ? (
+          <div className="space-y-4">
+            {diagnosis.secondary.map((d, i) => (
+              <div key={i} className="p-4 rounded-lg bg-muted/50">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="font-semibold text-sm text-foreground">{i + 1}. {d.description}</span>
+                  {d.code ? <span className="font-mono text-xs text-muted-foreground">ICD-10: {d.code}</span> : null}
+                </div>
+                {d.status || d.history ? (
+                  <p className="text-sm text-muted-foreground">
+                    {[d.status, d.history].filter(Boolean).join(" · ")}
+                  </p>
+                ) : null}
               </div>
-              <p className="text-sm text-muted-foreground">Status: {d.status} · {d.history}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No secondary diagnoses were documented.</p>
+        )}
       </div>
 
       {/* Comorbidities */}
       <div className="bg-card rounded-xl border p-5">
         <h3 className="font-semibold text-sm mb-3 text-foreground">Comorbidities</h3>
-        <ul className="space-y-1.5 text-sm text-foreground">
-          {diagnosis.comorbidities.map((c, i) => (
-            <li key={i}>• {c}</li>
-          ))}
-        </ul>
-        <p className="mt-3 text-xs text-muted-foreground font-mono">DRG: {diagnosis.drg}</p>
+        {diagnosis.comorbidities.length > 0 ? (
+          <ul className="space-y-1.5 text-sm text-foreground">
+            {diagnosis.comorbidities.map((c, i) => (
+              <li key={i}>• {c}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">No chronic comorbidities were explicitly identified.</p>
+        )}
+        {diagnosis.drg ? (
+          <p className="mt-3 text-xs text-muted-foreground font-mono">DRG: {diagnosis.drg}</p>
+        ) : null}
       </div>
     </div>
   );

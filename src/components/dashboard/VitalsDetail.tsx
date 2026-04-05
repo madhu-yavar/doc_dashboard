@@ -1,103 +1,387 @@
-import { patientData } from "@/data/patientData";
+import type { DashboardPatientData } from "@/data/patientData";
 import StatusBadge from "./StatusBadge";
 import { ArrowLeft } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-
-const bpData = patientData.vitals.history.map((h) => {
-  const [sys, dia] = h.bp.split("/").map(Number);
-  return { date: h.date, systolic: sys, diastolic: dia, hr: h.hr, spo2: h.spo2 };
-});
+import ProvenancePanel from "./ProvenancePanel";
+import SectionProvenanceBadge from "./SectionProvenanceBadge";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+} from "recharts";
 
 interface VitalsDetailProps {
   onBack: () => void;
+  data: DashboardPatientData;
 }
 
-const VitalsDetail = ({ onBack }: VitalsDetailProps) => {
-  const { vitals } = patientData;
-  const v = vitals.latest;
+const DEFAULT_REFERENCE_RANGES = {
+  bp_systolic_high: 120,
+  bp_diastolic_high: 80,
+  pulse_min: 60,
+  pulse_max: 100,
+  spo2_min: 95,
+  temp_min: 97,
+  temp_max: 99,
+  resp_min: 12,
+  resp_max: 20,
+};
+
+const parseReferenceValues = (value?: string) => {
+  const matches = String(value || "").match(/\d+(\.\d+)?/g);
+  return matches ? matches.map(Number) : [];
+};
+
+const buildReferenceRanges = (referenceRanges?: Record<string, string>) => {
+  const systolic = parseReferenceValues(referenceRanges?.bp_systolic_normal);
+  const diastolic = parseReferenceValues(referenceRanges?.bp_diastolic_normal);
+  const pulse = parseReferenceValues(referenceRanges?.pulse_normal);
+  const spo2 = parseReferenceValues(referenceRanges?.spo2_normal);
+  const temp = parseReferenceValues(referenceRanges?.temperature_normal);
+  const resp = parseReferenceValues(referenceRanges?.resp_rate_normal);
+
+  return {
+    bp_systolic_high: systolic[0] || DEFAULT_REFERENCE_RANGES.bp_systolic_high,
+    bp_diastolic_high: diastolic[0] || DEFAULT_REFERENCE_RANGES.bp_diastolic_high,
+    pulse_min: pulse[0] || DEFAULT_REFERENCE_RANGES.pulse_min,
+    pulse_max: pulse[1] || DEFAULT_REFERENCE_RANGES.pulse_max,
+    spo2_min: spo2[0] || DEFAULT_REFERENCE_RANGES.spo2_min,
+    temp_min: temp[0] || DEFAULT_REFERENCE_RANGES.temp_min,
+    temp_max: temp[1] || DEFAULT_REFERENCE_RANGES.temp_max,
+    resp_min: resp[0] || DEFAULT_REFERENCE_RANGES.resp_min,
+    resp_max: resp[1] || DEFAULT_REFERENCE_RANGES.resp_max,
+    labels: {
+      systolic: referenceRanges?.bp_systolic_normal || "<120",
+      diastolic: referenceRanges?.bp_diastolic_normal || "<80",
+      pulse: referenceRanges?.pulse_normal || "60-100",
+      spo2: referenceRanges?.spo2_normal || "≥95%",
+      temp: referenceRanges?.temperature_normal || "97-99°F",
+      resp: referenceRanges?.resp_rate_normal || "12-20/min",
+    },
+  };
+};
+
+const getTrend = (values: number[]): "up" | "down" | "stable" => {
+  if (values.length < 2) return "stable";
+  const first = values[0];
+  const last = values[values.length - 1];
+  if (!first && !last) return "stable";
+  const diff = last - first;
+  const threshold = Math.max(Math.abs(first) * 0.03, 1);
+  if (Math.abs(diff) <= threshold) return "stable";
+  return diff > 0 ? "up" : "down";
+};
+
+const getDeltaLabel = (values: number[], trend: "up" | "down" | "stable") => {
+  if (values.length < 2) return "";
+  if (trend === "stable") return "Trend stable";
+  const first = values[0];
+  const last = values[values.length - 1];
+  if (!first) return "";
+  const delta = Math.round((Math.abs(last - first) / Math.abs(first)) * 100);
+  return `Trend ${trend === "up" ? "↑" : "↓"} ${delta}%`;
+};
+
+const buildDisplayTrendData = (data: Array<Record<string, number | string>>) => {
+  if (data.length === 0) return [];
+  if (data.length > 1) return data;
+
+  const single = data[0];
+  return Array.from({ length: 7 }, (_, index) => ({
+    ...single,
+    label: `P${index + 1}`,
+  }));
+};
+
+const renderTrendChart = ({
+  data,
+  dataKey,
+  color,
+  fill,
+  mode,
+  referenceValue,
+}: {
+  data: Array<Record<string, number | string>>;
+  dataKey: string;
+  color: string;
+  fill: string;
+  mode: "area" | "line" | "bar";
+  referenceValue?: number;
+}) => {
+  if (!data.length) return null;
+  const chartData = data.map((item) => ({
+    ...item,
+    reference: referenceValue ?? 0,
+  }));
+
+  if (mode === "bar") {
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }} barCategoryGap={8}>
+          <Bar dataKey="reference" fill="#e7eef3" radius={[4, 4, 0, 0]} />
+          <Bar dataKey={dataKey} fill={fill} radius={[4, 4, 0, 0]} maxBarSize={26} />
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  if (mode === "line") {
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+          {typeof referenceValue === "number" ? (
+            <Line type="monotone" dataKey="reference" stroke="#d7e0e7" strokeWidth={3} dot={false} />
+          ) : null}
+          <Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={3} dot={false} />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+        <defs>
+          <linearGradient id={`${dataKey}-fill`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={fill} stopOpacity={0.34} />
+            <stop offset="100%" stopColor={fill} stopOpacity={0.04} />
+          </linearGradient>
+        </defs>
+        {typeof referenceValue === "number" ? (
+          <Line type="monotone" dataKey="reference" stroke="#d7e0e7" strokeWidth={3} dot={false} />
+        ) : null}
+        <Area
+          type="monotone"
+          dataKey={dataKey}
+          stroke={color}
+          strokeWidth={3}
+          fill={`url(#${dataKey}-fill)`}
+          dot={false}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+};
+
+const VitalsDetail: React.FC<VitalsDetailProps> = ({ onBack, data }) => {
+  const { vitals } = data;
+  const vitalsProvenance = data.provenance.sections.vitals;
+  const latest = vitals.latest;
+  const referenceRanges = buildReferenceRanges(vitals.referenceRanges);
+
+  const chartData = vitals.history.map((entry: any, index: number) => {
+    const [sys, dia] = String(entry.bp || "").split("/").map(Number);
+    return {
+      label: entry.date || `R${index + 1}`,
+      systolic: sys || 0,
+      diastolic: dia || 0,
+      hr: entry.hr || 0,
+      spo2: entry.spo2 || 0,
+      temp: entry.temp || 0,
+      rr: entry.rr || latest.respiratoryRate.value || 0,
+    };
+  });
+  const displayChartData = buildDisplayTrendData(chartData);
+
+  const cards = [
+    {
+      key: "systolic",
+      label: "Systolic BP",
+      value: latest.bloodPressure.systolic,
+      unit: "mmHg",
+      reference: referenceRanges.labels.systolic,
+      trend: getTrend(chartData.map((item) => item.systolic as number)),
+      chartMode: "area" as const,
+      status:
+        latest.bloodPressure.systolic >= referenceRanges.bp_systolic_high ? "Elevated" : "Normal",
+      referenceValue: referenceRanges.bp_systolic_high,
+      valueKey: "systolic",
+    },
+    {
+      key: "diastolic",
+      label: "Diastolic BP",
+      value: latest.bloodPressure.diastolic,
+      unit: "mmHg",
+      reference: referenceRanges.labels.diastolic,
+      trend: getTrend(chartData.map((item) => item.diastolic as number)),
+      chartMode: "line" as const,
+      status:
+        latest.bloodPressure.diastolic >= referenceRanges.bp_diastolic_high ? "Elevated" : "Normal",
+      referenceValue: referenceRanges.bp_diastolic_high,
+      valueKey: "diastolic",
+    },
+    {
+      key: "heart-rate",
+      label: "Heart Rate",
+      value: latest.heartRate.value,
+      unit: "bpm",
+      reference: referenceRanges.labels.pulse,
+      trend: getTrend(chartData.map((item) => item.hr as number)),
+      chartMode: "bar" as const,
+      status:
+        latest.heartRate.value < referenceRanges.pulse_min || latest.heartRate.value > referenceRanges.pulse_max
+          ? "Review"
+          : "Normal",
+      referenceValue: referenceRanges.pulse_max,
+      valueKey: "hr",
+    },
+    {
+      key: "spo2",
+      label: "SpO2",
+      value: latest.spo2.value,
+      unit: "%",
+      reference: referenceRanges.labels.spo2,
+      trend: getTrend(chartData.map((item) => item.spo2 as number)),
+      chartMode: "area" as const,
+      status: latest.spo2.value < referenceRanges.spo2_min ? "Review" : "Normal",
+      referenceValue: referenceRanges.spo2_min,
+      valueKey: "spo2",
+    },
+    {
+      key: "temperature",
+      label: "Temperature",
+      value: latest.temperature.value,
+      unit: "°F",
+      reference: referenceRanges.labels.temp,
+      trend: getTrend(chartData.map((item) => item.temp as number)),
+      chartMode: "line" as const,
+      status:
+        latest.temperature.value < referenceRanges.temp_min || latest.temperature.value > referenceRanges.temp_max
+          ? "Review"
+          : "Normal",
+      referenceValue: (referenceRanges.temp_min + referenceRanges.temp_max) / 2,
+      valueKey: "temp",
+    },
+    {
+      key: "respiratory-rate",
+      label: "Respiratory Rate",
+      value: latest.respiratoryRate.value,
+      unit: "/min",
+      reference: referenceRanges.labels.resp,
+      trend: getTrend(chartData.map((item) => item.rr as number)),
+      chartMode: "bar" as const,
+      status:
+        latest.respiratoryRate.value < referenceRanges.resp_min ||
+        latest.respiratoryRate.value > referenceRanges.resp_max
+          ? "Elevated"
+          : "Normal",
+      referenceValue: referenceRanges.resp_max,
+      valueKey: "rr",
+    },
+  ];
+  const supportedCards = vitalsProvenance.hasRaw
+    ? cards.filter((card) =>
+        vitalsProvenance.items.some((item) =>
+          item.value.toLowerCase().startsWith(card.label.toLowerCase())
+        )
+      )
+    : cards;
+
+  return (
+    <div className="space-y-8">
       <button onClick={onBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="w-4 h-4" /> Back to Dashboard
       </button>
 
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-section-vitals/10 flex items-center justify-center text-lg">📊</div>
-        <h2 className="text-xl font-bold text-foreground">Vital Signs — Detailed History</h2>
-        <StatusBadge status="normal" label="Stable ✓" />
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-section-vitals/10 text-lg">📊</div>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-foreground">Vital Signs</h2>
+            <SectionProvenanceBadge status={vitalsProvenance.status} />
+            <StatusBadge
+              status={vitals.status === "warning" ? "warning" : "normal"}
+              label={vitals.status === "warning" ? "Review" : "Stable"}
+            />
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Patient discharge summary · {chartData.length > 1 ? `${chartData.length}-point trend` : "single documented reading"}
+        </p>
       </div>
 
-      {/* Current Vitals */}
-      <div className="bg-card rounded-xl border p-5">
-        <h3 className="font-semibold text-sm mb-4 text-foreground">Current Vitals</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {[
-            { label: "Blood Pressure", value: `${v.bloodPressure.systolic}/${v.bloodPressure.diastolic}`, unit: v.bloodPressure.unit },
-            { label: "Heart Rate", value: v.heartRate.value, unit: v.heartRate.unit },
-            { label: "Temperature", value: v.temperature.value, unit: v.temperature.unit },
-            { label: "Resp Rate", value: v.respiratoryRate.value, unit: v.respiratoryRate.unit },
-            { label: "SpO2", value: v.spo2.value, unit: v.spo2.unit },
-            { label: "Pain Score", value: `${v.painScore.value}/${v.painScore.scale}`, unit: "" },
-          ].map((item) => (
-            <div key={item.label} className="text-center p-3 rounded-lg bg-muted/50">
-              <div className="text-xs text-muted-foreground mb-1">{item.label}</div>
-              <div className="text-lg font-bold text-foreground">{item.value}</div>
-              <div className="text-xs text-muted-foreground">{item.unit}</div>
+      <ProvenancePanel status={vitalsProvenance.status} items={vitalsProvenance.items} />
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+        {supportedCards.map((card) => {
+          const deltaLabel = getDeltaLabel(
+            chartData.map((item) => item[card.valueKey as keyof typeof item] as number),
+            card.trend
+          );
+          const badgeClass =
+            card.status === "Normal"
+              ? "bg-emerald-50 text-emerald-700"
+              : card.status === "Elevated"
+                ? "bg-amber-50 text-amber-700"
+                : "bg-slate-100 text-slate-700";
+          const accentColor =
+            card.status === "Normal" ? "#1f9d74" : "#d97706";
+          const accentFill =
+            card.status === "Normal" ? "#9fdcc7" : "#fdc97b";
+
+          return (
+            <div key={card.key} className="rounded-[18px] border border-slate-200 bg-white p-4 shadow-[0_8px_18px_rgba(15,23,42,0.035)]">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  {card.label}
+                </div>
+                <div className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${badgeClass}`}>
+                  {card.status}
+                </div>
+              </div>
+
+              <div className="mb-2 flex items-end gap-1.5">
+                <div className="text-3xl font-semibold leading-none tracking-tight text-slate-900">
+                  {card.value}
+                </div>
+                <div className="pb-0.5 text-base text-slate-300">{card.unit}</div>
+              </div>
+
+              <div className="mb-3 flex items-center gap-2 text-[11px]">
+                <div className="text-slate-400">{card.reference}</div>
+                {deltaLabel ? (
+                  <div className={card.status === "Normal" ? "font-medium text-emerald-600" : "font-medium text-amber-600"}>
+                    {deltaLabel}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="h-16">
+                {renderTrendChart({
+                  data: displayChartData,
+                  dataKey: card.valueKey,
+                  color: accentColor,
+                  fill: accentFill,
+                  mode: card.chartMode,
+                  referenceValue: card.referenceValue,
+                })}
+              </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      {/* BP Trend */}
-      <div className="bg-card rounded-xl border p-5">
-        <h3 className="font-semibold text-sm mb-4 text-foreground">Blood Pressure Trend (Last 5 Days)</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={bpData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis domain={[60, 170]} tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-              <Line type="monotone" dataKey="systolic" stroke="hsl(var(--status-critical))" strokeWidth={2} dot={{ r: 4 }} name="Systolic" />
-              <Line type="monotone" dataKey="diastolic" stroke="hsl(var(--status-info))" strokeWidth={2} dot={{ r: 4 }} name="Diastolic" />
-            </LineChart>
-          </ResponsiveContainer>
+      {vitals.alerts.length > 0 ? (
+        <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Alert Timeline</h3>
+          <div className="space-y-2">
+            {vitals.alerts.map((alert, index) => (
+              <div key={index} className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2 text-sm">
+                <span className="min-w-fit text-xs font-mono text-slate-500">{alert.date}</span>
+                <StatusBadge
+                  status={alert.type === "warning" ? "warning" : alert.type === "info" ? "info" : "normal"}
+                  label={alert.type === "warning" ? "⚠" : alert.type === "info" ? "ℹ" : "✓"}
+                />
+                <span className="text-slate-700">{alert.message}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* Heart Rate Trend */}
-      <div className="bg-card rounded-xl border p-5">
-        <h3 className="font-semibold text-sm mb-4 text-foreground">Heart Rate Trend</h3>
-        <div className="h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={bpData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-              <YAxis domain={[50, 100]} tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-              <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
-              <Line type="monotone" dataKey="hr" stroke="hsl(var(--section-vitals))" strokeWidth={2} dot={{ r: 4 }} name="Heart Rate" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Alert Timeline */}
-      <div className="bg-card rounded-xl border p-5">
-        <h3 className="font-semibold text-sm mb-4 text-foreground">Alert Timeline</h3>
-        <div className="space-y-3">
-          {vitals.alerts.map((alert, i) => (
-            <div key={i} className="flex items-start gap-3 text-sm">
-              <span className="text-xs font-mono text-muted-foreground whitespace-nowrap mt-0.5">{alert.date}</span>
-              <StatusBadge
-                status={alert.type === "warning" ? "warning" : alert.type === "info" ? "info" : "normal"}
-                label={alert.type === "warning" ? "⚠️" : alert.type === "info" ? "💊" : "✅"}
-              />
-              <span className="text-foreground">{alert.message}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      ) : null}
     </div>
   );
 };

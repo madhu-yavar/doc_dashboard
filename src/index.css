@@ -1,59 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 215 25% 15%;
+    --background: 150 30% 97%;
+    --foreground: 155 26% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 155 26% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
+    --popover-foreground: 155 26% 14%;
 
-    --primary: 187 65% 38%;
+    --primary: 152 55% 34%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 25% 95%;
-    --secondary-foreground: 215 25% 25%;
+    --secondary: 150 24% 93%;
+    --secondary-foreground: 154 24% 24%;
 
-    --muted: 210 15% 93%;
-    --muted-foreground: 215 10% 50%;
+    --muted: 150 14% 92%;
+    --muted-foreground: 156 9% 42%;
 
-    --accent: 187 50% 92%;
-    --accent-foreground: 187 65% 28%;
+    --accent: 145 36% 90%;
+    --accent-foreground: 152 55% 24%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 187 65% 38%;
+    --border: 148 18% 87%;
+    --input: 148 18% 87%;
+    --ring: 152 55% 34%;
 
     --radius: 0.75rem;
 
     /* Clinical status colors */
-    --status-normal: 152 69% 41%;
+    --status-normal: 148 60% 34%;
     --status-warning: 38 92% 50%;
     --status-critical: 0 84% 60%;
-    --status-info: 217 91% 60%;
-    --status-neutral: 220 9% 46%;
+    --status-info: 170 60% 36%;
+    --status-neutral: 156 9% 40%;
     --status-pending: 38 92% 50%;
 
     /* Section accent colors */
-    --section-vitals: 187 65% 38%;
-    --section-diagnosis: 262 52% 47%;
-    --section-medications: 330 65% 50%;
-    --section-labs: 217 91% 60%;
-    --section-radiology: 0 72% 51%;
-    --section-treatment: 152 69% 41%;
-    --section-notes: 38 92% 50%;
-    --section-discharge: 187 45% 50%;
-    --section-followup: 262 40% 55%;
+    --section-vitals: 170 52% 35%;
+    --section-diagnosis: 144 47% 34%;
+    --section-medications: 154 42% 38%;
+    --section-labs: 162 46% 39%;
+    --section-radiology: 178 39% 34%;
+    --section-treatment: 148 60% 34%;
+    --section-notes: 84 44% 40%;
+    --section-discharge: 156 37% 42%;
+    --section-followup: 132 34% 40%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -129,6 +129,6 @@
   }
 
   .section-card {
-    @apply bg-card rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer;
+    @apply bg-card rounded-[18px] border border-slate-200 shadow-[0_6px_18px_rgba(15,23,42,0.035)] hover:-translate-y-0.5 hover:shadow-[0_10px_22px_rgba(15,23,42,0.06)] transition-all duration-200 cursor-pointer;
   }
 }
