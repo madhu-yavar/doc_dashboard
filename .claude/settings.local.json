@@ -108,7 +108,9 @@
       "Bash(curl:*)",
       "Bash(git push)",
       "Bash(node:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(docker build:*)"
     ]
   }
 }
