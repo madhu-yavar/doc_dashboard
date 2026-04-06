@@ -5,6 +5,8 @@ const AnswerComposerAgent = require("./answer_composer_agent.cjs");
 const SafetyGuardAgent = require("./safety_guard_agent.cjs");
 const ActionRouterAgent = require("./action_router_agent.cjs");
 const SessionMemoryAgent = require("./session_memory_agent.cjs");
+const VitalNormalityTool = require("../tools/chat/vital_normality.tool.cjs");
+const MedicationComparisonTool = require("../tools/chat/medication_comparison.tool.cjs");
 
 class DoctorAssistantAgent {
   constructor(config = {}) {
@@ -20,6 +22,8 @@ class DoctorAssistantAgent {
       readSessions: config.readSessions,
       writeSessions: config.writeSessions,
     });
+    this.vitalNormalityTool = new VitalNormalityTool(config);
+    this.medicationComparisonTool = new MedicationComparisonTool(config);
   }
 
   isAffirmative(message = "") {
@@ -51,6 +55,7 @@ class DoctorAssistantAgent {
         messages: [],
         confirmedActions: [],
         pendingExternalConsent: null,
+        pendingClarification: null,
       };
 
     const userMessage = String(message || "");
@@ -110,12 +115,34 @@ class DoctorAssistantAgent {
       }
     }
 
+    if (session.pendingClarification) {
+      const pending = session.pendingClarification;
+      executionMessage = `${pending.message}\nClarification: ${userMessage}`;
+      sectionContext = pending.sectionContext;
+      classification = {
+        ...pending.classification,
+        needsClarification: false,
+        clarificationPrompt: "",
+      };
+      session.pendingClarification = null;
+    }
+
     if (!classification) {
       const intentResult = await this.intentAgent.execute({ message: executionMessage, sectionContext });
       classification = intentResult.data;
     }
 
+    const preRecordResults = classification.intent === "vital_normality"
+      ? this.vitalNormalityTool.interpret(executionMessage, document)
+      : null;
+
     if (classification.needsClarification) {
+      session.pendingClarification = {
+        message: executionMessage,
+        sectionContext,
+        classification,
+        createdAt: new Date().toISOString(),
+      };
       const clarificationMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
@@ -218,6 +245,157 @@ class DoctorAssistantAgent {
     });
     const internalEvidence = recordResult.data.evidence || [];
 
+    const comparisonResolution =
+      classification.intent === "medication_comparison" || classification.intent === "medication_substitution"
+        ? this.medicationComparisonTool.resolve(executionMessage, internalEvidence)
+        : null;
+
+    if (comparisonResolution?.needsClarification) {
+      session.pendingClarification = {
+        message: executionMessage,
+        sectionContext,
+        classification,
+        createdAt: new Date().toISOString(),
+      };
+      const clarificationMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        answer: comparisonResolution.clarificationPrompt,
+        citations: [],
+        confidence: 60,
+        confidence_label: "low",
+        source_class: "internal",
+        proposed_actions: [],
+        decision_prompt: null,
+        createdAt: new Date().toISOString(),
+      };
+
+      session.messages.push({
+        id: crypto.randomUUID(),
+        role: "user",
+        content: userMessage,
+        createdAt: new Date().toISOString(),
+      });
+      session.messages.push(clarificationMessage);
+      session.updatedAt = new Date().toISOString();
+      await this.sessionAgent.save(session);
+
+      return {
+        success: true,
+        data: {
+          chatId: session.chatId,
+          documentId,
+          answer: comparisonResolution.clarificationPrompt,
+          source_class: "internal",
+          confidence: 60,
+          confidence_label: "low",
+          citations: [],
+          refused: false,
+          proposed_actions: [],
+          decision_prompt: null,
+        },
+        session,
+      };
+    }
+
+    if (preRecordResults) {
+      const safety = await this.safetyAgent.execute({
+        classification,
+        internalEvidence: preRecordResults.citations || internalEvidence,
+        externalEvidence: [],
+      });
+
+      const assistantMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        answer: preRecordResults.answer,
+        citations: preRecordResults.citations || [],
+        confidence: safety.data.confidence.score,
+        confidence_label: safety.data.confidence.label,
+        source_class: preRecordResults.source_class || "internal",
+        proposed_actions: [],
+        decision_prompt: null,
+        createdAt: new Date().toISOString(),
+      };
+
+      session.messages.push({
+        id: crypto.randomUUID(),
+        role: "user",
+        content: userMessage,
+        createdAt: new Date().toISOString(),
+      });
+      session.messages.push(assistantMessage);
+      session.updatedAt = new Date().toISOString();
+      await this.sessionAgent.save(session);
+
+      return {
+        success: true,
+        data: {
+          chatId: session.chatId,
+          documentId,
+          answer: preRecordResults.answer,
+          source_class: preRecordResults.source_class || "internal",
+          confidence: safety.data.confidence.score,
+          confidence_label: safety.data.confidence.label,
+          citations: preRecordResults.citations || [],
+          refused: false,
+          proposed_actions: [],
+          decision_prompt: null,
+        },
+        session,
+      };
+    }
+
+    if (comparisonResolution?.answer && classification.needsExternal && !externalConsentGranted && classification.requiresExternalConsent) {
+      // consent path continues below; comparisonResolution only provides local fallback context
+    } else if (comparisonResolution?.answer && !classification.needsExternal) {
+      const safety = await this.safetyAgent.execute({
+        classification,
+        internalEvidence: comparisonResolution.citations || internalEvidence,
+        externalEvidence: [],
+      });
+
+      const assistantMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        answer: comparisonResolution.answer,
+        citations: comparisonResolution.citations || [],
+        confidence: safety.data.confidence.score,
+        confidence_label: safety.data.confidence.label,
+        source_class: comparisonResolution.source_class || "internal",
+        proposed_actions: [],
+        decision_prompt: null,
+        createdAt: new Date().toISOString(),
+      };
+
+      session.messages.push({
+        id: crypto.randomUUID(),
+        role: "user",
+        content: userMessage,
+        createdAt: new Date().toISOString(),
+      });
+      session.messages.push(assistantMessage);
+      session.updatedAt = new Date().toISOString();
+      await this.sessionAgent.save(session);
+
+      return {
+        success: true,
+        data: {
+          chatId: session.chatId,
+          documentId,
+          answer: comparisonResolution.answer,
+          source_class: comparisonResolution.source_class || "internal",
+          confidence: safety.data.confidence.score,
+          confidence_label: safety.data.confidence.label,
+          citations: comparisonResolution.citations || [],
+          refused: false,
+          proposed_actions: [],
+          decision_prompt: null,
+        },
+        session,
+      };
+    }
+
     const externalResult = classification.needsExternal
       ? await this.externalAgent.execute({ query: executionMessage, classification })
       : { success: true, data: { evidence: [], source_class: "internal" } };
@@ -237,6 +415,12 @@ class DoctorAssistantAgent {
         answer: safety.data.refusal.reason,
         citations: [],
         source_class: externalEvidence.length ? "external" : "internal",
+      };
+    } else if ((classification.intent === "medication_comparison" || classification.intent === "medication_substitution") && !externalEvidence.length && comparisonResolution?.answer) {
+      answerPayload = {
+        answer: comparisonResolution.answer,
+        citations: comparisonResolution.citations || [],
+        source_class: comparisonResolution.source_class || "mixed",
       };
     } else if (classification.needsExternal && !externalEvidence.length) {
       const internalSummary = internalEvidence[0]?.value

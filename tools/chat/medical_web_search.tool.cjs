@@ -114,15 +114,26 @@ class MedicalWebSearchTool {
   async searchIcd(query) {
     const url = `https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?sf=code,name&terms=${this.encode(query)}&maxList=3`;
     const payload = await this.fetchJson(url);
-    const results = Array.isArray(payload?.[3]) ? payload[3] : [];
-    return results.map((row) => ({
-      value: `${row[0]} ${row[1]}`,
+    const codes = Array.isArray(payload?.[1]) ? payload[1] : [];
+    const displays = Array.isArray(payload?.[3]) ? payload[3] : [];
+
+    const rows = displays.length
+      ? displays.map((row, index) => {
+          if (Array.isArray(row)) return row;
+          return [codes[index] || "", row];
+        })
+      : codes.map((code, index) => [code, Array.isArray(payload?.[2]) ? payload[2][index] || "" : ""]);
+
+    return rows
+      .filter((row) => row && row[0] && row[1])
+      .map((row) => ({
+      value: `${row[0]} ${row[1]}`.trim(),
       title: row[1],
       snippet: `ICD-10-CM code ${row[0]}: ${row[1]}`,
       source_section: "NLM ICD-10-CM",
       url: `https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=${this.encode(query)}`,
       retrieved_at: new Date().toISOString(),
-      confidence: 0.82,
+      confidence: 0.9,
       label: `[NLM ICD-10-CM: ${row[0]}]`,
     }));
   }
@@ -199,23 +210,47 @@ class MedicalWebSearchTool {
   }
 
   async searchClinicalTrials(query) {
-    const url = `https://clinicaltrials.gov/api/query/study_fields?expr=${this.encode(query)}&fields=NCTId,BriefTitle,Condition&min_rnk=1&max_rnk=3&fmt=json`;
+    const url = `https://clinicaltrials.gov/api/v2/studies?query.term=${this.encode(query)}&pageSize=3`;
     const payload = await this.fetchJson(url);
-    const studies = payload?.StudyFieldsResponse?.StudyFields || [];
+    const studies = payload?.studies || [];
     return studies.map((item) => ({
-      value: item.BriefTitle?.[0] || item.NCTId?.[0] || "Clinical trial",
-      title: item.BriefTitle?.[0] || item.NCTId?.[0] || "Clinical trial",
-      snippet: `${item.Condition?.[0] || ""}`.trim(),
+      value:
+        item.protocolSection?.identificationModule?.briefTitle ||
+        item.protocolSection?.identificationModule?.nctId ||
+        "Clinical trial",
+      title:
+        item.protocolSection?.identificationModule?.briefTitle ||
+        item.protocolSection?.identificationModule?.nctId ||
+        "Clinical trial",
+      snippet: `${item.protocolSection?.conditionsModule?.conditions?.[0] || ""}`.trim(),
       source_section: "ClinicalTrials.gov",
-      url: item.NCTId?.[0] ? `https://clinicaltrials.gov/study/${item.NCTId[0]}` : "https://clinicaltrials.gov/",
+      url: item.protocolSection?.identificationModule?.nctId
+        ? `https://clinicaltrials.gov/study/${item.protocolSection.identificationModule.nctId}`
+        : "https://clinicaltrials.gov/",
       retrieved_at: new Date().toISOString(),
       confidence: 0.72,
-      label: `[ClinicalTrials: ${item.NCTId?.[0] || "Study"}]`,
+      label: `[ClinicalTrials: ${item.protocolSection?.identificationModule?.nctId || "Study"}]`,
     }));
   }
 
-  async search({ query, intent }) {
+  async searchBySource(source, query, intent) {
     if (!query) return [];
+
+    if (source === "icd") return this.searchIcd(query);
+    if (source === "openfda") return this.searchOpenFda(query);
+    if (source === "pubmed") return this.searchPubMed(query);
+    if (source === "clinicaltrials") return this.searchClinicalTrials(query);
+
+    return [];
+  }
+
+  async search({ query, intent, sources = [] }) {
+    if (!query) return [];
+
+    if (Array.isArray(sources) && sources.length) {
+      const settled = await Promise.allSettled(sources.map((source) => this.searchBySource(source, query, intent)));
+      return settled.flatMap((item) => (item.status === "fulfilled" ? item.value : []));
+    }
 
     if (intent === "diagnosis_code") return this.searchIcd(query);
     if (intent === "drug_safety") {

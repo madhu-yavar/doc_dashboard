@@ -1,0 +1,30 @@
+services:
+  doctor-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: doctor-dashboard:latest
+    container_name: doctor-dashboard
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - NODE_ENV=production
+      - PORT=8001
+      - GEMMA_URL=http://206.1.62.28:8000/v1/chat/completions
+      - GEMMA_MODEL=google/gemma-4-26B-A4B-it
+    volumes:
+      # Persist uploaded documents and storage
+      - ./server/storage:/app/server/storage
+    networks:
+      - doctor-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8001/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  doctor-network:
+    driver: bridge

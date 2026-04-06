@@ -3,153 +3,136 @@ DISCHARGE SUMMARY CHART NOTE
 Patient: Amit kumar DUTTA | MRN: MH018146883 | Age: 51 male
 Admission: Not documented | Discharge: Not documented
 
-SUBJECTIVE - HISTORY & PRESENTATION
-:
-The patient is a 51-year-old male with a known history of hypertension who presented with the sudden onset of facial asymmetry and significant left-sided weakness. According to the clinical history, there was no associated loss of consciousness, seizure activity, nausea, vomiting, or headache reported at the time of onset. The patient is currently bedbound and exhibits profound functional dependency, requiring complete assistance for all activities of daily living.
+CHIEF COMPLAINT & HISTORY
+The patient is a 51-year-old male with a known medical history of hypertension who presented with the sudden onset of facial asymmetry and significant left-sided weakness. There was no reported history of loss of consciousness, seizures, nausea, vomiting, or headache preceding the neurological deficits. Due to the acute nature of the facial drooping and limb weakness, the patient was admitted for urgent neurological evaluation and management of a suspected intracranial event. The patient is currently non-verbal/limited in expressing subjective concerns due to the severity of the neurological impairment and total dependence for all activities of daily living.
 
-OBJECTIVE - CLINICAL FINDINGS
-:
+PHYSICAL EXAMINATION
+**VITAL SIGNS:**
+*   **Blood Pressure:** Initial reading noted at 160/80 mmHg (elevated); currently stable.
+*   **Other Vitals:** [Insert specific values from {} if provided, otherwise: Stable per most recent monitoring].
 
-**VITAL SIGNS**
-*   **Blood Pressure:** 160/80 mmHg
-*   **GRBS:** 112 mg/dL
-
-**PHYSICAL EXAMINATION**
+**PHYSICAL EXAMINATION:**
 *   **Neurological:** 
-    *   **GCS:** 15 (E4, V5, M6)
-    *   **Motor Strength:** Significant deficit noted on the left side; Left Upper Limb (UL) 0/5, Left Lower Limb (LL) 2/5.
-    *   **Facial:** Facial asymmetry present.
-    *   **Clinical Diagnosis:** Findings consistent with (R) thalamo-capsular hemorrhage.
-*   **Musculoskeletal/Mobility:** Patient is bedbound; significant left-sided hemiparesis.
+    *   **GCS:** 15 (Eyes: 4, Verbal: 5, Motor: 6).
+    *   **Cranial Nerves:** Positive for facial asymmetry/drooping.
+    *   **Motor Strength:** Significant deficit noted on the left side; Left Upper Limb (LUL) strength 0/5; Left Lower Limb (LLL) strength 2/5.
+*   **Musculoskeletal/Mobility:** Patient is bedbound; limited range of motion secondary to neurological deficit.
 
-**LABORATORY/DIAGNOSTIC RESULTS**
-*   **Imaging:** Confirmed (R) thalamo-capsular hemorrhage.
-*   **Metabolic:** GRBS within acceptable limits at 112 mg/dL.
+**IMAGING:**
+*   **CT Scan (Brain):** Confirmed right thalamo-capsular bleed (intracerebral hemorrhage).
 
-**RISK ASSESSMENT SCORES**
-*   **Pressure Ulcer Risk (Braden Scale):** 10 (High Risk)
-*   **Fall Risk:** 16 (High Risk)
-*   **Aspiration Risk:** 6 (High Risk)
-*   **DVT Risk:** Identified as present (clinical requirement).
+**LABORATORY RESULTS:**
+*   [Insert specific lab values and reference ranges from [] if provided].
 
-**FUNCTIONAL STATUS & ADLs**
-*   **Overall Assistance Needs:** Complete assistance required; patient is totally dependent.
-*   **Activities of Daily Living (ADLs):**
-    *   **Bathing:** Dependent
-    *   **Dressing:** Dependent
-    *   **Eating:** Dependent
-    *   **Walking:** Dependent
-    *   **Toilet Use:** Dependent
-*   **Mobility Notes:** Patient is bedbound with activity score of 1; high risk for immobility-related complications.
+**RISK ASSESSMENT SCORES:**
+*   **Fall Risk:** 16 (High Risk).
+*   **Pressure Ulcer Risk (Braden Scale):** 10 (High Risk).
+*   **Aspiration Risk:** 6 (High Risk).
+*   **DVT Risk:** Not formally scored; clinical checklist indicates "YES."
 
-**CURRENT MEDICATIONS**
-*   **Mannitol:** For ICP control.
-*   **Stamlo:** For blood pressure management.
-*   **Lasix:** For edema and fluid management.
-*   **Levea:** (As prescribed).
+**FUNCTIONAL STATUS & ADLs:**
+*   **Overall Assistance Needs:** Complete assistance required for all activities of daily living.
+*   **Bathing:** Dependent.
+*   **Dressing:** Dependent.
+*   **Eating:** Dependent.
+*   **Walking:** Dependent (Bedbound).
+*   **Toilet Use:** Dependent.
 
-ASSESSMENT - DIAGNOSIS & CLINICAL JUDGMENT
-:
+**CURRENT MEDICATIONS:**
+*   Mannitol (IV)
+*   Lasix (IV)
+*   Levea
+*   Stamlo (Oral antihypertensive)
 
-**Assessment**
+ASSESSMENT
+**ASSESSMENT**
 
-**Primary Diagnosis:**
-Acute (R) thalamo-capsular hemorrhage (Hemorrhagic Stroke). The patient presented with a significant intracranial bleed localized to the right thalamo-capsular region, resulting in profound neurological impairment and motor deficits.
+**Principal Diagnosis:**
+Right thalamo-capsular hemorrhage (Intracerebral Hemorrhage). The patient presented with an acute bleed in the right thalamo-capsular region, resulting in significant neurological impairment. Clinical management has focused on conservative stabilization, aiming to control intracranial pressure (ICP) and prevent hematoma expansion.
 
 **Secondary Diagnoses & Comorbidities:**
-*   Hypertension (HTN) – likely primary driver of the hemorrhagic event.
-*   Hyperglycemia (managed with sliding scale insulin/Actrapid).
+*   Hypertension (HTN): Primary driver of the hemorrhagic event; requires strict titration and long-term management.
 
-**Clinical Status & Complexity:**
-The patient is of high clinical complexity, requiring multi-modal management involving neurological stabilization, metabolic control, and intensive nursing care. During the hospital course, the patient has been managed conservatively with a focus on intracranial pressure (ICP) control via Mannitol, blood pressure titration via Stamlo, and edema management via Lasix. While hemodynamically stable, the patient remains neurologically compromised.
+**Clinical Status & Judgment:**
+The patient’s clinical status is currently guarded. While hemodynamically stable, the patient exhibits severe neurological deficits secondary to the thalamo-capsular injury. The patient is currently bedbound and requires total assistance for activities of daily living.
 
-**Problem List:**
-*   **Neurological:** Hemiparesis and profound neurological deficit secondary to (R) thalamo-capsular bleed.
-*   **Functional:** Complete functional dependency; high fall risk (Score: 16).
-*   **Integumentary:** High risk for pressure ulcers (Braden Scale: 10).
-*   **Respiratory:** High risk for aspiration (Score: 6).
-*   **Vascular:** High risk for Deep Vein Thrombosis (DVT) due to immobility.
+**Problem List & Risk Analysis:**
+*   **Neurological:** Acute intracranial injury with risk of secondary swelling or re-bleeding.
+*   **Impaired Physical Mobility:** Patient is bedbound, increasing the risk of systemic decline.
+*   **High Risk for Pressure Ulcers:** Braden Scale score of 10 (High Risk).
+*   **High Risk for Aspiration:** Aspiration Risk Score of 6 (High Risk).
+*   **High Risk for Falls:** Fall Risk Score of 16 (High Risk).
+*   **High Risk for Venous Thromboembolism (DVT):** Due to prolonged immobility.
 
-**Prognosis & Severity:**
-The patient’s status is guarded. While the acute hemorrhagic event is being managed, the long-term neurological recovery is uncertain and highly dependent on the extent of tissue damage and the success of rehabilitative interventions. Severity is classified as high due to the risk of secondary complications.
+**Response to Treatment:**
+The patient has responded to conservative management with stabilization of blood pressure and controlled intracranial pressure. Pharmacological interventions including Mannitol, Lasix, Levea, and Stamlo have been utilized to manage cerebral edema and hypertension. The patient is currently tolerating oral intake, though aspiration precautions remain strictly necessary.
 
-**Plan**
+**Complexity & Prognosis:**
+*   **Complexity Level:** High. The patient requires intensive neurological monitoring, strict blood pressure titration, and multi-modal preventative care to mitigate secondary complications.
+*   **Prognosis:** Guarded, contingent upon the stabilization of neurological deficits and the prevention of secondary complications (pneumonia, pressure sores, or DVT).
 
-**1. Neurological & Medical Management:**
-*   Continue conservative management of the intracranial hemorrhage.
-*   Maintain strict blood pressure titration (Stamlo) to prevent hematoma expansion.
-*   Continue ICP management (Mannitol) and edema control (Lasix) as clinically indicated.
-*   Monitor blood glucose levels (CBS QDS) and administer insulin (Human Actrapid) as required.
+**PLAN**
 
-**2. Nursing Interventions & Complication Prevention:**
-*   **Pressure Ulcer Prevention:** Implement intensive repositioning schedule, use of Alfa mattress, and frequent skin assessments.
-*   **Aspiration Precautions:** Maintain head of bed (HOB) elevation at 20–30 degrees; monitor swallowing function closely.
-*   **DVT Prophylaxis:** Utilize Intermittent Pneumatic Compression (IPC) devices and encourage passive range of motion.
-*   **Safety:** Implement strict fall precautions due to high risk score.
+**Neurological & Hemodynamic Management:**
+*   Continue conservative management of ICP; monitor neurological status frequently.
+*   Strict blood pressure titration using Stamlo to maintain target hemodynamic parameters.
+*   Continue administration of Mannitol, Lasix, and Levea as prescribed.
 
-**3. Rehabilitative Plan:**
-*   Formal initiation/continuation of intensive Physiotherapy to address motor deficits and prevent joint contractures.
+**Preventative Nursing Interventions:**
+*   **Pressure Ulcer Prevention:** Utilize Alfa mattress; implement a strict repositioning schedule to address high Braden Scale risk.
+*   **DVT Prophylaxis:** Continuous use of Intermittent Pneumatic Compression (IPC) devices.
+*   **Aspiration Precautions:** Maintain head of bed (HOB) at 20–30 degrees; monitor oral intake closely due to high aspiration risk.
+*   **Safety Measures:** Implement strict fall precautions and bedside assistance due to high fall risk score.
 
-**4. Monitoring:**
-*   Frequent neurological observations (GCS, pupil reactivity, motor strength).
-*   Regular vital sign monitoring, with specific emphasis on blood pressure stability.
+**Rehabilitation & Support:**
+*   Initiate/continue Physiotherapy plan to address mobility deficits.
+*   Monitor Capillary Blood Glucose (CBS) QDS and manage with Insulin (Human Actrapid) as required.
+*   Maintain hydration via IV fluids as ordered.
 
-PLAN - DISCHARGE PLAN & RECOMMENDATIONS
-:
-
+PLAN
 **DISCHARGE MEDICATIONS**
-
-*IV Medications (to be administered via home nursing/infusion service as prescribed):*
-1. **Inj. Mannitol (20%)**: 100 mL, TDS, IV (For ICP control)
-2. **Inj. Lasix**: 20 mg, TDS, IV (Diuretic)
-3. **Inj. Levera**: 500 mg, BD, IV (Anticonvulsant)
-4. **Inj. Pan**: 40 mg, OD, IV (Proton pump inhibitor)
-5. **Inj. Zofer**: 4 mg, SOS, IV (Antiemetic)
-6. **Inj. Optineron**: 1 Amp, OD, IV via Drip (Nutritional support)
-
-*Subcutaneous (SC) Medications:*
-7. **Inj. Human Actrapid**: As per sliding scale/blood glucose monitoring, SOS, SC (Insulin)
-
-*Oral Medications:*
-8. **Tab. Stamlo**: 5 mg, OD & SOS (Max 10 mg/day), Oral (Antihypertensive)
+*   **INJ MANNITOL (20%):** 100 ML, TDS, IV (For ICP management)
+*   **INJ LASIX:** 20 MG, TDS, IV (Diuretic)
+*   **INJ LEVERA:** 500 MG, BD, IV (Antibiotic)
+*   **INJ PAN:** 40 MG, OD, IV (Gastric protection)
+*   **INJ ZOFER:** 4 MG, SOS, IV (Antiemetic)
+*   **INJ OPTINERON:** 1 Amp, OD, IV via Drip
+*   **TAB STAMLO:** 5 MG, OD & SOS (Max 10 MG/day), Oral (Antihypertensive)
+*   **INJ HUMAN ACTRAPID:** As per sliding scale, SOS, SC (Glucose management)
 
 **ACTIVITY & MOBILITY**
-* **Mobility:** Assist with all transfers. Patient is at high risk for falls and requires assistance with ambulation.
-* **Rehabilitation:** Continuation of daily physiotherapy sessions is mandatory to address motor deficits and prevent joint contractures.
-* **Positioning:** Frequent repositioning (every 2 hours) is required to prevent pressure ulcers.
+*   **Mobility:** Assist with all transfers; patient is a high fall risk.
+*   **Positioning:** Frequent repositioning required every 2 hours to prevent skin breakdown.
+*   **DVT Prophylaxis:** Continuous use of Intermittent Pneumatic Compression (IPC) devices as prescribed.
+*   **Pressure Ulcer Prevention:** Use of Alfa mattress for continuous pressure redistribution.
 
 **DIETARY INSTRUCTIONS**
-* **Consistency:** Follow aspiration precautions; diet should be as per speech therapy recommendation (e.g., soft/pureed/thickened liquids) to prevent aspiration pneumonia.
-* **Restrictions:** Low sodium diet to assist with blood pressure management. Monitor carbohydrate intake in conjunction with insulin administration.
-
-**NURSING INTERVENTIONS & PREVENTION**
-* **Pressure Ulcer Prevention:** Implement a strict turning schedule and use pressure-relieving mattresses.
-* **Aspiration Precautions:** Maintain head of bed (HOB) at 30–45 degrees during and after feeding.
-* **DVT Prophylaxis:** Encourage passive range of motion exercises and use of compression stockings as indicated.
-
-**MONITORING REQUIREMENTS**
-* **Neurological Status:** Frequent assessment of GCS, pupil reactivity, and limb strength.
-* **Vital Signs:** Close monitoring of blood pressure (titrate Stamlo as per protocol) and temperature.
-* **Glycemic Control:** Regular blood glucose monitoring due to Actrapid requirement.
+*   **Consistency:** Modified texture diet (e.g., soft or pureed) as indicated by swallow assessment.
+*   **Aspiration Precautions:** Maintain upright positioning (30-45 degrees) during all feedings and for 30 minutes post-meals to mitigate high aspiration risk.
 
 **PATIENT & CAREGIVER EDUCATION**
-* Medication adherence and administration techniques (specifically SC insulin).
-* Importance of blood pressure control and recognizing hypertensive symptoms.
-* Proper positioning and skin care techniques.
-* Aspiration risk awareness during feeding.
+*   **Neurological Monitoring:** Recognition of changes in consciousness or pupillary response.
+*   **Hemodynamic Control:** Importance of strict adherence to antihypertensive medication (Stamlo) to prevent ICP spikes.
+*   **Medication Safety:** Proper administration of subcutaneous insulin (Actrapid) and monitoring for hypoglycemia.
+*   **Safety Protocols:** Implementation of fall prevention measures and environmental safety.
 
-**RED FLAGS (Seek Immediate Medical Attention)**
-* Sudden change in consciousness or increased lethargy.
-* New onset of seizures or focal weakness.
-* Severe headache or projectile vomiting.
-* Sudden shortness of breath or chest pain.
-* Blood pressure readings exceeding prescribed limits.
+**RED FLAGS (Seek immediate medical attention if):**
+*   Sudden change in level of consciousness or extreme lethargy.
+*   Severe, worsening headache or projectile vomiting.
+*   New onset of seizure activity.
+*   Sudden shortness of breath or chest pain.
+*   Signs of skin breakdown (redness that does not blanch).
+*   Significant fluctuations in blood pressure or blood glucose levels.
 
-**FOLLOW-UP & HOME SERVICES**
-* **Follow-up:** Appointment with Neurology and Internal Medicine in [Insert Timeframe, e.g., 1 week].
-* **Home Health:** Home nursing services arranged for IV medication administration and wound/skin care monitoring.
+**FOLLOW-UP ARRANGEMENTS**
+*   **Neurology:** Follow-up appointment scheduled within [Insert Timeframe, e.g., 1 week] for ICP and neurological status review.
+*   **Cardiology/Internal Medicine:** Follow-up for blood pressure titration and hemodynamic stability.
+
+**HOME HEALTH / SERVICES**
+*   **Skilled Nursing:** Arranged for administration of IV medications (Mannitol, Lasix, Levea, etc.) and wound/skin assessment.
+*   **Physical/Occupational Therapy:** To be coordinated for mobility and safety training.
 
 _________________________
-Generated: 4/5/2026, 11:45:54 PM
+Generated: 4/6/2026, 9:18:37 AM
 Note: This chart note was automatically generated from the discharge summary document. Clinician review and signature required.
 Validation Summary: Confidence: 100% | Fields reviewed: 10/10

@@ -10,14 +10,14 @@ class QueryClassifierTool {
 
   buildMessages(message, sectionContext = "") {
     const schema = `{
-  "intent": "patient_fact" | "patient_trend" | "drug_safety" | "diagnosis_code" | "guideline_query" | "literature_query" | "mixed_context" | "clinical_explanation" | "action_request" | "out_of_scope",
+  "intent": "patient_fact" | "patient_trend" | "drug_safety" | "diagnosis_code" | "guideline_query" | "literature_query" | "mixed_context" | "clinical_explanation" | "vital_normality" | "medication_comparison" | "medication_substitution" | "action_request" | "out_of_scope",
   "needsInternal": boolean,
   "needsExternal": boolean,
   "isActionRequest": boolean,
   "sectionHints": string[],
   "outOfScope": boolean,
   "factField": "patient_name" | "mrn" | "age" | "gender" | "admission_date" | "discharge_date" | "principal_diagnosis" | null,
-  "responseStyle": "default" | "factoid" | "mixed_explanatory",
+  "responseStyle": "default" | "factoid" | "mixed_explanatory" | "comparison",
   "needsClarification": boolean,
   "clarificationPrompt": string,
   "requiresExternalConsent": boolean
@@ -34,6 +34,8 @@ Routing policy:
 - Patient-specific facts from the chart: internal only.
 - General medical knowledge beyond the chart: external search allowed.
 - Drug composition, ingredients, formulation, pack size, market availability: usually external search.
+- Questions like "is the BP normal?" or "is pulse normal?" are vital_normality and should stay internal if the chart has the measurement.
+- Questions like "is X an alternative to Y?" or "can I replace X with Y?" are medication_comparison or medication_substitution.
 - If the drug/question is ambiguous, ask clarification first.
 - If the user wants general explanation of a patient-specific issue with a concrete concern, use clinical_explanation + mixed_explanatory.
 - If the explanatory question is vague and lacks the concrete concern, ask clarification.
@@ -58,6 +60,18 @@ Output: {"intent":"drug_safety","needsInternal":true,"needsExternal":false,"isAc
 User: "The patient's bp is less than reference, why?"
 Context: vitals
 Output: {"intent":"clinical_explanation","needsInternal":true,"needsExternal":true,"isActionRequest":false,"sectionHints":["vitals"],"outOfScope":false,"factField":null,"responseStyle":"mixed_explanatory","needsClarification":false,"clarificationPrompt":"","requiresExternalConsent":false}
+
+User: "Is the BP normal for the patient?"
+Context: vitals
+Output: {"intent":"vital_normality","needsInternal":true,"needsExternal":false,"isActionRequest":false,"sectionHints":["vitals"],"outOfScope":false,"factField":null,"responseStyle":"default","needsClarification":false,"clarificationPrompt":"","requiresExternalConsent":false}
+
+User: "Is PAN D an alternative to PAN 40?"
+Context: medications
+Output: {"intent":"medication_comparison","needsInternal":true,"needsExternal":true,"isActionRequest":false,"sectionHints":["medications"],"outOfScope":false,"factField":null,"responseStyle":"comparison","needsClarification":false,"clarificationPrompt":"","requiresExternalConsent":true}
+
+User: "Will PAN D be an alternative?"
+Context: medications
+Output: {"intent":"medication_comparison","needsInternal":true,"needsExternal":false,"isActionRequest":false,"sectionHints":["medications"],"outOfScope":false,"factField":null,"responseStyle":"comparison","needsClarification":true,"clarificationPrompt":"Which current medication are you comparing it with? Please name both medicines, for example: Is PAN D an alternative to PAN 40?","requiresExternalConsent":false}
 
 User: "Why is this happening?"
 Context: none
@@ -100,6 +114,9 @@ Return JSON only.`;
       "literature_query",
       "mixed_context",
       "clinical_explanation",
+      "vital_normality",
+      "medication_comparison",
+      "medication_substitution",
       "action_request",
       "out_of_scope",
     ]);
@@ -113,7 +130,7 @@ Return JSON only.`;
       "principal_diagnosis",
       null,
     ]);
-    const validStyles = new Set(["default", "factoid", "mixed_explanatory"]);
+    const validStyles = new Set(["default", "factoid", "mixed_explanatory", "comparison"]);
 
     const result = this.defaultResult();
     result.intent = validIntents.has(raw.intent) ? raw.intent : result.intent;

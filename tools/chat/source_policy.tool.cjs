@@ -6,6 +6,7 @@ class SourcePolicyTool {
     this.allowedDomains = [
       "clinicaltables.nlm.nih.gov",
       "api.fda.gov",
+      "dailymed.nlm.nih.gov",
       "eutils.ncbi.nlm.nih.gov",
       "clinicaltrials.gov",
       "pubmed.ncbi.nlm.nih.gov",

@@ -52,6 +52,107 @@ class AnswerComposerAgent {
     };
   }
 
+  firstSentence(text = "", maxLength = 220) {
+    const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+    if (!cleaned) return "";
+    const sentence = cleaned.match(/.+?[.!?](?:\s|$)/)?.[0]?.trim() || cleaned;
+    return sentence.length > maxLength ? `${sentence.slice(0, maxLength - 1).trim()}…` : sentence;
+  }
+
+  bestExternalSummary(item = {}) {
+    const preferred = [item.value, item.source_excerpt].map((value) => String(value || "").trim()).filter(Boolean);
+    for (const candidate of preferred) {
+      const sentence = this.firstSentence(candidate);
+      if (sentence) return sentence;
+    }
+    return "";
+  }
+
+  extractIcdCode(externalEvidence = []) {
+    const pattern = /\b[A-TV-Z][0-9][0-9AB](?:\.[0-9A-Z]{1,4})?\b/;
+    for (const item of externalEvidence) {
+      const match = `${item.label || ""} ${item.value || ""} ${item.source_excerpt || ""}`.match(pattern);
+      if (match) return match[0];
+    }
+    return "";
+  }
+
+  buildClinicalExplanationAnswer(message, internalEvidence = [], externalEvidence = []) {
+    const lower = String(message || "").toLowerCase();
+    const topInternal = internalEvidence[0];
+    const topExternal = externalEvidence[0];
+    const internalLine = topInternal?.value ? `Patient Record: ${topInternal.value}.` : "Patient Record: No chart-based explanation is documented.";
+
+    if (!topExternal) {
+      return null;
+    }
+
+    if ((lower.includes("low") || lower.includes("less than") || lower.includes("below")) && /\b1[4-9]\d\b|\b160\b|\b170\b|\b180\b/.test(String(topInternal?.value || ""))) {
+      return {
+        answer: `${internalLine} The chart does not show low blood pressure in this record. External Reference: Common causes of hypotension in adults include dehydration, sepsis, blood loss, medication effects, and endocrine or cardiac causes.`,
+        citations: this.citationAssembler.assemble([topInternal, ...externalEvidence], { max: 4 }),
+        source_class: "mixed",
+      };
+    }
+
+    const externalLine = this.bestExternalSummary(topExternal);
+    if (!externalLine) return null;
+
+    return {
+      answer: `${internalLine}\n\nExternal Reference: ${externalLine}`,
+      citations: this.citationAssembler.assemble([topInternal, ...externalEvidence].filter(Boolean), { max: 4 }),
+      source_class: topInternal ? "mixed" : "external",
+    };
+  }
+
+  buildDrugKnowledgeAnswer(message, internalEvidence = [], externalEvidence = []) {
+    if (!externalEvidence.length) return null;
+
+    const topInternal = internalEvidence[0];
+    const topExternal = externalEvidence[0];
+    const lower = String(message || "").toLowerCase();
+    const internalLine = topInternal?.value ? `Patient Record: ${topInternal.value}.` : "";
+    const externalLine = this.bestExternalSummary(topExternal);
+
+    if (!externalLine) return null;
+
+    let answer = "";
+    if (/\b(composition|ingredient)\b/.test(lower)) {
+      answer = `${internalLine ? `${internalLine}\n\n` : ""}External Reference: ${externalLine}`;
+    } else if (/\b(come with|come in|strength|dose|dosage|syrup|tablet|injection|availability|market)\b/.test(lower)) {
+      answer = `${internalLine ? `${internalLine}\n\n` : ""}External Reference: ${externalLine}`;
+    } else if (/\b(what does|what is .* used for|why do we need|role)\b/.test(lower)) {
+      answer = `${internalLine ? `${internalLine}\n\n` : ""}External Reference: ${externalLine}`;
+    } else {
+      answer = `${internalLine ? `${internalLine}\n\n` : ""}External Reference: ${externalLine}`;
+    }
+
+    return {
+      answer,
+      citations: this.citationAssembler.assemble([topInternal, ...externalEvidence].filter(Boolean), { max: 4 }),
+      source_class: topInternal ? "mixed" : "external",
+    };
+  }
+
+  buildCodingAnswer(message, externalEvidence = []) {
+    if (!externalEvidence.length) return null;
+
+    const code = this.extractIcdCode(externalEvidence);
+    const top = externalEvidence[0];
+    if (!code) return null;
+
+    const title = this.firstSentence(top.value || top.source_excerpt || "").replace(/^[A-TV-Z][0-9][0-9AB](?:\.[0-9A-Z]{1,4})?\s*/, "").trim();
+    const answer = title
+      ? `External Reference: The ICD-10-CM code for ${title} is ${code}.`
+      : `External Reference: The ICD-10-CM code is ${code}.`;
+
+    return {
+      answer,
+      citations: this.citationAssembler.assemble(externalEvidence, { max: 3 }),
+      source_class: "external",
+    };
+  }
+
   async execute({ message, classification, internalEvidence = [], externalEvidence = [], chatHistory = [] }) {
     if (classification?.responseStyle === "factoid" && internalEvidence.length && !externalEvidence.length) {
       const factAnswer = this.buildFactAnswer(classification, internalEvidence);
@@ -60,6 +161,39 @@ class AnswerComposerAgent {
           success: true,
           step: "answer_composer",
           data: factAnswer,
+        };
+      }
+    }
+
+    if (classification?.intent === "diagnosis_code" && externalEvidence.length) {
+      const codingAnswer = this.buildCodingAnswer(message, externalEvidence);
+      if (codingAnswer) {
+        return {
+          success: true,
+          step: "answer_composer",
+          data: codingAnswer,
+        };
+      }
+    }
+
+    if (classification?.intent === "clinical_explanation" && externalEvidence.length) {
+      const explanationAnswer = this.buildClinicalExplanationAnswer(message, internalEvidence, externalEvidence);
+      if (explanationAnswer) {
+        return {
+          success: true,
+          step: "answer_composer",
+          data: explanationAnswer,
+        };
+      }
+    }
+
+    if (classification?.intent === "drug_safety" && externalEvidence.length) {
+      const drugAnswer = this.buildDrugKnowledgeAnswer(message, internalEvidence, externalEvidence);
+      if (drugAnswer) {
+        return {
+          success: true,
+          step: "answer_composer",
+          data: drugAnswer,
         };
       }
     }
