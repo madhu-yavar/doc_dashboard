@@ -384,45 +384,129 @@ DISCHARGE SUMMARY CHART NOTE
 Patient: [Name] | MRN: [MRN] | Age: [Age] [Gender]
 Admission: [Date] | Discharge: [Date] | LOS: [N] days
 
-SUBJECTIVE (S) - HISTORY & PRESENTATION
-Write a detailed narrative including:
-- Chief complaint and reason for admission
-- Present illness and symptom progression
-- Patient's reported symptoms and concerns
-- History of present illness in chronological order
-- Past medical history relevant to current admission
-- Patient's perspective on their condition
+CHIEF COMPLAINT & HISTORY
+Write a comprehensive narrative (4-6 sentences minimum) including:
+- Chief complaint: detailed description of what brought the patient to the hospital
+- Duration of symptoms before presentation (specific timeframes)
+- Present illness: chronological progression from onset to admission
+- Patient's reported symptoms with specific details (location, severity, character)
+- Review of systems relevant to the chief complaint
+- Past medical history: ALL comorbidities that are relevant (HTN, DM, CKD, etc.)
+- Medications on admission
+- Allergies if any
+- Social history as relevant (smoking, alcohol, functional baseline)
 
-OBJECTIVE (O) - CLINICAL FINDINGS
-Document all measurable clinical data:
-- Vitals at discharge: BP, HR, RR, SpO2, Temp, GCS
-- Physical examination findings (pertinent positives and negatives)
-- Laboratory results (highlight abnormal values with reference ranges)
-- Diagnostic imaging/procedure results
-- Risk assessment scores: Fall Risk, Pressure Ulcer Risk, DVT Risk, EWS
-- Functional status: ADL assessment, mobility, assistance needs
+PHYSICAL EXAMINATION
+Document ALL clinical findings in detail:
 
-ASSESSMENT (A) - DIAGNOSIS & CLINICAL JUDGMENT
-Provide clinical synthesis:
-- Principal diagnosis with ICD code if available
-- Secondary diagnoses/comorbidities
-- Clinical impression of patient's condition
-- Response to treatment and hospital course
-- Prognosis and discharge disposition
-- Severity classification (stable, guarded, critical)
+**VITAL SIGNS**
+- Blood Pressure: systolic/diastolic mmHg with interpretation (normal/elevated/hypotensive)
+- Heart Rate: bpm with rhythm interpretation
+- Respiratory Rate: breaths/min, work of breathing
+- SpO2: % on room air or supplementation
+- Temperature: °C/F
+- Pain Score: /10
+- GCS: E___ V___ M___ (if applicable)
 
-PLAN (P) - DISCHARGE PLAN & RECOMMENDATIONS
-Detail discharge planning:
-- Discharge medications (name, dose, frequency, route) in organized list
-- Activity restrictions and mobility requirements
-- Dietary instructions
-- Patient education topics covered
-- Wound care instructions if applicable
-- Red flags warning signs to watch for
-- Follow-up appointments (specialty, date, time, location)
-- Home health/services arranged
-- Medications to continue/discontinue
-- Pending tests or consultations
+**GENERAL APPEARANCE**
+- Patient's appearance, level of consciousness, distress level
+
+**SYSTEM EXAMINATION**
+- HEENT: pertinent findings
+- Cardiovascular: sounds, murmurs, peripheral perfusion
+- Respiratory: breath sounds, work of breathing, cough
+- Abdomen: soft/tender, organomegaly if any
+- Musculoskeletal: range of motion, strength, symmetry
+- Neurological: motor strength, reflexes, sensation, cranial nerves
+- Skin: integrity, wounds, pressure areas
+
+**LABORATORY RESULTS** (list ALL abnormal values with reference ranges)
+- Hematology: Hb, WBC, platelets
+- Chemistry: electrolytes, renal function, liver function, blood glucose
+- ABG if available: pH, pCO2, pO2, HCO3
+- Other relevant labs
+
+**IMAGING/PROCEDURES**
+- CT/MRI/X-ray findings with detailed reports
+- Any procedures performed with outcomes
+
+**RISK ASSESSMENT SCORES** (with actual numbers and interpretation)
+- Fall Risk: score (High/Moderate/Low Risk)
+- Pressure Ulcer Risk (Braden): score (High/Moderate/Low Risk)
+- DVT Risk: score or assessment
+- aspiration risk: score if applicable
+- Other relevant risk scores
+
+**FUNCTIONAL STATUS**
+- ADLs: specific status for bathing, dressing, eating, toileting, transferring, ambulation
+- Mobility: bedbound, walker-assisted, independent, etc.
+- Communication ability
+
+ASSESSMENT
+Provide comprehensive clinical synthesis (4-6 sentences minimum):
+
+**PRIMARY DIAGNOSIS**
+- Full diagnosis with ICD-10 code if available
+- Pathophysiology brief explanation if relevant
+- Severity classification
+
+**SECONDARY DIAGNOSES**
+- List ALL comorbidities
+- Each with brief clinical relevance
+
+**CLINICAL COURSE**
+- What happened during hospital stay
+- Treatments provided and response
+- Any complications or interventions
+- Current clinical status: improving, stable, or deteriorating
+
+**PROGNOSIS**
+- Expected recovery trajectory
+- Short-term prognosis
+- Long-term considerations
+
+**DISCHARGE DISPOSITION**
+- Rationale for discharge destination
+- Home vs facility needs
+
+PLAN
+Provide detailed discharge planning:
+
+**MEDICATIONS** (Complete list with ALL details)
+- Generic name, Brand name (if applicable), DOSE, FREQUENCY, ROUTE, INDICATION
+- Example: Tab. Amlodipine 5 mg OD Oral - For hypertension
+- Group by: IV medications, Oral medications, PRN medications
+
+**DIET**
+- Specific diet ordered (e.g., Diabetic, Renal, Regular, Soft, NPO)
+- Fluid restrictions if any
+- Tube feeding if applicable
+
+**ACTIVITY**
+- Activity level ordered: bedrest, chair, ambulation ad lib, etc.
+- Assistive devices required
+- Physical therapy frequency and goals
+- Occupational therapy recommendations
+
+**NURSING CARE**
+- Wound care: specific instructions
+- IV therapy: type, duration, site
+- Monitoring requirements: vitals frequency, I&O
+- Fall precautions specific measures
+- Pressure ulcer prevention: schedule, mattress, repositioning
+
+**PATIENT EDUCATION TOPICS COVERED**
+- List ALL topics covered with patient/family
+- Include specific instructions given
+- Return precautions
+
+**FOLLOW-UP**
+- Specific appointments: specialty clinic, date/time if scheduled
+- Tests pending
+- Referrals made (PT, OT, Home Health, Specialty)
+
+**RED FLAGS** (Specific signs that require immediate medical attention)
+- List at least 5-7 specific red flags with clinical context
 
 _________________________
 Generated: [Current date]
@@ -432,13 +516,14 @@ Validation Summary: {{validationSummary}}
 CRITICAL QUALITY RULES:
 - NEVER copy generic text like "The document contains" or "PDF shows"
 - Write as if YOU are the attending physician documenting
-- Each SOAP section must be complete with substantive content
+- Each SOAP section must be complete with substantive content (minimum 150 words per section)
 - Use specific clinical details, not vague statements
-- Include actual values from lab results and vitals
-- Format medications as organized list with doses
-- Include all relevant diagnoses from the source data
-- Flag uncertain information with "[VERIFY]"
-- Do not include information without source citations
+- Include actual values from lab results and vitals with units
+- Format medications as organized list with doses, frequency, route
+- Include ALL relevant diagnoses from the source data
+- List ALL medications from the source data
+- If information is not available, state "Not documented" rather than omitting
+- Use complete sentences and proper medical terminology
 
 Return the chart note as plain text. Do NOT include markdown formatting or JSON.`
     }

@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inter-Agent Data Flow - Doctor Dashboard</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --surface-alt: #eef3f6;
+      --ink: #18303f;
+      --muted: #577082;
+      --border: #d3dee6;
+      --agent: #0f6d8f;
+      --skill: #2c8a62;
+      --tool: #94570f;
+      --store: #6b52a3;
+      --external: #ad3a4f;
+      --entry: #1b4d73;
+      --shadow: 0 16px 36px rgba(18, 44, 60, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #f7fafc 0%, #eef4f7 100%);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      width: min(1400px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+
+    .hero {
+      background:
+        radial-gradient(circle at top left, rgba(15, 109, 143, 0.18), transparent 34%),
+        radial-gradient(circle at top right, rgba(44, 138, 98, 0.14), transparent 30%),
+        var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px 28px 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 2.15rem;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+
+    .hero p {
+      margin: 6px 0;
+      color: var(--muted);
+      max-width: 980px;
+    }
+
+    .hero .meta {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .chip,
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.86);
+      color: var(--ink);
+      font-size: 0.92rem;
+    }
+
+    .hero-nav {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .hero-nav a {
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #e8f0f4;
+      border: 1px solid var(--border);
+      font-size: 0.92rem;
+    }
+
+    section {
+      margin-top: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    section h2 {
+      margin: 0 0 8px;
+      font-size: 1.55rem;
+      letter-spacing: -0.02em;
+    }
+
+    section > p,
+    .section-intro {
+      margin: 0 0 18px;
+      color: var(--muted);
+      max-width: 1050px;
+    }
+
+    h3 {
+      margin: 0 0 12px;
+      font-size: 1.15rem;
+    }
+
+    h4 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .overview-grid,
+    .two-col,
+    .three-col,
+    .drilldown-grid,
+    .appendix-grid,
+    .matrix-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .overview-grid,
+    .three-col {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .two-col,
+    .appendix-grid,
+    .matrix-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .drilldown-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .panel,
+    .flow-block,
+    .drilldown-card,
+    .appendix-card,
+    .matrix-card,
+    .note {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .node {
+      border-radius: 16px;
+      border: 2px solid var(--border);
+      padding: 14px 16px;
+      background: #fff;
+      box-shadow: 0 8px 20px rgba(18, 44, 60, 0.06);
+    }
+
+    .node h4,
+    .node p {
+      margin: 0;
+    }
+
+    .node p {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    .node.agent { border-color: rgba(15, 109, 143, 0.35); background: rgba(15, 109, 143, 0.08); }
+    .node.skill { border-color: rgba(44, 138, 98, 0.35); background: rgba(44, 138, 98, 0.08); }
+    .node.tool { border-color: rgba(148, 87, 15, 0.35); background: rgba(148, 87, 15, 0.08); }
+    .node.store { border-color: rgba(107, 82, 163, 0.35); background: rgba(107, 82, 163, 0.08); }
+    .node.external { border-color: rgba(173, 58, 79, 0.35); background: rgba(173, 58, 79, 0.08); }
+    .node.entry { border-color: rgba(27, 77, 115, 0.35); background: rgba(27, 77, 115, 0.08); }
+
+    .node.optional {
+      border-style: dashed;
+      background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.15));
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .arrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.92rem;
+      padding-left: 10px;
+    }
+
+    .arrow::before {
+      content: "↓";
+      font-size: 1.1rem;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .arrow.side::before {
+      content: "→";
+    }
+
+    .arrow.loop::before {
+      content: "↺";
+    }
+
+    .branch-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 16px;
+    }
+
+    .mini-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .parallel-lanes {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .tag-row,
+    .inline-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--ink);
+    }
+
+    .label {
+      display: inline-block;
+      margin-bottom: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .callout {
+      border-left: 4px solid var(--entry);
+      padding-left: 12px;
+      color: var(--muted);
+      font-size: 0.93rem;
+    }
+
+    dl {
+      margin: 0;
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 8px 14px;
+      font-size: 0.94rem;
+    }
+
+    dt {
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    dd {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.93rem;
+      background: rgba(255, 255, 255, 0.72);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    th {
+      background: rgba(232, 240, 244, 0.85);
+      color: var(--ink);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .small {
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+
+    code {
+      font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+      font-size: 0.9em;
+      background: rgba(255, 255, 255, 0.88);
+      padding: 1px 4px;
+      border-radius: 6px;
+    }
+
+    ul {
+      margin: 10px 0 0 18px;
+      padding: 0;
+    }
+
+    li + li {
+      margin-top: 4px;
+    }
+
+    @media (max-width: 1080px) {
+      .overview-grid,
+      .three-col,
+      .two-col,
+      .appendix-grid,
+      .matrix-grid,
+      .parallel-lanes,
+      .mini-grid,
+      .drilldown-grid,
+      .branch-grid {
+        grid-template-columns: 1fr;
+      }
+
+      dl {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .page {
+        width: 100%;
+        padding: 0;
+      }
+
+      section,
+      .hero {
+        box-shadow: none;
+      }
+
+      .hero-nav {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1>Inter-Agent Data Flow</h1>
+      <p>Code-grounded runtime architecture for the Doctor Dashboard agent system. This document is based on the implemented server entrypoints and live agent classes under <code>doctor_dashboard/agents</code>, not the incomplete registry layer.</p>
+      <p>The diagrams deliberately separate three things: live entrypoints, implemented agents, and the skills/tools/storage services each agent touches.</p>
+      <div class="meta">
+        <span class="chip">Source of truth: <code>server/index.cjs</code></span>
+        <span class="chip">Coverage: implemented agents only</span>
+        <span class="chip">Deliverable: HTML runtime map</span>
+      </div>
+      <nav class="hero-nav">
+        <a href="#overview">System Overview</a>
+        <a href="#handoff-view">Agent + Data Handoff</a>
+        <a href="#expansion-view">Agent + Skill + Tool</a>
+        <a href="#drilldowns">Per-Agent Drilldown</a>
+        <a href="#appendix">Appendix</a>
+      </nav>
+    </header>
+
+    <section id="legend">
+      <h2>Legend</h2>
+      <p class="section-intro">Visual type system used throughout the diagrams.</p>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:#d8edf4"></span>Entry/API/Caller</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#d6ebf2"></span>Agent</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#d8efe5"></span>Skill</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#f4e8d7"></span>Tool</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#e5ddf7"></span>Storage / Internal state</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:#f7dce2"></span>External service</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:repeating-linear-gradient(135deg,#ffffff,#ffffff 6px,#eef3f6 6px,#eef3f6 12px)"></span>Optional branch / conditional path</span>
+      </div>
+    </section>
+
+    <section id="overview">
+      <h2>System Overview</h2>
+      <p class="section-intro">Three live runtime orchestration paths exist today: extraction and dashboard mapping, doctor-assistant chat orchestration, and chart-note generation/export. The dashboard presentation agent is active through a skill, not through a server-level direct instantiation.</p>
+
+      <div class="overview-grid">
+        <div class="panel stack">
+          <span class="label">Extraction Runtime</span>
+          <div class="node entry">
+            <h4>Upload Center / Processing API</h4>
+            <p><code>POST /api/documents/upload</code> and <code>GET /api/documents/process/progress</code></p>
+          </div>
+          <div class="arrow">files[] / documentId / SSE progress</div>
+          <div class="node agent">
+            <h4>DischargeExtractorAgent</h4>
+            <p>Sequential PDF extraction and validation pipeline</p>
+          </div>
+          <div class="arrow">agentResult.data + validation</div>
+          <div class="node skill">
+            <h4>DashboardMapperSkill</h4>
+            <p>Builds dashboard cards and invokes presentation agent</p>
+          </div>
+          <div class="arrow">dashboard_cards + presentation</div>
+          <div class="node store">
+            <h4>Document Storage</h4>
+            <p><code>server/storage/documents.json</code> + uploaded PDF paths</p>
+          </div>
+        </div>
+
+        <div class="panel stack">
+          <span class="label">Chat Runtime</span>
+          <div class="node entry">
+            <h4>Chat API</h4>
+            <p><code>POST /api/chat/query</code>, <code>/action/confirm</code>, <code>/export/:documentId</code></p>
+          </div>
+          <div class="arrow">documentId + message + sectionContext + optional chatId</div>
+          <div class="node agent">
+            <h4>DoctorAssistantAgent</h4>
+            <p>Multi-agent orchestrator for internal evidence, external evidence, safety, answering, and action proposals</p>
+          </div>
+          <div class="arrow">assistant answer + citations + confidence + proposals + session</div>
+          <div class="node store">
+            <h4>Session / Action / Export Storage</h4>
+            <p><code>chat_sessions.json</code>, <code>chat_actions.json</code>, <code>chat_exports.json</code></p>
+          </div>
+          <div class="arrow">health and search metadata</div>
+          <div class="node external">
+            <h4>Medical Web Sources</h4>
+            <p>External search path reached only when classification requires external knowledge and consent is granted</p>
+          </div>
+        </div>
+
+        <div class="panel stack">
+          <span class="label">Chart Note Runtime</span>
+          <div class="node entry">
+            <h4>Chart Note API</h4>
+            <p><code>GET/POST /api/documents/:id/chart-note</code> and <code>POST /api/documents/:id/chart-note/pdf</code></p>
+          </div>
+          <div class="arrow">processed document + extracted_data + PDF file path</div>
+          <div class="node agent">
+            <h4>ChartNoteAgent</h4>
+            <p>ReAct-style SOAP note generation agent</p>
+          </div>
+          <div class="arrow">chart note content + reasoning steps + metadata</div>
+          <div class="node skill">
+            <h4>CrossValidationAgentSkill</h4>
+            <p>Source citation and hallucination-checking skill used before generation</p>
+          </div>
+          <div class="arrow">validated citations + validation summary</div>
+          <div class="node store">
+            <h4>Cached Chart Note</h4>
+            <p>Stored back onto the document record as <code>document.chartNote</code></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="matrix-grid" style="margin-top:16px;">
+        <div class="matrix-card">
+          <h3>Live Agent Inventory</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Agent</th>
+                <th>Called By</th>
+                <th>Primary Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>DischargeExtractorAgent</td><td>Processing API endpoints</td><td>PDF-to-structured extraction</td></tr>
+              <tr><td>DoctorAssistantAgent</td><td>Chat query endpoint</td><td>Chat orchestration</td></tr>
+              <tr><td>QueryIntentAgent</td><td>DoctorAssistantAgent</td><td>Intent classification and section hints</td></tr>
+              <tr><td>RecordContextAgent</td><td>DoctorAssistantAgent</td><td>Internal evidence retrieval</td></tr>
+              <tr><td>ExternalKnowledgeAgent</td><td>DoctorAssistantAgent</td><td>Approved external knowledge retrieval</td></tr>
+              <tr><td>SafetyGuardAgent</td><td>DoctorAssistantAgent</td><td>Confidence scoring and refusal logic</td></tr>
+              <tr><td>AnswerComposerAgent</td><td>DoctorAssistantAgent</td><td>Final answer synthesis</td></tr>
+              <tr><td>ActionRouterAgent</td><td>DoctorAssistantAgent</td><td>Action proposal generation</td></tr>
+              <tr><td>SessionMemoryAgent</td><td>DoctorAssistantAgent</td><td>Chat session load/save</td></tr>
+              <tr><td>DashboardPresentationAgent</td><td>DashboardMapperSkill</td><td>Summary-card and notes-rail presentation</td></tr>
+              <tr><td>ChartNoteAgent</td><td>Chart note GET/POST endpoints</td><td>SOAP note generation</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="matrix-card">
+          <h3>Runtime Notes</h3>
+          <ul>
+            <li><strong>DashboardPresentationAgent</strong> is live, but only through <code>DashboardMapperSkill</code>.</li>
+            <li><strong>CrossValidationAgentSkill</strong> is on the chart-note path even though it is a skill, not an agent.</li>
+            <li><strong>PDF export</strong> prefers cached chart notes; if none exist, the export endpoint currently uses a direct <code>GemmaClientTool + PromptBuilderTool</code> fallback instead of <code>ChartNoteAgent</code>.</li>
+            <li><strong>Registry files</strong> describe additional agents/tools/skills, but missing handlers mean they are not part of the live runtime flow.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="handoff-view">
+      <h2>Agent + Data Handoff View</h2>
+      <p class="section-intro">This view focuses on live call order, main payloads, and where data is persisted or exits the agent system.</p>
+
+      <div class="three-col">
+        <div class="flow-block stack">
+          <h3>Extraction Pipeline</h3>
+          <div class="node entry">
+            <h4>Upload Center / API</h4>
+            <p>Uploads PDFs, starts per-document SSE processing, and consumes processed dashboard responses</p>
+          </div>
+          <div class="arrow">file buffer -&gt; uploaded file path -&gt; <code>{ documentId, name, filePath }</code></div>
+          <div class="node agent">
+            <h4>DischargeExtractorAgent</h4>
+            <p>Consumes <code>pdfPath</code> and emits stepwise extracted data, validation, and usage</p>
+          </div>
+          <div class="arrow">agentResult = <code>{ data, validation, steps, tokensUsed }</code></div>
+          <div class="node skill">
+            <h4>DashboardMapperSkill</h4>
+            <p>Transforms extraction output into dashboard cards, sample patient data, and presentation input</p>
+          </div>
+          <div class="arrow">presentationInput = <code>{ vitals, diagnosis, meds, labs, radiology, treatment, notes, provenance }</code></div>
+          <div class="node agent">
+            <h4>DashboardPresentationAgent</h4>
+            <p>Generates <code>summary_cards</code> and <code>notes_rail</code></p>
+          </div>
+          <div class="arrow">document.result = <code>{ dashboard_cards, sample_patient_data, presentation, extracted_data }</code></div>
+          <div class="node store">
+            <h4>Document Storage + API Response</h4>
+            <p>Writes processed document back to storage and emits live progress / final document payload</p>
+          </div>
+        </div>
+
+        <div class="flow-block">
+          <h3>Doctor Assistant Pipeline</h3>
+          <div class="branch-grid">
+            <div class="stack">
+              <div class="node entry">
+                <h4><code>POST /api/chat/query</code></h4>
+                <p>Inputs: <code>documentId</code>, <code>message</code>, <code>sectionContext</code>, optional <code>chatId</code></p>
+              </div>
+              <div class="arrow">document + query payload</div>
+              <div class="node agent">
+                <h4>DoctorAssistantAgent</h4>
+                <p>Main orchestrator. Loads chat state, classifies intent, resolves evidence, applies safety, composes answer, routes actions, and saves session.</p>
+              </div>
+              <div class="arrow side">load / save session</div>
+              <div class="node agent">
+                <h4>SessionMemoryAgent</h4>
+                <p><code>load(documentId, chatId)</code> before orchestration and <code>save(session)</code> after answer generation</p>
+              </div>
+            </div>
+
+            <div class="stack">
+              <div class="node agent">
+                <h4>QueryIntentAgent</h4>
+                <p>Outputs <code>classification</code> + <code>sectionHints</code></p>
+              </div>
+              <div class="arrow">conditional branch</div>
+              <div class="node agent optional">
+                <h4>Clarification / Consent Return</h4>
+                <p>If <code>needsClarification</code> or external consent is required, the agent returns early with a low-confidence assistant message and updated session state.</p>
+              </div>
+              <div class="arrow">mainline only when classification can proceed</div>
+              <div class="parallel-lanes">
+                <div class="stack">
+                  <div class="node agent">
+                    <h4>RecordContextAgent</h4>
+                    <p>Inputs: <code>document + message + sectionHints + classification</code></p>
+                  </div>
+                  <div class="arrow">internalEvidence + sections</div>
+                </div>
+                <div class="stack">
+                  <div class="node agent optional">
+                    <h4>ExternalKnowledgeAgent</h4>
+                    <p>Inputs: <code>query + classification</code> only when <code>needsExternal</code> is true</p>
+                  </div>
+                  <div class="arrow">externalEvidence + source/error metadata</div>
+                </div>
+              </div>
+              <div class="node agent">
+                <h4>SafetyGuardAgent</h4>
+                <p>Scores confidence and decides refusal policy from internal + external evidence</p>
+              </div>
+              <div class="arrow">confidence + refusal + answer route</div>
+              <div class="parallel-lanes">
+                <div class="stack">
+                  <div class="node agent">
+                    <h4>AnswerComposerAgent</h4>
+                    <p>Builds final answer payload and citations unless safety refuses or external search has no result</p>
+                  </div>
+                </div>
+                <div class="stack">
+                  <div class="node agent">
+                    <h4>ActionRouterAgent</h4>
+                    <p>Builds action proposals from classification + full evidence set</p>
+                  </div>
+                </div>
+              </div>
+              <div class="arrow">assistant message + citations + confidence + proposed_actions</div>
+              <div class="node store">
+                <h4>Session + Action + Export Storage</h4>
+                <p>Session is saved immediately. Confirm and export endpoints persist actions and exports into dedicated collections.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flow-block stack">
+          <h3>Chart Note Pipeline</h3>
+          <div class="node entry">
+            <h4>Chart Note Endpoints</h4>
+            <p><code>GET/POST /api/documents/:id/chart-note</code></p>
+          </div>
+          <div class="arrow">document.result.extracted_data + document.filePath</div>
+          <div class="node skill">
+            <h4>CrossValidationAgentSkill</h4>
+            <p>Produces validated citations, confidence summary, and fields needing review from extracted data and PDF text</p>
+          </div>
+          <div class="arrow">validationSummary + citationData</div>
+          <div class="node agent">
+            <h4>ChartNoteAgent</h4>
+            <p>Consumes <code>{ extractedData, pdfText, citationData, validationSummary }</code> and returns SOAP note content plus reasoning steps</p>
+          </div>
+          <div class="arrow">chart note payload</div>
+          <div class="node store">
+            <h4>Document.chartNote Cache</h4>
+            <p>Generated note, reasoning steps, validation, and citations are persisted onto the document record</p>
+          </div>
+          <div class="arrow side">PDF export branch</div>
+          <div class="node entry optional">
+            <h4><code>POST /api/documents/:id/chart-note/pdf</code></h4>
+            <p>Uses cached chart note when present. If not cached, it runs a direct tool path: <code>PdfReaderTool -&gt; CrossValidationAgentSkill -&gt; PromptBuilderTool -&gt; GemmaClientTool</code> before rendering PDF.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="expansion-view">
+      <h2>Agent + Skill + Tool Expansion View</h2>
+      <p class="section-intro">This view expands each live runtime path to show concrete skills, tools, storage touchpoints, and external-service dependencies.</p>
+
+      <div class="two-col">
+        <div class="panel stack">
+          <h3>Extraction Expansion</h3>
+          <div class="node agent">
+            <h4>DischargeExtractorAgent</h4>
+            <p>Constructor dependencies: <code>PDFReaderTool</code>, <code>GemmaClientTool</code>, <code>PromptBuilderTool</code>, <code>ProvenanceBuilderTool</code></p>
+            <div class="tag-row">
+              <span class="tag">input: pdfPath</span>
+              <span class="tag">output: extracted data + validation + step metadata</span>
+            </div>
+          </div>
+          <div class="arrow">sequential skill chain</div>
+          <div class="mini-grid">
+            <div class="node skill"><h4>DocumentAnalyzerSkill</h4><p>Structure and section discovery</p></div>
+            <div class="node skill"><h4>DemographicsExtractorSkill</h4><p>Patient identity and dates</p></div>
+            <div class="node skill"><h4>RiskScoresExtractorSkill</h4><p>Risk extraction with validation</p></div>
+            <div class="node skill"><h4>VitalsExtractorSkill</h4><p>Vitals, readings, ranges, flags</p></div>
+            <div class="node skill"><h4>FunctionalStatusExtractorSkill</h4><p>Mobility / assistance needs</p></div>
+            <div class="node skill"><h4>ClinicalDataExtractorSkill</h4><p>Diagnosis, meds, allergies, investigations, treatment, notes</p></div>
+            <div class="node skill"><h4>CrossValidatorSkill</h4><p>Cross-field consistency checks</p></div>
+          </div>
+          <div class="arrow">dashboard transformation</div>
+          <div class="node skill">
+            <h4>DashboardMapperSkill</h4>
+            <p>Builds dashboard cards, sample patient summary, and presentation input; internally instantiates <code>DashboardPresentationAgent</code>.</p>
+          </div>
+          <div class="arrow">presentation agent</div>
+          <div class="node agent">
+            <h4>DashboardPresentationAgent</h4>
+            <p>Uses presentation tools and skills to emit <code>summary_cards</code> and <code>notes_rail</code>.</p>
+          </div>
+          <div class="arrow">skill + tool fanout</div>
+          <div class="mini-grid">
+            <div class="node skill"><h4>SummaryCardBuilderSkill</h4><p>Uses selected metrics and section-status calculations</p></div>
+            <div class="node skill"><h4>NotesRailBuilderSkill</h4><p>Selects timeline notes and formats chronology</p></div>
+            <div class="node tool"><h4>CardMetricSelectorTool</h4><p>Card metrics</p></div>
+            <div class="node tool"><h4>SectionStatusResolverTool</h4><p>Status / provenance state</p></div>
+            <div class="node tool"><h4>NoteSelectorTool</h4><p>Clinical note selection</p></div>
+            <div class="node tool"><h4>TimelineFormatterTool</h4><p>Display-ready note timeline</p></div>
+          </div>
+          <div class="arrow">storage + API</div>
+          <div class="parallel-lanes">
+            <div class="node store"><h4>documents.json</h4><p>Processed document record</p></div>
+            <div class="node external"><h4>Gemma LLM API</h4><p>Used by extraction skills</p></div>
+          </div>
+        </div>
+
+        <div class="panel stack">
+          <h3>Doctor Assistant Expansion</h3>
+          <div class="node agent">
+            <h4>DoctorAssistantAgent</h4>
+            <p>Constructor dependencies: <code>QueryIntentAgent</code>, <code>RecordContextAgent</code>, <code>ExternalKnowledgeAgent</code>, <code>AnswerComposerAgent</code>, <code>SafetyGuardAgent</code>, <code>ActionRouterAgent</code>, <code>SessionMemoryAgent</code></p>
+          </div>
+          <div class="arrow">internal agent network</div>
+          <div class="mini-grid">
+            <div class="node agent">
+              <h4>QueryIntentAgent</h4>
+              <p>Tools: <code>QueryClassifierTool</code>, <code>SectionHintResolverTool</code></p>
+            </div>
+            <div class="node agent">
+              <h4>RecordContextAgent</h4>
+              <p>Tools: <code>RecordContextSearchTool</code>, <code>SectionContextFetchTool</code>, <code>ProvenanceGateTool</code></p>
+            </div>
+            <div class="node agent">
+              <h4>ExternalKnowledgeAgent</h4>
+              <p>Tools: <code>MedicalWebSearchTool</code>, <code>SourcePolicyTool</code>, <code>ExternalSourceRankerTool</code>, <code>ExternalCitationNormalizerTool</code></p>
+            </div>
+            <div class="node agent">
+              <h4>SafetyGuardAgent</h4>
+              <p>Tools: <code>ConfidenceScorerTool</code>, <code>RefusalPolicyTool</code></p>
+            </div>
+            <div class="node agent">
+              <h4>AnswerComposerAgent</h4>
+              <p>Tools: <code>GemmaClientTool</code>, <code>ChatPromptBuilderTool</code>, <code>CitationAssemblerTool</code></p>
+            </div>
+            <div class="node agent">
+              <h4>ActionRouterAgent</h4>
+              <p>Skills: <code>NoteUpdateSuggesterSkill</code>, <code>AbnormalFlagActionSkill</code></p>
+            </div>
+          </div>
+          <div class="arrow">persistence and side effects</div>
+          <div class="parallel-lanes">
+            <div class="stack">
+              <div class="node agent">
+                <h4>SessionMemoryAgent</h4>
+                <p>Persists chat sessions through configured collection readers/writers</p>
+              </div>
+              <div class="arrow">load/save session state</div>
+              <div class="node store">
+                <h4>chat_sessions.json</h4>
+                <p>Conversation state, pending consent, confirmed actions, assistant messages</p>
+              </div>
+            </div>
+            <div class="stack">
+              <div class="node skill">
+                <h4>ChatExportBuilderSkill</h4>
+                <p>Used by export endpoint, not by the main answer path</p>
+              </div>
+              <div class="arrow">export chat summary</div>
+              <div class="parallel-lanes">
+                <div class="node store"><h4>chat_actions.json</h4><p>Confirmed proposals</p></div>
+                <div class="node store"><h4>chat_exports.json</h4><p>Saved export artifacts</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col" style="margin-top:16px;">
+        <div class="panel stack">
+          <h3>Chart Note Expansion</h3>
+          <div class="node entry">
+            <h4>Chart Note GET / POST</h4>
+            <p>Loads processed document, extracted data, and PDF file path before initializing validation and generation components.</p>
+          </div>
+          <div class="arrow">validation path first</div>
+          <div class="node skill">
+            <h4>CrossValidationAgentSkill</h4>
+            <p>Tool: <code>CitationTrackerTool</code>; runtime dependencies passed in: <code>gemmaClient</code> and <code>promptBuilder</code>.</p>
+          </div>
+          <div class="arrow">needs <code>pdfText</code> from PDF read</div>
+          <div class="parallel-lanes">
+            <div class="node tool"><h4>PdfReaderTool</h4><p>Reads stored PDF file from document.filePath</p></div>
+            <div class="node external"><h4>Gemma LLM API</h4><p>Used during citation-finding prompt flow</p></div>
+          </div>
+          <div class="arrow">validated citations + summary string</div>
+          <div class="node agent">
+            <h4>ChartNoteAgent</h4>
+            <p>Tools: <code>GemmaClientTool</code>, <code>PromptBuilderTool</code>; executes seven reasoning/generation steps for SOAP note assembly.</p>
+          </div>
+          <div class="arrow">chart note + reasoning steps + metadata</div>
+          <div class="node store">
+            <h4>document.chartNote</h4>
+            <p>Caches content, timing, tokens, citations, and validation outputs back on the document.</p>
+          </div>
+        </div>
+
+        <div class="panel stack">
+          <h3>PDF Export Fallback Path</h3>
+          <div class="callout">This path is live and code-grounded, but it does <strong>not</strong> currently call <code>ChartNoteAgent</code> when the chart note cache is empty.</div>
+          <div class="node entry optional">
+            <h4><code>POST /api/documents/:id/chart-note/pdf</code></h4>
+            <p>Checks for cached <code>document.chartNote</code>. If present, it renders the PDF directly.</p>
+          </div>
+          <div class="arrow">cache miss</div>
+          <div class="mini-grid">
+            <div class="node tool"><h4>PdfReaderTool</h4><p>Read PDF text</p></div>
+            <div class="node skill"><h4>CrossValidationAgentSkill</h4><p>Build citation payload</p></div>
+            <div class="node tool"><h4>PromptBuilderTool</h4><p>Build <code>chart_note_composer</code> prompt</p></div>
+            <div class="node tool"><h4>GemmaClientTool</h4><p>Generate note text directly</p></div>
+          </div>
+          <div class="arrow">cache note + render PDF</div>
+          <div class="parallel-lanes">
+            <div class="node store"><h4>document.chartNote</h4><p>Backfilled after direct generation</p></div>
+            <div class="node external"><h4>PDFDocument renderer</h4><p>Streams final PDF response</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="drilldowns">
+      <h2>Per-Agent Drilldown</h2>
+      <p class="section-intro">Compact cards for each implemented agent: purpose, caller, inputs, outputs, downstream dependencies, and important guards or failure behavior.</p>
+
+      <div class="drilldown-grid">
+        <div class="drilldown-card">
+          <h3>DischargeExtractorAgent</h3>
+          <dl>
+            <dt>Called By</dt><dd>Processing endpoints in <code>server/index.cjs</code></dd>
+            <dt>Purpose</dt><dd>Read PDF and execute the sequential extraction + validation skill pipeline.</dd>
+            <dt>Inputs</dt><dd><code>pdfPath</code>, optional <code>pdfName</code>, optional <code>onProgress</code></dd>
+            <dt>Outputs</dt><dd><code>{ data, validation, steps, detailedSteps, tokensUsed }</code></dd>
+            <dt>Downstream</dt><dd>PDFReaderTool, GemmaClientTool, PromptBuilderTool, ProvenanceBuilderTool, 7 extraction skills</dd>
+            <dt>Guards</dt><dd>Fails hard on unreadable PDF; otherwise continues past failed steps when <code>requireAllSteps</code> is false.</dd>
+          </dl>
+        </div>
+
+        <div class="drilldown-card">
+          <h3>DashboardPresentationAgent</h3>
+          <dl>
+            <dt>Called By</dt><dd><code>DashboardMapperSkill</code></dd>
+            <dt>Purpose</dt><dd>Convert dashboard data into UI-facing summary cards and notes rail content.</dd>
+            <dt>Inputs</dt><dd><code>{ dashboardData }</code></dd>
+            <dt>Outputs</dt><dd><code>{ summary_cards, notes_rail }</code></dd>
+            <dt>Downstream</dt><dd>SummaryCardBuilderSkill, NotesRailBuilderSkill, and 4 presentation tools</dd>
+            <dt>Guards</dt><dd>Returns failure when no dashboard data is provided.</dd>
+          </dl>
+        </div>
+
+        <div class="drilldown-card">
+          <h3>DoctorAssistantAgent</h3>
+          <dl>
+            <dt>Called By</dt><dd><code>POST /api/chat/query</code></dd>
+            <dt>Purpose</dt><dd>Load chat state, classify intent, collect evidence, enforce safety, compose answer, route actions, and persist the session.</dd>
+            <dt>Inputs</dt><dd><code>{ document, documentId, message, sectionContext, chatId }</code></dd>
+            <dt>Outputs</dt><dd><code>{ answer, citations, confidence, proposed_actions, session }</code></dd>
+            <dt>Downstream</dt><dd>QueryIntentAgent, RecordContextAgent, ExternalKnowledgeAgent, SafetyGuardAgent, AnswerComposerAgent, ActionRouterAgent, SessionMemoryAgent</dd>
+            <dt>Guards</dt><dd>Can return early for clarification or external-search consent before evidence retrieval begins.</dd>
+          </dl>
+        </div>
+
+        <div class="drilldown-card">
+          <h3>QueryIntentAgent</h3>
+          <dl>
+            <dt>Called By</dt><dd>DoctorAssistantAgent</dd>
+            <dt>Purpose</dt><dd>Classify query intent and resolve section hints for downstream evidence retrieval.</dd>
+            <dt>Inputs</dt><dd><code>{ message, sectionContext }</code></dd>
+            <dt>Outputs</dt><dd><code>classification + sectionHints</code></dd>
+            <dt>Downstream</dt><dd>QueryClassifierTool, SectionHintResolverTool</dd>
+            <dt>Guards</dt><dd>No explicit refusal logic; always returns a classification object for the parent agent to interpret.</dd>
+          </dl>
+        </div>
+
+        <div class="drilldown-card">
+          <h3>RecordContextAgent</h3>
+          <dl>
+            <dt>Called By</dt><dd>DoctorAssistantAgent</dd>
+            <dt>Purpose</dt><dd>Search the processed document for safe internal evidence and section snapshots.</dd>
+            <dt>Inputs</dt><dd><code>{ document, message, sectionHints, classification }</code></dd>
+            <dt>Outputs</dt><dd><code>{ evidence, sections, source_class }</code></dd>
+            <dt>Downstream</dt><dd>RecordContextSearchTool, SectionContextFetchTool, ProvenanceGateTool</dd>
+            <dt>Guards</dt><dd>Filters internal results through provenance gating before returning them.</dd>
+          </dl>
+        </div>
+
+        <div class="drilldown-card">
+          <h3>ExternalKnowledgeAgent</h3>
+          <dl>
+            <dt>Called By</dt><dd>DoctorAssistantAgent when <code>classification.needsExternal</code> is true</dd>
+            <dt>Purpose</dt><dd>Search approved medical web sources, filter/rank them, and normalize citations.</dd>
+            <dt>Inputs</dt><dd><code>{ query, classification }</code></dd>
+            <dt>Outputs</dt><dd><code>{ evidence, source_class, error, error_type }</code></dd>
+            <dt>Downstream</dt><dd>MedicalWebSearchTool, SourcePolicyTool, ExternalSourceRankerTool, ExternalCitationNormalizerTool</dd>
+            <dt>Guards</dt><dd>Returns a structured empty-success payload even when external search fails.</dd>
+          </dl>
+        </div>
+
+        <div class="drilldown-card">
+          <h3>SafetyGuardAgent</h3>
+          <dl>
+            <dt>Called By</dt><dd>DoctorAssistantAgent</dd>
+            <dt>Purpose</dt><dd>Compute confidence and decide whether the agent should refuse the answer.</dd>
+            <dt>Inputs</dt><dd><code>{ classification, internalEvidence, externalEvidence }</code></dd>
+            <dt>Outputs</dt><dd><code>{ confidence, refusal }</code></dd>
+            <dt>Downstream</dt><dd>ConfidenceScorerTool, RefusalPolicyTool</dd>
+            <dt>Guards</dt><dd>Acts as the final safety gate before answer composition.</dd>
+          </dl>
+        </div>
+
+        <div class="drilldown-card">
+          <h3>AnswerComposerAgent</h3>
+          <dl>
+            <dt>Called By</dt><dd>DoctorAssistantAgent</dd>
+            <dt>Purpose</dt><dd>Compose the final clinician-facing answer and assemble citations.</dd>
+            <dt>Inputs</dt><dd><code>{ message, classification, internalEvidence, externalEvidence, chatHistory }</code></dd>
+            <dt>Outputs</dt><dd><code>{ answer, citations, source_class }</code></dd>
+            <dt>Downstream</dt><dd>GemmaClientTool, ChatPromptBuilderTool, CitationAssemblerTool</dd>
+            <dt>Guards</dt><dd>Uses a direct fact-answer shortcut for supported factoid questions with internal evidence only.</dd>
+          </dl>
+        </div>
+
+        <div class="drilldown-card">
+          <h3>ActionRouterAgent</h3>
+          <dl>
+            <dt>Called By</dt><dd>DoctorAssistantAgent</dd>
+            <dt>Purpose</dt><dd>Convert action-style requests into explicit proposal payloads for note updates, abnormal flags, or chat export.</dd>
+            <dt>Inputs</dt><dd><code>{ classification, message, evidence, documentId }</code></dd>
+            <dt>Outputs</dt><dd><code>{ proposals }</code></dd>
+            <dt>Downstream</dt><dd>NoteUpdateSuggesterSkill, AbnormalFlagActionSkill</dd>
+            <dt>Guards</dt><dd>Returns no proposals when <code>classification.isActionRequest</code> is false.</dd>
+          </dl>
+        </div>
+
+        <div class="drilldown-card">
+          <h3>SessionMemoryAgent</h3>
+          <dl>
+            <dt>Called By</dt><dd>DoctorAssistantAgent</dd>
+            <dt>Purpose</dt><dd>Load an existing chat session or save an updated session object.</dd>
+            <dt>Inputs</dt><dd><code>load(documentId, chatId)</code> and <code>save(session)</code></dd>
+            <dt>Outputs</dt><dd>Session record or <code>null</code>; persisted session after save</dd>
+            <dt>Downstream</dt><dd>Configured collection readers/writers bound by the server</dd>
+            <dt>Guards</dt><dd>No business logic beyond lookup and upsert by <code>chatId</code>.</dd>
+          </dl>
+        </div>
+
+        <div class="drilldown-card">
+          <h3>ChartNoteAgent</h3>
+          <dl>
+            <dt>Called By</dt><dd>Chart note GET/POST endpoints</dd>
+            <dt>Purpose</dt><dd>Generate a SOAP-style chart note through a seven-step reasoning and writing loop.</dd>
+            <dt>Inputs</dt><dd><code>{ extractedData, pdfText, citationData, validationSummary }</code></dd>
+            <dt>Outputs</dt><dd><code>{ chart_note, reasoning_steps, metadata }</code></dd>
+            <dt>Downstream</dt><dd>GemmaClientTool, PromptBuilderTool</dd>
+            <dt>Guards</dt><dd>Returns a structured failure payload on generation errors; chart-note PDF export does not always go through this agent.</dd>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section id="appendix">
+      <h2>Appendix: Declared But Not Implemented</h2>
+      <p class="section-intro">These registry entries exist in <code>config/agents_registry.cjs</code>, <code>config/tools_registry.cjs</code>, or <code>config/skills_registry.cjs</code>, but their handlers are missing. They are intentionally excluded from the live-flow diagrams above.</p>
+
+      <div class="appendix-grid">
+        <div class="appendix-card">
+          <h3>Registry-Only Agents</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Registry ID</th>
+                <th>Declared Role</th>
+                <th>Missing Handler</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>quick_extractor_agent</code></td><td>Single-shot quick extraction</td><td><code>../agents/quick_extractor_agent.cjs</code></td></tr>
+              <tr><td><code>risk_validator_agent</code></td><td>Risk-score validation agent</td><td><code>../agents/risk_validator_agent.cjs</code></td></tr>
+              <tr><td><code>clinical_reasoner_agent</code></td><td>Clinical interpretation agent</td><td><code>../agents/clinical_reasoner_agent.cjs</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="appendix-card">
+          <h3>Registry-Only Tools</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Registry ID</th>
+                <th>Declared Role</th>
+                <th>Missing Handler</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>fall_risk_calculator</code></td><td>Risk tool</td><td><code>../tools/risk/fall_risk_calculator.tool.cjs</code></td></tr>
+              <tr><td><code>dvt_risk_calculator</code></td><td>Risk tool</td><td><code>../tools/risk/dvt_risk_calculator.tool.cjs</code></td></tr>
+              <tr><td><code>pressure_ulcer_calculator</code></td><td>Risk tool</td><td><code>../tools/risk/pressure_ulcer_calculator.tool.cjs</code></td></tr>
+              <tr><td><code>aspiration_risk_calculator</code></td><td>Risk tool</td><td><code>../tools/risk/aspiration_risk_calculator.tool.cjs</code></td></tr>
+              <tr><td><code>ews_calculator</code></td><td>Clinical scoring tool</td><td><code>../tools/clinical/ews_calculator.tool.cjs</code></td></tr>
+              <tr><td><code>gcs_calculator</code></td><td>Clinical scoring tool</td><td><code>../tools/clinical/gcs_calculator.tool.cjs</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="appendix-card" style="grid-column: 1 / -1;">
+          <h3>Registry-Only Skills</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Registry ID</th>
+                <th>Declared Role</th>
+                <th>Missing Handler</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>inconsistency_detector</code></td><td>Validation skill</td><td><code>../skills/validation/inconsistency_detector.skill.cjs</code></td></tr>
+              <tr><td><code>vitals_interpreter</code></td><td>Clinical skill</td><td><code>../skills/clinical/vitals_interpreter.skill.cjs</code></td></tr>
+              <tr><td><code>risk_interpreter</code></td><td>Clinical skill</td><td><code>../skills/clinical/risk_interpreter.skill.cjs</code></td></tr>
+              <tr><td><code>summary_generator</code></td><td>Clinical summary skill</td><td><code>../skills/clinical/summary_generator.skill.cjs</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

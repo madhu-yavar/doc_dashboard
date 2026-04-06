@@ -1269,8 +1269,12 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
       // Check if we need a new page for section header
       checkPageBreak(50);
 
+      // Special handling for ALLERGIES - use red/warning color for safety
+      const isAllergies = title === "ALLERGIES & ADVERSE REACTIONS";
+      const sectionColor = isAllergies ? "#dc2626" : primaryColor;
+
       // Section header
-      doc.roundedRect(leftMargin, yPosition, contentWidth, 22, 3).fillAndStroke(primaryColor, primaryColor);
+      doc.roundedRect(leftMargin, yPosition, contentWidth, 22, 3).fillAndStroke(sectionColor, sectionColor);
       doc.fontSize(11).font("Helvetica-Bold").fillColor("white").text(title, leftMargin + 10, yPosition + 6);
       yPosition += 28;
 
@@ -1380,11 +1384,19 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
 
       // Check for section headers - must be exact match on the line (not part of other text)
       // This prevents matching "Plan & Management Strategy:" as a PLAN section
+      const isAllergies = trimmed === "ALLERGIES & ADVERSE REACTIONS" ||
+                         trimmed === "ALLERGIES" ||
+                         trimmed === "DRUG ALLERGIES";
+
       const isSubjective = trimmed === "CHIEF COMPLAINT & HISTORY" ||
                           trimmed === "SUBJECTIVE - HISTORY & PRESENTATION" ||
                           trimmed === "SUBJECTIVE" ||
                           trimmed === "S - SUBJECTIVE" ||
                           trimmed === "HISTORY & PRESENTATION";
+
+      const isComorbidities = trimmed === "COMORBIDITIES" ||
+                             trimmed === "PAST MEDICAL HISTORY" ||
+                             trimmed === "CO-MORBIDITIES";
 
       const isObjective = trimmed === "PHYSICAL EXAMINATION" ||
                         trimmed === "OBJECTIVE - CLINICAL FINDINGS" ||
@@ -1392,17 +1404,39 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
                         trimmed === "O - OBJECTIVE" ||
                         trimmed === "CLINICAL FINDINGS";
 
+      const isProcedures = trimmed === "PROCEDURES & INTERVENTIONS" ||
+                          trimmed === "PROCEDURES" ||
+                          trimmed === "PROCEDURES PERFORMED";
+
+      const isHospitalCourse = trimmed === "HOSPITAL COURSE" ||
+                              trimmed === "COURSE IN HOSPITAL" ||
+                              trimmed === "HOSPITALIZATION COURSE";
+
       const isAssessment = trimmed === "ASSESSMENT" ||
                           trimmed === "ASSESSMENT - DIAGNOSIS & CLINICAL JUDGMENT" ||
                           trimmed === "A - ASSESSMENT" ||
                           trimmed === "DIAGNOSIS & ASSESSMENT";
+
+      const isPending = trimmed === "PENDING INVESTIGATIONS" ||
+                       trimmed === "PENDING" ||
+                       trimmed === "PENDING TESTS";
 
       const isPlan = trimmed === "PLAN" ||
                     trimmed === "PLAN - DISCHARGE PLAN & RECOMMENDATIONS" ||
                     trimmed === "P - PLAN" ||
                     trimmed === "DISCHARGE PLAN";
 
-      if (isSubjective || isObjective || isAssessment || isPlan) {
+      const isNursing = trimmed === "NURSING CARE NEEDS" ||
+                       trimmed === "NURSING CARE" ||
+                       trimmed === "NURSING";
+
+      const isRiskFlags = trimmed === "RISK FLAGS" ||
+                         trimmed === "RISK FACTORS" ||
+                         trimmed === "RISK ASSESSMENT";
+
+      if (isAllergies || isSubjective || isComorbidities || isObjective ||
+          isProcedures || isHospitalCourse || isAssessment || isPending ||
+          isPlan || isNursing || isRiskFlags) {
 
         // Render previous section
         if (currentSection && sectionContent.length > 0) {
@@ -1411,14 +1445,28 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
         }
 
         // Determine proper section title (new standard format)
-        if (isSubjective) {
+        if (isAllergies) {
+          currentSection = "ALLERGIES & ADVERSE REACTIONS";
+        } else if (isSubjective) {
           currentSection = "CHIEF COMPLAINT & HISTORY";
+        } else if (isComorbidities) {
+          currentSection = "COMORBIDITIES";
         } else if (isObjective) {
           currentSection = "PHYSICAL EXAMINATION";
+        } else if (isProcedures) {
+          currentSection = "PROCEDURES & INTERVENTIONS";
+        } else if (isHospitalCourse) {
+          currentSection = "HOSPITAL COURSE";
         } else if (isAssessment) {
           currentSection = "ASSESSMENT";
+        } else if (isPending) {
+          currentSection = "PENDING INVESTIGATIONS";
         } else if (isPlan) {
           currentSection = "PLAN";
+        } else if (isNursing) {
+          currentSection = "NURSING CARE NEEDS";
+        } else if (isRiskFlags) {
+          currentSection = "RISK FLAGS";
         }
         continue;
       }

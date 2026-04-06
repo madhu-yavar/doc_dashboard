@@ -60,45 +60,108 @@ class ChartNoteAgent {
 
       if (onProgress) onProgress({ step: "structure", status: "complete", data: structureStep });
 
-      // STEP 3: Generate Subjective section (THINK + WRITE)
-      console.log("📝 Step 3: Generating Subjective (S) section...");
+      // STEP 3: Generate ALLERGIES section (THINK + WRITE)
+      console.log("📝 Step 3: Generating ALLERGIES section...");
+      const allergiesStep = await this.generateAllergies(extractedData);
+      reasoningSteps.push({ step: "allergies", ...allergiesStep });
+      totalTokens += allergiesStep.usage?.totalTokens || 0;
+
+      if (onProgress) onProgress({ step: "allergies", status: "complete" });
+
+      // STEP 4: Generate CHIEF COMPLAINT & HISTORY section (THINK + WRITE)
+      console.log("📝 Step 4: Generating CHIEF COMPLAINT & HISTORY section...");
       const subjectiveStep = await this.generateSubjective(extractedData, structureStep.subjective);
       reasoningSteps.push({ step: "subjective", ...subjectiveStep });
       totalTokens += subjectiveStep.usage?.totalTokens || 0;
 
       if (onProgress) onProgress({ step: "subjective", status: "complete" });
 
-      // STEP 4: Generate Objective section (THINK + WRITE)
-      console.log("📝 Step 4: Generating Objective (O) section...");
+      // STEP 5: Generate COMORBIDITIES section (THINK + WRITE)
+      console.log("📝 Step 5: Generating COMORBIDITIES section...");
+      const comorbiditiesStep = await this.generateComorbidities(extractedData);
+      reasoningSteps.push({ step: "comorbidities", ...comorbiditiesStep });
+      totalTokens += comorbiditiesStep.usage?.totalTokens || 0;
+
+      if (onProgress) onProgress({ step: "comorbidities", status: "complete" });
+
+      // STEP 6: Generate PHYSICAL EXAMINATION section (THINK + WRITE)
+      console.log("📝 Step 6: Generating PHYSICAL EXAMINATION section...");
       const objectiveStep = await this.generateObjective(extractedData, structureStep.objective);
       reasoningSteps.push({ step: "objective", ...objectiveStep });
       totalTokens += objectiveStep.usage?.totalTokens || 0;
 
       if (onProgress) onProgress({ step: "objective", status: "complete" });
 
-      // STEP 5: Generate Assessment section (THINK + WRITE)
-      console.log("📝 Step 5: Generating Assessment (A) section...");
+      // STEP 7: Generate PROCEDURES & INTERVENTIONS section (THINK + WRITE)
+      console.log("📝 Step 7: Generating PROCEDURES & INTERVENTIONS section...");
+      const proceduresStep = await this.generateProcedures(extractedData);
+      reasoningSteps.push({ step: "procedures", ...proceduresStep });
+      totalTokens += proceduresStep.usage?.totalTokens || 0;
+
+      if (onProgress) onProgress({ step: "procedures", status: "complete" });
+
+      // STEP 8: Generate HOSPITAL COURSE section (THINK + WRITE)
+      console.log("📝 Step 8: Generating HOSPITAL COURSE section...");
+      const hospitalCourseStep = await this.generateHospitalCourse(extractedData, subjectiveStep.content);
+      reasoningSteps.push({ step: "hospital_course", ...hospitalCourseStep });
+      totalTokens += hospitalCourseStep.usage?.totalTokens || 0;
+
+      if (onProgress) onProgress({ step: "hospital_course", status: "complete" });
+
+      // STEP 9: Generate ASSESSMENT section (THINK + WRITE)
+      console.log("📝 Step 9: Generating ASSESSMENT section...");
       const assessmentStep = await this.generateAssessment(extractedData, structureStep.assessment);
       reasoningSteps.push({ step: "assessment", ...assessmentStep });
       totalTokens += assessmentStep.usage?.totalTokens || 0;
 
       if (onProgress) onProgress({ step: "assessment", status: "complete" });
 
-      // STEP 6: Generate Plan section (THINK + WRITE)
-      console.log("📝 Step 6: Generating Plan (P) section...");
+      // STEP 10: Generate PENDING INVESTIGATIONS section (THINK + WRITE)
+      console.log("📝 Step 10: Generating PENDING INVESTIGATIONS section...");
+      const pendingStep = await this.generatePendingInvestigations(extractedData);
+      reasoningSteps.push({ step: "pending", ...pendingStep });
+      totalTokens += pendingStep.usage?.totalTokens || 0;
+
+      if (onProgress) onProgress({ step: "pending", status: "complete" });
+
+      // STEP 11: Generate PLAN section (THINK + WRITE)
+      console.log("📝 Step 11: Generating PLAN section...");
       const planStep = await this.generatePlan(extractedData, structureStep.plan);
       reasoningSteps.push({ step: "plan", ...planStep });
       totalTokens += planStep.usage?.totalTokens || 0;
 
       if (onProgress) onProgress({ step: "plan", status: "complete" });
 
-      // STEP 7: Review and refine (THINK)
-      console.log("📝 Step 7: Reviewing and refining chart note...");
+      // STEP 12: Generate NURSING CARE NEEDS section (THINK + WRITE)
+      console.log("📝 Step 12: Generating NURSING CARE NEEDS section...");
+      const nursingStep = await this.generateNursingCare(extractedData);
+      reasoningSteps.push({ step: "nursing", ...nursingStep });
+      totalTokens += nursingStep.usage?.totalTokens || 0;
+
+      if (onProgress) onProgress({ step: "nursing", status: "complete" });
+
+      // STEP 13: Generate RISK FLAGS section (THINK + WRITE)
+      console.log("📝 Step 13: Generating RISK FLAGS section...");
+      const riskFlagsStep = await this.generateRiskFlags(extractedData);
+      reasoningSteps.push({ step: "risk_flags", ...riskFlagsStep });
+      totalTokens += riskFlagsStep.usage?.totalTokens || 0;
+
+      if (onProgress) onProgress({ step: "risk_flags", status: "complete" });
+
+      // STEP 14: Review and refine (THINK)
+      console.log("📝 Step 14: Reviewing and refining chart note...");
       const reviewStep = await this.reviewAndRefine({
+        allergies: allergiesStep.content,
         subjective: subjectiveStep.content,
+        comorbidities: comorbiditiesStep.content,
         objective: objectiveStep.content,
+        procedures: proceduresStep.content,
+        hospitalCourse: hospitalCourseStep.content,
         assessment: assessmentStep.content,
+        pending: pendingStep.content,
         plan: planStep.content,
+        nursing: nursingStep.content,
+        riskFlags: riskFlagsStep.content,
         validationSummary
       });
       reasoningSteps.push({ step: "review", ...reviewStep });
@@ -108,10 +171,17 @@ class ChartNoteAgent {
 
       // Compile final chart note
       const finalChartNote = this.compileChartNote({
+        allergies: reviewStep.refined?.allergies || allergiesStep.content,
         subjective: reviewStep.refined?.subjective || subjectiveStep.content,
+        comorbidities: reviewStep.refined?.comorbidities || comorbiditiesStep.content,
         objective: reviewStep.refined?.objective || objectiveStep.content,
+        procedures: reviewStep.refined?.procedures || proceduresStep.content,
+        hospitalCourse: reviewStep.refined?.hospitalCourse || hospitalCourseStep.content,
         assessment: reviewStep.refined?.assessment || assessmentStep.content,
+        pending: reviewStep.refined?.pending || pendingStep.content,
         plan: reviewStep.refined?.plan || planStep.content,
+        nursing: reviewStep.refined?.nursing || nursingStep.content,
+        riskFlags: reviewStep.refined?.riskFlags || riskFlagsStep.content,
         extractedData,
         validationSummary
       });
@@ -461,22 +531,365 @@ PLAN SECTION:
   }
 
   /**
-   * STEP 7: Review and refine
+   * Generate ALLERGIES section
+   */
+  async generateAllergies(extractedData) {
+    const allergies = extractedData.allergies || [];
+    const prompt = `Generate the ALLERGIES & ADVERSE REACTIONS section of a discharge chart note.
+
+ALLERGIES DATA:
+${JSON.stringify(allergies, null, 2)}
+
+If allergies are documented, list them clearly with severity if known.
+If no allergies are documented or array is empty, state "No Known Allergies (NKDA)"
+
+Format:
+THOUGHT: [Your reasoning]
+ALLERGIES SECTION:
+[The actual content - clear and concise]`;
+
+    const result = await this.gemmaClient.execute(prompt, {
+      temperature: 0.2,
+      maxTokens: 300
+    });
+
+    const content = result.success ? result.content : "";
+    const sectionContent = this.cleanSectionContent(this.extractAfter(content, "ALLERGIES SECTION"));
+
+    console.log("  📝 Allergies section generated:", {
+      length: sectionContent?.length || 0,
+      preview: sectionContent?.substring(0, 100) || "N/A"
+    });
+
+    return {
+      thought: this.extractSection(content, "THOUGHT"),
+      content: sectionContent || "No Known Allergies (NKDA)",
+      usage: result.usage
+    };
+  }
+
+  /**
+   * Generate COMORBIDITIES section
+   */
+  async generateComorbidities(extractedData) {
+    const diagnosis = extractedData.diagnosis || {};
+    const comorbidities = diagnosis.comorbidities || diagnosis.secondary || [];
+    const prompt = `Generate the COMORBIDITIES section of a discharge chart note.
+
+DIAGNOSIS DATA:
+${JSON.stringify(diagnosis, null, 2)}
+
+Document all comorbidities and secondary diagnoses that affect the patient's care.
+Include conditions like hypertension, diabetes, heart disease, kidney disease, etc.
+
+Format:
+THOUGHT: [Your reasoning]
+COMORBIDITIES SECTION:
+[The actual content - list each comorbidity]`;
+
+    const result = await this.gemmaClient.execute(prompt, {
+      temperature: 0.3,
+      maxTokens: 500
+    });
+
+    const content = result.success ? result.content : "";
+    const sectionContent = this.cleanSectionContent(this.extractAfter(content, "COMORBIDITIES SECTION"));
+
+    console.log("  📝 Comorbidities section generated:", {
+      length: sectionContent?.length || 0,
+      preview: sectionContent?.substring(0, 100) || "N/A"
+    });
+
+    return {
+      thought: this.extractSection(content, "THOUGHT"),
+      content: sectionContent || "No significant comorbidities documented.",
+      usage: result.usage
+    };
+  }
+
+  /**
+   * Generate PROCEDURES & INTERVENTIONS section
+   */
+  async generateProcedures(extractedData) {
+    const treatment = extractedData.treatment || {};
+    const procedures = treatment.procedures || [];
+    const clinicalNotes = extractedData.clinical_notes || [];
+    const prompt = `Generate the PROCEDURES & INTERVENTIONS section of a discharge chart note.
+
+TREATMENT DATA:
+${JSON.stringify(treatment, null, 2)}
+
+CLINICAL NOTES (for procedure context):
+${JSON.stringify(clinicalNotes.slice(0, 3), null, 2)}
+
+List all procedures, surgeries, interventions, and consults performed during the stay.
+Include dates when available.
+
+Format:
+THOUGHT: [Your reasoning]
+PROCEDURES SECTION:
+[The actual content - list procedures with dates]`;
+
+    const result = await this.gemmaClient.execute(prompt, {
+      temperature: 0.3,
+      maxTokens: 600
+    });
+
+    const content = result.success ? result.content : "";
+    const sectionContent = this.cleanSectionContent(this.extractAfter(content, "PROCEDURES SECTION"));
+
+    console.log("  📝 Procedures section generated:", {
+      length: sectionContent?.length || 0,
+      preview: sectionContent?.substring(0, 100) || "N/A"
+    });
+
+    return {
+      thought: this.extractSection(content, "THOUGHT"),
+      content: sectionContent || "No major procedures performed during this admission.",
+      usage: result.usage
+    };
+  }
+
+  /**
+   * Generate HOSPITAL COURSE section
+   */
+  async generateHospitalCourse(extractedData, subjectiveContent) {
+    const treatment = extractedData.treatment || {};
+    const clinicalNotes = extractedData.clinical_notes || [];
+    const meta = extractedData.meta || {};
+    const prompt = `Generate the HOSPITAL COURSE section of a discharge chart note.
+
+TREATMENT DATA:
+${JSON.stringify(treatment, null, 2)}
+
+CLINICAL NOTES:
+${JSON.stringify(clinicalNotes.slice(0, 5), null, 2)}
+
+ADMISSION INFO:
+${JSON.stringify(meta, null, 2)}
+
+CHIEF COMPLAINT (for context):
+${subjectiveContent}
+
+Write a narrative of the patient's hospital course from admission to discharge.
+Include:
+- Initial presentation and condition on admission
+- Treatment approach (conservative, surgical, etc.)
+- Response to treatment and clinical progression
+- Any complications or interventions
+- Condition at discharge
+
+Format:
+THOUGHT: [Your reasoning]
+HOSPITAL COURSE SECTION:
+[The actual content - narrative 3-5 sentences]`;
+
+    const result = await this.gemmaClient.execute(prompt, {
+      temperature: 0.4,
+      maxTokens: 800
+    });
+
+    const content = result.success ? result.content : "";
+    const sectionContent = this.cleanSectionContent(this.extractAfter(content, "HOSPITAL COURSE SECTION"));
+
+    console.log("  📝 Hospital Course section generated:", {
+      length: sectionContent?.length || 0,
+      preview: sectionContent?.substring(0, 100) || "N/A"
+    });
+
+    return {
+      thought: this.extractSection(content, "THOUGHT"),
+      content: sectionContent || this.generateFallbackHospitalCourse(extractedData),
+      usage: result.usage
+    };
+  }
+
+  /**
+   * Generate PENDING INVESTIGATIONS section
+   */
+  async generatePendingInvestigations(extractedData) {
+    const clinicalNotes = extractedData.clinical_notes || [];
+    const investigations = extractedData.investigations || [];
+    const pendingItems = [];
+
+    // Extract pending items from clinical notes
+    clinicalNotes.forEach(note => {
+      if (note.pending_items && Array.isArray(note.pending_items)) {
+        pendingItems.push(...note.pending_items);
+      }
+    });
+
+    const prompt = `Generate the PENDING INVESTIGATIONS section of a discharge chart note.
+
+PENDING ITEMS FROM CLINICAL NOTES:
+${JSON.stringify(pendingItems.slice(0, 20), null, 2)}
+
+INVESTIGATIONS:
+${JSON.stringify(investigations, null, 2)}
+
+List all pending labs, imaging, procedures, or consults at the time of discharge.
+Include what was ordered and the reason if known.
+
+Format:
+THOUGHT: [Your reasoning]
+PENDING INVESTIGATIONS SECTION:
+[The actual content - list pending items]`;
+
+    const result = await this.gemmaClient.execute(prompt, {
+      temperature: 0.3,
+      maxTokens: 600
+    });
+
+    const content = result.success ? result.content : "";
+    const sectionContent = this.cleanSectionContent(this.extractAfter(content, "PENDING INVESTIGATIONS SECTION"));
+
+    console.log("  📝 Pending Investigations section generated:", {
+      length: sectionContent?.length || 0,
+      preview: sectionContent?.substring(0, 100) || "N/A"
+    });
+
+    return {
+      thought: this.extractSection(content, "THOUGHT"),
+      content: sectionContent || "No pending investigations documented at discharge.",
+      usage: result.usage
+    };
+  }
+
+  /**
+   * Generate NURSING CARE NEEDS section
+   */
+  async generateNursingCare(extractedData) {
+    const nursingNeeds = extractedData.nursing_needs || [];
+    const risks = extractedData.risk_scores || {};
+    const functional = extractedData.functional_status || {};
+    const prompt = `Generate the NURSING CARE NEEDS section of a discharge chart note.
+
+NURSING NEEDS:
+${JSON.stringify(nursingNeeds, null, 2)}
+
+RISK SCORES:
+${JSON.stringify(risks, null, 2)}
+
+FUNCTIONAL STATUS:
+${JSON.stringify(functional, null, 2)}
+
+List all nursing care needs and special precautions required.
+Include fall precautions, pressure ulcer prevention, assistance with ADLs, etc.
+
+Format:
+THOUGHT: [Your reasoning]
+NURSING CARE SECTION:
+[The actual content - list nursing needs]`;
+
+    const result = await this.gemmaClient.execute(prompt, {
+      temperature: 0.3,
+      maxTokens: 500
+    });
+
+    const content = result.success ? result.content : "";
+    const sectionContent = this.cleanSectionContent(this.extractAfter(content, "NURSING CARE SECTION"));
+
+    console.log("  📝 Nursing Care section generated:", {
+      length: sectionContent?.length || 0,
+      preview: sectionContent?.substring(0, 100) || "N/A"
+    });
+
+    return {
+      thought: this.extractSection(content, "THOUGHT"),
+      content: sectionContent || this.generateFallbackNursingCare(extractedData),
+      usage: result.usage
+    };
+  }
+
+  /**
+   * Generate RISK FLAGS section
+   */
+  async generateRiskFlags(extractedData) {
+    const risks = extractedData.risk_scores || {};
+    const clinicalNotes = extractedData.clinical_notes || [];
+    const riskFlags = [];
+
+    // Extract risk flags from clinical notes
+    clinicalNotes.forEach(note => {
+      if (note.risk_flags && Array.isArray(note.risk_flags)) {
+        riskFlags.push(...note.risk_flags);
+      }
+    });
+
+    const prompt = `Generate the RISK FLAGS section of a discharge chart note.
+
+RISK SCORES:
+${JSON.stringify(risks, null, 2)}
+
+RISK FLAGS FROM NOTES:
+${JSON.stringify(riskFlags, null, 2)}
+
+List all risk flags that require attention.
+Include high fall risk, high pressure ulcer risk, bleeding risk, etc.
+
+Format:
+THOUGHT: [Your reasoning]
+RISK FLAGS SECTION:
+[The actual content - list significant risks]`;
+
+    const result = await this.gemmaClient.execute(prompt, {
+      temperature: 0.2,
+      maxTokens: 400
+    });
+
+    const content = result.success ? result.content : "";
+    const sectionContent = this.cleanSectionContent(this.extractAfter(content, "RISK FLAGS SECTION"));
+
+    console.log("  📝 Risk Flags section generated:", {
+      length: sectionContent?.length || 0,
+      preview: sectionContent?.substring(0, 100) || "N/A"
+    });
+
+    return {
+      thought: this.extractSection(content, "THOUGHT"),
+      content: sectionContent || this.generateFallbackRiskFlags(extractedData),
+      usage: result.usage
+    };
+  }
+
+  /**
+   * STEP 14: Review and refine
    */
   async reviewAndRefine(sections) {
     const prompt = `Review the following chart note for quality, completeness, and clinical accuracy.
 
-SUBJECTIVE:
+ALLERGIES:
+${sections.allergies || 'N/A'}
+
+CHIEF COMPLAINT & HISTORY:
 ${sections.subjective}
 
-OBJECTIVE:
+COMORBIDITIES:
+${sections.comorbidities || 'N/A'}
+
+PHYSICAL EXAMINATION:
 ${sections.objective}
+
+PROCEDURES:
+${sections.procedures || 'N/A'}
+
+HOSPITAL COURSE:
+${sections.hospitalCourse || 'N/A'}
 
 ASSESSMENT:
 ${sections.assessment}
 
+PENDING INVESTIGATIONS:
+${sections.pending || 'N/A'}
+
 PLAN:
 ${sections.plan}
+
+NURSING CARE:
+${sections.nursing || 'N/A'}
+
+RISK FLAGS:
+${sections.riskFlags || 'N/A'}
 
 Validation: ${sections.validationSummary}
 
@@ -489,25 +902,38 @@ IMPORTANT: Return the review ONLY. Do NOT include refined versions in your respo
 Format your response as:
 
 REVIEW:
-SUBJECTIVE: [Quality rating and brief feedback]
-OBJECTIVE: [Quality rating and brief feedback]
+ALLERGIES: [Quality rating and brief feedback]
+CHIEF COMPLAINT: [Quality rating and brief feedback]
+COMORBIDITIES: [Quality rating and brief feedback]
+PHYSICAL EXAM: [Quality rating and brief feedback]
+PROCEDURES: [Quality rating and brief feedback]
+HOSPITAL COURSE: [Quality rating and brief feedback]
 ASSESSMENT: [Quality rating and brief feedback]
-PLAN: [Quality rating and brief feedback]`;
+PENDING: [Quality rating and brief feedback]
+PLAN: [Quality rating and brief feedback]
+NURSING: [Quality rating and brief feedback]
+RISK FLAGS: [Quality rating and brief feedback]`;
 
     const result = await this.gemmaClient.execute(prompt, {
       temperature: 0.3,
-      maxTokens: 1000
+      maxTokens: 1500
     });
 
     const content = result.success ? result.content : "";
 
     // Don't do refinements - just return the review
-    // The original sections are already well-formatted
     const refined = {
+      allergies: null,
       subjective: null,
+      comorbidities: null,
       objective: null,
+      procedures: null,
+      hospitalCourse: null,
       assessment: null,
-      plan: null
+      pending: null,
+      plan: null,
+      nursing: null,
+      riskFlags: null
     };
 
     console.log("  📝 Review completed:", {
@@ -528,21 +954,25 @@ PLAN: [Quality rating and brief feedback]`;
   compileChartNote(sections) {
     const patient = sections.extractedData.patient || {};
     const admission = sections.extractedData.admission || {};
+    const diagnosis = sections.extractedData.diagnosis || {};
 
     // Ensure sections have content, provide fallback if empty
+    const allergies = sections.allergies?.trim() || "No Known Allergies (NKDA)";
     const subjective = sections.subjective?.trim() || this.generateFallbackSubjective(sections.extractedData);
+    const comorbidities = sections.comorbidities?.trim() || this.generateFallbackComorbidities(sections.extractedData);
     const objective = sections.objective?.trim() || this.generateFallbackObjective(sections.extractedData);
+    const procedures = sections.procedures?.trim() || "No major procedures performed during this admission.";
+    const hospitalCourse = sections.hospitalCourse?.trim() || this.generateFallbackHospitalCourse(sections.extractedData);
     const assessment = sections.assessment?.trim() || this.generateFallbackAssessment(sections.extractedData);
+    const pending = sections.pending?.trim() || "No pending investigations documented at discharge.";
     const plan = sections.plan?.trim() || this.generateFallbackPlan(sections.extractedData);
+    const nursing = sections.nursing?.trim() || this.generateFallbackNursingCare(sections.extractedData);
+    const riskFlags = sections.riskFlags?.trim() || this.generateFallbackRiskFlags(sections.extractedData);
 
     console.log("  📋 Final chart note compiled:", {
-      totalLength: subjective.length + objective.length + assessment.length + plan.length,
-      sections: {
-        subjective: subjective.length || 0,
-        objective: objective.length || 0,
-        assessment: assessment.length || 0,
-        plan: plan.length || 0
-      }
+      totalLength: allergies.length + subjective.length + comorbidities.length + objective.length +
+                   procedures.length + hospitalCourse.length + assessment.length + pending.length +
+                   plan.length + nursing.length + riskFlags.length
     });
 
     const finalNote = `DISCHARGE SUMMARY CHART NOTE
@@ -550,17 +980,38 @@ PLAN: [Quality rating and brief feedback]`;
 Patient: ${patient.name || 'Not documented'} | MRN: ${patient.mrn || 'N/A'} | Age: ${patient.age || 'N/A'} ${patient.gender || ''}
 Admission: ${admission.admission_date || 'Not documented'} | Discharge: ${admission.discharge_date || 'Not documented'}
 
+ALLERGIES & ADVERSE REACTIONS
+${allergies.trim()}
+
 CHIEF COMPLAINT & HISTORY
 ${subjective.trim()}
+
+COMORBIDITIES
+${comorbidities.trim()}
 
 PHYSICAL EXAMINATION
 ${objective.trim()}
 
+PROCEDURES & INTERVENTIONS
+${procedures.trim()}
+
+HOSPITAL COURSE
+${hospitalCourse.trim()}
+
 ASSESSMENT
 ${assessment.trim()}
 
+PENDING INVESTIGATIONS
+${pending.trim()}
+
 PLAN
 ${plan.trim()}
+
+NURSING CARE NEEDS
+${nursing.trim()}
+
+RISK FLAGS
+${riskFlags.trim()}
 
 _________________________
 Generated: ${new Date().toLocaleString()}
@@ -609,6 +1060,53 @@ Validation Summary: ${sections.validationSummary}`;
       content += "No medications documented.\n";
     }
     return content;
+  }
+
+  generateFallbackComorbidities(data) {
+    const comorbidities = data.diagnosis?.comorbidities || [];
+    const secondary = data.diagnosis?.secondary || [];
+    if (comorbidities.length > 0) {
+      return `• ${comorbidities.join("\n• ")}`;
+    } else if (secondary.length > 0) {
+      return `• ${secondary.slice(0, 5).join("\n• ")}`;
+    }
+    return "No significant comorbidities documented.";
+  }
+
+  generateFallbackHospitalCourse(data) {
+    const diagnosis = data.diagnosis?.principal || "the presenting condition";
+    const treatment = data.treatment?.current_approach || "standard medical management";
+    return `Patient was admitted with ${diagnosis} and managed with ${treatment}. ` +
+           `Clinical response was monitored throughout the hospital stay. ` +
+           `Patient was stabilized for discharge.`;
+  }
+
+  generateFallbackNursingCare(data) {
+    const nursingNeeds = data.nursing_needs || [];
+    const risks = data.risk_scores || {};
+    let content = "";
+    if (nursingNeeds.length > 0) {
+      content += `• ${nursingNeeds.join("\n• ")}`;
+    }
+    if (risks.fall_risk?.level === "High") {
+      content += `${content ? "\n" : ""}• Fall precautions required`;
+    }
+    if (risks.pressure_ulcer_risk?.level === "High") {
+      content += `${content ? "\n" : ""}• Pressure ulcer prevention measures`;
+    }
+    return content || "Standard nursing care provided.";
+  }
+
+  generateFallbackRiskFlags(data) {
+    const risks = data.risk_scores || {};
+    let flags = [];
+    if (risks.fall_risk?.level === "High") {
+      flags.push(`High Fall Risk (Score: ${risks.fall_risk.score})`);
+    }
+    if (risks.pressure_ulcer_risk?.level === "High") {
+      flags.push(`High Pressure Ulcer Risk (Score: ${risks.pressure_ulcer_risk.score})`);
+    }
+    return flags.length > 0 ? flags.join("\n• ") : "No significant risk flags identified.";
   }
 
   /**
