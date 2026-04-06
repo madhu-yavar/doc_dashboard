@@ -9,6 +9,7 @@ const DischargeExtractorAgent = require("../agents/discharge_extractor_agent.cjs
 const DashboardMapperSkill = require("../skills/clinical/dashboard_mapper.skill.cjs");
 const DoctorAssistantAgent = require("../agents/doctor_assistant_agent.cjs");
 const ChatExportBuilderSkill = require("../skills/chat/chat_export_builder.skill.cjs");
+const SourceHealthTool = require("../tools/chat/source_health.tool.cjs");
 
 const app = express();
 const PORT = Number(process.env.PORT || 8001);
@@ -172,6 +173,7 @@ const dischargeAgent = new DischargeExtractorAgent({
 // Initialize Dashboard Mapper
 const dashboardMapper = new DashboardMapperSkill();
 const chatExportBuilder = new ChatExportBuilderSkill();
+const sourceHealthTool = new SourceHealthTool();
 const doctorAssistantAgent = new DoctorAssistantAgent({
   gemma: {
     baseUrl: GEMMA_URL,
@@ -636,6 +638,15 @@ app.delete("/api/chat/history/:documentId", async (req, res) => {
   }
 
   return res.json({ cleared: true, chatId: removedSession.chatId });
+});
+
+app.get("/api/chat/source-health", async (_req, res) => {
+  try {
+    const sources = await sourceHealthTool.checkAll();
+    return res.json({ sources });
+  } catch (error) {
+    return res.status(500).json({ error: error instanceof Error ? error.message : "Source health check failed" });
+  }
 });
 
 app.post("/api/chat/query", async (req, res) => {
@@ -1233,10 +1244,10 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
     let sectionContent = [];
 
     const sectionTitles = {
-      "HISTORY & PRESENTATION": "HISTORY & PRESENTATION",
-      "CLINICAL FINDINGS": "CLINICAL FINDINGS",
-      "DIAGNOSIS & CLINICAL ASSESSMENT": "DIAGNOSIS & ASSESSMENT",
-      "DISCHARGE PLAN": "DISCHARGE PLAN"
+      "CHIEF COMPLAINT & HISTORY": "CHIEF COMPLAINT & HISTORY",
+      "PHYSICAL EXAMINATION": "PHYSICAL EXAMINATION",
+      "ASSESSMENT": "ASSESSMENT",
+      "PLAN": "PLAN"
     };
 
     // Page height for A4 is ~842 points, footer at 750
@@ -1263,9 +1274,11 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
       doc.fontSize(11).font("Helvetica-Bold").fillColor("white").text(title, leftMargin + 10, yPosition + 6);
       yPosition += 28;
 
-      // Content area with subtle background
-      const sectionStartY = yPosition;
       const textIndent = 12;
+
+      // Special handling for CHIEF COMPLAINT & HISTORY - more paragraph spacing
+      const isChiefComplaint = title === "CHIEF COMPLAINT & HISTORY";
+      const isAssessment = title === "ASSESSMENT";
 
       // Render content with consistent spacing
       let prevWasBullet = false;
@@ -1279,7 +1292,7 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
             const nextLine = content[index + 1].trim();
             const nextIsBullet = /^[\*\-\••]\s+|^(\d+[\.\)])\s+/.test(nextLine);
             if (!nextIsBullet && !prevWasBullet) {
-              yPosition += 8; // Paragraph break
+              yPosition += isChiefComplaint ? 14 : 8; // More spacing for CHIEF COMPLAINT
             }
           }
           return;
@@ -1292,28 +1305,37 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
         const isBullet = /^[\*\-\••]\s+|^(\d+[\.\)])\s+/.test(trimmed);
         const isSubsection = /^\*\*[^*]+\*\*:?$/.test(trimmed);
         const isBoldHeader = /^.+:\s*$/.test(trimmed) && trimmed.length < 60;
+        const isMajorHeader = /^[A-Z][A-Z\s\/]+$/.test(trimmed) && trimmed.length < 30;
 
-        if (isSubsection) {
+        if (isMajorHeader) {
           prevWasBullet = false;
           prevWasHeader = true;
-          yPosition += 6;
+          yPosition += 8;
+
+          doc.fontSize(10).font("Helvetica-Bold").fillColor("#1f2937");
+          doc.text(trimmed, leftMargin + textIndent, yPosition);
+          yPosition += doc.heightOfString(trimmed) + 6;
+        } else if (isSubsection) {
+          prevWasBullet = false;
+          prevWasHeader = true;
+          yPosition += 8;
 
           const headerText = trimmed.replace(/\*\*/g, '').replace(/:$/, '');
-          doc.fontSize(9).font("Helvetica-Bold").fillColor("#1f2937");
+          doc.fontSize(10).font("Helvetica-Bold").fillColor("#1f2937");
           doc.text(headerText, leftMargin + textIndent, yPosition);
-          yPosition += doc.heightOfString(headerText) + 3;
+          yPosition += doc.heightOfString(headerText) + 5;
         } else if (isBoldHeader) {
           prevWasBullet = false;
           prevWasHeader = true;
-          yPosition += 6;
+          yPosition += 8;
 
-          doc.fontSize(9).font("Helvetica-Bold").fillColor("#374151");
+          doc.fontSize(10).font("Helvetica-Bold").fillColor("#374151");
           doc.text(trimmed.replace(/:$/, ''), leftMargin + textIndent, yPosition);
-          yPosition += doc.heightOfString(trimmed.replace(/:$/, '')) + 3;
+          yPosition += doc.heightOfString(trimmed.replace(/:$/, '')) + 5;
         } else if (isBullet) {
-          // Bullet item
+          // Bullet item - use proper bullet symbol
           if (!prevWasBullet) {
-            yPosition += 4; // Space before bullet list starts
+            yPosition += 6; // Space before bullet list starts
           }
           prevWasBullet = true;
           prevWasHeader = false;
@@ -1323,29 +1345,30 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
           const bulletChar = bulletNum ? `${bulletNum[1]}.` : '•';
 
           // Draw bullet in green
-          doc.fillColor("#059669").fontSize(9).font("ZapfDingbats").text(bulletChar, leftMargin + textIndent, yPosition);
+          doc.fillColor("#059669").fontSize(8).text(bulletChar, leftMargin + textIndent, yPosition + 2);
           // Draw text
-          doc.fillColor("#4b5563").fontSize(9).font("Helvetica").text(bulletText, leftMargin + textIndent + 10, yPosition, {
-            width: contentWidth - textIndent * 2 - 15
+          doc.fillColor("#374151").fontSize(9).font("Helvetica").text(bulletText, leftMargin + textIndent + 10, yPosition, {
+            width: contentWidth - textIndent * 2 - 20
           });
 
-          yPosition += Math.max(doc.heightOfString(bulletText, { width: contentWidth - textIndent * 2 - 15 }), 12) + 2;
+          yPosition += Math.max(doc.heightOfString(bulletText, { width: contentWidth - textIndent * 2 - 20 }), 12) + 3;
         } else {
           // Regular paragraph text
           if (prevWasBullet || prevWasHeader) {
-            yPosition += 4; // Space after bullets/headers
+            yPosition += 6; // Space after bullets/headers
           }
           prevWasBullet = false;
           prevWasHeader = false;
 
           doc.fontSize(9).font("Helvetica").fillColor("#374151");
+          const lineHeight = isChiefComplaint ? 2.0 : 1.5;
           const options = {
             width: contentWidth - textIndent * 2,
             align: 'justify',
-            lineGap: 1.5
+            lineGap: lineHeight
           };
           doc.text(trimmed, leftMargin + textIndent, yPosition, options);
-          yPosition += doc.heightOfString(trimmed, options) + 6;
+          yPosition += doc.heightOfString(trimmed, options) + (isChiefComplaint ? 10 : 6);
         }
       });
 
@@ -1355,13 +1378,29 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
     for (const line of lines) {
       const trimmed = line.trim();
 
-      // Check for section headers - support multiple formats
-      // Matches: "SUBJECTIVE - ...", "OBJECTIVE - ...", "ASSESSMENT - ...", "PLAN - ..."
-      // Also matches: "S - SUBJECTIVE", "O - OBJECTIVE", etc.
-      const isSubjective = trimmed.match(/^SUBJECTIVE|^S - SUBJECTIVE|HISTORY & PRESENTATION/i);
-      const isObjective = trimmed.match(/^OBJECTIVE|^O - OBJECTIVE|CLINICAL FINDINGS/i);
-      const isAssessment = trimmed.match(/^ASSESSMENT|^A - ASSESSMENT|^DIAGNOSIS/i);
-      const isPlan = trimmed.match(/^PLAN|^P - PLAN|^DISCHARGE PLAN/i);
+      // Check for section headers - must be exact match on the line (not part of other text)
+      // This prevents matching "Plan & Management Strategy:" as a PLAN section
+      const isSubjective = trimmed === "CHIEF COMPLAINT & HISTORY" ||
+                          trimmed === "SUBJECTIVE - HISTORY & PRESENTATION" ||
+                          trimmed === "SUBJECTIVE" ||
+                          trimmed === "S - SUBJECTIVE" ||
+                          trimmed === "HISTORY & PRESENTATION";
+
+      const isObjective = trimmed === "PHYSICAL EXAMINATION" ||
+                        trimmed === "OBJECTIVE - CLINICAL FINDINGS" ||
+                        trimmed === "OBJECTIVE" ||
+                        trimmed === "O - OBJECTIVE" ||
+                        trimmed === "CLINICAL FINDINGS";
+
+      const isAssessment = trimmed === "ASSESSMENT" ||
+                          trimmed === "ASSESSMENT - DIAGNOSIS & CLINICAL JUDGMENT" ||
+                          trimmed === "A - ASSESSMENT" ||
+                          trimmed === "DIAGNOSIS & ASSESSMENT";
+
+      const isPlan = trimmed === "PLAN" ||
+                    trimmed === "PLAN - DISCHARGE PLAN & RECOMMENDATIONS" ||
+                    trimmed === "P - PLAN" ||
+                    trimmed === "DISCHARGE PLAN";
 
       if (isSubjective || isObjective || isAssessment || isPlan) {
 
@@ -1371,15 +1410,15 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
           sectionContent = [];
         }
 
-        // Determine proper section title
+        // Determine proper section title (new standard format)
         if (isSubjective) {
-          currentSection = "HISTORY & PRESENTATION";
+          currentSection = "CHIEF COMPLAINT & HISTORY";
         } else if (isObjective) {
-          currentSection = "CLINICAL FINDINGS";
+          currentSection = "PHYSICAL EXAMINATION";
         } else if (isAssessment) {
-          currentSection = "DIAGNOSIS & ASSESSMENT";
+          currentSection = "ASSESSMENT";
         } else if (isPlan) {
-          currentSection = "DISCHARGE PLAN";
+          currentSection = "PLAN";
         }
         continue;
       }

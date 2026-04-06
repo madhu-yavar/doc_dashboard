@@ -280,7 +280,7 @@ SUBJECTIVE SECTION:
     });
 
     const content = result.success ? result.content : "";
-    const sectionContent = this.extractAfter(content, "SUBJECTIVE SECTION");
+    const sectionContent = this.cleanSectionContent(this.extractAfter(content, "SUBJECTIVE SECTION"));
 
     console.log("  📝 Subjective section generated:", {
       length: sectionContent?.length || 0,
@@ -337,7 +337,7 @@ OBJECTIVE SECTION:
     });
 
     const content = result.success ? result.content : "";
-    const sectionContent = this.extractAfter(content, "OBJECTIVE SECTION");
+    const sectionContent = this.cleanSectionContent(this.extractAfter(content, "OBJECTIVE SECTION"));
 
     console.log("  📝 Objective section generated:", {
       length: sectionContent?.length || 0,
@@ -390,7 +390,7 @@ ASSESSMENT SECTION:
     });
 
     const content = result.success ? result.content : "";
-    const sectionContent = this.extractAfter(content, "ASSESSMENT SECTION");
+    const sectionContent = this.cleanSectionContent(this.extractAfter(content, "ASSESSMENT SECTION"));
 
     console.log("  📝 Assessment section generated:", {
       length: sectionContent?.length || 0,
@@ -446,7 +446,7 @@ PLAN SECTION:
     });
 
     const content = result.success ? result.content : "";
-    const sectionContent = this.extractAfter(content, "PLAN SECTION");
+    const sectionContent = this.cleanSectionContent(this.extractAfter(content, "PLAN SECTION"));
 
     console.log("  📝 Plan section generated:", {
       length: sectionContent?.length || 0,
@@ -550,17 +550,17 @@ PLAN: [Quality rating and brief feedback]`;
 Patient: ${patient.name || 'Not documented'} | MRN: ${patient.mrn || 'N/A'} | Age: ${patient.age || 'N/A'} ${patient.gender || ''}
 Admission: ${admission.admission_date || 'Not documented'} | Discharge: ${admission.discharge_date || 'Not documented'}
 
-SUBJECTIVE - HISTORY & PRESENTATION
-${subjective}
+CHIEF COMPLAINT & HISTORY
+${subjective.trim()}
 
-OBJECTIVE - CLINICAL FINDINGS
-${objective}
+PHYSICAL EXAMINATION
+${objective.trim()}
 
-ASSESSMENT - DIAGNOSIS & CLINICAL JUDGMENT
-${assessment}
+ASSESSMENT
+${assessment.trim()}
 
-PLAN - DISCHARGE PLAN & RECOMMENDATIONS
-${plan}
+PLAN
+${plan.trim()}
 
 _________________________
 Generated: ${new Date().toLocaleString()}
@@ -637,16 +637,16 @@ Validation Summary: ${sections.validationSummary}`;
         for (let i = 0; i < lines.length; i++) {
           if (lines[i].trim() && !lines[i].startsWith('THOUGHT')) {
             // Found actual content
-            return lines.slice(i).join('\n').trim();
+            return this.cleanSectionContent(lines.slice(i).join('\n'));
           }
         }
       }
-      return content;
+      return this.cleanSectionContent(content);
     }
-    const extracted = content.substring(index + marker.length).trim();
+    let extracted = content.substring(index + marker.length).trim();
     if (!extracted) {
       console.log(`    ⚠️ Empty content after marker "${marker}"`);
-      return content; // Fallback to full content
+      return this.cleanSectionContent(content); // Fallback to full content
     }
     // Remove any remaining section markers that might appear after
     const lines = extracted.split('\n');
@@ -656,7 +656,23 @@ Validation Summary: ${sections.validationSummary}`;
       if (line.match(/^(OBJECTIVE|ASSESSMENT|PLAN|REVIEW):/i)) break;
       cleaned.push(line);
     }
-    return cleaned.join('\n').trim();
+    return this.cleanSectionContent(cleaned.join('\n').trim());
+  }
+
+  /**
+   * Clean section content - remove leading artifacts like colons, extra whitespace
+   */
+  cleanSectionContent(content) {
+    if (!content) return '';
+    let cleaned = content;
+    // Remove leading colon or artifacts on first line
+    const lines = cleaned.split('\n');
+    if (lines.length > 0 && lines[0].trim() === ':') {
+      lines.shift(); // Remove the stray colon line
+    }
+    // Also remove leading colon if content starts with it
+    cleaned = lines.join('\n').replace(/^:\s*/, '').trim();
+    return cleaned;
   }
 
   /**
