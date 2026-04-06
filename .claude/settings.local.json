@@ -104,7 +104,11 @@
       "Bash(pdftotext /tmp/medical_report4.pdf -)",
       "Bash(npx tsc:*)",
       "Bash(pkill -f \"node.*server\")",
-      "Bash(lsof -ti:8080,8081)"
+      "Bash(lsof -ti:8080,8081)",
+      "Bash(curl:*)",
+      "Bash(git push)",
+      "Bash(node:*)",
+      "Bash(cat:*)"
     ]
   }
 }

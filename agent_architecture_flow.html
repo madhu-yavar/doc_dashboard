@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Architecture Flow Diagram</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 1200px;
+      width: 100%;
+    }
+    .diagram {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    h1 {
+      text-align: center;
+      color: #1a1a2e;
+      margin-bottom: 8px;
+      font-size: 24px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 13px;
+    }
+
+    /* Architecture Container */
+    .architecture {
+      position: relative;
+      padding: 20px 30px 20px 70px;
+    }
+
+    /* Level Styles */
+    .level {
+      position: relative;
+      margin-bottom: 18px;
+    }
+
+    .level-title {
+      position: absolute;
+      left: -55px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      font-weight: bold;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    .level-content {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Box Styles - Simplified Colors */
+    .box {
+      border-radius: 8px;
+      padding: 12px 16px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      cursor: default;
+    }
+
+    .box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+
+    .orchestrator {
+      background: #8b5cf6;
+      color: white;
+      padding: 14px 35px;
+    }
+
+    .agent {
+      background: #ec4899;
+      color: white;
+      min-width: 140px;
+    }
+
+    .skill {
+      background: #3b82f6;
+      color: white;
+      min-width: 110px;
+      font-size: 11px;
+    }
+
+    .tool {
+      background: #10b981;
+      color: white;
+      min-width: 90px;
+      font-size: 10px;
+      padding: 10px 12px;
+    }
+
+    .llm {
+      background: #f59e0b;
+      color: white;
+      padding: 14px 45px;
+    }
+
+    .box-title {
+      font-weight: 600;
+      margin-bottom: 2px;
+      font-size: 12px;
+    }
+
+    .box-desc {
+      font-size: 10px;
+      opacity: 0.9;
+    }
+
+    /* Animated Connector Lines */
+    .connector-vertical {
+      width: 2px;
+      height: 25px;
+      margin: 0 auto;
+      position: relative;
+      background: #cbd5e1;
+      overflow: hidden;
+    }
+
+    .connector-vertical::before {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom, transparent, #64748b, transparent);
+      animation: flowDown 1.5s linear infinite;
+    }
+
+    .connector-vertical::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid #64748b;
+    }
+
+    @keyframes flowDown {
+      0% { top: -100%; }
+      100% { top: 100%; }
+    }
+
+    /* Animated Flow Lines */
+    .flow-line {
+      position: absolute;
+      height: 2px;
+      background: linear-gradient(to right, transparent, #64748b, transparent);
+      animation: flowAcross 2s linear infinite;
+    }
+
+    @keyframes flowAcross {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* Pulse Animation for Boxes */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+
+    .box.active {
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    /* Staggered animation for levels */
+    .level:nth-child(1) .box { animation-delay: 0s; }
+    .level:nth-child(3) .box { animation-delay: 0.3s; }
+    .level:nth-child(5) .box { animation-delay: 0.6s; }
+    .level:nth-child(7) .box { animation-delay: 0.9s; }
+    .level:nth-child(9) .box { animation-delay: 1.2s; }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .legend-box {
+      width: 24px;
+      height: 16px;
+      border-radius: 4px;
+    }
+
+    .legend-orchestrator { background: #8b5cf6; }
+    .legend-agent { background: #ec4899; }
+    .legend-skill { background: #3b82f6; }
+    .legend-tool { background: #10b981; }
+    .legend-llm { background: #f59e0b; }
+
+    /* Example Flow Section */
+    .example-section {
+      margin-top: 25px;
+      padding: 18px;
+      background: #f8fafc;
+      border-radius: 10px;
+      border-left: 4px solid #8b5cf6;
+    }
+
+    .example-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 10px;
+    }
+
+    .example-flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 11px;
+    }
+
+    .example-step {
+      background: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      white-space: nowrap;
+    }
+
+    .example-arrow {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    /* Animated dots for flow */
+    .flow-dots {
+      display: inline-flex;
+      gap: 3px;
+    }
+
+    .flow-dots span {
+      width: 4px;
+      height: 4px;
+      background: #64748b;
+      border-radius: 50%;
+      animation: bounce 1.4s ease-in-out infinite;
+    }
+
+    .flow-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .flow-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-5px); }
+    }
+
+    /* Tags */
+    .tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-size: 8px;
+      margin-top: 3px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .architecture {
+        padding-left: 50px;
+      }
+      .level-title {
+        left: -40px;
+        font-size: 9px;
+      }
+      .box {
+        min-width: auto;
+        font-size: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="diagram">
+      <h1>🔄 Agent Architecture Flow</h1>
+      <p class="subtitle">Orchestrator → Agents → Skills → Tools → LLM</p>
+
+      <div class="architecture">
+        <!-- LEVEL 5: ORCHESTRATOR -->
+        <div class="level">
+          <span class="level-title">Level 5</span>
+          <div class="level-content">
+            <div class="box orchestrator active">
+              <div class="box-title">🎯 Orchestrator</div>
+              <div class="box-desc">Routes requests • Coordinates</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector-vertical"></div>
+
+        <!-- LEVEL 4: AGENTS -->
+        <div class="level">
+          <span class="level-title">Level 4</span>
+          <div class="level-content">
+            <div class="box agent active">
+              <div class="box-title">📄 PDF Extractor</div>
+              <div class="box-desc">7 Skills • 30-45s</div>
+              <span class="tag">ReAct</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">💬 Doctor Assistant</div>
+              <div class="box-desc">6 Sub-agents • 3-8s</div>
+              <span class="tag">Multi-Agent</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">📝 Chart Note</div>
+              <div class="box-desc">1 Skill • 15-25s</div>
+              <span class="tag">ReAct</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">🖥️ Dashboard Presenter</div>
+              <div class="box-desc">3 Skills • UI Components</div>
+              <span class="tag">Transform</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector-vertical"></div>
+
+        <!-- LEVEL 3: SKILLS -->
+        <div class="level">
+          <span class="level-title">Level 3</span>
+          <div class="level-content">
+            <div class="box skill active">
+              <div class="box-title">📊 Document Analyzer</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">👤 Demographics</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🩺 Vitals</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">⚠️ Risk Scores</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🏥 Clinical Data</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">✅ Cross Validator</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">💬 Note Suggester</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🔗 Abnormal Flag</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">📋 Note Composer</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🎨 Dashboard Mapper</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector-vertical"></div>
+
+        <!-- LEVEL 2: TOOLS -->
+        <div class="level">
+          <span class="level-title">Level 2</span>
+          <div class="level-content">
+            <div class="box tool active">
+              <div class="box-title">📖 PDF Reader</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🧠 Gemma Client</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">📝 Prompt Builder</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🔗 Citation Tracker</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">📊 Provenance</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🔍 Query Classifier</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">✓ Confidence Scorer</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🎯 Card Selector</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">💬 Chat Builder</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🔧 Timer • Cache</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector-vertical"></div>
+
+        <!-- LEVEL 1: LLM -->
+        <div class="level">
+          <span class="level-title">Level 1</span>
+          <div class="level-content">
+            <div class="box llm active">
+              <div class="box-title">🧠 LLM Foundation</div>
+              <div class="box-desc">Gemma 4-26B • On-prem • 24K context</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Example Flow -->
+      <div class="example-section">
+        <div class="example-title">
+          📌 Example: "Why is BP low?"
+          <div class="flow-dots" style="float: right;">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="example-flow">
+          <div class="example-step">User</div>
+          <span class="example-arrow">→</span>
+          <div class="example-step">Orchestrator</div>
+          <span class="example-arrow">→</span>
+          <div class="example-step">Doctor Assistant</div>
+          <span class="example-arrow">→</span>
+          <div class="example-step">Query Intent</div>
+          <span class="example-arrow">→</span>
+          <div class="example-step">Record Context</div>
+          <span class="example-arrow">→</span>
+          <div class="example-step">Answer Composer</div>
+          <span class="example-arrow">→</span>
+          <div class="example-step">Safety Guard</div>
+          <span class="example-arrow">→</span>
+          <div class="example-step">Response</div>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-box legend-orchestrator"></div>
+          <span>Orchestrator</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-box legend-agent"></div>
+          <span>Agents (4)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-box legend-skill"></div>
+          <span>Skills (16)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-box legend-tool"></div>
+          <span>Tools (25+)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-box legend-llm"></div>
+          <span>LLM</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
