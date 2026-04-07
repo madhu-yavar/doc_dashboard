@@ -110,7 +110,10 @@
       "Bash(node:*)",
       "Bash(cat:*)",
       "Bash(ls:*)",
-      "Bash(docker build:*)"
+      "Bash(docker build:*)",
+      "Bash(git revert:*)",
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)"
     ]
   }
 }
