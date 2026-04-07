@@ -111,6 +111,132 @@ class MedicalWebSearchTool {
     return Array.from(variants).filter(Boolean);
   }
 
+  extractText(value) {
+    if (typeof value === "string") return value.trim();
+    if (typeof value === "number") return String(value);
+    if (Array.isArray(value)) {
+      return value.map((item) => this.extractText(item)).filter(Boolean).join(" ").trim();
+    }
+    if (value && typeof value === "object") {
+      return (
+        this.extractText(value.$t) ||
+        this.extractText(value._) ||
+        this.extractText(value.value) ||
+        this.extractText(value.content) ||
+        ""
+      ).trim();
+    }
+    return "";
+  }
+
+  buildRxNormSearchUrl(name = "") {
+    return `https://rxnav.nlm.nih.gov/REST/drugs.json?name=${this.encode(name)}`;
+  }
+
+  async searchRxNorm(query) {
+    const queries = this.buildDrugQueries(query);
+    const seen = new Set();
+    const results = [];
+
+    for (const drug of queries) {
+      const payload = await this.fetchJson(this.buildRxNormSearchUrl(drug));
+      const groups = Array.isArray(payload?.drugGroup?.conceptGroup) ? payload.drugGroup.conceptGroup : [];
+
+      for (const group of groups) {
+        const concepts = Array.isArray(group?.conceptProperties) ? group.conceptProperties : [];
+        for (const item of concepts) {
+          const key = `${item?.rxcui || ""}:${item?.name || ""}`;
+          if (!item?.name || seen.has(key)) continue;
+          seen.add(key);
+          results.push({
+            value: item.name,
+            title: item.name,
+            snippet: `${item.synonym ? `${item.synonym}. ` : ""}${item.tty ? `Term type: ${item.tty}. ` : ""}${item.rxcui ? `RxCUI: ${item.rxcui}.` : ""}`.trim(),
+            source_section: "RxNorm",
+            url: this.buildRxNormSearchUrl(drug),
+            retrieved_at: new Date().toISOString(),
+            confidence: 0.82,
+            label: `[RxNorm: ${item.name}]`,
+          });
+          if (results.length >= 5) return results;
+        }
+      }
+    }
+
+    return results;
+  }
+
+  async searchMedlinePlus(query) {
+    const results = [];
+    const seen = new Set();
+    const names = this.buildDrugQueries(query);
+    let rxnormCandidates = [];
+
+    try {
+      rxnormCandidates = await this.searchRxNorm(query);
+    } catch {}
+
+    const candidates = [];
+    for (const item of rxnormCandidates.slice(0, 2)) {
+      const match = String(item.snippet || "").match(/RxCUI:\s*(\d+)/i);
+      candidates.push({
+        rxcui: match?.[1] || "",
+        name: item.title || item.value || "",
+      });
+    }
+
+    if (!candidates.length) {
+      for (const name of names.slice(0, 2)) {
+        candidates.push({ rxcui: "", name });
+      }
+    }
+
+    for (const candidate of candidates) {
+      const params = new URLSearchParams({
+        "mainSearchCriteria.v.cs": "2.16.840.1.113883.6.88",
+        knowledgeResponseType: "application/json",
+        "informationRecipient.languageCode.c": "en",
+      });
+      if (candidate.rxcui) params.set("mainSearchCriteria.v.c", candidate.rxcui);
+      if (candidate.name) params.set("mainSearchCriteria.v.dn", candidate.name);
+
+      const url = `https://connect.medlineplus.gov/service?${params.toString()}`;
+      const payload = await this.fetchJson(url);
+      const feed = payload?.feed || payload;
+      const entries = Array.isArray(feed?.entry) ? feed.entry : feed?.entry ? [feed.entry] : [];
+
+      for (const entry of entries) {
+        const title = this.extractText(entry?.title);
+        const snippet =
+          this.extractText(entry?.summary) ||
+          this.extractText(entry?.content) ||
+          this.extractText(entry?.subtitle) ||
+          "MedlinePlus information retrieved.";
+        const links = Array.isArray(entry?.link) ? entry.link : entry?.link ? [entry.link] : [];
+        const displayUrl =
+          links.find((link) => typeof link?.href === "string" && /medlineplus\.gov/i.test(link.href))?.href ||
+          "https://medlineplus.gov/druginformation.html";
+        const key = `${title}|${displayUrl}`;
+        if (!title || seen.has(key)) continue;
+        seen.add(key);
+        results.push({
+          value: title,
+          title,
+          snippet,
+          source_section: "MedlinePlus",
+          url,
+          display_url: displayUrl,
+          retrieved_at: new Date().toISOString(),
+          confidence: 0.8,
+          label: `[MedlinePlus: ${title}]`,
+        });
+        if (results.length >= 5) return results;
+      }
+    }
+
+    return results;
+  }
+
   async searchIcd(query) {
     const url = `https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?sf=code,name&terms=${this.encode(query)}&maxList=3`;
     const payload = await this.fetchJson(url);
@@ -141,6 +267,9 @@ class MedicalWebSearchTool {
   async searchOpenFda(query) {
     const queries = this.buildDrugQueries(query);
     const results = [];
+    const lower = String(query || "").toLowerCase();
+    const wantsPurpose = /\b(what does|used for|purpose|why do we need|role|indication)\b/.test(lower);
+    const wantsComposition = /\b(composition|ingredient|contains|active ingredient)\b/.test(lower);
 
     for (const drug of queries) {
       const searchExpr = [
@@ -157,9 +286,11 @@ class MedicalWebSearchTool {
             value: item.openfda?.generic_name?.[0] || drug,
             title: item.openfda?.brand_name?.[0] || item.openfda?.generic_name?.[0] || drug,
             snippet:
-              item.description?.[0] ||
-              item.dosage_and_administration?.[0] ||
-              item.indications_and_usage?.[0] ||
+              (wantsPurpose
+                ? item.indications_and_usage?.[0] || item.dosage_and_administration?.[0] || item.description?.[0]
+                : wantsComposition
+                ? item.description?.[0] || item.indications_and_usage?.[0]
+                : item.description?.[0] || item.dosage_and_administration?.[0] || item.indications_and_usage?.[0]) ||
               item.warnings?.[0] ||
               "FDA label data retrieved.",
             source_section: "FDA Drug Label",
@@ -237,6 +368,8 @@ class MedicalWebSearchTool {
     if (!query) return [];
 
     if (source === "icd") return this.searchIcd(query);
+    if (source === "rxnorm") return this.searchRxNorm(query);
+    if (source === "medlineplus") return this.searchMedlinePlus(query);
     if (source === "openfda") return this.searchOpenFda(query);
     if (source === "pubmed") return this.searchPubMed(query);
     if (source === "clinicaltrials") return this.searchClinicalTrials(query);
@@ -254,8 +387,15 @@ class MedicalWebSearchTool {
 
     if (intent === "diagnosis_code") return this.searchIcd(query);
     if (intent === "drug_safety") {
-      const [fda, pubmed] = await Promise.allSettled([this.searchOpenFda(query), this.searchPubMed(query)]);
+      const [rxnorm, medlineplus, fda, pubmed] = await Promise.allSettled([
+        this.searchRxNorm(query),
+        this.searchMedlinePlus(query),
+        this.searchOpenFda(query),
+        this.searchPubMed(query),
+      ]);
       return [
+        ...(rxnorm.status === "fulfilled" ? rxnorm.value : []),
+        ...(medlineplus.status === "fulfilled" ? medlineplus.value : []),
         ...(fda.status === "fulfilled" ? fda.value : []),
         ...(pubmed.status === "fulfilled" ? pubmed.value : []),
       ];
@@ -263,8 +403,13 @@ class MedicalWebSearchTool {
     if (intent === "literature_query" || intent === "guideline_query") return this.searchPubMed(query);
     if (/trial/i.test(query)) return this.searchClinicalTrials(query);
 
-    const [pubmed, fda] = await Promise.allSettled([this.searchPubMed(query), this.searchOpenFda(query)]);
+    const [medlineplus, pubmed, fda] = await Promise.allSettled([
+      this.searchMedlinePlus(query),
+      this.searchPubMed(query),
+      this.searchOpenFda(query),
+    ]);
     return [
+      ...(medlineplus.status === "fulfilled" ? medlineplus.value : []),
       ...(pubmed.status === "fulfilled" ? pubmed.value : []),
       ...(fda.status === "fulfilled" ? fda.value : []),
     ];

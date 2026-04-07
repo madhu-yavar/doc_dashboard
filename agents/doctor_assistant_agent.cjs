@@ -397,20 +397,25 @@ class DoctorAssistantAgent {
     }
 
     const externalResult = classification.needsExternal
-      ? await this.externalAgent.execute({ query: executionMessage, classification })
+      ? await this.externalAgent.execute({ query: executionMessage, classification, internalEvidence })
       : { success: true, data: { evidence: [], source_class: "internal" } };
     const externalEvidence = externalResult.data.evidence || [];
     const externalError = externalResult.data.error || null;
     const externalErrorType = externalResult.data.error_type || null;
+    const externalResolution = externalResult.data.resolution || null;
 
     const safety = await this.safetyAgent.execute({
       classification,
       internalEvidence,
       externalEvidence,
     });
+    const allowResolvedDrugFallback =
+      classification.intent === "drug_safety" &&
+      !externalEvidence.length &&
+      Boolean(externalResolution?.generic_name || externalResolution?.normalized_display);
 
     let answerPayload;
-    if (safety.data.refusal.refused) {
+    if (safety.data.refusal.refused && !allowResolvedDrugFallback) {
       answerPayload = {
         answer: safety.data.refusal.reason,
         citations: [],
@@ -426,13 +431,17 @@ class DoctorAssistantAgent {
       const internalSummary = internalEvidence[0]?.value
         ? ` The uploaded record documents: ${internalEvidence[0].value}.`
         : "";
+      const resolvedSummary =
+        externalResolution?.generic_name || externalResolution?.normalized_display
+          ? ` I identified the medication as ${externalResolution.generic_name || externalResolution.normalized_display}, but I could not retrieve a reliable external fact for this question right now.`
+          : "";
       const failureReason =
         externalErrorType === "no_results"
           ? "I searched approved external medical sources but did not find a reliable answer for that question."
           : "I tried approved external medical sources, but the external search is unavailable right now.";
 
       answerPayload = {
-        answer: `${failureReason}${internalSummary}`,
+        answer: `${failureReason}${resolvedSummary}${internalSummary}`,
         citations: internalEvidence.length ? [internalEvidence[0]] : [],
         source_class: internalEvidence.length ? "mixed" : "external",
       };
@@ -443,6 +452,7 @@ class DoctorAssistantAgent {
           classification,
           internalEvidence,
           externalEvidence,
+          externalMeta: { resolution: externalResolution },
           chatHistory: session.messages,
         })
       ).data;

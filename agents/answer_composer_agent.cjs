@@ -1,6 +1,7 @@
 const GemmaClientTool = require("../tools/llm/gemma_client.tool.cjs");
 const ChatPromptBuilderTool = require("../tools/chat/chat_prompt_builder.tool.cjs");
 const CitationAssemblerTool = require("../tools/chat/citation_assembler.tool.cjs");
+const DrugFactExtractorTool = require("../tools/chat/drug_fact_extractor.tool.cjs");
 
 class AnswerComposerAgent {
   constructor(config = {}) {
@@ -9,6 +10,7 @@ class AnswerComposerAgent {
     this.gemmaClient = new GemmaClientTool(config.gemma || {});
     this.promptBuilder = new ChatPromptBuilderTool(config);
     this.citationAssembler = new CitationAssemblerTool(config);
+    this.drugFactExtractor = new DrugFactExtractorTool(config);
   }
 
   buildFactAnswer(classification, internalEvidence = []) {
@@ -105,31 +107,21 @@ class AnswerComposerAgent {
     };
   }
 
-  buildDrugKnowledgeAnswer(message, internalEvidence = [], externalEvidence = []) {
+  buildDrugKnowledgeAnswer(message, internalEvidence = [], externalEvidence = [], resolution = null) {
     if (!externalEvidence.length) return null;
 
     const topInternal = internalEvidence[0];
-    const topExternal = externalEvidence[0];
-    const lower = String(message || "").toLowerCase();
     const internalLine = topInternal?.value ? `Patient Record: ${topInternal.value}.` : "";
-    const externalLine = this.bestExternalSummary(topExternal);
+    const extracted = this.drugFactExtractor.extract({ message, externalEvidence, resolution });
+    const externalLine = extracted?.answer || this.bestExternalSummary(externalEvidence[0]);
 
     if (!externalLine) return null;
 
-    let answer = "";
-    if (/\b(composition|ingredient)\b/.test(lower)) {
-      answer = `${internalLine ? `${internalLine}\n\n` : ""}External Reference: ${externalLine}`;
-    } else if (/\b(come with|come in|strength|dose|dosage|syrup|tablet|injection|availability|market)\b/.test(lower)) {
-      answer = `${internalLine ? `${internalLine}\n\n` : ""}External Reference: ${externalLine}`;
-    } else if (/\b(what does|what is .* used for|why do we need|role)\b/.test(lower)) {
-      answer = `${internalLine ? `${internalLine}\n\n` : ""}External Reference: ${externalLine}`;
-    } else {
-      answer = `${internalLine ? `${internalLine}\n\n` : ""}External Reference: ${externalLine}`;
-    }
+    const answer = `${internalLine ? `${internalLine}\n\n` : ""}External Reference: ${externalLine}`;
 
     return {
       answer,
-      citations: this.citationAssembler.assemble([topInternal, ...externalEvidence].filter(Boolean), { max: 4 }),
+      citations: this.citationAssembler.assemble([topInternal, ...(extracted?.citations || externalEvidence)].filter(Boolean), { max: 4 }),
       source_class: topInternal ? "mixed" : "external",
     };
   }
@@ -153,7 +145,7 @@ class AnswerComposerAgent {
     };
   }
 
-  async execute({ message, classification, internalEvidence = [], externalEvidence = [], chatHistory = [] }) {
+  async execute({ message, classification, internalEvidence = [], externalEvidence = [], chatHistory = [], externalMeta = null }) {
     if (classification?.responseStyle === "factoid" && internalEvidence.length && !externalEvidence.length) {
       const factAnswer = this.buildFactAnswer(classification, internalEvidence);
       if (factAnswer) {
@@ -187,8 +179,8 @@ class AnswerComposerAgent {
       }
     }
 
-    if (classification?.intent === "drug_safety" && externalEvidence.length) {
-      const drugAnswer = this.buildDrugKnowledgeAnswer(message, internalEvidence, externalEvidence);
+    if ((classification?.intent === "drug_safety" || externalMeta?.resolution?.generic_name || externalMeta?.resolution?.normalized_display) && externalEvidence.length) {
+      const drugAnswer = this.buildDrugKnowledgeAnswer(message, internalEvidence, externalEvidence, externalMeta?.resolution || null);
       if (drugAnswer) {
         return {
           success: true,

@@ -16,10 +16,13 @@ class ExternalSourceRankerTool {
       if (text.includes(term)) score += 0.08;
     }
 
-    if (/pubmed|fda|clinicaltrials|icd|nlm/i.test(section)) score += 0.1;
+    if (/pubmed|fda|clinicaltrials|icd|nlm|rxnorm|medlineplus/i.test(section)) score += 0.1;
     if (knowledgeType === "coding_reference" && /icd|nlm/.test(section)) score += 0.3;
     if (knowledgeType === "drug_knowledge" && /fda|dailymed/.test(`${section} ${item.url || ""}`.toLowerCase())) score += 0.25;
+    if (knowledgeType === "drug_knowledge" && /rxnorm|medlineplus/.test(`${section} ${item.url || ""}`.toLowerCase())) score += 0.22;
+    if (knowledgeType === "drug_comparison" && /rxnorm|medlineplus|fda|dailymed/.test(`${section} ${item.url || ""}`.toLowerCase())) score += 0.24;
     if (knowledgeType === "clinical_explanation" && /pubmed/.test(section)) score += 0.22;
+    if (knowledgeType === "clinical_explanation" && /medlineplus/.test(section)) score += 0.12;
     if (knowledgeType === "clinical_explanation" && /fda|dailymed/.test(`${section} ${item.url || ""}`.toLowerCase())) score -= 0.1;
     return score;
   }

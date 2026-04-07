@@ -5,10 +5,26 @@ class SourceHealthTool {
     this.config = { timeout: 12000, ...config };
     this.sources = {
       openfda: "https://api.fda.gov/drug/label.json?limit=1",
+      openfda_docs: "https://open.fda.gov/apis/drug/",
       dailymed: "https://dailymed.nlm.nih.gov/dailymed/",
       pubmed: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/einfo.fcgi?db=pubmed&retmode=json",
       icd: "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=test&maxList=1",
       clinicaltrials: "https://clinicaltrials.gov/api/v2/studies?query.term=heart&pageSize=1",
+      rxnorm: "https://rxnav.nlm.nih.gov/REST/version.json",
+      medlineplus: "https://medlineplus.gov/",
+      medlineplus_connect: "https://connect.medlineplus.gov/service",
+      who_icd: "https://icd.who.int/",
+      who_id: "https://id.who.int/",
+      cdsco: "https://cdsco.gov.in/opencms/opencms/en/Home/",
+      ipc: "https://www.ipc.gov.in/",
+      icmr: "https://www.icmr.gov.in/guidelines",
+      mohfw_stg: "https://clinicalestablishments.mohfw.gov.in/en/standard-treatment-guidelines",
+      ncdc: "https://ncdc.mohfw.gov.in/resource-library-tab1/",
+      nvhcp: "https://nvhcp.mohfw.gov.in/Guidelines",
+      nmc: "https://www.nmc.org.in/",
+      janaushadhi: "https://janaushadhi.gov.in/index.html",
+      pharmaceuticals: "https://pharmaceuticals.gov.in/",
+      nppa: "https://nppaindia.nic.in/",
     };
   }
 

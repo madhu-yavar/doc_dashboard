@@ -4,6 +4,7 @@ const ExternalSourceRankerTool = require("../tools/chat/external_source_ranker.t
 const ExternalCitationNormalizerTool = require("../tools/chat/external_citation_normalizer.tool.cjs");
 const ExternalQueryPlannerTool = require("../tools/chat/external_query_planner.tool.cjs");
 const SourceRouterTool = require("../tools/chat/source_router.tool.cjs");
+const DrugEntityResolverTool = require("../tools/chat/drug_entity_resolver.tool.cjs");
 
 class ExternalKnowledgeAgent {
   constructor(config = {}) {
@@ -15,6 +16,7 @@ class ExternalKnowledgeAgent {
     this.normalizer = new ExternalCitationNormalizerTool(config);
     this.queryPlanner = new ExternalQueryPlannerTool(config);
     this.sourceRouter = new SourceRouterTool(config);
+    this.drugResolver = new DrugEntityResolverTool(config);
   }
 
   extractTerms(text = "") {
@@ -56,21 +58,38 @@ class ExternalKnowledgeAgent {
     const knowledgeType = String(plan.knowledge_type || "").toLowerCase();
     if (knowledgeType === "coding_reference") return results;
 
-    const terms = this.extractTerms(plan.entity || plan.search_queries?.[0] || "");
+    const resolvedTerms = [
+      plan.resolved_entity?.generic_name,
+      plan.resolved_entity?.normalized_display,
+      ...(plan.resolved_entity?.ingredient_list || []),
+    ].filter(Boolean);
+    const terms = this.extractTerms([plan.entity, plan.search_queries?.[0], ...resolvedTerms].filter(Boolean).join(" "));
     if (!terms.length) return results;
 
     return results.filter((item) => {
       const source = `${item.source_section || ""} ${item.url || ""}`.toLowerCase();
-      if (/fda|dailymed|clinicaltables/.test(source)) return true;
+      if (/fda|dailymed|clinicaltables|rxnorm|medlineplus/.test(source)) return true;
 
       const haystack = `${item.title || ""} ${item.value || ""} ${item.snippet || ""}`.toLowerCase();
       return terms.some((term) => haystack.includes(term));
     });
   }
 
-  async execute({ query, classification }) {
+  async execute({ query, classification, internalEvidence = [] }) {
     try {
       const plan = await this.queryPlanner.plan(query, classification);
+      if (plan.knowledge_type === "drug_knowledge" || plan.knowledge_type === "drug_comparison") {
+        plan.resolved_entity = await this.drugResolver.resolve(query, internalEvidence);
+        const resolvedTerms = [
+          plan.resolved_entity.generic_name,
+          plan.resolved_entity.normalized_display,
+          plan.resolved_entity.primary_mention,
+        ].filter(Boolean);
+        if (resolvedTerms.length) {
+          plan.entity = resolvedTerms[0];
+          plan.search_queries = Array.from(new Set([...resolvedTerms, ...plan.search_queries].filter(Boolean))).slice(0, 5);
+        }
+      }
       if (plan.needs_clarification) {
         return {
           success: true,
@@ -107,12 +126,24 @@ class ExternalKnowledgeAgent {
         entity: plan.entity,
       });
 
+      const sourceText = (item = {}) => `${item.source_section || ""} ${item.url || ""}`.toLowerCase();
+      const hasDrugInfoIntent =
+        plan.knowledge_type === "drug_knowledge" &&
+        /\b(what does|used for|purpose|why do we need|what is .* for|indication|alternative|substitute|replace)\b/i.test(
+          String(query || "")
+        );
+
       if (
         plan.knowledge_type === "drug_knowledge" &&
         /\b(composition|ingredient|formulation|strength|dose|dosage|syrup|tablet|injection|come with|come in|availability|market)\b/i.test(String(query || ""))
       ) {
-        const structural = ranked.filter((item) => /fda|dailymed/i.test(`${item.source_section || ""} ${item.url || ""}`));
+        const structural = ranked.filter((item) => /rxnorm|medlineplus|fda|dailymed/i.test(sourceText(item)));
         ranked = structural.length ? structural : [];
+      }
+
+      if (hasDrugInfoIntent) {
+        const informative = ranked.filter((item) => /rxnorm|medlineplus|fda|dailymed/i.test(sourceText(item)));
+        ranked = informative.length ? informative : ranked;
       }
 
       return {
@@ -124,6 +155,7 @@ class ExternalKnowledgeAgent {
           error: ranked.length ? null : "No reliable external results found.",
           error_type: ranked.length ? null : "no_results",
           plan,
+          resolution: plan.resolved_entity || null,
           sources,
         },
       };
@@ -137,6 +169,7 @@ class ExternalKnowledgeAgent {
           error: error.message,
           error_type: "search_failed",
           plan: null,
+          resolution: null,
           sources: [],
         },
       };

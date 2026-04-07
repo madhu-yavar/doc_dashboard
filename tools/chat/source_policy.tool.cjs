@@ -4,12 +4,32 @@ class SourcePolicyTool {
     this.version = "1.0.0";
     this.config = config;
     this.allowedDomains = [
-      "clinicaltables.nlm.nih.gov",
       "api.fda.gov",
+      "open.fda.gov",
       "dailymed.nlm.nih.gov",
       "eutils.ncbi.nlm.nih.gov",
-      "clinicaltrials.gov",
       "pubmed.ncbi.nlm.nih.gov",
+      "clinicaltables.nlm.nih.gov",
+      "clinicaltrials.gov",
+      "rxnav.nlm.nih.gov",
+      "medlineplus.gov",
+      "connect.medlineplus.gov",
+      "icd.who.int",
+      "id.who.int",
+      "cdsco.gov.in",
+      "www.cdsco.gov.in",
+      "ipc.gov.in",
+      "www.ipc.gov.in",
+      "icmr.gov.in",
+      "www.icmr.gov.in",
+      "mohfw.gov.in",
+      "clinicalestablishments.mohfw.gov.in",
+      "ncdc.mohfw.gov.in",
+      "nvhcp.mohfw.gov.in",
+      "nmc.org.in",
+      "janaushadhi.gov.in",
+      "pharmaceuticals.gov.in",
+      "nppaindia.nic.in",
     ];
   }
 

@@ -47,7 +47,7 @@ class ExternalQueryPlannerTool {
         knowledge_type: "drug_knowledge",
         entity,
         search_queries: [entity],
-        source_preferences: ["openfda", "pubmed"],
+        source_preferences: ["rxnorm", "medlineplus", "openfda", "pubmed"],
         needs_clarification: false,
         clarification_prompt: "",
       };
@@ -58,7 +58,7 @@ class ExternalQueryPlannerTool {
         knowledge_type: "drug_comparison",
         entity: trimmed.replace(/\?+$/g, "").trim(),
         search_queries: [trimmed.replace(/\?+$/g, "").trim()],
-        source_preferences: ["openfda", "pubmed"],
+        source_preferences: ["rxnorm", "medlineplus", "openfda", "pubmed"],
         needs_clarification: false,
         clarification_prompt: "",
       };
@@ -70,7 +70,7 @@ class ExternalQueryPlannerTool {
           knowledge_type: "clinical_explanation",
           entity: "low blood pressure",
           search_queries: ["hypotension causes adults review", "low blood pressure causes adults"],
-          source_preferences: ["pubmed"],
+          source_preferences: ["pubmed", "medlineplus"],
           needs_clarification: false,
           clarification_prompt: "",
         };
@@ -80,7 +80,7 @@ class ExternalQueryPlannerTool {
           knowledge_type: "clinical_explanation",
           entity: "high blood pressure",
           search_queries: ["hypertension causes adults review", "high blood pressure causes adults"],
-          source_preferences: ["pubmed"],
+          source_preferences: ["pubmed", "medlineplus"],
           needs_clarification: false,
           clarification_prompt: "",
         };
@@ -89,7 +89,7 @@ class ExternalQueryPlannerTool {
         knowledge_type: "clinical_explanation",
         entity: trimmed,
         search_queries: [trimmed, `general medical explanation for ${trimmed}`],
-        source_preferences: ["pubmed"],
+        source_preferences: ["pubmed", "medlineplus"],
         needs_clarification: false,
         clarification_prompt: "",
       };
@@ -99,18 +99,18 @@ class ExternalQueryPlannerTool {
       knowledge_type: "general_medical_reference",
       entity: trimmed,
       search_queries: [trimmed],
-      source_preferences: ["pubmed", "openfda"],
+      source_preferences: ["medlineplus", "pubmed", "openfda"],
       needs_clarification: false,
       clarification_prompt: "",
     };
   }
 
   buildMessages(query, classification = {}) {
-    const schema = `{
+const schema = `{
   "knowledge_type": "drug_knowledge" | "drug_comparison" | "coding_reference" | "literature_reference" | "guideline_reference" | "clinical_explanation" | "trial_reference" | "general_medical_reference",
   "entity": string,
   "search_queries": string[],
-  "source_preferences": ("openfda" | "pubmed" | "icd" | "clinicaltrials")[],
+  "source_preferences": ("rxnorm" | "medlineplus" | "openfda" | "pubmed" | "icd" | "clinicaltrials")[],
   "needs_clarification": boolean,
   "clarification_prompt": string
 }`;
@@ -127,16 +127,16 @@ Rules:
 - Prefer short, high-signal search queries.
 - For drug composition, formulation, purpose, and adverse effects:
   - knowledge_type = "drug_knowledge"
-  - prefer sources ["openfda","pubmed"]
+  - prefer sources ["rxnorm","medlineplus","openfda","pubmed"]
 - For medication comparison or substitution:
   - knowledge_type = "drug_comparison"
-  - prefer sources ["openfda","pubmed"]
+  - prefer sources ["rxnorm","medlineplus","openfda","pubmed"]
 - For ICD or diagnosis code lookups:
   - knowledge_type = "coding_reference"
   - prefer ["icd"]
 - For general clinical explanations:
   - knowledge_type = "clinical_explanation"
-  - prefer ["pubmed"]
+  - prefer ["pubmed","medlineplus"]
 - For research / trials:
   - knowledge_type = "trial_reference"
   - prefer ["clinicaltrials","pubmed"]
@@ -145,19 +145,19 @@ Rules:
 
 Examples:
 Question: "What is the composition for T.CILACAR M?"
-Output: {"knowledge_type":"drug_knowledge","entity":"T.CILACAR M","search_queries":["T.CILACAR M composition","T.CILACAR M ingredients","T.CILACAR M generic name"],"source_preferences":["openfda","pubmed"],"needs_clarification":false,"clarification_prompt":""}
+Output: {"knowledge_type":"drug_knowledge","entity":"T.CILACAR M","search_queries":["T.CILACAR M composition","T.CILACAR M ingredients","T.CILACAR M generic name"],"source_preferences":["rxnorm","medlineplus","openfda","pubmed"],"needs_clarification":false,"clarification_prompt":""}
 
 Question: "What does mannitol do?"
-Output: {"knowledge_type":"drug_knowledge","entity":"mannitol","search_queries":["mannitol indications","mannitol uses","mannitol drug label"],"source_preferences":["openfda","pubmed"],"needs_clarification":false,"clarification_prompt":""}
+Output: {"knowledge_type":"drug_knowledge","entity":"mannitol","search_queries":["mannitol indications","mannitol uses","mannitol drug label"],"source_preferences":["rxnorm","medlineplus","openfda","pubmed"],"needs_clarification":false,"clarification_prompt":""}
 
 Question: "What is the ICD code for multiple myeloma?"
 Output: {"knowledge_type":"coding_reference","entity":"multiple myeloma","search_queries":["multiple myeloma ICD 10"],"source_preferences":["icd"],"needs_clarification":false,"clarification_prompt":""}
 
 Question: "Is PAN D an alternative to PAN 40?"
-Output: {"knowledge_type":"drug_comparison","entity":"PAN D vs PAN 40","search_queries":["PAN D alternative to PAN 40","pantoprazole domperidone versus pantoprazole 40 mg"],"source_preferences":["openfda","pubmed"],"needs_clarification":false,"clarification_prompt":""}
+Output: {"knowledge_type":"drug_comparison","entity":"PAN D vs PAN 40","search_queries":["PAN D alternative to PAN 40","pantoprazole domperidone versus pantoprazole 40 mg"],"source_preferences":["rxnorm","medlineplus","openfda","pubmed"],"needs_clarification":false,"clarification_prompt":""}
 
 Question: "Why is low blood pressure seen in adults?"
-Output: {"knowledge_type":"clinical_explanation","entity":"low blood pressure","search_queries":["common causes of low blood pressure adults","hypotension causes adults"],"source_preferences":["pubmed"],"needs_clarification":false,"clarification_prompt":""}`;
+Output: {"knowledge_type":"clinical_explanation","entity":"low blood pressure","search_queries":["common causes of low blood pressure adults","hypotension causes adults"],"source_preferences":["pubmed","medlineplus"],"needs_clarification":false,"clarification_prompt":""}`;
 
     const user = `Question: ${String(query || "").trim()}
 Intent hint: ${classification?.intent || "unknown"}
@@ -200,7 +200,7 @@ Return JSON only.`;
       "trial_reference",
       "general_medical_reference",
     ]);
-    const validSources = new Set(["openfda", "pubmed", "icd", "clinicaltrials"]);
+    const validSources = new Set(["rxnorm", "medlineplus", "openfda", "pubmed", "icd", "clinicaltrials"]);
     const fallback = this.defaultPlan(query, classification);
 
     const plan = {
