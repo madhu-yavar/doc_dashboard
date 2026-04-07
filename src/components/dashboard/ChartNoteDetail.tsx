@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { DashboardPatientData } from "@/data/patientData";
 import { ArrowLeft, FileText, Download, Copy, Check, Eye, RefreshCw } from "lucide-react";
 import StructuredChartNote from "./StructuredChartNote";
+import { API_BASE } from "@/lib/processedDocuments";
 
 interface ChartNoteDetailProps {
   onBack: () => void;
@@ -30,7 +31,7 @@ const ChartNoteDetail = ({ onBack, data, chartNoteContent, documentId }: ChartNo
   const handleRegenerate = async () => {
     setIsRegenerating(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8001"}/api/documents/${documentId}/chart-note?regenerate=true`);
+      const response = await fetch(`${API_BASE}/documents/${documentId}/chart-note?regenerate=true`);
 
       if (!response.ok) {
         throw new Error("Failed to regenerate chart note");
@@ -60,7 +61,7 @@ const ChartNoteDetail = ({ onBack, data, chartNoteContent, documentId }: ChartNo
     setIsExporting(true);
     try {
       // Fetch the chart note PDF from the server
-      const response = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:8001"}/api/documents/${documentId}/chart-note/pdf`, {
+      const response = await fetch(`${API_BASE}/documents/${documentId}/chart-note/pdf`, {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });

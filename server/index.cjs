@@ -20,6 +20,7 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 const storageDir = path.join(__dirname, "storage");
 const uploadsDir = path.join(storageDir, "uploads");
+const distDir = path.join(__dirname, "..", "dist");
 const documentsPath = path.join(storageDir, "documents.json");
 const chatSessionsPath = path.join(storageDir, "chat_sessions.json");
 const chatActionsPath = path.join(storageDir, "chat_actions.json");
@@ -377,7 +378,13 @@ app.get("/api/documents/:id", async (req, res) => {
     return res.status(404).json({ error: "Document not found" });
   }
 
-  return res.json({ document: publicDocument(document) });
+  return res.json(publicDocument(document));
+});
+
+app.use(express.static(distDir));
+
+app.get(/^\/(?!api).*/, (_req, res) => {
+  res.sendFile(path.join(distDir, "index.html"));
 });
 
 app.post("/api/documents/upload", upload.array("files"), async (req, res) => {

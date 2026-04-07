@@ -1,6 +1,8 @@
 import { patientData, type DashboardPatientData } from "@/data/patientData";
 
-export const API_BASE = "http://localhost:8001/api";
+const API_ROOT = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+
+export const API_BASE = `${API_ROOT}/api`;
 
 export type QueueStatus = "queued" | "processing" | "processed" | "failed";
 
