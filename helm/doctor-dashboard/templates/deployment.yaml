@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "doctor-dashboard.fullname" . }}
+  namespace: {{ include "doctor-dashboard.namespace" . }}
+  labels:
+    {{- include "doctor-dashboard.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "doctor-dashboard.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "doctor-dashboard.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "doctor-dashboard.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 10 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.container.port }}
+          protocol: TCP
+        {{- if .Values.healthProbes.enabled }}
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: http
+          initialDelaySeconds: {{ .Values.healthProbes.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.healthProbes.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.healthProbes.liveness.timeoutSeconds }}
+          successThreshold: {{ .Values.healthProbes.liveness.successThreshold }}
+          failureThreshold: {{ .Values.healthProbes.liveness.failureThreshold }}
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: http
+          initialDelaySeconds: {{ .Values.healthProbes.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.healthProbes.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.healthProbes.readiness.timeoutSeconds }}
+          successThreshold: {{ .Values.healthProbes.readiness.successThreshold }}
+          failureThreshold: {{ .Values.healthProbes.readiness.failureThreshold }}
+        {{- if .Values.healthProbes.startup.enabled }}
+        startupProbe:
+          httpGet:
+            path: /api/health
+            port: http
+          initialDelaySeconds: {{ .Values.healthProbes.startup.initialDelaySeconds }}
+          periodSeconds: {{ .Values.healthProbes.startup.periodSeconds }}
+          timeoutSeconds: {{ .Values.healthProbes.startup.timeoutSeconds }}
+          successThreshold: {{ .Values.healthProbes.startup.successThreshold }}
+          failureThreshold: {{ .Values.healthProbes.startup.failureThreshold }}
+        {{- end }}
+        {{- end }}
+        env:
+        - name: NODE_ENV
+          value: {{ .Values.config.nodeEnv | quote }}
+        - name: PORT
+          value: {{ .Values.config.port | quote }}
+        - name: GEMMA_URL
+          value: {{ .Values.config.gemmaUrl | quote }}
+        - name: GEMMA_MODEL
+          value: {{ .Values.config.gemmaModel | quote }}
+        - name: USE_GEMINI_FOR_EXTERNAL
+          value: {{ .Values.config.useGeminiForExternal | quote }}
+        - name: GEMINI_MODEL
+          value: {{ .Values.config.geminiModel | quote }}
+        {{- if .Values.secrets.geminiApiKey }}
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "doctor-dashboard.fullname" . }}-secret
+              key: gemini-api-key
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        volumeMounts:
+        - name: storage
+          mountPath: /app/server/storage
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: {{ include "doctor-dashboard.fullname" . }}-storage
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

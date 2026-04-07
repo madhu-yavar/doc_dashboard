@@ -183,6 +183,170 @@ For real deployments, prefer:
 
 This keeps the app internal and exposes only Nginx.
 
+## Kubernetes / Helm Deployment
+
+This application includes a Helm chart for deployment on Kubernetes clusters.
+
+### Prerequisites
+
+- Kubernetes cluster (AKS, EKS, GKE, etc.)
+- Helm 3.x installed
+- Container registry access
+- Ingress controller (nginx-traefik, etc.)
+- cert-manager (for automatic TLS certificates)
+
+### Quick Start
+
+1. **Build and push the Docker image** to your registry:
+
+```bash
+# Build
+docker build -t doctor-dashboard:latest .
+
+# Tag for your registry
+docker tag doctor-dashboard:latest <your-registry>/doctor-dashboard:latest
+
+# Push
+docker push <your-registry>/doctor-dashboard:latest
+```
+
+2. **Create the namespace**:
+
+```bash
+kubectl create namespace hospital
+```
+
+3. **Install the Helm chart**:
+
+```bash
+# Basic installation
+helm install doctor-dashboard ./helm/doctor-dashboard \
+  --namespace hospital \
+  --set image.repository=<your-registry>/doctor-dashboard
+
+# With custom hostname
+helm install doctor-dashboard ./helm/doctor-dashboard \
+  --namespace hospital \
+  --set image.repository=<your-registry>/doctor-dashboard \
+  --set ingress.hosts[0].host=doctor-dashboard.your-domain.com
+```
+
+4. **Access the application**:
+
+After cert-manager provisions the TLS certificate (typically 1-2 minutes), access the application at:
+```
+https://doctor-dashboard.your-domain.com
+```
+
+### Configuration
+
+Key Helm values (see `helm/doctor-dashboard/values.yaml` for full options):
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `image.repository` | Container image | `doctor-dashboard` |
+| `image.tag` | Image tag | `latest` |
+| `replicaCount` | Number of replicas | `1` |
+| `ingress.enabled` | Enable ingress | `true` |
+| `ingress.className` | Ingress class | `nginx` |
+| `ingress.hosts[0].host` | Application hostname | `doctor-dashboard.hospital.local` |
+| `ingress.annotations` | Ingress annotations | cert-manager enabled |
+| `storage.size` | PVC size | `5Gi` |
+| `config.gemmaUrl` | Gemma API endpoint | `http://206.1.62.28:8000/v1/chat/completions` |
+| `config.gemmaModel` | Gemma model name | `google/gemma-4-26B-A4B-it` |
+| `secrets.geminiApiKey` | Gemini API key | (empty) |
+
+### Example Production Deployment (AKS)
+
+```bash
+# Login to Azure Container Registry
+az acr login --name <your-registry>
+
+# Build and push
+docker build -t doctor-dashboard:latest .
+docker tag doctor-dashboard:latest <your-registry>.azurecr.io/doctor-dashboard:latest
+docker push <your-registry>.azurecr.io/doctor-dashboard:latest
+
+# Deploy with production values
+helm install doctor-dashboard ./helm/doctor-dashboard \
+  --namespace hospital \
+  --create-namespace \
+  --set image.repository=<your-registry>.azurecr.io/doctor-dashboard \
+  --set ingress.hosts[0].host=doctor-dashboard.production.com \
+  --set ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt-prod \
+  --set storage.storageClass=default \
+  --set storage.size=10Gi \
+  --set resources.requests.cpu=500m \
+  --set resources.requests.memory=1Gi \
+  --set resources.limits.cpu=2000m \
+  --set resources.limits.memory=2Gi
+```
+
+### Upgrade Deployment
+
+```bash
+helm upgrade doctor-dashboard ./helm/doctor-dashboard \
+  --namespace hospital \
+  --values helm/doctor-dashboard/values.yaml \
+  --set image.tag=v1.0.0
+```
+
+### Uninstall
+
+```bash
+helm uninstall doctor-dashboard --namespace hospital
+```
+
+### Verify Deployment
+
+```bash
+# Check all resources
+kubectl get all -n hospital
+
+# Check pod logs
+kubectl logs -n hospital deployment/doctor-dashboard -f
+
+# Check ingress
+kubectl get ingress -n hospital
+
+# Check certificate status
+kubectl get certificate -n hospital
+
+# Test health endpoint
+kubectl port-forward -n hospital svc/doctor-dashboard 8001:8001
+curl http://localhost:8001/api/health
+```
+
+### Architecture in Kubernetes
+
+```
+External Traffic (HTTPS)
+    ↓
+[Ingress Controller - nginx]
+    ↓
+[TLS Termination - cert-manager]
+    ↓
+[Ingress Resource - doctor-dashboard.your-domain.com]
+    ↓
+[Service - ClusterIP:8001]
+    ↓
+[Pod - doctor-dashboard]
+    ↓
+[PVC - /app/server/storage]
+    ↓
+[External - Gemma Service]
+```
+
+### Storage and Persistence
+
+The application requires persistent storage for:
+- Uploaded PDF documents
+- Extracted data (documents.json)
+- Chat sessions and history
+- Search cache
+
+The Helm chart creates a PVC with configurable size (default 5Gi). Ensure your cluster has a default storage class or specify one in values.
+
 ## Storage
 
 Uploaded files and generated state are stored in:
