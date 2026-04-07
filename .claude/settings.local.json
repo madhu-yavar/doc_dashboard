@@ -114,7 +114,11 @@
       "Bash(git revert:*)",
       "Bash(git checkout:*)",
       "Bash(git reset:*)",
-      "Bash(docker-compose build:*)"
+      "Bash(docker-compose build:*)",
+      "Bash(git pull:*)",
+      "Bash(lsof:*)",
+      "Bash(npm run build:*)",
+      "Bash(ps:*)"
     ]
   }
 }
