@@ -113,7 +113,8 @@
       "Bash(docker build:*)",
       "Bash(git revert:*)",
       "Bash(git checkout:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(docker-compose build:*)"
     ]
   }
 }
