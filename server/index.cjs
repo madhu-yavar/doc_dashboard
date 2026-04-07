@@ -15,6 +15,8 @@ const app = express();
 const PORT = Number(process.env.PORT || 8001);
 const GEMMA_URL = process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions";
 const MODEL = process.env.GEMMA_MODEL || "google/gemma-4-26B-A4B-it";
+const USE_GEMINI_FOR_EXTERNAL = process.env.USE_GEMINI_FOR_EXTERNAL !== "false";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 const storageDir = path.join(__dirname, "storage");
 const uploadsDir = path.join(storageDir, "uploads");
@@ -180,8 +182,16 @@ const doctorAssistantAgent = new DoctorAssistantAgent({
     model: MODEL,
     timeout: 120000,
   },
+  gemini: {
+    enabled: USE_GEMINI_FOR_EXTERNAL,
+    model: GEMINI_MODEL,
+    timeout: 120000,
+    apiKey: process.env.GEMINI_API_KEY || "",
+  },
   readSessions: async () => readCollection(chatSessionsPath, "sessions"),
   writeSessions: async (sessions) => writeCollection(chatSessionsPath, "sessions", sessions),
+  readSearchCache: async () => readCollection(searchCachePath, "entries"),
+  writeSearchCache: async (entries) => writeCollection(searchCachePath, "entries", entries),
 });
 
 // Helper function to transform agent result to dashboard format
@@ -650,7 +660,7 @@ app.get("/api/chat/source-health", async (_req, res) => {
 });
 
 app.post("/api/chat/query", async (req, res) => {
-  const { documentId, message, sectionContext, chatId } = req.body || {};
+  const { documentId, message, sectionContext, chatId, geminiApiKey } = req.body || {};
 
   if (!documentId || !message) {
     return res.status(400).json({ error: "documentId and message are required" });
@@ -669,6 +679,7 @@ app.post("/api/chat/query", async (req, res) => {
       message,
       sectionContext,
       chatId,
+      geminiApiKey,
     });
 
     return res.json({

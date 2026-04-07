@@ -17,13 +17,18 @@ class SourceRouterTool {
     const text = String(query || "").toLowerCase();
 
     if (intent === "diagnosis_code") return ["icd"];
-    if (intent === "drug_safety") return ["rxnorm", "medlineplus", "openfda", "pubmed"];
-    if (intent === "medication_comparison" || intent === "medication_substitution") return ["rxnorm", "medlineplus", "openfda", "pubmed"];
+    if (intent === "drug_safety") {
+      if (/\b(adverse|side effect|interaction|toxicity|contraindication|warning)\b/.test(text)) {
+        return ["rxnorm", "medlineplus", "openfda", "pubmed"];
+      }
+      return ["rxnorm", "medlineplus", "openfda"];
+    }
+    if (intent === "medication_comparison" || intent === "medication_substitution") return ["rxnorm", "medlineplus", "openfda"];
     if (intent === "literature_query" || intent === "guideline_query") return ["pubmed"];
     if (intent === "clinical_explanation") return ["pubmed", "medlineplus", "openfda"];
     if (/trial/.test(text)) return ["clinicaltrials", "pubmed"];
 
-    return ["medlineplus", "pubmed", "openfda"];
+    return ["medlineplus", "openfda", "pubmed"];
   }
 }
 

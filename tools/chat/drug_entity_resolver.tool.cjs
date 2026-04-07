@@ -8,13 +8,23 @@ class DrugEntityResolverTool {
     this.gemmaClient = new GemmaClientTool(config.gemma || {});
     this.aliases = [
       { pattern: /\bpan\s*40\b/i, generic_name: "pantoprazole", normalized_display: "pantoprazole 40 mg", dosage_form: "tablet" },
+      { pattern: /\bt\.?\s*pan\s*40\b/i, generic_name: "pantoprazole", normalized_display: "pantoprazole 40 mg", dosage_form: "tablet" },
+      { pattern: /\bpantocid\b/i, generic_name: "pantoprazole", normalized_display: "pantoprazole", dosage_form: "tablet or injection" },
       { pattern: /\bpan\s*d\b/i, generic_name: "pantoprazole + domperidone", normalized_display: "pantoprazole + domperidone", dosage_form: "tablet" },
       { pattern: /\bthyronorm\b/i, generic_name: "levothyroxine", normalized_display: "levothyroxine", dosage_form: "tablet" },
-      { pattern: /\baugmentin\b/i, generic_name: "amoxicillin + clavulanate", normalized_display: "amoxicillin + clavulanate", dosage_form: "tablet or injection" },
+      { pattern: /\bthyro-?norm\b/i, generic_name: "levothyroxine", normalized_display: "levothyroxine", dosage_form: "tablet" },
+      { pattern: /\baugmentin\b/i, generic_name: "amoxicillin and clavulanate potassium", normalized_display: "amoxicillin/clavulanate", dosage_form: "tablet or injection" },
       { pattern: /\blasix\b/i, generic_name: "furosemide", normalized_display: "furosemide", dosage_form: "tablet or injection" },
       { pattern: /\bmannitol\b/i, generic_name: "mannitol", normalized_display: "mannitol", dosage_form: "injection or infusion" },
       { pattern: /\bstator\b/i, generic_name: "atorvastatin", normalized_display: "atorvastatin", dosage_form: "tablet" },
       { pattern: /\btelvas\s*beta\b/i, generic_name: "telmisartan + metoprolol", normalized_display: "telmisartan + metoprolol", dosage_form: "tablet" },
+      { pattern: /\bzofer\b/i, generic_name: "ondansetron", normalized_display: "ondansetron", dosage_form: "tablet or injection" },
+      { pattern: /\blevera\b|\blevipil\b/i, generic_name: "levetiracetam", normalized_display: "levetiracetam", dosage_form: "tablet or injection" },
+      { pattern: /\bdecmax\b/i, generic_name: "dexamethasone", normalized_display: "dexamethasone", dosage_form: "injection" },
+      { pattern: /\bmedi\s*set\b|\bmediset\b/i, generic_name: "ondansetron", normalized_display: "ondansetron", dosage_form: "injection" },
+      { pattern: /\bactrapid\b/i, generic_name: "human insulin regular", normalized_display: "regular human insulin", dosage_form: "injection" },
+      { pattern: /\bparacetamol\b/i, generic_name: "paracetamol", normalized_display: "paracetamol", dosage_form: "tablet or syrup or injection" },
+      { pattern: /\boptineron\b|\boptineuron\b/i, generic_name: "", normalized_display: "Optineuron", dosage_form: "injection" },
       { pattern: /\bdapagliflozin\b|\bdapagliflozolin\b/i, generic_name: "dapagliflozin", normalized_display: "dapagliflozin", dosage_form: "tablet" },
       { pattern: /\bcilacar\s*m\b|\bt\.?\s*cilacar\s*m\b/i, generic_name: "", normalized_display: "CILACAR M", dosage_form: "tablet" },
     ];
@@ -50,6 +60,21 @@ class DrugEntityResolverTool {
       }
     }
     return null;
+  }
+
+  normalizeText(value = "") {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  }
+
+  similarity(a = "", b = "") {
+    const aTerms = new Set(this.normalizeText(a).split(/\s+/).filter(Boolean));
+    const bTerms = new Set(this.normalizeText(b).split(/\s+/).filter(Boolean));
+    if (!aTerms.size || !bTerms.size) return 0;
+    let overlap = 0;
+    for (const term of aTerms) {
+      if (bTerms.has(term)) overlap += 1;
+    }
+    return overlap / Math.max(aTerms.size, bTerms.size);
   }
 
   buildMessages(message = "", internalEvidence = []) {
@@ -142,7 +167,7 @@ Medications: ${JSON.stringify(candidates)}`,
   }
 
   async resolve(message = "", internalEvidence = []) {
-    const fallback = this.aliasFallback(message, internalEvidence) || {
+    let fallback = this.aliasFallback(message, internalEvidence) || {
       primary_mention: "",
       normalized_display: "",
       generic_name: "",
@@ -152,6 +177,33 @@ Medications: ${JSON.stringify(candidates)}`,
       matched_internal_value: "",
       confidence: 0.3,
     };
+
+    if (!fallback.generic_name) {
+      const candidates = this.medicationCandidates(internalEvidence);
+      let bestAlias = null;
+      let bestScore = 0;
+      for (const alias of this.aliases) {
+        for (const candidate of candidates) {
+          const score = this.similarity(candidate, alias.normalized_display || alias.generic_name || "");
+          if (score > bestScore) {
+            bestScore = score;
+            bestAlias = { alias, candidate };
+          }
+        }
+      }
+      if (bestAlias && bestScore >= 0.5) {
+        fallback = {
+          primary_mention: bestAlias.candidate,
+          normalized_display: bestAlias.alias.normalized_display,
+          generic_name: bestAlias.alias.generic_name,
+          ingredient_list: bestAlias.alias.generic_name ? bestAlias.alias.generic_name.split("+").map((v) => v.trim()).filter(Boolean) : [],
+          dosage_form: bestAlias.alias.dosage_form || "",
+          strength: this.extractStrength(bestAlias.candidate) || fallback.strength,
+          matched_internal_value: bestAlias.candidate,
+          confidence: Math.max(0.55, bestScore),
+        };
+      }
+    }
 
     const result = await this.gemmaClient.executeChat(this.buildMessages(message, internalEvidence), {
       temperature: 0.0,

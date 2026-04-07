@@ -8,6 +8,27 @@ class ExternalQueryPlannerTool {
     this.gemmaClient = new GemmaClientTool(config.gemma || {});
   }
 
+  buildDeterministicDrugQueries(entity = "", query = "") {
+    const base = String(entity || "").trim();
+    const lower = String(query || "").toLowerCase();
+    const variants = [];
+    if (!base) return variants;
+
+    if (/\b(composition|ingredient|contains|active ingredient)\b/.test(lower)) {
+      variants.push(`${base} composition`, `${base} active ingredient`, `${base} generic name`);
+    } else if (/\b(what does|used for|purpose|why do we need|role|indication)\b/.test(lower)) {
+      variants.push(`${base} indication`, `${base} uses`, `${base} drug label`);
+    } else if (/\b(come with|come in|strength|dose|dosage|syrup|tablet|injection|availability|market|formulation)\b/.test(lower)) {
+      variants.push(`${base} available strengths`, `${base} dosage form`, `${base} formulation`);
+    } else if (/\b(alternative|substitute|replace|equivalent)\b/.test(lower)) {
+      variants.push(`${base} therapeutic alternative`, `${base} substitute`, `${base} equivalent`);
+    } else {
+      variants.push(base, `${base} drug information`);
+    }
+
+    return Array.from(new Set(variants.filter(Boolean)));
+  }
+
   defaultPlan(query = "", classification = {}) {
     const intent = classification?.intent || "mixed_context";
     const trimmed = String(query || "").trim();
@@ -46,8 +67,8 @@ class ExternalQueryPlannerTool {
       return {
         knowledge_type: "drug_knowledge",
         entity,
-        search_queries: [entity],
-        source_preferences: ["rxnorm", "medlineplus", "openfda", "pubmed"],
+        search_queries: this.buildDeterministicDrugQueries(entity, trimmed),
+        source_preferences: ["rxnorm", "medlineplus", "openfda"],
         needs_clarification: false,
         clarification_prompt: "",
       };
@@ -57,8 +78,8 @@ class ExternalQueryPlannerTool {
       return {
         knowledge_type: "drug_comparison",
         entity: trimmed.replace(/\?+$/g, "").trim(),
-        search_queries: [trimmed.replace(/\?+$/g, "").trim()],
-        source_preferences: ["rxnorm", "medlineplus", "openfda", "pubmed"],
+        search_queries: [trimmed.replace(/\?+$/g, "").trim(), `${trimmed.replace(/\?+$/g, "").trim()} generic composition`],
+        source_preferences: ["rxnorm", "medlineplus", "openfda"],
         needs_clarification: false,
         clarification_prompt: "",
       };
@@ -127,10 +148,10 @@ Rules:
 - Prefer short, high-signal search queries.
 - For drug composition, formulation, purpose, and adverse effects:
   - knowledge_type = "drug_knowledge"
-  - prefer sources ["rxnorm","medlineplus","openfda","pubmed"]
+  - prefer sources ["rxnorm","medlineplus","openfda"]
 - For medication comparison or substitution:
   - knowledge_type = "drug_comparison"
-  - prefer sources ["rxnorm","medlineplus","openfda","pubmed"]
+  - prefer sources ["rxnorm","medlineplus","openfda"]
 - For ICD or diagnosis code lookups:
   - knowledge_type = "coding_reference"
   - prefer ["icd"]
@@ -145,16 +166,16 @@ Rules:
 
 Examples:
 Question: "What is the composition for T.CILACAR M?"
-Output: {"knowledge_type":"drug_knowledge","entity":"T.CILACAR M","search_queries":["T.CILACAR M composition","T.CILACAR M ingredients","T.CILACAR M generic name"],"source_preferences":["rxnorm","medlineplus","openfda","pubmed"],"needs_clarification":false,"clarification_prompt":""}
+Output: {"knowledge_type":"drug_knowledge","entity":"T.CILACAR M","search_queries":["T.CILACAR M composition","T.CILACAR M active ingredient","T.CILACAR M generic name"],"source_preferences":["rxnorm","medlineplus","openfda"],"needs_clarification":false,"clarification_prompt":""}
 
 Question: "What does mannitol do?"
-Output: {"knowledge_type":"drug_knowledge","entity":"mannitol","search_queries":["mannitol indications","mannitol uses","mannitol drug label"],"source_preferences":["rxnorm","medlineplus","openfda","pubmed"],"needs_clarification":false,"clarification_prompt":""}
+Output: {"knowledge_type":"drug_knowledge","entity":"mannitol","search_queries":["mannitol indication","mannitol uses","mannitol drug label"],"source_preferences":["rxnorm","medlineplus","openfda"],"needs_clarification":false,"clarification_prompt":""}
 
 Question: "What is the ICD code for multiple myeloma?"
 Output: {"knowledge_type":"coding_reference","entity":"multiple myeloma","search_queries":["multiple myeloma ICD 10"],"source_preferences":["icd"],"needs_clarification":false,"clarification_prompt":""}
 
 Question: "Is PAN D an alternative to PAN 40?"
-Output: {"knowledge_type":"drug_comparison","entity":"PAN D vs PAN 40","search_queries":["PAN D alternative to PAN 40","pantoprazole domperidone versus pantoprazole 40 mg"],"source_preferences":["rxnorm","medlineplus","openfda","pubmed"],"needs_clarification":false,"clarification_prompt":""}
+Output: {"knowledge_type":"drug_comparison","entity":"PAN D vs PAN 40","search_queries":["PAN D alternative to PAN 40","pantoprazole domperidone versus pantoprazole 40 mg"],"source_preferences":["rxnorm","medlineplus","openfda"],"needs_clarification":false,"clarification_prompt":""}
 
 Question: "Why is low blood pressure seen in adults?"
 Output: {"knowledge_type":"clinical_explanation","entity":"low blood pressure","search_queries":["common causes of low blood pressure adults","hypotension causes adults"],"source_preferences":["pubmed","medlineplus"],"needs_clarification":false,"clarification_prompt":""}`;
@@ -207,7 +228,7 @@ Return JSON only.`;
       knowledge_type: validTypes.has(raw.knowledge_type) ? raw.knowledge_type : fallback.knowledge_type,
       entity: String(raw.entity || fallback.entity || "").trim(),
       search_queries: Array.isArray(raw.search_queries)
-        ? raw.search_queries.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 4)
+        ? raw.search_queries.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 6)
         : [],
       source_preferences: Array.isArray(raw.source_preferences)
         ? raw.source_preferences.map((item) => String(item || "").trim().toLowerCase()).filter((item) => validSources.has(item))
@@ -217,6 +238,14 @@ Return JSON only.`;
     };
 
     if (!plan.search_queries.length) plan.search_queries = fallback.search_queries;
+    if (plan.knowledge_type === "drug_knowledge" || plan.knowledge_type === "drug_comparison") {
+      plan.search_queries = Array.from(
+        new Set([
+          ...this.buildDeterministicDrugQueries(plan.entity || fallback.entity, query),
+          ...plan.search_queries,
+        ].filter(Boolean))
+      ).slice(0, 6);
+    }
     if (!plan.source_preferences.length) plan.source_preferences = fallback.source_preferences;
     if (!plan.entity) plan.entity = fallback.entity;
     if (!plan.clarification_prompt && plan.needs_clarification) {

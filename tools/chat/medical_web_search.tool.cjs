@@ -2,7 +2,45 @@ class MedicalWebSearchTool {
   constructor(config = {}) {
     this.name = "Medical Web Search";
     this.version = "1.0.0";
-    this.config = { timeout: 15000, ...config };
+    this.config = { timeout: 20000, cacheTtlMs: 24 * 60 * 60 * 1000, ...config };
+    this.readSearchCache = config.readSearchCache;
+    this.writeSearchCache = config.writeSearchCache;
+  }
+
+  cacheKey(source = "", query = "", intent = "") {
+    return `${String(source || "").toLowerCase()}::${String(intent || "").toLowerCase()}::${String(query || "").trim().toLowerCase()}`;
+  }
+
+  async readCached(source = "", query = "", intent = "") {
+    if (typeof this.readSearchCache !== "function") return null;
+    try {
+      const entries = await this.readSearchCache();
+      const key = this.cacheKey(source, query, intent);
+      const item = (Array.isArray(entries) ? entries : []).find((entry) => entry.key === key);
+      if (!item?.payload || !item.cached_at) return null;
+      if (Date.now() - new Date(item.cached_at).getTime() > this.config.cacheTtlMs) return null;
+      return item.payload;
+    } catch {
+      return null;
+    }
+  }
+
+  async writeCached(source = "", query = "", intent = "", payload = []) {
+    if (typeof this.readSearchCache !== "function" || typeof this.writeSearchCache !== "function") return;
+    try {
+      const entries = await this.readSearchCache();
+      const key = this.cacheKey(source, query, intent);
+      const next = Array.isArray(entries) ? entries.filter((entry) => entry.key !== key) : [];
+      next.unshift({
+        key,
+        source,
+        intent,
+        query,
+        cached_at: new Date().toISOString(),
+        payload,
+      });
+      await this.writeSearchCache(next.slice(0, 500));
+    } catch {}
   }
 
   async fetchJson(url) {
@@ -366,15 +404,19 @@ class MedicalWebSearchTool {
 
   async searchBySource(source, query, intent) {
     if (!query) return [];
+    const cached = await this.readCached(source, query, intent);
+    if (cached) return cached;
 
-    if (source === "icd") return this.searchIcd(query);
-    if (source === "rxnorm") return this.searchRxNorm(query);
-    if (source === "medlineplus") return this.searchMedlinePlus(query);
-    if (source === "openfda") return this.searchOpenFda(query);
-    if (source === "pubmed") return this.searchPubMed(query);
-    if (source === "clinicaltrials") return this.searchClinicalTrials(query);
+    let result = [];
+    if (source === "icd") result = await this.searchIcd(query);
+    else if (source === "rxnorm") result = await this.searchRxNorm(query);
+    else if (source === "medlineplus") result = await this.searchMedlinePlus(query);
+    else if (source === "openfda") result = await this.searchOpenFda(query);
+    else if (source === "pubmed") result = await this.searchPubMed(query);
+    else if (source === "clinicaltrials") result = await this.searchClinicalTrials(query);
 
-    return [];
+    await this.writeCached(source, query, intent, result);
+    return result;
   }
 
   async search({ query, intent, sources = [] }) {

@@ -33,6 +33,7 @@ ${schema}
 Routing policy:
 - Patient-specific facts from the chart: internal only.
 - General medical knowledge beyond the chart: external search allowed.
+- In this dashboard, questions like "what is the treatment plan?", "what lab tests were done?", "what investigations were ordered?", and "what medications are prescribed?" should default to the active patient record and should not ask which patient.
 - Drug composition, ingredients, formulation, pack size, market availability: usually external search.
 - Questions like "is the BP normal?" or "is pulse normal?" are vital_normality and should stay internal if the chart has the measurement.
 - Questions like "is X an alternative to Y?" or "can I replace X with Y?" are medication_comparison or medication_substitution.
@@ -64,6 +65,14 @@ Output: {"intent":"clinical_explanation","needsInternal":true,"needsExternal":tr
 User: "Is the BP normal for the patient?"
 Context: vitals
 Output: {"intent":"vital_normality","needsInternal":true,"needsExternal":false,"isActionRequest":false,"sectionHints":["vitals"],"outOfScope":false,"factField":null,"responseStyle":"default","needsClarification":false,"clarificationPrompt":"","requiresExternalConsent":false}
+
+User: "What is the treatment plan?"
+Context: none
+Output: {"intent":"patient_fact","needsInternal":true,"needsExternal":false,"isActionRequest":false,"sectionHints":["treatment"],"outOfScope":false,"factField":null,"responseStyle":"default","needsClarification":false,"clarificationPrompt":"","requiresExternalConsent":false}
+
+User: "What lab tests were done?"
+Context: none
+Output: {"intent":"patient_fact","needsInternal":true,"needsExternal":false,"isActionRequest":false,"sectionHints":["labs"],"outOfScope":false,"factField":null,"responseStyle":"default","needsClarification":false,"clarificationPrompt":"","requiresExternalConsent":false}
 
 User: "Is PAN D an alternative to PAN 40?"
 Context: medications

@@ -123,6 +123,12 @@ class MedicationComparisonTool {
     };
   }
 
+  isBroadAlternativeQuery(text = "", primary = null, alternative = null) {
+    if (!primary || alternative) return false;
+    const normalized = String(text || "").toLowerCase();
+    return /\b(what\s+is\s+the\s+alternate\s+for|what\s+are\s+the\s+alternatives?\s+for|alternative\s+for|alternate\s+for)\b/i.test(normalized);
+  }
+
   resolve(message = "", internalEvidence = []) {
     const text = String(message || "");
     const lower = text.toLowerCase();
@@ -150,6 +156,10 @@ class MedicationComparisonTool {
 
     if (!primary && internalMeds.length === 1) {
       primary = this.findMedicationByText(internalMeds[0]);
+    }
+
+    if (this.isBroadAlternativeQuery(text, primary, alternative)) {
+      return null;
     }
 
     if (!primary || !alternative) {

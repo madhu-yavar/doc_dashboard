@@ -57,6 +57,7 @@ class ExternalKnowledgeAgent {
   filterRelevantResults(results = [], plan = {}) {
     const knowledgeType = String(plan.knowledge_type || "").toLowerCase();
     if (knowledgeType === "coding_reference") return results;
+    if (knowledgeType === "drug_knowledge" || knowledgeType === "drug_comparison") return results;
 
     const resolvedTerms = [
       plan.resolved_entity?.generic_name,
@@ -115,12 +116,12 @@ class ExternalKnowledgeAgent {
           sources,
         });
         rawResults.push(...chunk);
-        if (rawResults.length >= 8) break;
+        if (rawResults.length >= 18) break;
       }
 
       const allowed = this.sourcePolicy.filter(rawResults);
       const relevant = this.filterRelevantResults(allowed, plan);
-      let ranked = this.ranker.rank(relevant, plan.search_queries[0] || query, 5, {
+      let ranked = this.ranker.rank(relevant, plan.search_queries[0] || query, 8, {
         knowledgeType: plan.knowledge_type,
         intent: classification?.intent,
         entity: plan.entity,

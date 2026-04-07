@@ -11,6 +11,8 @@ class ExternalSourceRankerTool {
     let score = item.confidence || 0.6;
     const knowledgeType = String(context.knowledgeType || "").toLowerCase();
     const section = String(item.source_section || item.title || "").toLowerCase();
+    const loweredQuery = String(query || "").toLowerCase();
+    const needsStructuredDrugFact = /\b(what does|used for|purpose|why do we need|composition|ingredient|contains|active ingredient|strength|dose|dosage|availability|market|alternative|substitute|replace)\b/.test(loweredQuery);
 
     for (const term of terms) {
       if (text.includes(term)) score += 0.08;
@@ -24,10 +26,12 @@ class ExternalSourceRankerTool {
     if (knowledgeType === "clinical_explanation" && /pubmed/.test(section)) score += 0.22;
     if (knowledgeType === "clinical_explanation" && /medlineplus/.test(section)) score += 0.12;
     if (knowledgeType === "clinical_explanation" && /fda|dailymed/.test(`${section} ${item.url || ""}`.toLowerCase())) score -= 0.1;
+    if (needsStructuredDrugFact && /pubmed/.test(section)) score -= 0.35;
+    if (needsStructuredDrugFact && /rxnorm|medlineplus|fda|dailymed/.test(`${section} ${item.url || ""}`.toLowerCase())) score += 0.18;
     return score;
   }
 
-  rank(results = [], query = "", limit = 5, context = {}) {
+  rank(results = [], query = "", limit = 8, context = {}) {
     return (Array.isArray(results) ? results : [])
       .map((item) => ({ ...item, confidence: this.score(item, query, context) }))
       .sort((a, b) => b.confidence - a.confidence)

@@ -37,9 +37,11 @@ type ChatMessage = {
   source_class?: "internal" | "external" | "mixed";
   proposed_actions?: ChatActionProposal[];
   decision_prompt?: {
-    type: "external_search_consent";
+    type: "external_search_consent" | "gemini_api_key";
     question?: string;
-    options: Array<{ label: string; value: string }>;
+    options?: Array<{ label: string; value: string }>;
+    submit_label?: string;
+    placeholder?: string;
   } | null;
   createdAt?: string;
 };
@@ -78,6 +80,8 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
   const [isLoading, setIsLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string>("");
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+  const [geminiKeyDraft, setGeminiKeyDraft] = useState("");
 
   useEffect(() => {
     if (!documentId) {
@@ -109,7 +113,10 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
 
   if (!documentId) return null;
 
-  const handleSendMessage = async (rawMessage: string, options?: { preserveInput?: boolean }) => {
+  const handleSendMessage = async (
+    rawMessage: string,
+    options?: { preserveInput?: boolean; optimisticContent?: string; geminiKeyForTurn?: string; skipOptimistic?: boolean }
+  ) => {
     const message = rawMessage.trim();
     if (!message || isLoading) return;
 
@@ -121,7 +128,15 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
       content: message,
       createdAt: new Date().toISOString(),
     };
-    setMessages((current) => [...current, optimisticMessage]);
+    if (!options?.skipOptimistic) {
+      setMessages((current) => [
+        ...current,
+        {
+          ...optimisticMessage,
+          content: options?.optimisticContent ?? optimisticMessage.content,
+        },
+      ]);
+    }
     if (!options?.preserveInput) {
       setInput("");
     }
@@ -135,6 +150,7 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
           message,
           sectionContext: currentSection,
           chatId: chatId || undefined,
+          geminiApiKey: options?.geminiKeyForTurn || geminiApiKey || undefined,
         }),
       });
 
@@ -146,13 +162,27 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
       setMessages(session.messages || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Chat request failed");
-      setMessages((current) => current.filter((item) => item.id !== optimisticMessage.id));
+      if (!options?.skipOptimistic) {
+        setMessages((current) => current.filter((item) => item.id !== optimisticMessage.id));
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleSend = async () => handleSendMessage(input);
+
+  const handleSubmitGeminiKey = async () => {
+    const key = geminiKeyDraft.trim();
+    if (!key || isLoading) return;
+    setGeminiApiKey(key);
+    setGeminiKeyDraft("");
+    await handleSendMessage("[gemini_api_key]", {
+      preserveInput: true,
+      optimisticContent: "Gemini API key provided",
+      geminiKeyForTurn: key,
+    });
+  };
 
   const handleConfirmAction = async (actionId: string) => {
     if (!chatId) return;
@@ -345,7 +375,7 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
                           ) : null}
                           {message.decision_prompt?.type === "external_search_consent" ? (
                             <div className="flex items-center gap-2">
-                              {message.decision_prompt.options.map((option) => (
+                              {message.decision_prompt.options?.map((option) => (
                                 <Button
                                   key={option.value}
                                   size="sm"
@@ -357,6 +387,23 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
                                   {option.label}
                                 </Button>
                               ))}
+                            </div>
+                          ) : null}
+                          {message.decision_prompt?.type === "gemini_api_key" ? (
+                            <div className="space-y-2 rounded-xl bg-white/80 p-2.5">
+                              <input
+                                type="password"
+                                value={geminiKeyDraft}
+                                onChange={(event) => setGeminiKeyDraft(event.target.value)}
+                                placeholder={message.decision_prompt.placeholder || "Paste Gemini API key"}
+                                className="w-full rounded-lg border border-emerald-200 px-3 py-2 text-[12px] text-slate-700 outline-none ring-0 placeholder:text-slate-400 focus:border-emerald-400"
+                              />
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-[10px] text-slate-400">Used only for this browser session.</p>
+                                <Button size="sm" className="h-7 text-[11px]" disabled={isLoading || !geminiKeyDraft.trim()} onClick={handleSubmitGeminiKey}>
+                                  {message.decision_prompt.submit_label || "Submit"}
+                                </Button>
+                              </div>
                             </div>
                           ) : null}
                         </div>
@@ -384,7 +431,13 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
                 <Textarea
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
-                  placeholder="Ask about this patient, meds, trends, ICD, guidelines, or request a note update..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="Ask about this patient, meds, trends, ICD, guidelines, or request a note update... (Press Enter to send, Shift+Enter for new line)"
                   className="min-h-[84px] resize-none text-[13px]"
                 />
                 <div className="flex items-center justify-between gap-2">

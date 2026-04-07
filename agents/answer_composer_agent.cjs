@@ -1,4 +1,5 @@
 const GemmaClientTool = require("../tools/llm/gemma_client.tool.cjs");
+const GeminiClientTool = require("../tools/llm/gemini_client.tool.cjs");
 const ChatPromptBuilderTool = require("../tools/chat/chat_prompt_builder.tool.cjs");
 const CitationAssemblerTool = require("../tools/chat/citation_assembler.tool.cjs");
 const DrugFactExtractorTool = require("../tools/chat/drug_fact_extractor.tool.cjs");
@@ -8,6 +9,7 @@ class AnswerComposerAgent {
     this.name = "Answer Composer Agent";
     this.version = "1.0.0";
     this.gemmaClient = new GemmaClientTool(config.gemma || {});
+    this.geminiClient = new GeminiClientTool(config.gemini || {});
     this.promptBuilder = new ChatPromptBuilderTool(config);
     this.citationAssembler = new CitationAssemblerTool(config);
     this.drugFactExtractor = new DrugFactExtractorTool(config);
@@ -59,6 +61,14 @@ class AnswerComposerAgent {
     if (!cleaned) return "";
     const sentence = cleaned.match(/.+?[.!?](?:\s|$)/)?.[0]?.trim() || cleaned;
     return sentence.length > maxLength ? `${sentence.slice(0, maxLength - 1).trim()}…` : sentence;
+  }
+
+  compactSentences(text = "", maxSentences = 2, maxLength = 320) {
+    const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+    if (!cleaned) return "";
+    const sentences = cleaned.match(/[^.!?]+[.!?]+/g) || [cleaned];
+    const compact = sentences.slice(0, maxSentences).map((item) => item.trim()).join(" ");
+    return compact.length > maxLength ? `${compact.slice(0, maxLength - 1).trim()}…` : compact;
   }
 
   bestExternalSummary(item = {}) {
@@ -113,7 +123,27 @@ class AnswerComposerAgent {
     const topInternal = internalEvidence[0];
     const internalLine = topInternal?.value ? `Patient Record: ${topInternal.value}.` : "";
     const extracted = this.drugFactExtractor.extract({ message, externalEvidence, resolution });
-    const externalLine = extracted?.answer || this.bestExternalSummary(externalEvidence[0]);
+    let externalLine = extracted?.answer || "";
+    const combinedExternal = externalEvidence.map((item) => `${item.value || ""} ${item.source_excerpt || ""}`).join(" ").toLowerCase();
+    const generic = resolution?.generic_name || resolution?.normalized_display || "";
+
+    if (!externalLine && /\b(what does|used for|purpose|why do we need|role)\b/i.test(String(message || "")) && generic) {
+      if (/inhibits gastric acid secretion|proton pump inhibitor|ppi/.test(combinedExternal)) {
+        externalLine = `${generic} reduces gastric acid secretion and is used for acid-related disorders.`;
+      } else if (/thyroxine|thyroid gland|synthetic t4|tetraiodothyronine/.test(combinedExternal)) {
+        externalLine = `${generic} is synthetic thyroid hormone replacement.`;
+      } else if (/amoxicillin|clavulanate|antibiotic|antibacterial/.test(combinedExternal)) {
+        externalLine = `${generic} is an antibiotic used for bacterial infections.`;
+      } else if (/loop diuretic/.test(combinedExternal)) {
+        externalLine = `${generic} is a loop diuretic used to remove excess fluid.`;
+      } else if (/osmotic/.test(combinedExternal) && /diuretic|pressure/.test(combinedExternal)) {
+        externalLine = `${generic} is used to reduce intracranial or intraocular pressure and promote diuresis.`;
+      }
+    }
+
+    if (!externalLine) {
+      externalLine = this.bestExternalSummary(externalEvidence[0]);
+    }
 
     if (!externalLine) return null;
 
@@ -145,7 +175,31 @@ class AnswerComposerAgent {
     };
   }
 
-  async execute({ message, classification, internalEvidence = [], externalEvidence = [], chatHistory = [], externalMeta = null }) {
+  buildExternalOnlyFallback(message, externalEvidence = [], resolution = null) {
+    if (!externalEvidence.length) return null;
+
+    const extracted = this.drugFactExtractor.extract({ message, externalEvidence, resolution });
+    const answer = extracted?.answer || this.bestExternalSummary(externalEvidence[0]);
+    if (!answer) return null;
+
+    return {
+      answer: answer.replace(/^External Reference:\s*/i, "").trim(),
+      citations: this.citationAssembler.assemble(extracted?.citations || externalEvidence, { max: 4 }),
+      source_class: "external",
+      llm_provider: "external_fallback",
+    };
+  }
+
+  async execute({
+    message,
+    classification,
+    internalEvidence = [],
+    externalEvidence = [],
+    chatHistory = [],
+    externalMeta = null,
+    externalComposer = "gemma",
+    geminiApiKey = "",
+  }) {
     if (classification?.responseStyle === "factoid" && internalEvidence.length && !externalEvidence.length) {
       const factAnswer = this.buildFactAnswer(classification, internalEvidence);
       if (factAnswer) {
@@ -153,6 +207,95 @@ class AnswerComposerAgent {
           success: true,
           step: "answer_composer",
           data: factAnswer,
+        };
+      }
+    }
+
+    if (externalComposer === "gemini_web") {
+      const groundedPrompt = this.promptBuilder.buildGeminiExternal({
+        message,
+        classification,
+        externalEvidence: [],
+        chatHistory,
+      });
+      const geminiResult = await this.geminiClient.executeGroundedSearch(message, {
+        apiKey: geminiApiKey,
+        systemInstruction: groundedPrompt.systemInstruction,
+        temperature: 0.1,
+        maxTokens: 500,
+      });
+
+      if (geminiResult.success && geminiResult.content.trim()) {
+        return {
+          success: true,
+          step: "answer_composer",
+          data: {
+            answer: this.compactSentences(geminiResult.content, 2, 360),
+            citations: this.citationAssembler.assemble(geminiResult.citations || [], { max: 4 }),
+            source_class: "external",
+            llm_provider: "gemini_web",
+          },
+        };
+      }
+
+      return {
+        success: true,
+        step: "answer_composer",
+        data: {
+          answer: "I tried Gemini web grounding for this external question, but the grounded web search did not return a usable answer right now.",
+          citations: [],
+          source_class: "external",
+          llm_provider: "gemini_web_failed",
+        },
+      };
+    }
+
+    if (externalComposer === "gemini" && externalEvidence.length) {
+      const groundedPrompt = this.promptBuilder.buildGeminiExternal({
+        message,
+        classification,
+        externalEvidence,
+        chatHistory,
+      });
+      const geminiResult = await this.geminiClient.execute(groundedPrompt.prompt, {
+        apiKey: geminiApiKey,
+        systemInstruction: groundedPrompt.systemInstruction,
+        temperature: 0.1,
+        maxTokens: 500,
+      });
+
+      if (geminiResult.success && geminiResult.content.trim()) {
+        const sourceClass =
+          internalEvidence.length && externalEvidence.length
+            ? "mixed"
+            : externalEvidence.length
+            ? "external"
+            : "internal";
+        const citationItems =
+          sourceClass === "mixed"
+            ? [internalEvidence[0]].filter(Boolean).concat(externalEvidence, internalEvidence.slice(1))
+            : [...internalEvidence, ...externalEvidence];
+
+        return {
+          success: true,
+          step: "answer_composer",
+          data: {
+            answer: geminiResult.content.trim(),
+            citations: this.citationAssembler.assemble(externalEvidence, {
+              max: classification?.responseStyle === "factoid" ? 1 : 4,
+            }),
+            source_class: "external",
+            llm_provider: "gemini",
+          },
+        };
+      }
+
+      const fallback = this.buildExternalOnlyFallback(message, externalEvidence, externalMeta?.resolution || null);
+      if (fallback) {
+        return {
+          success: true,
+          step: "answer_composer",
+          data: fallback,
         };
       }
     }

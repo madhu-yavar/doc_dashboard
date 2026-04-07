@@ -50,6 +50,42 @@ ${externalBlock || "None"}
 
 Return plain text only.`;
   }
+
+  buildGeminiExternal({ message, classification, externalEvidence = [], chatHistory = [] }) {
+    const historyBlock = (chatHistory || [])
+      .slice(-6)
+      .map((item) => `${item.role}: ${item.content || item.answer || ""}`)
+      .join("\n");
+    const externalBlock = externalEvidence
+      .slice(0, 8)
+      .map((item, index) => `[EX${index + 1}] ${item.label || item.source_section || "Medical Source"} | ${item.value} | ${item.source_excerpt} | ${item.url || ""}`)
+      .join("\n");
+
+    return {
+      systemInstruction:
+        "You are a medical assistant composing a concise answer for a doctor from external medical sources only. Use only the provided external evidence. Do not invent facts. Do not mention missing tools or internal mechanics. Do not include markdown citations in the answer body. Keep the response compact.",
+      prompt: `Question:
+${message}
+
+Intent:
+${classification?.intent || "unknown"}
+
+Recent chat:
+${historyBlock || "None"}
+
+External medical evidence:
+${externalBlock || "None"}
+
+Instructions:
+- Answer in at most 2 short clinician-facing sentences.
+- No bullet lists.
+- No headings.
+- Do not mention patient record content.
+- If external evidence is weak, say that directly and do not overclaim.
+- For drug questions, prefer purpose/use, composition, or comparison facts over chemistry-heavy label text.
+- Return plain text only.`,
+    };
+  }
 }
 
 module.exports = ChatPromptBuilderTool;

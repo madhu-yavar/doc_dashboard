@@ -24,6 +24,8 @@ class DoctorAssistantAgent {
     });
     this.vitalNormalityTool = new VitalNormalityTool(config);
     this.medicationComparisonTool = new MedicationComparisonTool(config);
+    this.useGeminiForExternal = config.gemini?.enabled !== false;
+    this.defaultGeminiApiKey = String(config.gemini?.apiKey || "").trim();
   }
 
   isAffirmative(message = "") {
@@ -45,7 +47,34 @@ class DoctorAssistantAgent {
     };
   }
 
-  async execute({ document, documentId, message, sectionContext, chatId }) {
+  createGeminiKeyPrompt(answer) {
+    return {
+      type: "gemini_api_key",
+      question: answer,
+      submit_label: "Use Gemini",
+      placeholder: "Paste Gemini API key for this session",
+    };
+  }
+
+  shouldTreatPendingClarificationAsNewQuestion(message = "", pendingClassification = null, nextClassification = null) {
+    const text = String(message || "").trim();
+    if (!text || !nextClassification) return false;
+    if (this.isAffirmative(text) || this.isNegative(text)) return false;
+
+    const looksStandalone =
+      text.includes("?") ||
+      /^(what|which|who|when|where|why|how|is|are|can|does|do|will|tell|show|list)\b/i.test(text);
+
+    const intentChanged = nextClassification.intent && nextClassification.intent !== pendingClassification?.intent;
+    const hasConcreteTarget =
+      Boolean(nextClassification.factField) ||
+      (Array.isArray(nextClassification.sectionHints) && nextClassification.sectionHints.length > 0) ||
+      Boolean(nextClassification.needsExternal);
+
+    return !nextClassification.needsClarification && (looksStandalone || intentChanged || hasConcreteTarget);
+  }
+
+  async execute({ document, documentId, message, sectionContext, chatId, geminiApiKey = "" }) {
     const session =
       (await this.sessionAgent.load(documentId, chatId)) || {
         chatId: chatId || crypto.randomUUID(),
@@ -56,12 +85,61 @@ class DoctorAssistantAgent {
         confirmedActions: [],
         pendingExternalConsent: null,
         pendingClarification: null,
+        pendingGeminiKeyPrompt: null,
       };
 
     const userMessage = String(message || "");
+    const providedGeminiApiKey = String(geminiApiKey || "").trim();
     let executionMessage = userMessage;
     let externalConsentGranted = false;
     let classification = null;
+    let transientGeminiApiKey = providedGeminiApiKey;
+    let userContentForHistory = userMessage;
+
+    if (session.pendingGeminiKeyPrompt) {
+      const pending = session.pendingGeminiKeyPrompt;
+      if (!providedGeminiApiKey) {
+        const promptMessage = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          answer: "A Gemini API key is required to continue with Gemini-backed external synthesis for this turn.",
+          citations: [],
+          confidence: 60,
+          confidence_label: "low",
+          source_class: "external",
+          proposed_actions: [],
+          decision_prompt: this.createGeminiKeyPrompt("Enter a Gemini API key to continue. It will be used only for this session and will not be stored in chat history."),
+          createdAt: new Date().toISOString(),
+        };
+        session.messages.push(promptMessage);
+        session.updatedAt = new Date().toISOString();
+        await this.sessionAgent.save(session);
+
+        return {
+          success: true,
+          data: {
+            chatId: session.chatId,
+            documentId,
+            answer: promptMessage.answer,
+            source_class: "external",
+            confidence: 60,
+            confidence_label: "low",
+            citations: [],
+            refused: false,
+            proposed_actions: [],
+            decision_prompt: promptMessage.decision_prompt,
+          },
+          session,
+        };
+      }
+
+      executionMessage = pending.message;
+      sectionContext = pending.sectionContext;
+      classification = pending.classification || null;
+      session.pendingGeminiKeyPrompt = null;
+      externalConsentGranted = true;
+      userContentForHistory = "Gemini API key provided";
+    }
 
     if (session.pendingExternalConsent) {
       const pending = session.pendingExternalConsent;
@@ -72,6 +150,54 @@ class DoctorAssistantAgent {
         classification = pending.classification || null;
         session.pendingExternalConsent = null;
         externalConsentGranted = true;
+        if (this.useGeminiForExternal && !transientGeminiApiKey && !this.defaultGeminiApiKey) {
+          const keyPrompt =
+            "External search is approved. Enter a Gemini API key to use Gemini for grounded external synthesis. The key will not be stored in chat history.";
+
+          session.pendingGeminiKeyPrompt = {
+            message: executionMessage,
+            sectionContext,
+            classification,
+            createdAt: new Date().toISOString(),
+          };
+          session.messages.push({
+            id: crypto.randomUUID(),
+            role: "user",
+            content: "Yes",
+            createdAt: new Date().toISOString(),
+          });
+          session.messages.push({
+            id: crypto.randomUUID(),
+            role: "assistant",
+            answer: keyPrompt,
+            citations: [],
+            confidence: 60,
+            confidence_label: "low",
+            source_class: "external",
+            proposed_actions: [],
+            decision_prompt: this.createGeminiKeyPrompt(keyPrompt),
+            createdAt: new Date().toISOString(),
+          });
+          session.updatedAt = new Date().toISOString();
+          await this.sessionAgent.save(session);
+
+          return {
+            success: true,
+            data: {
+              chatId: session.chatId,
+              documentId,
+              answer: keyPrompt,
+              source_class: "external",
+              confidence: 60,
+              confidence_label: "low",
+              citations: [],
+              refused: false,
+              proposed_actions: [],
+              decision_prompt: this.createGeminiKeyPrompt(keyPrompt),
+            },
+            session,
+          };
+        }
       } else if (this.isNegative(userMessage)) {
         const declineMessage = {
           id: crypto.randomUUID(),
@@ -89,7 +215,7 @@ class DoctorAssistantAgent {
         session.messages.push({
           id: crypto.randomUUID(),
           role: "user",
-          content: userMessage,
+          content: userContentForHistory,
           createdAt: new Date().toISOString(),
         });
         session.messages.push(declineMessage);
@@ -117,14 +243,21 @@ class DoctorAssistantAgent {
 
     if (session.pendingClarification) {
       const pending = session.pendingClarification;
-      executionMessage = `${pending.message}\nClarification: ${userMessage}`;
-      sectionContext = pending.sectionContext;
-      classification = {
-        ...pending.classification,
-        needsClarification: false,
-        clarificationPrompt: "",
-      };
-      session.pendingClarification = null;
+      const standaloneIntent = await this.intentAgent.execute({ message: userMessage, sectionContext });
+
+      if (this.shouldTreatPendingClarificationAsNewQuestion(userMessage, pending.classification, standaloneIntent.data)) {
+        session.pendingClarification = null;
+        classification = standaloneIntent.data;
+      } else {
+        executionMessage = `${pending.message}\nClarification: ${userMessage}`;
+        sectionContext = pending.sectionContext;
+        classification = {
+          ...pending.classification,
+          needsClarification: false,
+          clarificationPrompt: "",
+        };
+        session.pendingClarification = null;
+      }
     }
 
     if (!classification) {
@@ -237,18 +370,27 @@ class DoctorAssistantAgent {
       };
     }
 
-    const recordResult = await this.recordAgent.execute({
-      document,
-      message: executionMessage,
-      sectionHints: classification.sectionHints,
-      classification,
-    });
-    const internalEvidence = recordResult.data.evidence || [];
+    const internalEvidence = classification.needsExternal
+      ? []
+      : (
+          await this.recordAgent.execute({
+            document,
+            message: executionMessage,
+            sectionHints: classification.sectionHints,
+            classification,
+          })
+        ).data.evidence || [];
 
     const comparisonResolution =
-      classification.intent === "medication_comparison" || classification.intent === "medication_substitution"
+      !classification.needsExternal &&
+      (classification.intent === "medication_comparison" || classification.intent === "medication_substitution")
         ? this.medicationComparisonTool.resolve(executionMessage, internalEvidence)
         : null;
+
+    const useGeminiWebSearch =
+      classification.needsExternal &&
+      this.useGeminiForExternal &&
+      Boolean(transientGeminiApiKey || this.defaultGeminiApiKey);
 
     if (comparisonResolution?.needsClarification) {
       session.pendingClarification = {
@@ -396,8 +538,8 @@ class DoctorAssistantAgent {
       };
     }
 
-    const externalResult = classification.needsExternal
-      ? await this.externalAgent.execute({ query: executionMessage, classification, internalEvidence })
+    const externalResult = classification.needsExternal && !useGeminiWebSearch
+      ? await this.externalAgent.execute({ query: executionMessage, classification, internalEvidence: [] })
       : { success: true, data: { evidence: [], source_class: "internal" } };
     const externalEvidence = externalResult.data.evidence || [];
     const externalError = externalResult.data.error || null;
@@ -413,9 +555,10 @@ class DoctorAssistantAgent {
       classification.intent === "drug_safety" &&
       !externalEvidence.length &&
       Boolean(externalResolution?.generic_name || externalResolution?.normalized_display);
+    const allowExternalAnswerDespiteLowSafety = classification.needsExternal && (externalEvidence.length || useGeminiWebSearch);
 
     let answerPayload;
-    if (safety.data.refusal.refused && !allowResolvedDrugFallback) {
+    if (safety.data.refusal.refused && !allowResolvedDrugFallback && !allowExternalAnswerDespiteLowSafety) {
       answerPayload = {
         answer: safety.data.refusal.reason,
         citations: [],
@@ -427,10 +570,7 @@ class DoctorAssistantAgent {
         citations: comparisonResolution.citations || [],
         source_class: comparisonResolution.source_class || "mixed",
       };
-    } else if (classification.needsExternal && !externalEvidence.length) {
-      const internalSummary = internalEvidence[0]?.value
-        ? ` The uploaded record documents: ${internalEvidence[0].value}.`
-        : "";
+    } else if (classification.needsExternal && !externalEvidence.length && !useGeminiWebSearch) {
       const resolvedSummary =
         externalResolution?.generic_name || externalResolution?.normalized_display
           ? ` I identified the medication as ${externalResolution.generic_name || externalResolution.normalized_display}, but I could not retrieve a reliable external fact for this question right now.`
@@ -441,19 +581,25 @@ class DoctorAssistantAgent {
           : "I tried approved external medical sources, but the external search is unavailable right now.";
 
       answerPayload = {
-        answer: `${failureReason}${resolvedSummary}${internalSummary}`,
-        citations: internalEvidence.length ? [internalEvidence[0]] : [],
-        source_class: internalEvidence.length ? "mixed" : "external",
+        answer: `${failureReason}${resolvedSummary}`,
+        citations: [],
+        source_class: "external",
       };
     } else {
       answerPayload = (
         await this.answerAgent.execute({
           message: executionMessage,
           classification,
-          internalEvidence,
+          internalEvidence: classification.needsExternal ? [] : internalEvidence,
           externalEvidence,
           externalMeta: { resolution: externalResolution },
           chatHistory: session.messages,
+          externalComposer: useGeminiWebSearch
+            ? "gemini_web"
+            : classification.needsExternal && externalEvidence.length && this.useGeminiForExternal && (transientGeminiApiKey || this.defaultGeminiApiKey)
+            ? "gemini"
+            : "gemma",
+          geminiApiKey: transientGeminiApiKey || this.defaultGeminiApiKey,
         })
       ).data;
     }
@@ -465,14 +611,20 @@ class DoctorAssistantAgent {
       documentId,
     });
 
+    const effectiveConfidence =
+      answerPayload.llm_provider === "gemini_web" && answerPayload.citations?.length
+        ? { score: 88, label: "high" }
+        : safety.data.confidence;
+
     const assistantMessage = {
       id: crypto.randomUUID(),
       role: "assistant",
       answer: answerPayload.answer,
       citations: answerPayload.citations,
-      confidence: safety.data.confidence.score,
-      confidence_label: safety.data.confidence.label,
+      confidence: effectiveConfidence.score,
+      confidence_label: effectiveConfidence.label,
       source_class: answerPayload.source_class,
+      llm_provider: answerPayload.llm_provider || undefined,
       proposed_actions: actionResult.data.proposals,
       decision_prompt: null,
       createdAt: new Date().toISOString(),
@@ -481,7 +633,7 @@ class DoctorAssistantAgent {
     session.messages.push({
       id: crypto.randomUUID(),
       role: "user",
-      content: externalConsentGranted ? "Yes" : userMessage,
+      content: externalConsentGranted && userContentForHistory === userMessage ? "Yes" : userContentForHistory,
       createdAt: new Date().toISOString(),
     });
     session.messages.push(assistantMessage);
@@ -496,11 +648,12 @@ class DoctorAssistantAgent {
         documentId,
         answer: answerPayload.answer,
         source_class: answerPayload.source_class,
-        confidence: safety.data.confidence.score,
-        confidence_label: safety.data.confidence.label,
+        confidence: effectiveConfidence.score,
+        confidence_label: effectiveConfidence.label,
         citations: answerPayload.citations,
-        refused: safety.data.refusal.refused,
-        refusal_reason: safety.data.refusal.reason || undefined,
+        refused: answerPayload.llm_provider === "gemini_web" ? false : allowExternalAnswerDespiteLowSafety ? false : safety.data.refusal.refused,
+        refusal_reason: answerPayload.llm_provider === "gemini_web" ? undefined : allowExternalAnswerDespiteLowSafety ? undefined : safety.data.refusal.reason || undefined,
+        llm_provider: answerPayload.llm_provider || undefined,
         proposed_actions: actionResult.data.proposals,
         decision_prompt: assistantMessage.decision_prompt,
       },
