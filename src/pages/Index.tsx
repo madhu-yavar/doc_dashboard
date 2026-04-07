@@ -365,7 +365,7 @@ const Index = () => {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-full border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                className="h-9 w-9 rounded-full border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 disabled:border-slate-200 disabled:bg-white disabled:text-slate-300"
                 onClick={() => openProcessedDocument(previousProcessedDocument?.id)}
                 disabled={!previousProcessedDocument}
               >
@@ -373,7 +373,7 @@ const Index = () => {
               </Button>
               <Button
                 size="icon"
-                className="h-9 w-9 rounded-full bg-blue-500 text-white hover:bg-blue-600"
+                className="h-9 w-9 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400"
                 onClick={() => openProcessedDocument(nextProcessedDocument?.id)}
                 disabled={!nextProcessedDocument}
               >
