@@ -118,7 +118,8 @@
       "Bash(git pull:*)",
       "Bash(lsof:*)",
       "Bash(npm run build:*)",
-      "Bash(ps:*)"
+      "Bash(ps:*)",
+      "Bash(find:*)"
     ]
   }
 }
