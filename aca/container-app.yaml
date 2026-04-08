@@ -1,0 +1,51 @@
+metadata:
+  name: doctor-dashboard
+  namespace: z-dev
+  annotations:
+    description: "Doctor Dashboard - AI-powered medical document processing"
+
+spec:
+  type: Microsoft.App/containerApps
+  apiVersion: '2023-05-01'
+  properties:
+    environmentId: /subscriptions/759c3e4d-1b5f-481d-b10d-5d93bf2aaeea/resourceGroups/z-grid-dev/providers/Microsoft.App/environments/doctor-dashboard-env
+    configuration:
+      activeRevisionsMode: Single
+      secrets:
+        - name: gemma-url
+          value: "http://206.1.62.28:8000/v1/chat/completions"
+      ingress:
+        external: true
+        targetPort: 8001
+        customDomains:
+          - name: doctor-dashboard.zagent.dev.yavar.ai
+        transport: Auto
+        clientCertificateMode: Ignore
+    template:
+      containers:
+        - name: doctor-dashboard
+          image: zgridcontainerregistry.azurecr.io/doctor-dashboard:latest
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "8001"
+            - name: GEMMA_URL
+              secretRef: gemma-url
+            - name: GEMMA_MODEL
+              value: "google/gemma-4-26B-A4B-it"
+            - name: USE_GEMINI_FOR_EXTERNAL
+              value: "true"
+          resources:
+            cpu:
+              core: 0.5
+            memory: "1.0Gi"
+          volumeMounts:
+            - name: storage
+              mountPath: /app/server/storage
+      volumes:
+        - name: storage
+          storageType: Temporary
+      scale:
+        minReplicas: 0
+        maxReplicas: 3

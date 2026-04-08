@@ -1,0 +1,16 @@
+resourceGroupName=z-grid-dev
+location=eastus
+appName=doctor-dashboard
+containerName=doctor-dashboard
+acrName=zgridcontainerregistry
+imageName=doctor-dashboard
+namespace=z-dev
+
+# Container Environment
+envName=doctor-dashboard-env
+
+# Container App Configuration
+cpu=0.5
+memory=1.0Gi
+minReplicas=0
+maxReplicas=3

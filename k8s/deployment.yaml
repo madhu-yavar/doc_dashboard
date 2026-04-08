@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: doctor-dashboard
+  namespace: doctor-dashboard
+  labels:
+    app: doctor-dashboard
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: doctor-dashboard
+  template:
+    metadata:
+      labels:
+        app: doctor-dashboard
+        version: v1
+    spec:
+      containers:
+      - name: doctor-dashboard
+        image: zinfradevv1.azurecr.io/doctor-dashboard:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8001
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: doctor-dashboard-config
+        - secretRef:
+            name: doctor-dashboard-secrets
+            optional: true
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: storage
+          mountPath: /app/server/storage
+      volumes:
+      - name: storage
+        emptyDir: {}
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: doctor-dashboard
+  namespace: doctor-dashboard
+  labels:
+    app: doctor-dashboard
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8001
+    protocol: TCP
+    name: http
+  selector:
+    app: doctor-dashboard

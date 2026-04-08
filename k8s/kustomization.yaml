@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: doctor-dashboard
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - deployment.yaml
+  - ingress.yaml
+
+images:
+  - name: zinfradevv1.azurecr.io/doctor-dashboard
+    newTag: latest

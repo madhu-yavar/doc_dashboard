@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: doctor-dashboard
+  labels:
+    name: doctor-dashboard
+    app: doctor-dashboard
