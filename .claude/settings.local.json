@@ -119,7 +119,10 @@
       "Bash(lsof:*)",
       "Bash(npm run build:*)",
       "Bash(ps:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(docker images:*)",
+      "Bash(git show:*)",
+      "Bash(xargs:*)"
     ]
   }
 }
