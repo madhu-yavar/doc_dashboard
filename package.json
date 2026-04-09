@@ -4,7 +4,6 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "./start.sh",
     "dev": "vite",
     "server": "node server/index.cjs",
     "build": "vite build",

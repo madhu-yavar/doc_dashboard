@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "Prakriti MUKHOPADHYAY",
+      "source": "Patient Name : Prakriti MUKHOPADHYAY"
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "55",
+      "source": "Age : 55"
+    },
+    "gender": {
+      "value": "female",
+      "source": "Gender : female"
+    },
+    "admission_date": {
+      "value": "25/03/2026",
+      "source": "Patient arrival Date : 25/03/2026"
+    },
+    "discharge_date": {
+      "value": "",
+      "source": ""
+    },
+    "chief_complaints": {
+      "value": "Ganglionic swelling left hand Middle finger DIP joint",
+      "source": "Chief Complaints : Ganglionic swelling left hand Middle finger DIP joint"
+    },
+    "principal_diagnosis": {
+      "value": "Ganglionic cyst left hand Middle finger DIP joint",
+      "source": "Provisional Diagnosis :\nGanglionic cyst left hand Middle finger DIP joint"
+    },
+    "secondary_context": {
+      "value": "htn | HTN, DM | Nothing significant.",
+      "source": "Past History : htn || Past Medical History : HTN, DM || Past Surgical History : Nothing significant."
+    },
+    "allergies": {
+      "value": "not known",
+      "source": "Any Known Allergies : not known"
+    },
+    "current_medications": {
+      "value": "as per order | TAB TELVAS BETA 50 BD",
+      "source": "Current Medications : as per order || Current medications : TAB TELVAS BETA 50 BD"
+    },
+    "bp": {
+      "value": "120/80",
+      "source": "Blood Pressure(mmHg) : 120/80"
+    },
+    "pulse": {
+      "value": "88",
+      "source": "Pulse/min : 88"
+    },
+    "temperature_f": {
+      "value": "97.6",
+      "source": "Temp(F) : 97.6"
+    },
+    "respiration": {
+      "value": "20",
+      "source": "Respiration/min : 20"
+    },
+    "spo2": {
+      "value": "97.6",
+      "source": "Spo2(%) : 97.6"
+    },
+    "pain_score": {
+      "value": "2",
+      "source": "Pain Score : 2"
+    },
+    "fall_score": {
+      "value": "4",
+      "source": "Total Fall Risk Score(sum of all points per category) : 4"
+    },
+    "fall_risk": {
+      "value": "",
+      "source": ""
+    },
+    "pressure_score": {
+      "value": "",
+      "source": ""
+    },
+    "pressure_risk": {
+      "value": "No",
+      "source": "Existence of Pressure Ulcer : No"
+    },
+    "dvt_score": {
+      "value": "",
+      "source": ""
+    },
+    "dvt_risk": {
+      "value": "NO",
+      "source": "DVT : NO"
+    },
+    "aspiration_score": {
+      "value": "",
+      "source": ""
+    },
+    "aspiration_risk": {
+      "value": "No",
+      "source": "Risk for Aspiration : No"
+    },
+    "ews_score": {
+      "value": "18",
+      "source": "TOTAL SCORE : 18"
+    }
+  }
+}

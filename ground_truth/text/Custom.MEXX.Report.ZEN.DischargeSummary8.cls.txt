@@ -1,0 +1,441 @@
+INPATIENT RECORD
+Hospital No:
+Name:
+Doctor Name:
+Date:
+
+57018681
+
+BP Systolic: 120 mmHg
+Respiration: 16 br/min
+Saturation(Oxygen): 98 %
+
+Visit No:
+Age/Sex:
+Specialty:
+
+BP Diastolic: 90 mmHg
+Temperature: 98 °F
+Mean Arterial Pressure-MAP: 100
+mmHg
+
+Pulse Rate: 89 bt/min
+Delivered Oxygen Flow Rate: 0
+Bowel Status: 1
+
+Eye Opening: 4
+
+Forms
+Reassesment Tool(Pre and Post Shift Out)
+Score : 0
+Temperature : 98
+Pulse : 80
+Respiration : 16
+SpO2 : 98
+BP : 120/90
+Shifting : Daycare-Before Discharge
+: Time
+11;50am-Patient received from the admission desk with a case ADENOCARCINOMA STOMACH. Patient
+currently occupied day care With complaints of fever and tiredness patient visit informed to Dr Annalakshmi
+Discharge Checklist MHE
+Status : Authorised
+Score : 0
+Discharge Planning initiated : 24/03/2026
+Reports required by patient on discharge: : yes
+IV Cannula removed : Yes
+Last vital signs documented : Yes
+Discharge Medication or Prescription : Yes
+Investigation results : Yes
+Appointment details : Yes
+Advice/Instructions/Education information : Yes
+ID band removed : Yes
+All personal belongings returned : Not Applicable
+Discharge comments : left the ward with stable condition
+Reports supplied to patients on discharge : 1 op file in that discharge summary-1 blood reports -4 given to patient
+husband srinivas
+Home Discharge Planning
+Intravascular Access Lines
+Status : Authorised
+IntraVascular Access Type : Peripheral IV Line
+Peripheral IV Activity : Discontinued
+CVC Site Assesst
+
+1 of 6
+
+
+Hospital No: 57018681
+Name:
+
+Visit No:
+Doctor Name:
+
+Lumen color : b;ue
+Central IV TPA Intervention
+Catheter position corrected / withdrawn
+Arterial Line Status
+Peripheral IV Assessment
+Peripheral IV Removal Date : 24/03/2026
+Peripheral IV Removal Time : 18:00
+Peripheral Removal Indication : Treatment completed
+NURSING INITIAL ASSESSMENT - NEW
+Status : Entered
+Score : 0
+Patient Name : Shobha K
+MRN : MH009527399
+Age : 51 Yrs
+Gender : Female
+Patient arrival Date : 24/03/2026
+Patient Arrival Time : 11:55
+Accompanied by Relative : Yes
+Name of Relative : Mr. Shrinivas
+Relationship with Patient : Husband
+Contact Number : 9845256747
+Primary Language Spoken : Kannada
+Interpreter Needed : No
+Room Orientation Given : Yes
+Patient Identification Band Fixed : Yes
+If Yes Type Of Band : Green and orange band
+Height(Cm) : 161
+Weight(Kgs) : 71.7
+Reason Not Able To Check : .
+Chief Complaints : Currently admitted for immunotherapy#89
+Past History : ADENOCARCINOMA STOMACH STAGE IV (PERITONEAL METS)
+HYPOTHYROIDISM
+FIBROMYALGIA
+Vital Assessment
+Temp(F) : 98
+Pulse/min : 89
+Blood Pressure(mmHg) : 120/90
+Respiration/min : 16
+Spo2(%) : 98
+GRBS (mg/dl) : .
+Skin Integrity : INTACT
+Other Parameters
+EWS Score : 0
+2 of 6
+
+
+Hospital No: 57018681
+Name:
+
+Visit No:
+Doctor Name:
+
+GCS : 15/15
+Pain Score : 0
+Valuable handover checklist completed : Yes
+Belongings : With Patient
+Dentures : No
+Hearing Aid : No
+Eye Glasses/Contact Lens : No
+Others : .
+Vulnerable : Yes
+Any Special Care Given : keep side rails up, frequent visiting, no wet floor
+Restraints : No
+If Yes, Type Of Restraint : NO
+Any Known Allergies : unknown
+Current Medications : Tab Maxdulin 0-0-1 x continue
+Tab Emeset 4mg sos for nausea
+Tab Sompraz D 1-0-0 X daily & sos (before food) for gastritis
+Syp Mucaine gel 10 ml sos (before food) for mucositis/gastritis
+Informed the Doctor : Yes
+Name of the Doctor : Dr Annalakshmi S
+Investigations Ordered : NIL
+Diet : neutropenic diet
+Collected Old records : Yes
+If Yes Document Type : 1 OP FILE
+Is the patient at risk for any of the following? If Yes, complete the risk assessment form.
+Fall : YES
+Pressure Score : NO
+DVT : YES
+Aspiration : YES
+Pain Assessment Score : Not Applicable
+Ability to perform activities of daily living
+Activity
+Bathing : Independent
+Dressing : Independent
+Eating : Independent
+Walking : Independent
+Toilet Use : Independent
+Nursing needs(complete Nursing care plan based on the identified needs)
+Actual needs : To control the growth of cancer cells
+– Palliation.
+– make a tumor smaller before surgery/ radiation therapy
+– destroy cancer cells that may remain after surgery or radiation therapy
+– help other treatments work better
+– kill cancer cells that have returned or spread to other parts of your body
+Potential needs : Improve quality of life and prolong life expectancy.
+-To prevent extravasation
+- Managing and relieving of chemo drugs side effects and pain management.
+Any other needs : Palliative care or hospice care, which help control the symptoms and side effects of the disease.
+3 of 6
+
+
+Hospital No: 57018681
+Name:
+
+Visit No:
+Doctor Name:
+
+Assessment Done By : Ankitha D.S
+Rating : 0
+BMI : 27.39
+Fall Score : 3-LOW RISK
+Pressure score : 23-NO RISK
+DVT Score : 4-HIGH RISK
+Aspiration score : 0-LOW RISK
+General Physical Examination:
+Pallor : NO
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+Any Other Findings : .
+
+Forms
+Patient/Family Health Education
+Status : Authorised
+Date: : 24/03/2026
+Time: : 18:29
+Assessment Type : Inital Assessment
+Educational Needs : Safe and effective use of medcial equipment,Discharge Instruction of continuing care,Pesonal
+hygiene and practitioner hand wash,Infection control related issues,Home Instruction,Other (specify in
+comments),Health Maintenance,Social Services,Safety,Hand hygiene,Isolation precaution
+Given Education : Maintain body and oral hygiene (Chlorhexidine mouth wash daily)
+2.Avoid contact with sick people (fever ,cough, running nose )
+3.Avoid going in crowded places.
+4.Avoid exposure to dust
+Teaching Method : One to One,Group teaching
+Teaching Tool : Verbal Instructions
+Evaluation : Applies knowledge/skills
+Child Attends School : No
+Does the child has any problem at school : No
+Literacy Skills : No
+Plan and Comments : Report back if abdominal pain, abdominal distension, fever, loose stools > 3 times per day,
+bleeding manifestations, excessive tiredness, breathing difficulty, altered sensorium or SOS incase of any undue
+symptoms.
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : To reduce the risk of dvt and thier complication Nursing Diagnosis : Risk for
+DVT
+Education and comments: : aking anticoagulants (blood thinners) as prescribed for the appropriate duration,
+depending on the risk factors and the location of the clot.
+- Monitor for excessive bleeding and adjusting the diet if taking warfarin, which can interact with Vit K rich foods.
+4 of 6
+
+
+Hospital No: 57018681
+Name:
+
+Visit No:
+Doctor Name:
+
+- Diagnosing DVT using the wells score, D -dimer test and venous ultrasound.
+- Avoid any procedures including tooth extraction strictly; to inform prior to any procedures
+- Avoid intramuscular injections;
+- Avoid NSAID's (Paracetamol is safe)
+- No self-medications strictly
+- To watch out for any bleeding manifestations and report immediately
+- To withhold apixaban if plt count <50,000 and inform
+Nursing Interventions : Maintain body and oral hygiene (Chlorhexidine mouth wash daily)
+2.Avoid contact with sick people (fever ,cough, running nose )
+3.Avoid going in crowded places.
+4.Avoid exposure to dust
+Evaluation : Continue
+Progress Note :
+Seen by Dr.Satish Kumar A
+51 yr old lady
+ADENOCARCINOMA STOMACH STAGE IV (PERITONEAL METS)
+HYPOTHYROIDISM
+FIBROMYALGIA
+Dec 23; Venous Doppler of Left lower limb ;
+Great saphenous vein at the upper 1/3 of the leg and its tributaries are dilated and shows heteroechoic thrombus with
+no flow – thrombophlebitis.
+On Tab Apixaban (Eliquis) 2.5mg 1-0-1 (8am and 8pm)
+On Nivolumab Q3weeks (last on 2 March 26)
+Referred in view of thrombocytopenia
+No bleeding manifestations
+Had UTI recently; On NIFTAS
+2/3/2026;Hb-11.3;MCV-82.3;Tc-8270;N66.8;L24.8;plt c-153000
+9/3/2026;Hb-11;MCV-87.3;Tc-7620;N51.4;L40.8;plt c-121000
+Urine c/s - Escherichia coli 10^3 cfu/ml
+12/3/2026;Hb-10.9;MCV-86.6;Tc-6880;N55.6;L36.9;plt c-75,000
+17/3/2026;Hb-10;MCV-88.2;Tc-3860;N46.1;L43.8;plt c-60000
+Manual platelet count done, few giant platelets noted
+24/3/2026;Has come for Follow up
+Received Inj Romiplostim 250mcg on 17/3/2026
+Asymptomatic
+no bleeding manifestation
+Inv;cr-1.08
+Hb-10.9;MCV-86.5;Tc-4870;N42.5;L46.4;plt c-150000
+PS-Normocytic Normochromic Anemia.
+LDH-238;tb-0.57;Alb-3.9;Glo-2.1;A/G-1.9;sgpt-25
+5 of 6
+
+
+Hospital No: 57018681
+Name:
+
+Visit No:
+Doctor Name:
+
+Imp ; Thrombocytopenia - probably acute onset
+Adv;
+Inj Romiplostim 250mcg s/c stat
+- Follow up after 2 WEEKs with cbc
+Drug / Generic Item
+MEDISET 4mg / 2 ML AMP INJ
+
+MEDICATION ORDERS
+Dosage Qty Frequency
+2 AMP
+ONCE
+
+Instructions/Notes
+
+Duration
+1 DAY(S)
+
+(ONDANSETRON (80007494))
+
+PANTOCID 40 MG/VIAL LYOPHILIZED POWDER FOR
+INJECTION
+
+1 VL
+
+ONCE
+
+1 DAY(S)
+
+1 TAB
+
+ONCE
+
+1 DAY(S)
+
+1 VL
+
+ONCE
+
+1 DAY(S)
+
+(PANTOPRAZOLE (80007606))
+
+DOLO 650 MG TABLET
+(PARACETAMOL (80007661))
+
+AVIL 45.50 MG/2 ML AMPOULE SOLUTION FOR INJECTION,
+22.75 MG/ML
+(PHENIRAMINE (80007868))
+
+OPDYTA INJECTION 100MG
+(NIVOLUMAB)
+
+OPDYTA 40 MG INJECTION
+(NIVOLUMAB)
+
+NORMAL SALINE 09% W/V AQUA PULSE 500 ML
+
+1
+ONCE
+POWDERFORINJECTION
+2
+ONCE
+POWDERFORINJECTION
+1 BT
+ONCE
+
+1 DAY(S)
+
+3 BT
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+1 PC
+
+ONCE
+ONCE
+
+1 DAY(S)
+1 DAY(S)
+
+5 PC
+
+ONCE
+
+1 DAY(S)
+
+4 PC
+
+ONCE
+
+1 DAY(S)
+
+3 PC
+
+ONCE
+
+1 DAY(S)
+
+1 VL
+
+ONCE
+
+1 DAY(S)
+
+1
+ONCE
+SOLUTION
+FOR
+INJECTIONS
+
+1 DAY(S)
+
+1 DAY(S)
+1 DAY(S)
+
+(SODIUM CHLORIDE (80009680))
+
+NORMAL SALINE 0.9% W/V 100 ML AQUA PULSE, DENIS
+(SODIUM CHLORIDE (80009680))
+
+AUTOFUSION SET # 14289
+(IV SET (PHARMACY NON-DRUG))
+
+TEGADERM VELFIX EDGE 7CMX9CM #5502A,DATT
+22G VENFLON(OHMEDA)
+(CANNULA (PHARMACY NON-DRUG))
+
+POLYFLUSH PRE-FILLED SYRINGE 5 ML # 90319, POLY
+MEDICURE LTD
+(SYRINGE (PHARMACY NON-DRUG))
+
+SYRINGE 10 ML WITH NEEDLE DISPOVAN, HMD
+(SYRINGE (PHARMACY NON-DRUG))
+
+SYRINGE 2 ML WITH NEEDLE DISPOVAN, HMD )
+(SYRINGE (PHARMACY NON-DRUG))
+
+ROMY 250 MCG/0.5 ML VIAL INJECTION
+(ROMIPLOSTIM 250 MCG INJECTION)
+
+NEUROBION FORTE-RF (1000mcg, 100mg, 100mg) solution for
+injections [2ml]
+(THIOCTIC ACID~BENFOTIAMINE~CHROMIUM~FOLIC ACID~INOSITOL~VITAMIN
+B12~PYRIDOXINE)
+
+6 of 6
+
+

@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary5.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary5.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "",
+      "source": ""
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "38",
+      "source": "Age : 38"
+    },
+    "gender": {
+      "value": "Male",
+      "source": "Male"
+    },
+    "admission_date": {
+      "value": "24/03/2026",
+      "source": "Date of birth : 24/03/2026"
+    },
+    "discharge_date": {
+      "value": "",
+      "source": ""
+    },
+    "chief_complaints": {
+      "value": "NEWBORN",
+      "source": "Comment / Chief Complaints / Diagnosis : NEWBORN"
+    },
+    "principal_diagnosis": {
+      "value": "looks well",
+      "source": "impression\n: looks well"
+    },
+    "secondary_context": {
+      "value": "",
+      "source": ""
+    },
+    "allergies": {
+      "value": "No",
+      "source": "Allergies : No"
+    },
+    "current_medications": {
+      "value": "",
+      "source": ""
+    },
+    "bp": {
+      "value": "",
+      "source": ""
+    },
+    "pulse": {
+      "value": "128",
+      "source": "Pulse Rate: 128"
+    },
+    "temperature_f": {
+      "value": "98",
+      "source": "Temperature: 98"
+    },
+    "respiration": {
+      "value": "48",
+      "source": "Respiration: 48"
+    },
+    "spo2": {
+      "value": "98",
+      "source": "Spo2 : 98"
+    },
+    "pain_score": {
+      "value": "2",
+      "source": "Pain Score : 2"
+    },
+    "fall_score": {
+      "value": "",
+      "source": ""
+    },
+    "fall_risk": {
+      "value": "",
+      "source": ""
+    },
+    "pressure_score": {
+      "value": "",
+      "source": ""
+    },
+    "pressure_risk": {
+      "value": "No",
+      "source": "Existence of Pressure Ulcer : No"
+    },
+    "dvt_score": {
+      "value": "",
+      "source": ""
+    },
+    "dvt_risk": {
+      "value": "",
+      "source": ""
+    },
+    "aspiration_score": {
+      "value": "0",
+      "source": "NEONATE - ASPIRATION RISK ASSESSMENT TOOL\nStatus : Entered\nScore : 0"
+    },
+    "aspiration_risk": {
+      "value": "LOW RISK",
+      "source": "COMMENTS : LOW RISK"
+    },
+    "ews_score": {
+      "value": "8",
+      "source": "Total Score :8"
+    }
+  }
+}

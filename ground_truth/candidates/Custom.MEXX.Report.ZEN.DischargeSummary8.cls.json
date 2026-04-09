@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary8.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary8.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "Shobha K",
+      "source": "Patient Name : Shobha K"
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "51",
+      "source": "Age : 51"
+    },
+    "gender": {
+      "value": "Female",
+      "source": "Gender : Female"
+    },
+    "admission_date": {
+      "value": "24/03/2026",
+      "source": "Patient arrival Date : 24/03/2026"
+    },
+    "discharge_date": {
+      "value": "",
+      "source": ""
+    },
+    "chief_complaints": {
+      "value": "Currently admitted for immunotherapy#89",
+      "source": "Chief Complaints : Currently admitted for immunotherapy#89"
+    },
+    "principal_diagnosis": {
+      "value": "Risk for",
+      "source": "Diagnosis : Risk for"
+    },
+    "secondary_context": {
+      "value": "ADENOCARCINOMA STOMACH STAGE IV (PERITONEAL METS)",
+      "source": "Past History : ADENOCARCINOMA STOMACH STAGE IV (PERITONEAL METS)"
+    },
+    "allergies": {
+      "value": "unknown",
+      "source": "Any Known Allergies : unknown"
+    },
+    "current_medications": {
+      "value": "Tab Maxdulin 0-0-1 x continue",
+      "source": "Current Medications : Tab Maxdulin 0-0-1 x continue"
+    },
+    "bp": {
+      "value": "120/90",
+      "source": "Blood Pressure(mmHg) : 120/90"
+    },
+    "pulse": {
+      "value": "89",
+      "source": "Pulse Rate: 89"
+    },
+    "temperature_f": {
+      "value": "98",
+      "source": "Temp(F) : 98"
+    },
+    "respiration": {
+      "value": "16",
+      "source": "Respiration: 16"
+    },
+    "spo2": {
+      "value": "98",
+      "source": "SpO2 : 98"
+    },
+    "pain_score": {
+      "value": "0",
+      "source": "Pain Score : 0"
+    },
+    "fall_score": {
+      "value": "3",
+      "source": "Fall Score : 3"
+    },
+    "fall_risk": {
+      "value": "",
+      "source": ""
+    },
+    "pressure_score": {
+      "value": "23",
+      "source": "Pressure score : 23"
+    },
+    "pressure_risk": {
+      "value": "",
+      "source": ""
+    },
+    "dvt_score": {
+      "value": "4",
+      "source": "DVT Score : 4"
+    },
+    "dvt_risk": {
+      "value": "YES",
+      "source": "DVT : YES"
+    },
+    "aspiration_score": {
+      "value": "0",
+      "source": "Aspiration score : 0"
+    },
+    "aspiration_risk": {
+      "value": "",
+      "source": ""
+    },
+    "ews_score": {
+      "value": "0",
+      "source": "EWS Score : 0"
+    }
+  }
+}

@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary2.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary2.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "DR SHIVARAJ K S",
+      "source": "Patient Name : DR SHIVARAJ K S"
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "70",
+      "source": "Age : 70"
+    },
+    "gender": {
+      "value": "Male",
+      "source": "Gender : Male"
+    },
+    "admission_date": {
+      "value": "24/03/2026",
+      "source": "Patient arrival Date : 24/03/2026"
+    },
+    "discharge_date": {
+      "value": "",
+      "source": ""
+    },
+    "chief_complaints": {
+      "value": "BREATHING DIFFICULTY",
+      "source": "Chief Complaints : BREATHING DIFFICULTY"
+    },
+    "principal_diagnosis": {
+      "value": "lrti- sepsis",
+      "source": "Provisional Diagnosis : lrti- sepsis"
+    },
+    "secondary_context": {
+      "value": "UPPER GI BLEED - S/P OGD SHOWED GE JUNCTION BLEEDING LESION NOTED HEMOCLIP APPLIED [20/11/25] | Family History : Social / Personal History : Menstrual History : Previous Pregnancy : Current medications : nebs",
+      "source": "Past History : UPPER GI BLEED - S/P OGD SHOWED GE JUNCTION BLEEDING LESION NOTED HEMOCLIP APPLIED [20/11/25] || Past Surgical History : Family History : Social / Personal History : Menstrual History : Previous Pregnancy : Current medications : nebs"
+    },
+    "allergies": {
+      "value": "UNKNOWN",
+      "source": "Any Known Allergies : UNKNOWN"
+    },
+    "current_medications": {
+      "value": "TAB FLUVIR 75 MG P/O 1-0-1 | nebs | Injury treatment: 02",
+      "source": "Current Medications : TAB FLUVIR 75 MG P/O 1-0-1 || Current medications : nebs || Injury treatment: 02"
+    },
+    "bp": {
+      "value": "140/90",
+      "source": "Blood Pressure(mmHg) : 140/90"
+    },
+    "pulse": {
+      "value": "105",
+      "source": "Pulse/min : 105"
+    },
+    "temperature_f": {
+      "value": "98.3",
+      "source": "Temp(F) : 98.3"
+    },
+    "respiration": {
+      "value": "23",
+      "source": "Respiration/min : 23"
+    },
+    "spo2": {
+      "value": "96",
+      "source": "Spo2(%) : 96"
+    },
+    "pain_score": {
+      "value": "1",
+      "source": "Pain Score : 1"
+    },
+    "fall_score": {
+      "value": "10",
+      "source": "Total Fall Risk Score(sum of all points per category) : 10"
+    },
+    "fall_risk": {
+      "value": "Moderate Fall Risk",
+      "source": "Total Fall Risk Score(sum of all points per category) : 10\nRemarks : Moderate Fall Risk"
+    },
+    "pressure_score": {
+      "value": "13",
+      "source": "Pressure score : 13"
+    },
+    "pressure_risk": {
+      "value": "Moderate Risk",
+      "source": "Pressure score : 13 Moderate Risk"
+    },
+    "dvt_score": {
+      "value": "5",
+      "source": "DVT Score : 5"
+    },
+    "dvt_risk": {
+      "value": "YES",
+      "source": "DVT : YES"
+    },
+    "aspiration_score": {
+      "value": "2",
+      "source": "Aspiration score : 2"
+    },
+    "aspiration_risk": {
+      "value": "Low Risk",
+      "source": "COMMENTS : Low Risk"
+    },
+    "ews_score": {
+      "value": "5",
+      "source": "EWS Score : 5"
+    }
+  }
+}

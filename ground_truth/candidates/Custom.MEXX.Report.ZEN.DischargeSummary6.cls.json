@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary6.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary6.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "Preetham KUMAR",
+      "source": "Patient Name : Preetham KUMAR"
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "43",
+      "source": "Age : 43"
+    },
+    "gender": {
+      "value": "MALE",
+      "source": "Gender : MALE"
+    },
+    "admission_date": {
+      "value": "24/03/2026",
+      "source": "Patient Arrival Date : 24/03/2026"
+    },
+    "discharge_date": {
+      "value": "25/03/2026",
+      "source": "Date of Discharge : 25/03/2026"
+    },
+    "chief_complaints": {
+      "value": "Voice change and difficulty in breathing.",
+      "source": "Chief Complaints : Voice change and difficulty in breathing."
+    },
+    "principal_diagnosis": {
+      "value": "Left Vocal Cord Growth",
+      "source": "Provisional Diagnosis : Left Vocal Cord Growth"
+    },
+    "secondary_context": {
+      "value": "HTN",
+      "source": "Past History : HTN"
+    },
+    "allergies": {
+      "value": "UNKNOWN",
+      "source": "Any Known Allergies : UNKNOWN"
+    },
+    "current_medications": {
+      "value": "AS PER CHART | T.CILACAR M",
+      "source": "Current medications : AS PER CHART || Current Medications : T.CILACAR M"
+    },
+    "bp": {
+      "value": "120 70",
+      "source": "BP Systolic: 120 mmHg\nRespiration: 20 br/min\nSaturation(Oxygen): 96 %\n\nVisit No:\nAge/Sex:\nSpecialty:\n\nBP Diastolic: 70 mmHg"
+    },
+    "pulse": {
+      "value": "86",
+      "source": "Pulse Rate: 86"
+    },
+    "temperature_f": {
+      "value": ".",
+      "source": "Temp F : ."
+    },
+    "respiration": {
+      "value": "20",
+      "source": "Respiration: 20"
+    },
+    "spo2": {
+      "value": "97",
+      "source": "Spo2(%) : 97"
+    },
+    "pain_score": {
+      "value": "1",
+      "source": "Pain Score : 1"
+    },
+    "fall_score": {
+      "value": "3",
+      "source": "Total Fall Risk Score(sum of all points per category) : 3"
+    },
+    "fall_risk": {
+      "value": "3low risk",
+      "source": "Total Fall Risk Score(sum of all points per category) : 3\nRemarks : 3low risk"
+    },
+    "pressure_score": {
+      "value": "23",
+      "source": "Pressure score : 23"
+    },
+    "pressure_risk": {
+      "value": "LOW RISK",
+      "source": "Pressure score : 23 LOW RISK"
+    },
+    "dvt_score": {
+      "value": "2",
+      "source": "DVT Score : 2"
+    },
+    "dvt_risk": {
+      "value": "NO",
+      "source": "DVT : NO"
+    },
+    "aspiration_score": {
+      "value": "3",
+      "source": "Aspiration score : 3"
+    },
+    "aspiration_risk": {
+      "value": "Low Risk",
+      "source": "COMMENTS : Low Risk"
+    },
+    "ews_score": {
+      "value": "5",
+      "source": "EWS Score : 5"
+    }
+  }
+}

@@ -1,0 +1,61 @@
+# CD Pipeline - Deploy to Kubernetes
+trigger: none
+pr: none
+
+resources:
+  pipelines:
+  - pipeline: doctor-dashboard-ci
+    source: doctor-dashboard-ci
+    trigger:
+      branches:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  acrName: 'zgridcontainerregistry'
+  imageName: 'doctor-dashboard'
+  k8sNamespace: 'doctor-dashboard'
+  acrResourceId: '/subscriptions/759c3e4d-1b5f-481d-b10d-5d93bf2aaeea/resourceGroups/z-grid-dev/providers/Microsoft.ContainerRegistry/registries/zgridcontainerregistry'
+  aksResourceGroup: 'z-grid-dev'
+  aksClusterName: 'z-girid-dev'
+
+stages:
+- stage: Deploy
+  displayName: 'Deploy to Kubernetes'
+  jobs:
+  - deployment: Deploy
+    displayName: 'Deploy to AKS'
+    environment: 'doctor-dashboard'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: none
+
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifactName: manifests
+              targetPath: $(System.ArtifactsDirectory)/manifests
+
+          - task: KubernetesManifest@1
+            displayName: 'Deploy to Kubernetes'
+            inputs:
+              action: deploy
+              namespace: $(k8sNamespace)
+              manifests: |
+                $(System.ArtifactsDirectory)/manifests/deployment.yaml
+                $(System.ArtifactsDirectory)/manifests/service.yaml
+                $(System.ArtifactsDirectory)/manifests/ingress.yaml
+                $(System.ArtifactsDirectory)/manifests/configmap.yaml
+              containers: |
+                $(acrName).azurecr.io/$(imageName):$(resources.pipeline.doctor-dashboard-ci.runName)
+
+          - task: KubernetesManifest@1
+            displayName: 'Verify Deployment'
+            inputs:
+              action: verify
+              namespace: $(k8sNamespace)
+              manifests: |
+                $(System.ArtifactsDirectory)/manifests/deployment.yaml

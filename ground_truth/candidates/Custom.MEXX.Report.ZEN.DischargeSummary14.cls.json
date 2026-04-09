@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary14.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary14.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "",
+      "source": ""
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "",
+      "source": ""
+    },
+    "gender": {
+      "value": "Male",
+      "source": "Male"
+    },
+    "admission_date": {
+      "value": "25/03/2026",
+      "source": "Patient arrival Date : 25/03/2026"
+    },
+    "discharge_date": {
+      "value": "",
+      "source": ""
+    },
+    "chief_complaints": {
+      "value": "rt little fingr recon",
+      "source": "Chief Complaints : rt little fingr recon"
+    },
+    "principal_diagnosis": {
+      "value": "middle and distal phalanx gangrenous rt little finger",
+      "source": "Provisional Diagnosis : middle and distal phalanx gangrenous rt little finger"
+    },
+    "secondary_context": {
+      "value": "nothing significant | NIL",
+      "source": "Past History : nothing significant || Past Medical History : NIL"
+    },
+    "allergies": {
+      "value": "Not known yet",
+      "source": "Any Known Allergies : Not known yet"
+    },
+    "current_medications": {
+      "value": "Tab pan 40 mg | NIL",
+      "source": "Current Medications : Tab pan 40 mg || Current medications : NIL"
+    },
+    "bp": {
+      "value": "130/80",
+      "source": "Blood Pressure(mmHg) : 130/80"
+    },
+    "pulse": {
+      "value": "88",
+      "source": "Pulse Rate: 88"
+    },
+    "temperature_f": {
+      "value": "98.4",
+      "source": "Temp(F) : 98.4"
+    },
+    "respiration": {
+      "value": "18",
+      "source": "Respiration: 18"
+    },
+    "spo2": {
+      "value": "98",
+      "source": "Spo2(%) : 98"
+    },
+    "pain_score": {
+      "value": "2",
+      "source": "Pain Score : 2"
+    },
+    "fall_score": {
+      "value": "2",
+      "source": "Total Fall Risk Score(sum of all points per category) : 2"
+    },
+    "fall_risk": {
+      "value": "",
+      "source": ""
+    },
+    "pressure_score": {
+      "value": "",
+      "source": ""
+    },
+    "pressure_risk": {
+      "value": "No",
+      "source": "Existence of Pressure Ulcer : No"
+    },
+    "dvt_score": {
+      "value": "",
+      "source": ""
+    },
+    "dvt_risk": {
+      "value": "YES",
+      "source": "DVT : YES"
+    },
+    "aspiration_score": {
+      "value": "",
+      "source": ""
+    },
+    "aspiration_risk": {
+      "value": "No",
+      "source": "Risk for Aspiration : No"
+    },
+    "ews_score": {
+      "value": "1",
+      "source": "TOTAL SCORE : 1"
+    }
+  }
+}

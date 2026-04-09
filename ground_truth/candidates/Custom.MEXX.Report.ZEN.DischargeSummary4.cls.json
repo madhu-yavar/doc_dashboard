@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary4.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary4.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "",
+      "source": ""
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "13",
+      "source": "Age : 13"
+    },
+    "gender": {
+      "value": "Female",
+      "source": "Gender : Female"
+    },
+    "admission_date": {
+      "value": "23/03/1926",
+      "source": "Patient Arrival Date : 23/03/1926"
+    },
+    "discharge_date": {
+      "value": "25/03/2026",
+      "source": "Date of Discharge : 25/03/2026"
+    },
+    "chief_complaints": {
+      "value": "Complaints of recurrent episodes of cold, mouth breathing.",
+      "source": "Chief Complaints : Complaints of recurrent episodes of cold, mouth breathing."
+    },
+    "principal_diagnosis": {
+      "value": "ADENOTONSILLITIS",
+      "source": "Provisional Diagnosis : ADENOTONSILLITIS"
+    },
+    "secondary_context": {
+      "value": "NIL | NO COMORBIDITIES | NOTHING SIGNIFICANT",
+      "source": "Past History : NIL || Past Medical History : NO COMORBIDITIES || Past Surgical History : NOTHING SIGNIFICANT"
+    },
+    "allergies": {
+      "value": "NOT KNOWN",
+      "source": "Allergy : NOT KNOWN"
+    },
+    "current_medications": {
+      "value": "AS PER CHART | NIL",
+      "source": "Current medications : AS PER CHART || Current medications : NIL"
+    },
+    "bp": {
+      "value": "100/60",
+      "source": "Blood Pressure\n: 100/60"
+    },
+    "pulse": {
+      "value": "74",
+      "source": "Pulse Rate: 74"
+    },
+    "temperature_f": {
+      "value": "97.6",
+      "source": "Temp F : 97.6"
+    },
+    "respiration": {
+      "value": "20",
+      "source": "Respiration: 20"
+    },
+    "spo2": {
+      "value": "98",
+      "source": "Spo2 : 98"
+    },
+    "pain_score": {
+      "value": "2",
+      "source": "Pain Score : 2"
+    },
+    "fall_score": {
+      "value": "1",
+      "source": "Total Fall Risk Score(sum of all points per category) : 1"
+    },
+    "fall_risk": {
+      "value": "low risk",
+      "source": "Total Fall Risk Score(sum of all points per category) : 1\nRemarks : low risk"
+    },
+    "pressure_score": {
+      "value": "",
+      "source": ""
+    },
+    "pressure_risk": {
+      "value": "No",
+      "source": "Existence of Pressure Ulcer : No"
+    },
+    "dvt_score": {
+      "value": "",
+      "source": ""
+    },
+    "dvt_risk": {
+      "value": "",
+      "source": ""
+    },
+    "aspiration_score": {
+      "value": "",
+      "source": ""
+    },
+    "aspiration_risk": {
+      "value": "low risk",
+      "source": "COMMENTS : low risk"
+    },
+    "ews_score": {
+      "value": "25",
+      "source": "Total Score : 25"
+    }
+  }
+}
