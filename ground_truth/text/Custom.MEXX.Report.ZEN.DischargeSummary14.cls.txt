@@ -1,0 +1,643 @@
+INPATIENT RECORD
+Hospital No:
+Name:
+Doctor Name:
+Date:
+
+66863369
+
+BP Systolic: 130 mmHg
+Respiration: 18 br/min
+Mean Arterial Pressure-MAP: 97
+mmHg
+Verbal: 5
+
+Visit No:
+Age/Sex:
+Specialty:
+
+BP Diastolic: 80 mmHg
+Temperature: 98.4 °F
+Bowel Status: 1
+
+Pulse Rate: 88 bt/min
+Saturation(Oxygen): 98 %
+Eye Opening: 4
+
+Forms
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 2
+Age : Below 60 Years - 0
+Mobility : Requires assisstance or supervision for mobility,transfer or ambulation - 2
+Type of Assessment : Shift Assessment
+Pain Assessments
+Score: 2
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 2
+
+Additional Pain Assessment Details
+Type: Not Applicable
+Duration: Not Applicable
+Continuous: Not Applicable
+Time: Not Applicable
+
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Score : 0
+CATEGORIES
+TOTAL SCORE : 1
+Questionnaires
+1 of 12
+
+
+Hospital No: 66863369
+Name:
+
+Visit No:
+Doctor Name:
+
+Date : 25/03/2026
+Sex : Male
+A - Each Risk Factor Represents 1 Point : Age 41 - 60 years
+Total Tickmarks : 1
+Total Score A : 1
+Total Score (A+B+C+D+E) = : 1
+Adult Pressure Ulcer Braden Scale
+SENSORY PERCEPTION : 4
+4 - No Impairment : Y
+MOISTURE : 4
+4 - Rarely Moist : Y
+ACTIVITY : 4
+4 - Walks Frequently : Y
+MOBILITY : 4
+4 - No Limitations : Y
+NUTRITION : 4
+4 - Excellent : Y
+FRICTION AND SHEAR : 3
+3 - Apparent Problem : Y
+TOTAL SCORE : 23
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+Total Score :20
+NURSING INITIAL ASSESSMENT - NEW
+Score : 0
+MRN : MH017960671
+Patient arrival Date : 25/03/2026
+Patient Arrival Time : 10:20
+Accompanied by Relative : Yes
+Name of Relative : Archana Dey
+Relationship with Patient : Wife
+Contact Number : 8240014041
+Primary Language Spoken : Begali
+Interpreter Needed : No
+Room Orientation Given : Yes
+Patient Identification Band Fixed : Yes
+If Yes Type Of Band : White
+Height(Cm) : 168
+Weight(Kgs) : 81.20
+Reason Not Able To Check : I have checked
+Chief Complaints : rt little fingr recon
+Past History : nothing significant
+2 of 12
+
+
+Hospital No: 66863369
+Name:
+
+Visit No:
+Doctor Name:
+
+Vital Assessment
+Temp(F) : 98.4
+Pulse/min : 88
+Blood Pressure(mmHg) : 130/80
+Respiration/min : 20
+Spo2(%) : 98
+GRBS (mg/dl) : 133
+Skin Integrity : Dry
+Other Parameters
+GCS : 15
+Pain Score : 2/10
+Belongings : No
+Dentures : No
+Hearing Aid : No
+Eye Glasses/Contact Lens : No
+Vulnerable : No
+Any Special Care Given : RA
+Restraints : No
+If Yes, Type Of Restraint : RA
+Any Known Allergies : Not known yet
+Current Medications : Tab pan 40 mg
+Informed the Doctor : Yes
+Name of the Doctor : Dr. Md. Yusuf Mushtaque
+Investigations Ordered : did not given
+Diet : NPM
+Collected Old records : Yes
+Is the patient at risk for any of the following? If Yes, complete the risk assessment form.
+Fall : YES
+Pressure Score : YES
+DVT : YES
+Aspiration : YES
+Ability to perform activities of daily living
+Activity
+Bathing : Assisted
+Dressing : Assisted
+Eating : Assisted
+Walking : Assisted
+Toilet Use : Assisted
+Nursing needs(complete Nursing care plan based on the identified needs)
+Actual needs : Understand the patient medical history and risk factors
+Potential needs : Continuous monitoring
+emotional support and reassurance.
+Assessment Done By : KEYA RANI RAKSHIT
+Rating : 2/10
+BMI : 28.70
+General Physical Examination:
+Pallor : NO
+3 of 12
+
+
+Hospital No: 66863369
+Name:
+
+Visit No:
+Doctor Name:
+
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+
+Forms
+HOURLY NURSING ROUND
+Score : 0
+HOURLY NURSING ROUND - DAY
+CHECKPOINTS
+Introduce yourself : 10 AM
+Ask for pain if any : 10 AM,11 AM
+Ask for Comfort or Position : 10 AM,11 AM
+Ask for bathroom needs : 10 AM,11 AM
+Peripery-move the phone, Call Light, Trashcan, Watercan, Over-Bed Table : 10 AM,11 AM
+Pump-Syringe pump, Infusion Line, IV Line : 10 AM,11 AM
+HOURLY NURSING ROUND - NIGHT
+CHECKPOINTS
+Forms
+Nurses Endorsment Checklist
+Status : Entered
+Shift : Morning to Evening
+Situation : Shift Handover
+Comment / Chief Complaints / Diagnosis : RT LITTLE FINGER CRUSH INJURY WITH COMPOUND
+FRACTURE
+Background
+Allergies : No
+Remarks : N/A
+Diet : No
+Remarks : npm for ot
+Previous Medications : No
+Remarks : N/A
+Old reports added to TRAK : No
+Remarks : N/A
+Consents : Yes
+Remarks : ot consent
+Cross Consultation : No
+Remarks : N/A
+Procedures performed before transfer : No
+Remarks : N/A
+Vulnerable : No
+Remarks : N/A
+Past Medical / Surgical History : NIL
+Level of Consciousness : Oriented
+Vitals -TPR & BP : is stable : Yes
+On MET/PET List : Yes
+4 of 12
+
+
+Hospital No: 66863369
+Name:
+
+Visit No:
+Doctor Name:
+
+Risk For FALL : Yes
+Risk For Pressure Ulcer : No
+Risk for Aspiration : No
+Existence of Pressure Ulcer : No
+O2 Administration : No
+SPO2(Latest reading in the shift) : 98
+DIET : Oral
+On tube feeding : No
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : Yes
+Self Void : Yes
+Foley's : No
+Drain : No
+Bowel Opened : Yes
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Ambulant
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Special Needs : Yes
+Patient & Family Education : Yes
+Transfer : No
+Medications: Yes
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Discharge Plan : No
+Hand over by : AYANTIKA GAYEN
+Handed over to : PARTHA DEBNATH
+Team Lead Hand over By : KEYA RANI RAKSHIT
+Team Lead Hand over To : PARTHA DEBNATH
+Status : Entered
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : to be reduce anxiety levelNursing Diagnosis : Anxiety
+5 of 12
+
+
+Hospital No: 66863369
+Name:
+
+Visit No:
+Doctor Name:
+
+Education and comments: : maintain personal hygiene
+Nursing Interventions : provide psychological support
+Evaluation : Modify
+IP Initial Assessment
+Status : Entered
+Score : 0
+Patient Arrival Date : 25/03/2026
+Patient Arrival Time : 10:30
+Chief Complaints : PT ADMITTED FOR rt little finger reconstruction IN A FUC middle and distal phalanx
+gangrenous rt little finger
+History of Presenting illness : H/O middle and distal phalanx gangrenous rt little finger
+Allergy : NIL
+Past Medical History : NIL
+Current medications : NIL
+Pulse /min : 88
+Resp Rate/min : 18
+Temp F : 98.4
+BP mm Hg : 130/80
+Room Air : Y
+GRBS mg/dL : 133
+Pallor : NO
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+CVS : S1S2+
+RS : B/L VBS +
+PA : SOFT
+CNS : GCS 15/15
+Others : NIL
+Provisional Diagnosis : middle and distal phalanx gangrenous rt little finger
+Care Plan : rt little finger reconstruction
+Spo2 : 98
+Treatment Note :
+vitals stable
+plan flap
+
+Forms
+Operation Report MHE
+Status : Entered
+Surgery Start Date : 25/03/2026 Surgery End Date 25/03/2026
+Surgery Start Time : 14:55 Surgery End Time 15:15
+Operation : FLAPS LOCAL FLAP
+Indications : rt little finger recon
+Surgeon : DR. AKHILESH KUMAR AGARWAL
+6 of 12
+
+
+Hospital No: 66863369
+Name:
+
+Visit No:
+Doctor Name:
+
+Skin Preparation : microshield
+Procedure : under block cross finger flap detatchment done.,
+flap inset done by 4_0 ethilon
+dressing done
+Operations : FLAPS LOCAL FLAP
+Post Operative Orders : normal diet
+tab pyrigesic 650 QD
+tab PAN 40 OD
+Status : Entered
+Initial Nutritional Assessment
+Status : Entered
+ANTHROPOMETRIC MEASUREMENTS
+Height (cms) : 168
+Weight (kgs) : 81.20
+IBW (kgs) : 64.63
+BMI : 28.70
+Recent weight loss/gain : None
+GI SYMPTOMS (Recent)
+None : Y
+Food allergies/Intolerance : No
+Subjective Global Assessment rating
+Well Nourished : Y
+Nutritional intervention proposed/Diet advised : NPO, diet progression as per medical condition
+Select Type : Assessment
+Evaluation Criteria
+Adult Others:R FINGER RECONSTRUCTION.
+Well Nourished
+SGA RATING : A
+
+Forms
+Recovery Room Discharge New
+Status : Entered
+Score : 0
+Procedure : LOCAL ROTATION FLAPS (LGEN)
+Conscious & orientated : Yes
+Maintaining the airway & having protective reflexes : Yes
+Stable cardiovascular function : Yes
+Stable respiratory function : Yes
+Body Temp >35.9°C : Yes
+Surgical site satisfactory : Yes
+Recovery staff name : PUJA GHOSH
+Ward staff : PARTHA DEBNATH
+Surgical Site Infection Prevention Bundle
+7 of 12
+
+
+Hospital No: 66863369
+Name:
+
+Visit No:
+Doctor Name:
+
+Status : Entered
+Booked procedure : LOCAL ROTATION FLAPS (LGEN)
+Name of surgeon : DR. AKHILESH KUMAR AGARWAL
+Actual procedure : LOCAL ROTATION FLAPS (LGEN)
+Theatre No: : ort-1
+Date of procedure : 25/03/2026
+Time of procedure: From : 14:55
+To : 15:30
+Antibiotic prophylaxis given : No
+Skin antisepsis done with : Providone-Iodine
+Type of surgery : Clean
+Maintaining Normothermia (>36 C) : Yes
+Blood glucose level controlled : Yes
+
+Forms
+OT MOVEMENTS
+Status : Entered
+Score : 0
+Operation Date : 25/03/2026
+Area in Date : 25/03/2026
+Area in Time : 14:30
+Theatre In Date : 25/03/2026
+Theatre In Time : 14:55
+Theatre Out Date : 25/03/2026
+Theatre Out Time : 15:30
+Area Out Date : 25/03/2026
+Area Out Time : 16:30
+Area In update user : Puja Ghosh
+Date & Time : 25/03/2026 15:22
+Theatre In Update user : Puja Ghosh
+Date & time : 25/03/2026 15:22
+Theatre out update user : Puja Ghosh
+Date & time : 25/03/2026 16:40
+Area Out update user : Puja Ghosh
+Date & Time : 25/03/2026 16:40
+Area In
+Theatre In
+Theatre Out
+Area Out
+Theatre Location : ORT 1
+Incision Time : 15:00
+Closure Time : 15:25
+Incision Date : 25/03/2026
+Closure Date : 25/03/2026
+Incision Time Updated User : Puja Ghosh
+IT Updated Date and Time : 25/03/2026 15:22
+CT Updated User Name : Puja Ghosh
+CT Updated Date and Time : 25/03/2026 16:40
+8 of 12
+
+
+Hospital No: 66863369
+Name:
+
+Visit No:
+Doctor Name:
+
+Surgery cat : Elective
+Additional dose of antibiotic given if surgery continues for > 4hrs : NO
+Scheduled Start Time : 14:00
+Scheduled Date : 25/03/2026
+Antibiotic
+Wound Classification : Clean
+Aseptic Technique Has Benn Followed If There Is Excess Wound Leakage And Need For A Dressing Change : Done
+Scrub Staff : HABIBA SULTANA
+Floor Staff : BIKRAM DAS
+Pre Op Staff : PUJA GHOSH
+Post Op Staff : PUJA GHOSH
+OT Technician : ARPAN
+Shifting Staff : partha debnath
+Site prepared with povidone Iodine or 2% chlorhexedine gluconate: : YES
+Has the antiseptic site preparation dried before skin incision : YES
+Intra Updated User : Puja Ghosh
+Intra Date & Time : 25/03/2026 15:23
+Post Updated User : Puja Ghosh
+Post Date & Time : 25/03/2026 15:23
+OT Checklist & Instrument Count
+Score : 0
+OT CHECKLIST AND INSTRUMENT COUNT
+SURGEON : DR. AKHILESH KUMAR AGARWAL
+CIRCULATING NURSE : PUJA GHOSH
+DATE : 25/03/2026
+OT NUMBER : ORT-1
+NEEDLES, BLADES & SWABS
+ITEM
+INITIAL/ START COUNT
+CAVITY/ SECOND COUNT
+CLOSING/ THIRD COUNT
+ADDED COUNT
+FINAL COUNT
+Gauze 4x4 : 10
+Gauze 4x4 : 10
+Gauze 4x4 : 10
+Gauze 4x4 : 10
+Sponge 12x12 : 10
+Sponge 12x12 : 10
+Sponge 12x12 : 10
+Sponge 12x12 : 10
+INSTRUMENTS
+INSTRUMENT
+INITIAL/ START COUNT
+CAVITY/ SECOND COUNT
+CLOSING/ THIRD COUNT
+9 of 12
+
+
+Hospital No: 66863369
+Name:
+
+Visit No:
+Doctor Name:
+
+ADDED COUNT
+FINAL COUNT
+Artery forceps Curved 6 inch : 04
+Artery forceps Curved 6 inch : 04
+Artery forceps Curved 6 inch : 04
+Artery forceps Curved 6 inch : 04
+Mosquito curved : 04
+Mosquito curved : 04
+Mosquito curved : 04
+Mosquito curved : 04
+Allis 6 inch : 04
+Allis 6 inch : 04
+Allis 6 inch : 04
+Allis 6 inch : 04
+Dissecting Forceps : 02
+Dissecting Forceps : 02
+Dissecting Forceps : 02
+Dissecting Forceps : 02
+Needle Holders 4 inch : 02
+Needle Holders 4 inch : 02
+Needle Holders 4 inch : 02
+Needle Holders 4 inch : 02
+COUNT STATUS AND DISCREPANCY RESOLUTION
+Discrepancy Found : No
+Surgical Safety Checklist(New)
+Status : Entered
+Score : 0
+Before Induction of Anaesthesia
+Sign in : 25/03/2026
+Identity : Y
+Procedure : Y
+Consent : Y
+Site Marked : Yes
+Pulse oximeter on patient and functioning : Yes
+Essential equipment/assistance available : Yes
+Does patient have known allergy? : No
+Difficult airway/aspiration risk? : No
+Risk Of >500ML blood loss (7ml/kg in children)? : No
+Before skin incision
+Time Out : 25/03/2026
+Confirm all Team members have introduced themselves by Name and Role : Y
+Correct Patient : Y
+Correct Site : Y
+Correct Procedure : Y
+Has antibiotic prophylaxis been given within the last 60 minutes? : Yes
+Essential imaging is available : Yes
+Before patient leaves operation room
+10 of 12
+
+
+Hospital No: 66863369
+Name:
+
+Visit No:
+Doctor Name:
+
+Sign Out : 25/03/2026
+The Nurse has confirmed the name of the procedure (s) with the Surgeon and Anesthetist : Yes
+All items counts are correct : Yes
+Specimen(s) is/are correctly labelled (including Patient URN): : No
+Are there any equipment issues to be addressed? : No
+Surgeon, Anesthetist and Nurse have reviewed any and all key concerns for the recovery and management of the
+Patient : Yes
+Sign In Time : 14:55
+Time Out Time : 15:00
+Surgical team review:
+Are there any equipment issues or concerns to be addressed : No
+Sign Out time : 15:25
+Are there any patient-specific concerns? : No
+Nursing Team Review:
+Site : Y
+Anesthesia safety check completed : Y
+Sign In Nurse : PUJA GHOSH
+Correct Position : Y
+Has sterility (including indicator result) been confirmed? : Yes
+Are there any equipment issues or concerns? : No
+Time Out Nurse : PUJA GHOSH
+Sign Out Nurse : PUJA GHOSH
+Anaesthesia Team Review:
+Time Out Surgeon : DR. AKHILESH KUMAR AGARWAL
+Sign In Status by Nurse : Entered
+Sign Out Status by Nurse : Entered
+Pre-Op Check List(N)
+Status : Entered
+Score : 0
+ID Band correct and in place OT : Yes
+Premed given and recorded OT : N/A
+Procedural area prepared/marked OT : Yes
+Last food at date OT : 25/03/2026
+Last voided date OT : 25/03/2026
+Last fluid date OT : 25/03/2026
+Allergies recorded : Yes
+Proposed Operation : LOCAL ROTATION FLAPS (LGEN)
+Observation Group
+Pre-OP Check List Last Administered: 25/03/2026 15:07
+
+Ward Check
+OT Check
+Consent incomplete action taken OT : Surgeon notified
+Bowels last opened : 25/03/2026
+Patient´s Xray available
+Antibiotic prescribed OT : No
+11 of 12
+
+
+Hospital No: 66863369
+Name:
+
+Visit No:
+Doctor Name:
+
+Antibiotic given OT : No
+Antithrombotic prescribed OT : No
+Antithrombotic given OT : No
+Has a pregnancy test been performed? OT : No
+Routine medication : Yes
+Gowned, underwear removed : Yes
+Anti-embolism stockings on patient and correctly fitted : No
+Are there any pressure areas or areas of frail skin need to be considered when positioning patient : Yes
+Nursing / Care assessment
+Additional information (Anxiety, Dementia, Mobility, Communication, Pre-existing medical conditions)
+OT Nurse Name : PUJA GHOSH
+Ward Nurse
+OT Nurse
+Team Lead Hand over To : MUNMUN DAS
+Drug / Generic Item
+BACCIRUB DISPENSER HAND SOLU 100 ML,RAMA
+
+MEDICATION ORDERS
+Dosage Qty Frequency
+1 PC
+ONCE
+
+Instructions/Notes
+
+Duration
+1 DAY(S)
+
+(SURGICAL)
+
+12 of 12
+
+

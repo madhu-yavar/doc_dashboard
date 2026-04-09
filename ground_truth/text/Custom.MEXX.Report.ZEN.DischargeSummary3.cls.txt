@@ -1,0 +1,790 @@
+INPATIENT RECORD
+Hospital No:
+Name:
+Doctor Name:
+Date:
+
+59549979
+
+BP Systolic: 110 mmHg
+Respiration: 20 br/min
+Saturation(Oxygen): 98 %
+
+Visit No:
+Age/Sex:
+Specialty:
+
+BP Diastolic: 70 mmHg
+Pulse Rate: 82 bt/min
+Temperature: 98.6 °F
+Delivered Oxygen Flow Rate: 0
+AVPU Conscious level: AVPU12120A Mean Arterial Pressure-MAP: 83
+mmHg
+
+Hourly urine Output: 200 millilitres per
+hour
+
+Forms
+Pain Assessments
+Score: 2
+Type of Assessment: Initial Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 2
+
+Additional Pain Assessment Details
+Since: 24/03/2026
+Type: Dull,Pulling
+Onset: Gradual
+
+Associated Symptoms: Decrease activity
+
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 3-low risk.
+Age : 60-69 Years - 1
+Patient care Equipment : Two Present - 2
+Type of Assessment : Initial Assessment
+CATH LAB PRE AND POST PROCEDURE CHECKLIST
+.
+Score : 0
+Pre Cath Lab Checklist
+Allergies : No
+1 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+Consent : Yes
+If No, Specify : cag
+Skin preparation done : Yes
+Pre Medication given : No
+Patient Voided : No
+Anti coagulant : No
+Any vascular procedure conducted : No
+Any vascular procedure conducted within one month : No
+Removal of dentures : Y
+Vital Signs
+BP :
+110/70
+Temp :
+98.6
+Pulse :
+74
+Resp :
+20
+SPO2 : 98
+Others
+EF :
+60%
+Weight :
+93.6
+Height :
+172
+RBS : Investigations Checklist
+HB :
+12.5
+CBC :
+5000
+Creatinine :
+1.00
+Viral Marker :
+Potassium : 4.10
+Intra Cath log (To be filled by Cath nurse)
+Intra procedure
+Post Procedure
+Medication
+
+2 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+Post Cath vascular access monitoring
+Vitals at the arrival of patient
+Time of Sheath removal
+Post Cath vascular access Monitoring
+NURSING INITIAL ASSESSMENT - NEW
+Score : 0
+Patient Name : Mr.Priyadarshini PUNJA
+MRN : MH011199849
+Age : 64 Yrs
+Gender : Female
+Patient arrival Date : 24/03/2026
+Patient Arrival Time : 09:20
+Accompanied by Relative : Yes
+Name of Relative : MR.GIRISH
+Relationship with Patient : spouse
+Contact Number : 9844001181
+Primary Language Spoken : kannada
+Interpreter Needed : No
+Room Orientation Given : Yes
+Patient Identification Band Fixed : Yes
+If Yes Type Of Band : green
+Height(Cm) : 170
+Weight(Kgs) : 78
+Reason Not Able To Check : Chief Complaints : patient came with complain chest pain.
+Past History : HTN.
+Vital Assessment
+Temp(F) : 98.6
+Pulse/min : 78
+Blood Pressure(mmHg) : 110/70
+Respiration/min : 20
+Spo2(%) : 98
+GRBS (mg/dl) : Skin Integrity : intact.
+Other Parameters
+EWS Score : 2
+GCS : 15/15
+Pain Score : 2
+Valuable handover checklist completed : No
+Belongings : No
+Dentures : No
+Hearing Aid : No
+Eye Glasses/Contact Lens : No
+Others : nil
+Vulnerable : No
+Any Special Care Given : 3 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+Restraints : No
+If Yes, Type Of Restraint : Any Known Allergies : unknown
+Current Medications : tab-telma 40mg -1-0-0
+Informed the Doctor : Yes
+Name of the Doctor : Dr. Soumya
+Investigations Ordered : CBC, RP2 SEROLOGY ,blood grouping and typing .
+Diet : NPO.
+Collected Old records : Yes
+If Yes Document Type : .
+Is the patient at risk for any of the following? If Yes, complete the risk assessment form.
+Fall : YES
+Pressure Score : NO
+DVT : YES
+Aspiration : YES
+Pain Assessment Score : Acute
+Ability to perform activities of daily living
+Activity
+Bathing : Independent
+Dressing : Independent
+Eating : Independent
+Walking : Independent
+Toilet Use : Independent
+Nursing needs(complete Nursing care plan based on the identified needs)
+Actual needs : to restore normal cardiac function.
+Potential needs : to prevnet from fall.
+Any other needs : nill
+Assessment Done By : Reshma Kumari
+Rating : 2
+BMI : 26.99
+Fall Score : 3-LOW RISK
+Pressure score : 21-NO RISK.
+DVT Score : 2-MODrtae RISK.
+Aspiration score : 0-LOW RISK.
+General Physical Examination:
+Pallor : NO
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+Any Other Findings : Questionnaires
+Date : 24/03/2026
+Patient's Indentification No. : MH011199849
+Sex : Female
+B - Each Risk Factor Represents 2 Point : Age 60 - 74 years
+4 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+Total Tickmarks : 1
+Total Score B : 2
+Total Score (A+B+C+D+E) = : 2
+Risk Assessment : : Moderate
+2 Moderate : 2-moderate risk.
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Score : 0
+CATEGORIES
+Adult Pressure Ulcer Braden Scale
+SENSORY PERCEPTION : 4
+4 - No Impairment : Y
+MOISTURE : 4
+4 - Rarely Moist : Y
+ACTIVITY : 4
+4 - Walks Frequently : Y
+MOBILITY : 3
+3 - Slightly Limited : Y
+NUTRITION : 3
+3 - Adequate : Y
+FRICTION AND SHEAR : 3
+3 - Apparent Problem : Y
+TOTAL SCORE : 21- no risk.
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+Total Score :9
+
+Forms
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : to prevent from fall.Nursing Diagnosis : Risk for fall
+Nursing Interventions : a) Reduce and eliminate contributing factors by
+b) Encouraging patient to more daily progress.
+c)Evaluating patient’s pain and the present treatment regimen.
+d)Checking vital signs and resting after activity.
+e) Providing sufficient support to ensure safety and to prevent falling, encourage passive exercise.
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : to prevent from fall.Nursing Diagnosis : Risk for DVT
+5 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+Nursing Interventions : a) Monitor skin integrity every 2nd hourly.
+b)Position the pa Monitor tient to stay off the ulcer
+c)Re-position the patient every 2nd hourly
+d)Apply pressure reducing devices (Air mattress)
+e)Avoid massage over the bony prominent
+F)Educate wheel chair bounded patient for reposition
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : to reduce pain.Nursing Diagnosis : Acute pain ./ or post-operative pain
+Nursing Interventions : ), frequency, precipitating factors and relief factors.
+B) Eliminate factors that precipitate pain.
+C) Other analgesic 6th/8th hourly if necessary in accordance with physician orders
+D) Provide restful and quiet environment.
+Evaluation : Terminate
+Patient/Family Health Education
+Status : Authorised
+Date: : 24/03/2026
+Time: : 09:22
+Assessment Type : Inital Assessment
+Educational Needs : Safe and effective use of medcial equipment,Pain Management,Patients
+Rights and Responsibilities,Pesonal hygiene and practitioner hand wash,Home Instruction,Health
+Maintenance,Nutrition,Safety,Falling precaution,Hand hygiene
+Given Education : educate the patient to press nursing call b ell for help.
+Teaching Method : One to One
+Teaching Tool : Verbal Instructions
+Evaluation : Verbalize basic concept without assistance
+Child Attends School : No
+Does the child has any problem at school : No
+Literacy Skills : Yes
+
+Chief Complaint
+Asymptomatic
+PT IS ASYMTPOMATIC CURRENTLY
+ON 16/03/2026
+PT CAME FOR REGULAR HEALTH CHECK UP, TMT WAS FOUND TO BE POSITIVE
+NO C/O CHEST PAIN, BREATHLESSNESS, SWEATING, FATIGUE,LOC
+POSTED FOR CAG
+
+Diagnosis
+01OR
+ASYMPTOMATIC
+TMT - POSITIVE
+NORMAL LV FUNCTION
+POSRTED FOR CAG
+6 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+Past History Medical
+Score : 0
+Hypertension : Yes
+Diabetes : No
+Cardiac Dieases : No
+Tuberculosis : No
+COPD / Asthma : No
+Other chronic disorder : No
+Since When : HTN CINCE 1YR
+
+Forms
+Past/Ongoing Medications
+Score : 0
+Past/Ongoing Medication
+Name of drug : TAB PIVASTA 2MG 0-0-1
+TAB TELMA 40MG 1-0-0
+TAB EZEDOC 10MG 0-0-1
+CAP D. RISE 60K ONCA A WEEK FOR 8 WEEKS THEN ONCE A MONTH
+Intravascular Access Lines
+Status : Entered
+IntraVascular Access Type : Peripheral IV Line
+Peripheral IV Activity : New insertion
+Peripheral IV Insertion Date : 24/03/2026
+Peripheral IV Insertion Time : 09:30
+Peripheral IV Catheter Type : IV Cannula
+Peripheral IV Site : Hand
+Peripheral IV Gauge : 20 Gauge
+Peripheral IV Procedure Preparation : Hand hygiene performed
+Peripheral IV Procedure Result : Successful insertion
+Peripheral IV Number Of Attempts : 1
+Peripheral IV Equipment used : Manual,Stopcock
+Referred To IV Nurse : No
+CVC Site Assesst
+Lumen color : pink .
+Central IV TPA Intervention
+Catheter position corrected / withdrawn
+Arterial Line Status
+Peripheral IV Assessment
+Need Assessment :
+Yes
+Care : Cap(s) changed,Secured with
+tape
+Site Details : No
+7 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+complications
+Dressing Type / Appearance :
+Dry,Intact
+Peripheral IV Patency : No complications
+Peripheral IV Removal Date : 24/03/2026
+Peripheral IV Removal Time : 05:30
+Peripheral Removal Indication : Treatment completed
+
+Alerts
+Past alert of Peripheral Line1 - Onset: 24/03/2026
+Expiry: 24/03/2026
+20g in left hand. REMOVED AT 5.00PM
+Forms
+Nurses Endorsment Checklist
+Shift : Morning to Evening
+Situation : Elective,NON MLC,Shift Handover
+Comment / Chief Complaints / Diagnosis : T CAME FOR REGULAR HEALTH CHECK UP, TMT WAS FOUND
+TO BE POSITIVE
+Background
+Allergies : No
+Remarks : unknown
+Diet : No
+Remarks : no
+Previous Medications : No
+Remarks : no
+Old reports added to TRAK : No
+Remarks : no
+Consents : Yes
+Remarks : cag
+Cross Consultation : No
+Remarks : no
+Procedures performed before transfer : No
+Remarks : no
+Vulnerable : No
+Remarks : no
+Past Medical / Surgical History : HTN.
+Level of Consciousness : Oriented
+GCS : 15/15
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 2
+On MET/PET List : No
+Risk For FALL : No
+Risk For Pressure Ulcer : No
+Risk for Aspiration : No
+Existence of Pressure Ulcer : No
+Remarks : intact.
+O2 Administration : No
+8 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+Remarks : room air.
+SPO2(Latest reading in the shift) : 98
+DIET : Oral
+Diet-Specify the type : Normal
+On tube feeding : No
+Remarks : oral.
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : Yes
+Remarks : 20g in left hand.
+Self Void : Yes
+Remarks : 1 times.
+Foley's : No
+Drain : No
+Bowel Opened : No
+Fluid Balance : 250/1 times.
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Ambulant
+Investigations Sent : Yes
+Remarks : ANGIO PROFLE.
+Reports Collected : No
+Care Plan : Yes
+Remarks : fall, pain , dvt.
+Special Needs : No
+Patient & Family Education : Yes
+Remarks : diet, hygiene.
+Transfer : No
+Medications: No
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : iv cannula removed.
+Discharge Plan : Yes
+Date of Discharge : 24/03/2026
+Comments : waiting for final clearance.
+Hand over by : Reshma Kumari
+Handed over to : Negha V Saibu
+9 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+Team Lead Hand over By : Rekha V
+Team Lead Hand over To : Keerthi Reddy M
+Comments by Team Lead : waiting for final clearance, checked by Rekha sister.
+
+Forms
+Pain Assessments
+Score: 1
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 1
+
+Additional Pain Assessment Details
+Type: Dull
+Duration: Not Applicable
+Continuous: Not Applicable
+Time: Not Applicable
+
+Comments: PAIN SCALE SCORE IS 1
+
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 2
+Remarks : FALL RISK SCORE IS 2
+Age : 60-69 Years - 1
+Patient care Equipment : One Present- 1
+Type of Assessment : Shift Assessment
+Discharge Checklist MHE
+Status : Authorised
+Score : 0
+Discharge Planning initiated : 24/03/2026
+Reports required by patient on discharge: : 1 DISCHARGE SUMMARY,1ECG,5 BLOOD INVESTIGATION
+REPORTS
+IV Cannula removed : Yes
+Last vital signs documented : Yes
+Discharge Medication or Prescription : Yes
+Investigation results : Yes
+Appointment details : Yes
+Advice/Instructions/Education information : Yes
+10 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+ID band removed : Yes
+All personal belongings returned : Yes
+Discharge comments : PATIENT GOT DISCAHRGE CLEARNCE BY 5.00CLOCK DISCHARGE SUMMAARY
+EXPLAINED BY DR SOUMAYA,ID BAND REMOVED,IV CANNULA REMOVED,DISCHARGE ADVICE
+ALSO GIVEN
+Reports supplied to patients on discharge : 1 DISCHARGE SUMMARY,1ECG,5 BLOOD
+INVESTIGATIONREPORTS GIVEN TO PATRIENT BYSTANDER
+NAME; GIRISH PUNJA
+RELATIONSHIP; HUSBAND
+NUMBER ; 9845042253
+Home Discharge Planning
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+Total Score :9
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Status : Entered
+Score : 0
+CATEGORIES
+TOTAL SCORE : 0
+COMMENTS : LOW RISK
+No Risk - 0 : Y
+Questionnaires
+Status : Entered
+Date : 24/03/2026
+Patient's Indentification No. : MH011199849
+Sex : Female
+A - Each Risk Factor Represents 1 Point : Minor Surgery Planned
+Total Tickmarks : 1
+Total Score A : 1
+B - Each Risk Factor Represents 2 Point : Age 60 - 74 years
+Total Tickmarks : 1
+Total Score B : 2
+Total Score (A+B+C+D+E) = : 3
+Risk Assessment : : High
+3 - 4 High : 3 HIGH
+Adult Pressure Ulcer Braden Scale
+Status : Entered
+SENSORY PERCEPTION : 4
+4 - No Impairment : Y
+MOISTURE : 4
+4 - Rarely Moist : Y
+ACTIVITY : 4
+11 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+4 - Walks Frequently : Y
+MOBILITY : 4
+4 - No Limitations : Y
+NUTRITION : 3
+3 - Adequate : Y
+FRICTION AND SHEAR : 3
+3 - Apparent Problem : Y
+TOTAL SCORE : 22 NO RISK
+Status : Entered
+
+Forms
+Patient/Family Health Education
+Status : Entered
+Date: : 24/03/2026
+Time: : 17:38
+Assessment Type : Reassessment
+Educational Needs : Disease process,Safe and Effective Use of Medication, side effects and Interactions,Care plan
+and treatment,Health Maintenance,Safety
+Given Education : EDUCATED THE PATIENT FAMILY ON DISEASE PROCESS,SAFETY,SAFE AND
+EFFECTIVE USE OF MEDICATION,SIDE EFFECTS AND INTERACTIONS,HEALTH MAINTAINCES,CARE
+PLAN AND TREATMENT
+Teaching Method : One to One
+Teaching Tool : Verbal Instructions
+Evaluation : Verbalize basic concept without assistance
+Child Attends School : No
+Does the child has any problem at school : No
+Literacy Skills : Yes
+Plan and Comments : EDUCATED THE PATIENT FAMILY ON DISEASE PROCESS,SAFETY,SAFE AND
+EFFECTIVE USE OF MEDICATION,SIDE EFFECTS AND INTERACTIONS,HEALTH MAINTAINCES,CARE
+PLAN AND TREATMENT
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO REDUCE AND PREVENT DVT RISK Nursing Diagnosis : Risk for
+DVT
+Education and comments: : EDUCATED PATIENT ON DVT PREVENTION AND RISK MANAGEMENT
+Nursing Interventions : >Thromboprophylaxis
+>Pulmonary embolism
+>Prevent from deep vein thrombosis
+>Assess the condition of the patient
+>Encouraged regular exercise and mobility
+>Applied compression stockings
+>Monitored closely for signs of DVT
+12 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+>Educated patient and family on DVT prevention strategies
+Evaluation : Continue
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO RESTORE NORMAL DAILY ACTIVITY Nursing Diagnosis : Activity
+intolerance
+Education and comments: : EDUCATED THE PATIENT ON RESTOREING NORMAL ACTIVITY
+Nursing Interventions : a)Reduce and eliminate contributing factors by
+b)Encouraging patient to more daily progress.
+c)Evaluating patient’s pain and the present treatment regimen.
+d)Checking vital signs and resting after activity. a)Reduce and eliminate contributing factors by
+Evaluation : Continue
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO REDUCE FALL RISK Nursing Diagnosis : Risk for fall
+Education and comments: : EDUCATED PATIENT ON FALL RISK MANAGEMENT
+Nursing Interventions : >Safety measures and motility assistance
+>Prevent from injury
+>Prevent the patient from fall
+>Assess the condition of the patient
+>Implemented safety measures like : bed side rails raised up and call bell kept within reach.
+>Provided assistance with mobility
+>Reviewed the medications that may increase fall risk.
+Fall risk assessment done.
+Avoid the fall risk factors.
+Raised the bed side rail.
+Provided extra pillow
+Emergency call bell given & explained.
+>Educated the patient and family on fall prevention strategies.
+Evaluation : Continue
+Residents Notes :
+DR SOUMYA FOR DR PR NAYAK
+TMT - POSITIVE SLOW FLOW,
+13 of 14
+
+
+Hospital No: 59549979
+Name:
+
+Visit No:
+Doctor Name:
+
+NON-OBSTRUCTIVE CORONARIES
+NORMAL LV FUNCTION
+KNOWN
+HYPERTENSION X 1YR
+CORONARY ANGIOGRAM DONE (VIA RIGHT RADIAL ARTERY) ON 24.03.2026 SHOWED SLOW FLOW,
+NON OBSTRUCTIVE CORONARIES.
+POST PROCEDURE
+PT IS STABLE
+NO NEW COMPLAINTS
+BP- 110/70
+HR- 82
+SPO2- 98 ON RA
+ADVICE
+- D/C TODAY
+- FOLLOW TREATEMENT AS PER D/C SUMMARY
+MEDICATION ORDERS
+Drug / Generic Item
+Dosage Qty Frequency
+CANNULA 18 G VENFLON PRO-SAFETY (REF #393247), BD
+1 PC
+ONCE
+
+Instructions/Notes
+
+Duration
+1 DAY(S)
+
+(CANNULA (PHARMACY NON-DRUG))
+
+TEGADERM IV DRESSING KIT 6.5 CM X 7 CM, # 1683
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1 BT
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+ONCE
+1 NUMBER ONCE
+
+1 DAY(S)
+1 DAY(S)
+
+3 PC
+
+1 DAY(S)
+
+(TEGADERM DRESSING (PHARMACY NON-DRUG))
+
+CANNULA 20 G VENFLON PRO-SAFETY (REF #393244), BD
+(CANNULA (PHARMACY NON-DRUG))
+
+TEGADERM IV DRESSING KIT 6.5 CM X 7 CM, # 1683
+(TEGADERM DRESSING (PHARMACY NON-DRUG))
+
+AUTOFUSION SET # 14289
+(IV SET (PHARMACY NON-DRUG))
+
+NORMAL SALINE 09% W/V AQUA PULSE 500 ML
+(SODIUM CHLORIDE (80009680))
+
+VEIN-O-LINE 100 CM Extension Tube, Romsons
+UNDERPAD ABSORABLE MEDICAL(60 X90CM) ULTRACARE
+(UNDERPAD (PHARMACY NON-DRUG))
+
+POLYFLUSH PRE-FILLED SYRINGE 5 ML # 90319, POLY
+MEDICURE LTD
+
+ONCE
+
+(SYRINGE (PHARMACY NON-DRUG))
+
+14 of 14
+
+

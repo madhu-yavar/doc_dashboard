@@ -1,0 +1,1459 @@
+INPATIENT RECORD
+Hospital No:
+Name:
+Doctor Name:
+Date:
+
+67048914
+
+BP Systolic: 120 mmHg
+Respiration: 19 br/min
+Saturation(Oxygen): 98 %
+
+Visit No:
+Age/Sex:
+Specialty:
+
+BP Diastolic: 70 mmHg
+Pulse Rate: 87 bt/min
+Temperature: 98 °F
+Delivered Oxygen Flow Rate: 0
+AVPU Conscious level: AVPU12120A Mean Arterial Pressure-MAP: 87
+mmHg
+
+Hourly urine Output: 100 millilitres per
+hour
+
+Forms
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 3 low risk
+Age : Below 60 Years - 0
+Patient care Equipment : One Present- 1
+Mobility : Requires assisstance or supervision for mobility,transfer or ambulation - 2
+Type of Assessment : Initial Assessment
+NURSING INITIAL ASSESSMENT - NEW
+Status : Entered
+Score : 0
+Patient Name : Komala S
+MRN : MH018143857
+Age : 51 Yrs
+Gender : Female
+Patient arrival Date : 24/03/2026
+Patient Arrival Time : 20:10
+Accompanied by Relative : Yes
+Name of Relative : venkataramu
+Relationship with Patient : husband
+Contact Number : 7760497172
+Primary Language Spoken : kannada
+Interpreter Needed : No
+Room Orientation Given : Yes
+Patient Identification Band Fixed : Yes
+If Yes Type Of Band : GREEN
+Height(Cm) : 158
+Weight(Kgs) : 70
+Reason Not Able To Check : .
+Chief Complaints : Chief Complaints : C/O HEADACHE, NASAL BLOCK SINCE FEW MONTHS
+Past History : Past Medical History : K/C/O HTN , HYPOTHYROID
+Vital Assessment
+1 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Temp(F) : 98
+Pulse/min : 87
+Blood Pressure(mmHg) : 110/70
+Respiration/min : 19
+Spo2(%) : 99
+GRBS (mg/dl) : nil
+Skin Integrity : intact
+Other Parameters
+EWS Score : 1
+GCS : 15/15
+Pain Score : 2
+Valuable handover checklist completed : No
+Belongings : With Patient
+Dentures : With Patient
+Hearing Aid : With Patient
+Eye Glasses/Contact Lens : With Patient
+Others : nil
+Vulnerable : No
+Any Special Care Given : NIL
+Restraints : No
+If Yes, Type Of Restraint : nil
+Any Known Allergies : UNKNOWN
+Current Medications : thyronorm 50mcg 1-0-0
+Informed the Doctor : Yes
+Name of the Doctor : Referral Doctor
+Investigations Ordered : nil
+Diet : low salt diet
+Collected Old records : No
+If Yes Document Type : nil
+Is the patient at risk for any of the following? If Yes, complete the risk assessment form.
+Fall : YES
+Pressure Score : NO
+DVT : NO
+Aspiration : YES
+Pain Assessment Score : Not Applicable
+Ability to perform activities of daily living
+Activity
+Bathing : Independent
+Dressing : Independent
+Eating : Independent
+Walking : Independent
+Toilet Use : Independent
+Nursing needs(complete Nursing care plan based on the identified needs)
+Actual needs : TO PREDUCE THE PAIN LEVEL
+Potential needs : TO PREVENT THE INFECTION
+Any other needs : .
+2 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Assessment Done By : Angel Maria Philip
+Rating : .
+BMI : 28.04
+Fall Score : 3 LOW RISK
+Pressure score : 21 NO RISK
+DVT Score : 2 MODEARTE RISK
+Aspiration score : 0 LOW RISK
+General Physical Examination:
+Pallor : NO
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+Any Other Findings : nil
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Score : 0
+CATEGORIES
+TOTAL SCORE : 0
+COMMENTS : low risk
+No Risk - 0 : Y
+Adult Pressure Ulcer Braden Scale
+SENSORY PERCEPTION : 4
+4 - No Impairment : Y
+MOISTURE : 4
+4 - Rarely Moist : Y
+ACTIVITY : 4
+4 - Walks Frequently : Y
+MOBILITY : 3
+3 - Slightly Limited : Y
+NUTRITION : 3
+3 - Adequate : Y
+FRICTION AND SHEAR : 3
+3 - Apparent Problem : Y
+TOTAL SCORE : 21 no risk
+Questionnaires
+Date : 24/03/2026
+Patient's Indentification No. : MH018143857
+Sex : Female
+A - Each Risk Factor Represents 1 Point : Age 41 - 60 years,Other risk factor
+Total Tickmarks : 2
+Total Score A : 2
+Total Score (A+B+C+D+E) = : 2
+Risk Assessment : : Moderate
+2 Moderate : 2 moderate risk
+
+Forms
+3 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+HOURLY NURSING ROUND
+Score : 0
+HOURLY NURSING ROUND - DAY
+CHECKPOINTS
+Introduce yourself : 08 PM
+Ask for pain if any : 08 PM
+Ask for Comfort or Position : 08 PM
+Ask for bathroom needs : 08 PM
+Peripery-move the phone, Call Light, Trashcan, Watercan, Over-Bed Table : 08 PM
+Pump-Syringe pump, Infusion Line, IV Line : 08 PM
+HOURLY NURSING ROUND - NIGHT
+CHECKPOINTS
+Comments : ADMISSION@ 8:20PM
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO PREVENT THE FALLNursing Diagnosis : Risk for fall
+Education and comments: : PROVIDED COMFORT AND REST
+Nursing Interventions : >Safety measures and motility assistance
+>Prevent from injury
+>Prevent the patient from fall
+>Assess the condition of the patient
+>Implemented safety measures like : bed side rails raised up and call bell kept within reach.
+>Provided assistance with mobility
+>Reviewed the medications that may increase fall risk.
+Fall risk assessment done.
+Avoid the fall risk factors.
+Raised the bed side rail.
+Provided extra pillow
+Emergency call bell given & explained.
+Educate the parents to stay with baby side always
+>Educated the patient and family on fall prevention strategies.
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO REDUCE THE PAIN LEVELNursing Diagnosis : Acute pain ./ or postoperative pain
+Education and comments: : PROVIDED COMFORT AND REST
+4 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Nursing Interventions : <Pain relief and comfort management
+<Impact on daily activities
+<Reduce the level of pain
+<Assess the condition of the patient
+Assess the pain score
+Comfortable position given
+Administered pain medication
+<Educated to the patient and family about pain management
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO PREVENT THE DVTNursing Diagnosis : Risk for DVT
+Education and comments: : DVT PREEVNTION STARTEGIES
+Nursing Interventions : >Thromboprophylaxis
+>Pulmonary embolism
+>Prevent from deep vein thrombosis
+>Assess the condition of the patient
+>Encouraged regular exercise and mobility
+>Applied compression stockings
+>Monitored closely for signs of DVT
+>Educated patient and family on DVT prevention strategies
+Evaluation : Terminate
+Patient/Family Health Education
+Status : Entered
+Date: : 24/03/2026
+Time: : 20:27
+Assessment Type : Inital Assessment
+Educational Needs : Pain Management,Care plan and treatment,Activity/Exercise,Health
+Maintenance,Nutrition,Safety,Lines/drain/catheter reconciliation,Falling precaution,Hand hygiene,Medication side
+effects
+Given Education : EDUCATION GIVEN REGARDING ABOUT:
+SAFETY, HAND HYGIENE
+Teaching Method : One to One
+Teaching Tool : Verbal Instructions
+5 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Evaluation : Verbalize basic concept with assistance
+Child Attends School : No
+Does the child has any problem at school : No
+Literacy Skills : Yes
+IP Initial Assessment
+Score : 0
+Patient Arrival Date : 24/03/2026
+Patient Arrival Time : 20:00
+Chief Complaints : C/O HEADACHE, NASAL BLOCK SINCE FEW MONTHS
+History of Presenting illness : C/O HEADACHE, NASAL BLOCK SINCE FEW MONTHS
+ADMITTED FOR SURGERY
+Allergy : NOT KNOWN
+Past Medical History : K/C/O HTN , HYPOTHYROID
+Current medications : AS PER CHART
+Pulse /min : 80
+Resp Rate/min : 16
+Temp F : AFEB
+BP mm Hg : 140/80
+Room Air : Y
+GRBS mg/dL : .
+Pallor : NO
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+CVS : S1S2+
+RS : B/L NVBS+
+PA : SOFT, NT ,BS+
+CNS : NFND
+Others : .
+Provisional Diagnosis : ?DNS
+Care Plan : SEPTOPLASTY+ FESS
+Spo2 : 97
+Diet Plan : Surgical Site Infection Prevention Bundle
+Pre-operative chlorhexidine bath supplied : Yes
+Bath taken night prior to surgery : Yes
+Bath taken on the day of surgery : Yes
+Prophylactic antibiotic prescribed : No
+Type of hair removal : Clipper
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+
+6 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Total Score :8
+
+Forms
+Nurses Endorsment Checklist
+Status : Entered
+Shift : Night to Morning
+Situation : Elective,Surgery,Transfer Out
+Comment / Chief Complaints / Diagnosis : Chief Complaints : C/O HEADACHE, NASAL BLOCK SINCE FEW
+MONTHS
+Background
+Allergies : No
+Diet : No
+Previous Medications : No
+Old reports added to TRAK : No
+Consents : Yes
+Cross Consultation : No
+Procedures performed before transfer : No
+Vulnerable : No
+Past Medical / Surgical History : nil
+Level of Consciousness : Oriented
+GCS : 15
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 2
+Risk For FALL : Yes
+Remarks : 3 low risk
+Risk For Pressure Ulcer : No
+Risk for Aspiration : No
+Existence of Pressure Ulcer : No
+O2 Administration : No
+Remarks : room air
+SPO2(Latest reading in the shift) : 98
+DIET : NPO
+On tube feeding : No
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : No
+Self Void : Yes
+Remarks : 3 times
+Foley's : No
+Drain : No
+Bowel Opened : No
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+7 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Ambulation : Ambulant
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Remarks : pain management
+Special Needs : No
+Patient & Family Education : Yes
+Remarks : pain management
+Transfer : No
+Medications: Yes
+Remarks : as per chart
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : Consumables
+Discharge Plan : No
+Hand over by : Angel Maria Philip
+Handed over to : Mohini M K
+Team Lead Hand over By : Balapdianghun
+Team Lead Hand over To : Mohini M K
+Status : Entered
+OT MOVEMENTS
+Status : Entered
+Score : 0
+Operation Date : 25/03/2026
+Area in Date : 25/03/2026
+Area in Time : 06:00
+Theatre In Date : 25/03/2026
+Theatre In Time : 06:10
+Theatre Out Date : 25/03/2026
+Theatre Out Time : 08:30
+Area Out Date : 25/03/2026
+Area Out Time : 08:35
+Shifting to ICU : Y
+Area In update user : Chimi Tahang
+Date & Time : 25/03/2026 07:30
+Theatre In Update user : Chimi Tahang
+Date & time : 25/03/2026 07:30
+Theatre out update user : Chimi Tahang
+Date & time : 25/03/2026 10:17
+Area Out update user : Chimi Tahang
+Date & Time : 25/03/2026 10:17
+Area In
+8 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Theatre In
+Theatre Out
+Area Out
+Theatre Location : MHM 4F OT 2
+Incision Time : 06:55
+Closure Time : 08:10
+Incision Date : 25/03/2026
+Closure Date : 25/03/2026
+Incision Time Updated User : Chimi Tahang
+IT Updated Date and Time : 25/03/2026 07:30
+CT Updated User Name : Chimi Tahang
+CT Updated Date and Time : 25/03/2026 10:17
+Surgery cat : Elective
+Shower with chlorhexidine : YES
+Additional dose of antibiotic given if surgery continues for > 4hrs : NO
+Hair removed with clipper on the surgery site : YES
+DM : NO
+Scheduled Start Time : 06:00
+Scheduled Date : 25/03/2026
+Antibiotic
+Antibiotic name : Inj.Magnex Forte
+1.5gm
+Date :
+25/03/2026
+Time : 06:30
+Wound Classification : Clean
+Scrub Staff : SOUMYA
+Floor Staff : CHIMI
+OT Technician : MILTON
+Site prepared with povidone Iodine or 2% chlorhexedine gluconate: : YES
+Has the antiseptic site preparation dried before skin incision : YES
+Ward Updated User : Angel Maria Philip
+Ward Date & Time : 25/03/2026 04:59
+Intra Updated User : Chimi Tahang
+Intra Date & Time : 25/03/2026 10:17
+Pre-Op Check List(N)
+Status : Entered
+Score : 0
+ID Band correct and in place : Yes
+Valid consent signed : Yes
+Premed given and recorded : Yes
+Procedural area prepared/marked : Yes
+Last food at time : 23:30
+Last voided time : 05:00
+Hair clips/make up/nail varnish removed : Yes
+Last food : 24/03/2026
+9 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Last voided : 25/03/2026
+Last fluid : 24/03/2026
+Last fluid time : 11:30
+Multi resistant organism : Yes
+Allergies recorded : NKA
+Observation Group
+Pre-OP Check List Last Administered: 25/03/2026 04:54
+
+Ward Check
+OT Check
+Shaved : Yes
+Bowels last opened : 25/03/2026
+Patient´s Xray available
+Bowels last opened time : 05:00
+Suitable clothing : Yes
+Gowned, underwear removed : Yes
+Nursing / Care assessment
+Additional information (Anxiety, Dementia, Mobility, Communication, Pre-existing medical conditions)
+Care Provider Name : Angel Maria Philip
+Care Provider Role : NURSE
+Ward Nurse
+OT Nurse
+Team Lead Hand over By : Balapdianghun
+Surgical Site Infection Prevention Bundle
+Booked procedure : FESS + SEPTOPLASTY (LENT)
+Name of surgeon : Dr. Prem Kumar P
+Actual procedure : FESS + SEPTOPLASTY (LENT)
+Theatre No: : 02
+Date of procedure : 25/03/2026
+Time of procedure: From : 06:10
+To : 08:30
+Pre-operative chlorhexidine bath supplied : Yes
+Bath taken night prior to surgery : Yes
+Bath taken on the day of surgery : Yes
+Prophylactic antibiotic prescribed : Yes
+Antibiotic prophylaxis given : Yes
+Given in : OT
+Skin antisepsis done with : Providone-Iodine
+Type of surgery : Clean
+Maintaining Normothermia (>36 C) : Yes
+Blood glucose level controlled : Yes
+
+Forms
+Surgical Safety Checklist(New)
+Status : Entered
+Score : 0
+Before Induction of Anaesthesia
+10 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Sign in : 25/03/2026
+Identity : Y
+Procedure : Y
+Consent : Y
+Site Marked : Yes
+Pulse oximeter on patient and functioning : Yes
+Essential equipment/assistance available : Yes
+Does patient have known allergy? : Unknown
+Difficult airway/aspiration risk? : No,No,
+Risk Of >500ML blood loss (7ml/kg in children)? : No
+Before skin incision
+Time Out : 25/03/2026
+Confirm all Team members have introduced themselves by Name and Role : Y
+Correct Patient : Y
+Correct Site : Y
+Correct Procedure : Y
+Has antibiotic prophylaxis been given within the last 60 minutes? : Yes
+Essential imaging is available : Yes
+Before patient leaves operation room
+Sign Out : 25/03/2026
+The Nurse has confirmed the name of the procedure (s) with the Surgeon and Anesthetist : Yes
+All items counts are correct : Yes
+Specimen(s) is/are correctly labelled (including Patient URN): : Yes
+Are there any equipment issues to be addressed? : No
+Surgeon, Anesthetist and Nurse have reviewed any and all key concerns for the recovery and management of the
+Patient : Yes
+Sign In Time : 06:10
+Time Out Time : 06:50
+Surgical team review:
+Are there any equipment issues or concerns to be addressed : No
+Sign Out time : 08:10
+Are there any patient-specific concerns? : No
+Nursing Team Review:
+Site : Y
+Anesthesia safety check completed : Y
+Sign In Nurse : Muzamil Ahmad
+Correct Position : Y
+Has sterility (including indicator result) been confirmed? : Yes
+Are there any equipment issues or concerns? : No
+Time Out Nurse : Chimi Tamang
+Sign Out Nurse : Chimi Tamang
+Anaesthesia Team Review:
+Time Out Surgeon : Dr. Prem Kumar P
+Time Out Anesthetist : Dr. Arul Prakasham P M
+OT Checklist & Instrument Count
+Score : 0
+OT CHECKLIST AND INSTRUMENT COUNT
+11 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+SCRUB NURSE : Soumya Manna
+SURGEON : Dr. Prem Kumar P
+CIRCULATING NURSE : Chimi Tamang
+ANESTHETIST : Dr. Arul Prakasham P M
+DATE : 25/03/2026
+OT NUMBER : 02
+NEEDLES, BLADES & SWABS
+ITEM
+INITIAL/ START COUNT
+CAVITY/ SECOND COUNT
+CLOSING/ THIRD COUNT
+ADDED COUNT
+FINAL COUNT
+BP Blade : 1
+BP Blade : 1
+BP Blade : 1
+BP Blade : 1
+Gauze 4x4 : 10
+Gauze 4x4 : 10
+Gauze 4x4 : 10
+Gauze 4x4 : 10
+Patty : 10
+Patty : 10
+Patty : 10
+Patty : 10
+Pack : 10
+Pack : 10
+Pack : 10
+Pack : 10
+INSTRUMENTS
+INSTRUMENT
+INITIAL/ START COUNT
+CAVITY/ SECOND COUNT
+CLOSING/ THIRD COUNT
+ADDED COUNT
+FINAL COUNT
+Artery forceps Curved 6 inch : 1
+Artery forceps Curved 6 inch : 1
+Artery forceps Curved 6 inch : 1
+Artery forceps Curved 6 inch : 1
+Mosquito curved : 1
+Mosquito curved : 1
+Mosquito curved : 1
+Mosquito curved : 1
+Non Toothed 6 inch : 1
+Non Toothed 6 inch : 1
+Non Toothed 6 inch : 1
+12 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Non Toothed 6 inch : 1
+Needle Holders 6 inch : 1
+Needle Holders 6 inch : 1
+Needle Holders 6 inch : 1
+Needle Holders 6 inch : 1
+BP Handle 4 inch : 1
+BP Handle 4 inch : 1
+BP Handle 4 inch : 1
+BP Handle 4 inch : 1
+COUNT STATUS AND DISCREPANCY RESOLUTION
+Scrub Nurse : Soumya Manna
+Circulating Nurse : Chimi Tamang
+Pre-Op Check List(N)
+Status : Entered
+Score : 0
+ID Band correct and in place OT : Yes
+Valid consent signed OT : Yes
+Premed given and recorded OT : Yes
+X-Rays OT : Films with Pat.
+Procedural area prepared/marked OT : Yes
+Dentures OT : Own teeth
+Hair clips/ make up/ nail varnish removed OT : Yes
+Jewelery removed/taped OT : Yes
+Multi resistant organism OT : Yes
+Blood results available OT : Yes
+Allergies recorded : NKA
+Observation Group
+Pre-OP Check List Last Administered: 25/03/2026 07:21
+
+Ward Check
+OT Check
+Shaved OP : Yes
+Patient´s Xray available
+Antibiotic prescribed OT : Yes
+Antibiotic given OT : Yes
+Suitable clothing OT : Yes
+Is clotting normal : Yes
+Anti-coagulant checked : Yes
+Platelets checked : Yes
+Gowned, underwear removed : Yes
+Are there any pressure areas or areas of frail skin need to be considered when positioning patient : Yes
+Nursing / Care assessment
+Additional information (Anxiety, Dementia, Mobility, Communication, Pre-existing medical conditions)
+OT Nurse Name : Muzamil Ahmad
+Ward Nurse
+OT Nurse
+13 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Team Lead Hand over To : Muzamil Ahmad
+
+Alerts
+Peripheral Line1 - Onset: 25/03/2026
+PERIPHARAL LINE NO 20G IN RIGHT HAND
+Forms
+Skin Examination
+Pallor : No
+Cyanosis : No
+Skin turgor : Normal turgor
+Jaundice : No
+Erythema : No
+Petechiae : No
+Purpura : No
+Oedema : No
+Rash : No
+Skin Lesions : No
+Surgical scars : No
+Wounds : No
+Dressing : PRESENT
+Burns : No
+Note / Location : NOSE
+Hair : Normal
+
+Nails : Normal
+Pain Assessments
+Score: 1
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 1
+
+Additional Pain Assessment Details
+Since: 25/03/2026
+Type: Stabbing
+Duration: Irregular
+Continuous: Constant
+Time: At rest
+Onset: Gradual
+
+Associated Symptoms: None
+Comments: INJ PCT 1GM GIVEN.
+14 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Intravascular Access Lines
+Status : Entered
+IntraVascular Access Type : Peripheral IV Line
+Peripheral IV Activity : New insertion
+Peripheral IV Insertion Date : 25/03/2026
+Peripheral IV Insertion Time : 07:00
+Peripheral IV Catheter Type : IV Cannula
+Peripheral IV Location : Right
+Peripheral IV Site : Hand
+Peripheral IV Gauge : 20 Gauge
+Peripheral IV Procedure Preparation : Handwashing observed
+Peripheral IV Insertion Indication : IV hydration / medication
+Peripheral IV Procedure Result : Successful insertion
+Peripheral IV Number Of Attempts : 1
+Peripheral IV Equipment used : Manual,Extension set
+Referred To IV Nurse : No
+CVC Site Assesst
+Lumen color : PINK
+Central IV TPA Intervention
+Catheter position corrected / withdrawn
+Arterial Line Status
+Peripheral IV Assessment
+Need Assessment :
+Yes
+Care : Skin cleansed with
+chlorhexidine
+Site Details : No
+complications
+Dressing Type / Appearance :
+Intact
+Peripheral IV Patency : No complications
+
+Forms
+Nurses Endorsment Checklist
+Shift : Transfers
+Situation : Elective,Surgery,Transfer Out
+Comment / Chief Complaints / Diagnosis : Chief Complaints : C/O HEADACHE, NASAL BLOCK SINCE FEW
+MONTHS
+SEPTOPLASTY+ FESS POD-00
+Background
+Allergies : No
+15 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Diet : No
+Previous Medications : No
+Old reports added to TRAK : No
+Consents : Yes
+Cross Consultation : No
+Procedures performed before transfer : No
+Vulnerable : No
+Past Medical / Surgical History : nil
+Intubation : N/A
+Ventilation Status : N/A
+ET Size and Lip Level : N/A
+Tracheostomy : N/A
+ICD : N/A
+Pig Tail : N/A
+T Piece : N/A
+Chest Physio : N/A
+Treated with Inotropes : N/A
+Blood Transfusion : N/A
+Level of Consciousness : Oriented
+GCS : E4M6V5
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 2
+On MET/PET List : No
+Risk For FALL : No
+Risk For Pressure Ulcer : No
+Risk for Aspiration : No
+Existence of Pressure Ulcer : No
+Remarks : INTACK.
+O2 Administration : No
+Remarks : ROOMAIR
+SPO2(Latest reading in the shift) : 98
+DIET : NPO
+Diet-Specify the type : Normal
+On tube feeding : No
+Remarks : N/A
+IV Fluids : Yes
+Remarks : IVF NS/RL 100ML/HR ONFLOW.
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : Yes
+Remarks : PERIPHARAL LINE NO 20G D1
+Self Void : Yes
+Remarks : NOT PASSED
+Foley's : No
+Drain : No
+Bowel Opened : No
+16 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : No
+Ambulation : Bed Bound
+Investigations Sent : No
+Reports Collected : No
+Care Plan : No
+Pupil Reaction : 2MM
+Inotropes : No
+Ventilator : No
+Dialysis : No
+Special Needs : No
+Patient & Family Education : No
+Transfer : No
+Medications: No
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : Consumables
+Discharge Plan : No
+Comments : NPO TILL 11:30AM.
+Hand over by : Ranjitha T U
+Handed over to : Stephy Paul
+Team Lead Hand over By : Ranjitha T U
+Team Lead Hand over To : Blessy Mol Babu
+
+Forms
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 3
+Remarks : LOW RISK
+Age : Below 60 Years - 0
+Elimination,Bowel and Urine : Urgency or frequency - 2
+Patient care Equipment : One Present- 1
+Type of Assessment : Shift Assessment
+Pain Assessments
+Score: 1
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+17 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Numeric Pain Scale: 1
+
+Additional Pain Assessment Details
+Type: Dull
+Duration: Episodic
+Continuous: Variable
+Time: Day
+
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+Total Score :10
+Questionnaires
+Date : 25/03/2026
+Patient's Indentification No. : MH018143857
+Sex : Female
+A - Each Risk Factor Represents 1 Point : Age 41 - 60 years
+Total Tickmarks : 1
+Total Score A : 1
+Total Score (A+B+C+D+E) = : 1
+Risk Assessment : : Low
+1 Low : 1 low risk
+Adult Pressure Ulcer Braden Scale
+SENSORY PERCEPTION : 4
+4 - No Impairment : Y
+MOISTURE : 4
+4 - Rarely Moist : Y
+ACTIVITY : 4
+4 - Walks Frequently : Y
+MOBILITY : 4
+4 - No Limitations : Y
+NUTRITION : 4
+4 - Excellent : Y
+FRICTION AND SHEAR : 3
+3 - Apparent Problem : Y
+18 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+TOTAL SCORE : 23
+
+Forms
+Nurses Endorsment Checklist
+Status : Entered
+Shift : Morning to Evening
+Situation : Elective,Shift Handover
+Comment / Chief Complaints / Diagnosis : Chief Complaints : C/O HEADACHE, NASAL BLOCK SINCE FEW
+MONTHS
+SEPTOPLASTY+ FESS POD-00
+Background
+Allergies : No
+Diet : No
+Previous Medications : No
+Old reports added to TRAK : No
+Consents : Yes
+Cross Consultation : No
+Procedures performed before transfer : No
+Vulnerable : No
+Past Medical / Surgical History : nil
+Level of Consciousness : Oriented
+GCS : 15
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 1
+On MET/PET List : No
+Risk For FALL : No
+Risk For Pressure Ulcer : No
+Risk for Aspiration : No
+Existence of Pressure Ulcer : No
+Remarks : SKIN INTACT
+O2 Administration : No
+Remarks : ROOM AIR
+SPO2(Latest reading in the shift) : 98
+DIET : Oral
+Diet-Specify the type : Normal
+On tube feeding : No
+IV Fluids : No
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : No
+Self Void : No
+Foley's : No
+Drain : No
+Bowel Opened : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Dressing Present : Yes
+High Risk medications : No
+19 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Is Patient on Physiotherapy : No
+Ambulation : Ambulant
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Remarks : PAIN,FALL,DVT
+Special Needs : No
+Patient & Family Education : Yes
+Remarks : EDUCATED
+Transfer : No
+Medications: No
+Planned Procedure : No
+Approved follow-up : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Remarks : Consumables
+Discharge Plan : No
+Hand over by : Stephy Paul
+Handed over to : Miss Meghana G Daddikoppa
+Team Lead Hand over By : Blessy Mol Babu
+Team Lead Hand over To : Priyanka Patari
+Status : Entered
+HOURLY NURSING ROUND
+Score : 0
+HOURLY NURSING ROUND - DAY
+CHECKPOINTS
+Introduce yourself : 11 AM,02 PM
+Ask for pain if any : 11 AM,12 NOON,02 PM,03 PM,04 PM
+Ask for Comfort or Position : 11 AM,12 NOON,01 PM,02 PM
+Ask for bathroom needs : 11 AM,01 PM,02 PM,03 PM,04 PM
+Peripery-move the phone, Call Light, Trashcan, Watercan, Over-Bed Table : 11 AM,01 PM,02 PM,03 PM
+Pump-Syringe pump, Infusion Line, IV Line : 11 AM,12 NOON,02 PM,04 PM
+HOURLY NURSING ROUND - NIGHT
+CHECKPOINTS
+Comments : 11:15am received from sicu
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO PREVENT DVT Nursing Diagnosis : Risk for DVT
+Education and comments: : EDUCATED
+Nursing Interventions : a) Educate in proper use and function of assistive devices.
+b) Provide progressive mobilization.
+c) Motivate the patient to gradually increase mobility.
+20 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Evaluation : Continue
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO PREVENT FALL Nursing Diagnosis : Risk for fall
+Education and comments: : EDUCATED
+Nursing Interventions : >Safety measures and motility assistance
+>Prevent from injury
+>Prevent the patient from fall
+>Assess the condition of the patient
+>Implemented safety measures like : bed side rails raised up and call bell kept within reach.
+>Provided assistance with mobility
+>Reviewed the medications that may increase fall risk.
+>Educated the patient and family on fall prevention strategies.
+Evaluation : Continue
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO PREVENT PAIN Nursing Diagnosis : Acute pain ./ or post-operative pain
+Education and comments: : EDUCATED
+Nursing Interventions : a) monitor characteristics of pain, frequency, precipitating factors and relief factors
+b)eliminate factors that precipitate pain
+c) other analgesics 6th/8th hourly if necessary in accordance with physician orders
+d)provide restful and quit environment
+Evaluation : Continue
+Patient/Family Health Education
+Status : Entered
+Date: : 25/03/2026
+Time: : 14:49
+Educational Needs : Safe and Effective Use of Medication, side effects and Interactions,Community
+resources,Pesonal hygiene and practitioner hand wash,Home Instruction,Health Maintenance,Safety,Hand hygiene
+Given Education : Safe and Effective Use of Medication, side effects and Interactions
+Pesonal hygiene and practitioner hand wash
+Teaching Method : One to One
+Teaching Tool : Verbal Instructions
+Evaluation : Needs Follow-Up
+Child Attends School : Not Applicable
+Does the child has any problem at school : Not Applicable
+Literacy Skills : Yes
+Diet Notes :
+THE PATIENT IS ON NPO UNTIL FURTHER NOTICE
+Initial Nutritional Assessment
+Status : Authorised
+21 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+ANTHROPOMETRIC MEASUREMENTS
+Height (cms) : NOT RECORDED
+Weight (kgs) : NOT RECORDED
+IBW (kgs) : NaN
+BMI : NaN
+Recent weight loss/gain : None
+GI SYMPTOMS (Recent)
+Food allergies/Intolerance : No
+Subjective Global Assessment rating
+Nutritional intervention proposed/Diet advised : NPO, diet progression as per medical condition
+Others : Clinical notes will be updated on change of diet
+Select Type : Assessment
+Evaluation Criteria
+Adults : Cardiac Disease Adult Others:SEPTOPLASTY AND FESS
+
+Forms
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 3
+Remarks : LOW RISK
+Age : Below 60 Years - 0
+Patient care Equipment : One Present- 1
+Mobility : Requires assisstance or supervision for mobility,transfer or ambulation - 2
+Type of Assessment : Shift Assessment
+Pain Assessments
+Score: 2
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 2
+
+Additional Pain Assessment Details
+Since: 25/03/2026
+Type: Dull
+Continuous: Variable
+Time: Night,Day
+Onset: Gradual
+
+Associated Symptoms: Decrease activity
+
+22 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Skin Examination
+Pallor : No
+Cyanosis : No
+Skin turgor : Normal turgor
+Jaundice : No
+Erythema : No
+Petechiae : No
+Purpura : No
+Oedema : No
+Rash : No
+Skin Lesions : No
+Surgical scars : No
+Wounds : No
+Dressing : PRESENT
+Burns : No
+Note / Location : NOSE
+Hair : Normal
+
+Nails : Normal
+Questionnaires
+Status : Entered
+Date : 25/03/2026
+Patient's Indentification No. : MH018143857
+Sex : Female
+A - Each Risk Factor Represents 1 Point : Age 41 - 60 years
+Total Tickmarks : 1
+Total Score A : 1
+B - Each Risk Factor Represents 2 Point : Major surgery (> 60 minutes)
+Total Tickmarks : 1
+Total Score B : 2
+Total Score (A+B+C+D+E) = : 3
+Risk Assessment : : High
+3 - 4 High : 3-HIGH RISK
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Status : Entered
+Score : 0
+CATEGORIES
+TOTAL SCORE : 0
+COMMENTS : LOW RISK
+
+Forms
+Add Nursing Care Plan
+Status : Entered
+23 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO PREVENT DVTNursing Diagnosis : Risk for DVT
+Education and comments: : EDUCATED THE PATIENT REGARDING DVT AND PREVENTION
+Nursing Interventions : assess the patient condition
+advise the patient regarding mobilization
+provide health education regarding dvt
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO PREVENT FALLNursing Diagnosis : Risk for fall
+Education and comments: : EDUCATED THE PATIENT REGARDING FALL AND PREVENTION
+Nursing Interventions : - ASSESS THE PATIENT CONDITION
+- PROVIDE BED SIDE RAILS
+- PROVIDE HEALTH EDUCATION FALL AND PREVENTION
+Evaluation : Terminate
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : Yes
+Patient Measurable Goal for the day : TO REDUCE PAINNursing Diagnosis : Acute pain ./ or post-operative pain
+Education and comments: : EDUCATED THE PAITENT REGARDING PAIN AND MANAGEMENT
+Nursing Interventions : -ASSESS THE PATIENT CONDITION
+- MONITORE PAIN SCORE BY USING SCALE
+-PROVIDE COMFORTABLE POSITION
+-ADMINISTERE MEDICATION AS PER DRUGCHART
+Evaluation : Terminate
+Patient/Family Health Education
+Status : Authorised
+Date: : 25/03/2026
+Time: : 16:20
+Assessment Type : Other1
+Educational Needs : Pain Management,Pesonal hygiene and practitioner hand wash,Infection control related
+issues,Care plan and treatment,Health Maintenance,Safety,Lines/drain/catheter reconciliation,Falling
+precaution,Hand hygiene,Medication side effects
+Given Education : HEALT HEDUCATION
+
+24 of 25
+
+
+Hospital No: 67048914
+Name:
+
+Visit No:
+Doctor Name:
+
+Lines/drain/catheter reconciliationFalling precaution
+Teaching Method : One to One
+Teaching Tool : Verbal Instructions
+Evaluation : Verbalize basic concept with assistance
+Child Attends School : Not Applicable
+Does the child has any problem at school : Not Applicable
+Literacy Skills : Yes
+Investigation Orders
+Laboratory :
+
+- TSH (Thyroid Stimulating Hormone)
+- Hepatitis B Surface Antigen (Hbsag) - (ECLIA)
+- Hepatitis C Virus Antibody (ECLIA)
+- HIV I & II (ECLIA)
+.
+
+Drug / Generic Item
+OCTENIDINE WASH LOTION 150 ML, # 121501
+
+MEDICATION ORDERS
+Dosage Qty Frequency
+1 BT
+ONCE
+
+Instructions/Notes
+
+Duration
+1 DAY(S)
+
+(OCTENIDINE ANTIMICROBIAL BODY WASH LOTION)
+
+LEVOLIN 063 MG/25 ML RESPULES INHALATION SOLUTION
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1 RESPULE ONCE
+
+1 DAY(S)
+
+1 NUMBER ONCE
+
+1 DAY(S)
+
+1 TAB
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+ONCE
+1 NUMBER ONCE
+
+1 DAY(S)
+1 DAY(S)
+
+1 BT
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1 VL
+
+1 DAY(S)
+
+2 PC
+
+12 HOURLY
+( Q12H)
+ONCE
+
+2 PC
+
+ONCE
+
+1 DAY(S)
+
+2 PC
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+1 TAB
+
+ONCE
+
+1 DAY(S)
+
+1 TAB
+
+BD (1-0-1)
+
+1 DAY(S)
+
+1 TAB
+
+ONCE
+
+1 DAY(S)
+
+(LEVOSALBUTAMOL (80006235))
+
+FORAPRL 0.5 MG/2 ML RESPULE
+(FORMOTEROL~BUDESONIDE)
+
+DIGITAL THERMOMETER, MYCARE
+(APPLIANCE (PHARMACY NON-DRUG))
+
+CILACAR 5MG TABLET 15'S ( CILNIDIPINE)
+(CILNIDIPINE)
+
+OXYGEN MASK ADULT, ROMSON
+UNDERPAD ABSORABLE MEDICAL(60 X90CM) ULTRACARE
+(UNDERPAD (PHARMACY NON-DRUG))
+
+NORMAL SALINE 09% W/V AQUA PULSE 500 ML
+(SODIUM CHLORIDE (80009680))
+
+MICRO POLYSYTE DUO 15CM 13341, POLYMED
+(SURGICALS (PHARMACY NON-DRUG))
+
+VIATRAN 1.5 GM/VIAL POWDER FOR INJECTION
+(CEFOPERAZONE~SULBACTAM (80002516))
+
+SYRINGE 10 ML WITH NEEDLE DISPOVAN, HMD
+
+1 DAY(S)
+
+(SYRINGE (PHARMACY NON-DRUG))
+
+NEEDLE DISPOSABLE 18G X 1.1/2, DISPOVAN
+(NEEDLE (PHARMACY NON-DRUG))
+
+POLYFLUSH PRE-FILLED SYRINGE 5 ML # 90319, POLY
+MEDICURE LTD
+(SYRINGE (PHARMACY NON-DRUG))
+
+AUTOFUSION SET # 14289
+(IV SET (PHARMACY NON-DRUG))
+
+CILACAR 5MG TABLET 15'S ( CILNIDIPINE)
+(CILNIDIPINE)
+
+HIFENAC-D TABLET
+(ACECLOFENAC~PARACETAMOL~SERRAPEPTASE (80000054))
+
+RELENT TABLET
+(CETIRIZINE~AMBROXOL)
+
+25 of 25
+
+

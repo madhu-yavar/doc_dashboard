@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary16.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary16.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "",
+      "source": ""
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "",
+      "source": ""
+    },
+    "gender": {
+      "value": "",
+      "source": ""
+    },
+    "admission_date": {
+      "value": "25/03/2026",
+      "source": "Patient arrival Date : 25/03/2026"
+    },
+    "discharge_date": {
+      "value": "",
+      "source": ""
+    },
+    "chief_complaints": {
+      "value": "ANEMIA UNDER EVALUATION",
+      "source": "Chief Complaints : ANEMIA UNDER EVALUATION"
+    },
+    "principal_diagnosis": {
+      "value": "ANAEMIA UNDER EVALUATION",
+      "source": "Provisional Diagnosis : ANAEMIA UNDER EVALUATION"
+    },
+    "secondary_context": {
+      "value": "NO COMORBIDITIES | NOT KNOWN",
+      "source": "Past History : NO COMORBIDITIES || Past Medical History : NOT KNOWN"
+    },
+    "allergies": {
+      "value": "NOT KNOWN",
+      "source": "Any Known Allergies : NOT KNOWN"
+    },
+    "current_medications": {
+      "value": "T.PAN 40 | HOME MEDS",
+      "source": "Current Medications : T.PAN 40 || Current medications : HOME MEDS"
+    },
+    "bp": {
+      "value": "100/60",
+      "source": "Blood Pressure(mmHg) : 100/60"
+    },
+    "pulse": {
+      "value": "78",
+      "source": "Pulse Rate: 78"
+    },
+    "temperature_f": {
+      "value": "96.2",
+      "source": "Temp(F) : 96.2"
+    },
+    "respiration": {
+      "value": "20",
+      "source": "Respiration: 20"
+    },
+    "spo2": {
+      "value": "99",
+      "source": "Spo2(%) : 99"
+    },
+    "pain_score": {
+      "value": "0",
+      "source": "Score : 0"
+    },
+    "fall_score": {
+      "value": "",
+      "source": ""
+    },
+    "fall_risk": {
+      "value": "",
+      "source": ""
+    },
+    "pressure_score": {
+      "value": "",
+      "source": ""
+    },
+    "pressure_risk": {
+      "value": "",
+      "source": ""
+    },
+    "dvt_score": {
+      "value": "",
+      "source": ""
+    },
+    "dvt_risk": {
+      "value": "NO",
+      "source": "DVT : NO"
+    },
+    "aspiration_score": {
+      "value": "",
+      "source": ""
+    },
+    "aspiration_risk": {
+      "value": "",
+      "source": ""
+    },
+    "ews_score": {
+      "value": "",
+      "source": ""
+    }
+  }
+}

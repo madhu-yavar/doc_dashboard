@@ -1,0 +1,110 @@
+{
+  "file_name": "Custom.MEXX.Report.ZEN.DischargeSummary15.cls.pdf",
+  "source_pdf": "/Users/yavar/Documents/CoE/Manipal/data/Custom.MEXX.Report.ZEN.DischargeSummary15.cls.pdf",
+  "fields": {
+    "patient_name": {
+      "value": "Mr Kishore CHOUDHURY",
+      "source": "Patient Name : Mr Kishore CHOUDHURY"
+    },
+    "mrn_or_hospital_no": {
+      "value": "Name",
+      "source": "Hospital No:\nName"
+    },
+    "age": {
+      "value": "70",
+      "source": "Age : 70"
+    },
+    "gender": {
+      "value": "male",
+      "source": "Gender : male"
+    },
+    "admission_date": {
+      "value": "25/03/2026",
+      "source": "Patient arrival Date : 25/03/2026"
+    },
+    "discharge_date": {
+      "value": "",
+      "source": ""
+    },
+    "chief_complaints": {
+      "value": "shortness of breath/ loss of consciousness",
+      "source": "Chief Complaints : shortness of breath/ loss of consciousness"
+    },
+    "principal_diagnosis": {
+      "value": "SYNCOPE UNDER EVALUATION",
+      "source": "Provisional Diagnosis : SYNCOPE UNDER EVALUATION"
+    },
+    "secondary_context": {
+      "value": "HTN, T2DM, COPD/ POST CABG | HTN",
+      "source": "Past History : HTN, T2DM, COPD/ POST CABG || Past Medical History : HTN"
+    },
+    "allergies": {
+      "value": "not known",
+      "source": "Any Known Allergies : not known"
+    },
+    "current_medications": {
+      "value": "GLYCOMET SR 850MG--OD | TAB GLYCOMET SR 850-ONE TAB ONCE DAILY AFTER LUNCH X CONT",
+      "source": "Current Medications : GLYCOMET SR 850MG--OD || Current medications : TAB GLYCOMET SR 850-ONE TAB ONCE DAILY AFTER LUNCH X CONT"
+    },
+    "bp": {
+      "value": "120/80",
+      "source": "Blood Pressure(mmHg) : 120/80"
+    },
+    "pulse": {
+      "value": "78",
+      "source": "Pulse Rate: 78"
+    },
+    "temperature_f": {
+      "value": "98.2",
+      "source": "Temp(F) : 98.2"
+    },
+    "respiration": {
+      "value": "20",
+      "source": "Respiration: 20"
+    },
+    "spo2": {
+      "value": "99",
+      "source": "SPO2: 99"
+    },
+    "pain_score": {
+      "value": "1",
+      "source": "Pain Score : 1"
+    },
+    "fall_score": {
+      "value": "9",
+      "source": "Total Fall Risk Score(sum of all points per category) : 9"
+    },
+    "fall_risk": {
+      "value": "",
+      "source": ""
+    },
+    "pressure_score": {
+      "value": "",
+      "source": ""
+    },
+    "pressure_risk": {
+      "value": "No",
+      "source": "Existence of Pressure Ulcer : No"
+    },
+    "dvt_score": {
+      "value": "",
+      "source": ""
+    },
+    "dvt_risk": {
+      "value": "NO",
+      "source": "DVT : NO"
+    },
+    "aspiration_score": {
+      "value": "",
+      "source": ""
+    },
+    "aspiration_risk": {
+      "value": "No",
+      "source": "Risk for Aspiration : No"
+    },
+    "ews_score": {
+      "value": "17",
+      "source": "TOTAL SCORE : 17"
+    }
+  }
+}

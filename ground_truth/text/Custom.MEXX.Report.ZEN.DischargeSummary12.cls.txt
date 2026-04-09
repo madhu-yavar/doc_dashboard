@@ -1,0 +1,968 @@
+INPATIENT RECORD
+Hospital No:
+Name:
+Doctor Name:
+Date:
+
+67051984
+
+Visit No:
+Age/Sex:
+Specialty:
+
+BP Systolic: 160 mmHg
+BP Diastolic: 80 mmHg
+Pulse Rate: 55 bt/min
+Respiration: 15 br/min
+Temperature: 98.8 °F
+Saturation(Oxygen): 98 %
+Mean Arterial Pressure-MAP: 107
+Eye Opening: 4
+Verbal: 4
+mmHg
+Motor: 6
+IP Initial Assessment
+Status : Entered
+Score : 0
+Patient Arrival Date : 25/03/2026
+Patient Arrival Time : 05:40
+Chief Complaints : Sudden onset of facial asymmetry, (L) sided weakness from
+History of Presenting illness : Sudden onset of facial asymmetry, (L) sided weakness from 12:30AM on 25/03/26
+There is no H/O LOC, seizure, nausea, vomiting, headache. He was initially taken to R N Tagore Hospital, from
+where he is transferred here.
+
+Allergy : NKF&DA
+Past Medical History : HTN
+Menstrual History : NA
+Current medications : Not any medication at present
+Pulse /min : 74
+Resp Rate/min : 15
+Temp F : WNL
+BP mm Hg : 160/80
+GRBS mg/dL : 112
+JVP : Not raised
+Pallor : NO
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+Peripheral Pulse : Pakpable
+Others : CT Scan (P) of brain showed E/O (R) thalamo capsular bleed
+CVS : S1& S2 ++
+RS : B/L VBS
+PA : Soft
+CNS : E4V5M6
+Others : E4V5M6
+(L) side weak
+Left UL 0/5, LL 2/5 Rt UL & LL 5/5
+PERL
+Planter (R) Flexor (L) Extensor
+1 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+(R) angular deviation of mouth
+
+Provisional Diagnosis : (R) thalamo capsular bleed
+Care Plan : Conservative to start with
+Spo2 : 98
+Diet Plan : NPM
+IV Fluid NS 500ml 8th Hrly
+Relationship : Wife
+Date : 25/03/2026
+Name : Anindita Dutta
+Residents Notes :
+SEND BLOOD FOR -:
+CBC, CRP
+SODIUM, POTASSIUM,
+UREA, CREAT
+PT, APTT, INR
+SEROLOGIES
+LFT, LIPID PROFILE
+TSH
+BLOOD FOR -: GROUPING & RH
+TYPING
+URINE FOR -:
+R/E, C/S
+
+RADIOLOGY-:
+CHEST XRAY - AP (Port)
+ECHOCARDIOGRAM (Port)
+CT SCAN (P) Of BRAIN CM
+USG W/A PLAN
+OTHERS -:
+ECG
+Diet -:
+NPM
+IV FLUID, NORMAL SALINE - 500ML 8th HRLY
+MEDICINES-:
+INJ MANNITOL (20%) - 100 ML IV TDS
+INJ LASIX (20MG) - IV TDS
+INJ LEVERA (500MG) - IV BD
+INJ PAN (40MG) - IV OD
+INJ ZOFER (4MG) - IV SOS
+2 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+TAB STAMLO (5MG) - OD & SOS (MAXm 10MG/DAY)
+INJ OPTINERON -1 Amp IV OD IN DRIP
+Others -:
+HEAD UP 20 Deg
+IPC
+FOLEYS CATHETER INSERTION SOS
+ALFA MATTRESS
+CHECK CBS QDS & GIVE
+INJ HUMAN ACTRAPID SC SOS
+PHYSIOTHERAY - PLAN
+
+Forms
+Doctor's Handover
+Status : Entered
+Score : 0
+Shift : Others
+Situation : Other (Comment)
+Mode of admission
+Comment : Sudden onset of facial asymmetry, (L) sided weakness from
+There is no H/O LOC, seizure, nausea, vomiting, headache
+
+Background : Allergies,Diet,Medications
+Past medical / surgical history: : HTN
+Comments : E4V5M6
+(L) side weak
+UL 0/5, LL 2/5
+PERL
+Planter (R) Flexor (L) Extensor
+(R) angular deviation of mouth
+
+Please check past and present medication in patient file.
+Assessment : LOC,Oriented
+Assessment 2 : Vital signs
+Assessment 3 : Lab,Radiology
+Recommendations : IV Fluids,Miscellaneous,Medications,Radiology,Planned procedure
+Discharge Plan : No
+Comments : CT brain (R) thalamo capsular bleed.
+on coinservative management
+Handed over to : DR. BHASKAR NAYEK
+Handed over by : DR. ABHIJIT RAY
+
+Forms
+Nurses Endorsment Checklist
+3 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+Shift : Night to Morning
+Background
+Level of Consciousness : Oriented
+Vitals -TPR & BP : is stable : Yes
+On MET/PET List : No
+Risk For FALL : Yes
+Risk For Pressure Ulcer : No
+Risk for Aspiration : Yes
+Existence of Pressure Ulcer : No
+O2 Administration : No
+DIET : Oral
+On tube feeding : No
+IV Fluids : Yes
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+Pre Antibiotic Culture : No
+Invasive Lines : Yes
+Self Void : Yes
+Foley's : No
+Drain : No
+Bowel Opened : No
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Special Needs : Yes
+Patient & Family Education : Yes
+Transfer : Yes
+Medications: Yes
+Planned Procedure : No
+Approved follow-up : Yes
+Transfusion : No
+Patient belongings with health care providers : Yes
+Pending Reports : Yes
+Critical Value : No
+Pharmacy / Consumables : Charged
+Discharge Plan : No
+Hand over by : ARINDITA DEY
+Handed over to : SANDIP JANA
+Team Lead Hand over By : Parikshit Manna
+Team Lead Hand over To : NANAOBI DEVI
+
+Forms
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 16
+Age : Below 60 Years - 0
+4 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+Fall History : One fall within 6 months before admission- 5
+Elimination,Bowel and Urine : Incontinence- 2
+Medications:
+ON 2 OR MORE HIGH FALL RISK DRUGS - 5
+Mobility : Unsteady Gait- 2
+Cognition : Impulsive- 2
+Type of Assessment : Shift Assessment
+Pain Assessments
+Score: 0
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 0 No Pain
+
+Additional Pain Assessment Details
+Type: Not Applicable
+Duration: Not Applicable
+Continuous: Not Applicable
+Time: Not Applicable
+Onset: Sudden
+
+Associated Symptoms: None
+
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Score : 0
+CATEGORIES
+TOTAL SCORE : 6
+Questionnaires
+Date : 25/03/2026
+Patient's Indentification No. : MH018146883
+Sex : Male
+Height : 160
+Weight (Kg) : 60
+A - Each Risk Factor Represents 1 Point : Age 41 - 60 years
+Total Tickmarks : 1
+Total Score A : 1
+D - Each Risk Factor Represents 5 Points : Stroke (< 1 month)
+Total Tickmarks : 1
+5 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+Total Score D : 5
+Total Score (A+B+C+D+E) = : 6
+Adult Pressure Ulcer Braden Scale
+SENSORY PERCEPTION : 2
+2 - Very Limited : Y
+MOISTURE : 2
+2 - Moist : Y
+ACTIVITY : 1
+1 - Bed Bound : Y
+MOBILITY : 2
+2 - Very Limited : Y
+NUTRITION : 2
+2 - Probably Inadequate : Y
+FRICTION AND SHEAR : 1
+1 - Problem : Y
+TOTAL SCORE : 10
+Intravascular Access Lines
+Status : Entered
+IntraVascular Access Type : Peripheral IV Line
+CVC Site Assesst
+Central IV TPA Intervention
+Catheter position corrected / withdrawn
+Arterial Line Status
+Peripheral IV Assessment
+NURSING INITIAL ASSESSMENT - NEW
+Score : 0
+Patient Name : Amit kumar DUTTA
+MRN : MH018146883
+Age : 51
+Gender : male
+Patient arrival Date : 25/03/2026
+Patient Arrival Time : 05:40
+Accompanied by Relative : Yes
+Name of Relative : anindita dutta
+Relationship with Patient : wife
+Primary Language Spoken : bengali
+Interpreter Needed : No
+Room Orientation Given : Yes
+Patient Identification Band Fixed : Yes
+If Yes Type Of Band : id band
+Height(Cm) : 160
+Weight(Kgs) : 60
+6 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+Reason Not Able To Check : vital checked
+Chief Complaints : udden onset of facial asymmetry, (L) sided weakness from 12:30AM on 25/03/26
+There is no H/O LOC, seizure, nausea, vomiting, headache. He was initially taken to R N Tagore Hospital, from
+where he is transferred here.
+Past History : htn
+Vital Assessment
+Temp(F) : 98.4
+Pulse/min : 78
+Blood Pressure(mmHg) : 160/80
+Respiration/min : 19
+Spo2(%) : 100
+GRBS (mg/dl) : 112
+Skin Integrity : dry skin
+Other Parameters
+GCS : 15/15
+Pain Score : 0/10
+Belongings : No
+Dentures : No
+Hearing Aid : No
+Eye Glasses/Contact Lens : No
+Vulnerable : Yes
+Any Special Care Given : back care given
+Restraints : No
+If Yes, Type Of Restraint : no need
+Any Known Allergies : not known
+Current Medications : Not any medication at present
+Informed the Doctor : Yes
+Name of the Doctor : DR. ABHIJIT RAY
+Investigations Ordered : yes
+Diet : as per dr adv
+Collected Old records : No
+Is the patient at risk for any of the following? If Yes, complete the risk assessment form.
+Fall : YES
+Pressure Score : YES
+DVT : YES
+Aspiration : YES
+Pain Assessment Score : Acute
+Ability to perform activities of daily living
+Activity
+Bathing : Dependent
+Dressing : Dependent
+Eating : Dependent
+Walking : Dependent
+Toilet Use : Dependent
+Nursing needs(complete Nursing care plan based on the identified needs)
+Actual needs : vitals checked . monitor intake output.
+Potential needs : back care given .
+7 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+position change .
+provide medication as per dr adv
+Assessment Done By : Parikshit Manna
+Rating : 0/10
+BMI : 23.44
+General Physical Examination:
+Pallor : NO
+Icterus : NO
+Edema : NO
+Clubbing : NO
+Cyanosis : NO
+Lymphadenopathy : NO
+
+Forms
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : No
+Nursing Care Plan discussed with Family : No
+Patient Measurable Goal for the day : to be prevention of HAPU.Nursing Diagnosis : Risk of pressure ulcer/Injury
+can cause by lack of mobilization due to pain and altered nutritional diet
+Education and comments: : education given.
+Nursing Interventions : back care given .
+position change 2nd hourly.
+Evaluation : Continue
+Forms
+Pain Assessments
+Score: 1
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 1
+
+Additional Pain Assessment Details
+Since: 25/03/2026
+Type: Not Applicable
+Duration: Not Applicable
+Continuous: Not Applicable
+Time: Not Applicable
+
+Associated Symptoms: None
+
+8 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 8
+Age : Below 60 Years - 0
+Elimination,Bowel and Urine : Urgency or frequency - 2
+Medications:
+ON 1 HIGH FALL RISK DRUG - 3
+Mobility : Requires assisstance or supervision for mobility,transfer or ambulation - 2
+Cognition : Altered awareness of immediate physical environment- 1
+Type of Assessment : Shift Assessment
+Intravascular Access Lines
+Status : Entered
+IntraVascular Access Type : Peripheral IV Line
+Peripheral IV Activity : Site assessed
+CVC Site Assesst
+Lumen color : pink
+Central IV TPA Intervention
+Catheter position corrected / withdrawn
+Arterial Line Status
+Peripheral IV Assessment
+Adult Pressure Ulcer Braden Scale
+SENSORY PERCEPTION : 2
+2 - Very Limited : Y
+MOISTURE : 2
+2 - Moist : Y
+ACTIVITY : 1
+1 - Bed Bound : Y
+MOBILITY : 2
+2 - Very Limited : Y
+NUTRITION : 3
+3 - Adequate : Y
+FRICTION AND SHEAR : 2
+2 - Potiential Problem : Y
+TOTAL SCORE : 12
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Score : 0
+CATEGORIES
+
+9 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+TOTAL SCORE : 2
+Questionnaires
+Date : 25/03/2026
+Sex : Male
+A - Each Risk Factor Represents 1 Point : Age 41 - 60 years,Other risk factor
+Total Tickmarks : 2
+Total Score A : 2
+Total Score (A+B+C+D+E) = : 2
+Risk Assessment : : Moderate
+
+Forms
+Nurses Endorsment Checklist
+Status : Entered
+Shift : Morning to Evening
+Situation : Shift Handover
+Comment / Chief Complaints / Diagnosis : Rt.capsulo thalamic bleed
+Background
+Allergies : No
+Diet : No
+Previous Medications : No
+Consents : Yes
+Cross Consultation : Yes
+Vulnerable : Yes
+ET size and Lip level time of Antibiotic : NA
+Procedure Performed : NA
+NST Status : NA
+Mode of Delivery : NA
+ET Size and Lip Level : NA
+T Piece : NA
+Umblical Line : NA
+Growth Chart Updated : NA
+Blood Transfusion : NA
+Level of Consciousness : Oriented
+Vitals -TPR & BP : is stable : Yes
+Pain Score : 1
+On MET/PET List : No
+Risk For FALL : Yes
+Risk For Pressure Ulcer : Yes
+Risk for Aspiration : Yes
+Existence of Pressure Ulcer : Yes
+If Yes, Specify the type : Hospital Acquired Pressure Ulcer(HAPU)
+O2 Administration : No
+SPO2(Latest reading in the shift) : 99
+DIET : NPO
+On tube feeding : No
+IV Fluids : Yes
+Blood/Blood products : No
+Total Parenteral Nutrition : No
+10 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+Pre Antibiotic Culture : No
+Invasive Lines : Yes
+Self Void : Yes
+Foley's : No
+Drain : No
+Bowel Opened : No
+Is the patient posted for any Surgery / Procedure : No
+b)If Yes, is the financial clearance obtained (As applicable) : a)If Yes, Refer the pre-operative checklist
+Next Capillary Blood glucose-checktime : 14:00
+Dressing Present : No
+High Risk medications : No
+Is Patient on Physiotherapy : Yes
+Ambulation : Bed Bound
+Investigations Sent : No
+Reports Collected : No
+Care Plan : Yes
+Hemoglobin : NA
+Positive Cultures : NA
+Inotropes : No
+Ventilator : No
+Dialysis : No
+Implant : NA
+Dressing status : NA
+IABP : NA
+Intraprocedural changes in planned procedure : NA
+Baby gender : NA
+Medication : NA
+Pamper wetting : NA
+Na+ : NA
+Blood group : NA
+Special Needs : Yes
+Remarks : CLOSE MONITOR
+Patient & Family Education : Yes
+Transfer : No
+Medications: Yes
+Planned Procedure : No
+Transfusion : No
+Patient belongings with health care providers : No
+Pending Reports : No
+Critical Value : No
+Pharmacy / Consumables : Charged
+Discharge Plan : No
+Comments : PT GENERAL WEAKNESS PRESENT
+Hand over by : SANDIP JANA
+Handed over to : Bishal Paul
+Team Lead Hand over By : NANAOBI DEVI
+Team Lead Hand over To : Bishal Paul
+11 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+Status : Entered
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : No
+Patient Measurable Goal for the day : to prevent the pressure soreNursing Diagnosis : Risk of pressure ulcer/Injury
+can cause by lack of mobilization due to pain and altered nutritional diet
+Education and comments: : about hand hygiene
+Nursing Interventions : back care given
+every 2nd hourly position change
+assess the general condition of the pt
+monitor intake output
+Evaluation : Continue
+HOURLY NURSING ROUND
+Score : 0
+HOURLY NURSING ROUND - DAY
+CHECKPOINTS
+Introduce yourself : 08 AM
+Ask for pain if any : 08 AM,09 AM
+Ask for Comfort or Position : 08 AM,09 AM
+Ask for bathroom needs : 08 AM,09 AM
+Peripery-move the phone, Call Light, Trashcan, Watercan, Over-Bed Table : 08 AM,09 AM
+Pump-Syringe pump, Infusion Line, IV Line : 08 AM,09 AM
+HOURLY NURSING ROUND - NIGHT
+CHECKPOINTS
+Residents Notes :
+As per Dr.Nirup Datta
+Refer To Dr.Kushan Sengupta(consultant gastroenterologist)
+Residents Notes :
+H/O sudden facial asymmetry with left sided weakness on midnight
+Known HTN(not on medication)
+CT brain-Rt.capsulo thalamic bleed
+Conscious,Alert
+GCS-E4 M6 V5
+Pupils-B/L 4mm,reacting to light
+Left facial weakness
+Left hemiparesis(UL-0/5,LL-2/5)
+P-68,BP-158/92,RR-18,Spo2-100% on room air,CBG-112
+Chest-air entry bilat.equal
+Abd-soft,IPS-+
+EFHO-Gr,1 DD,No RWMA,EF-60%
+Adv-Soft diet
+Physiotherapy
+Refer to Dr.Sumanta Chatterjee(consultant cardiologist)
+12 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+Swallow assessment/therapy
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+Total Score :24
+Physiotherapy Notes :
+DBE
+CHEST PHYSIO
+PASSIVE EX OF[ LF] L\L & U\L
+LEG DANGLING WITH SUPPORTED
+Progress Note :
+H/O sudden facial asymmetry with left sided weakness on midnight
+Known HTN(not on medication)
+CT brain-Rt.capsulo thalamic bleed
+Conscious,Alert
+GCS-E4 M6 V5
+Pupils-B/L 4mm,reacting to light
+Left facial weakness
+Left hemiparesis(UL-0/5,LL-2/5)
+P-68,BP-158/92,RR-18,Spo2-100% on room air,CBG-112
+Chest-air entry bilat.equal
+Abd-soft,IPS-+
+EFHO-Gr,1 DD,No RWMA,EF-60%
+Adv-Soft diet
+Physiotherapy
+Refer to Dr.Sumanta Chatterjee(consultant cardiologist)
+Swallow assessment/therapy
+CT brain plain CM
+
+Forms
+Pain Assessments
+Score: 1
+Type of Assessment: Shift Assessment
+Pain Assessment Scale: Numeric Pain Scale (0-10 Scale)
+Numeric Pain Scale: 1
+
+Additional Pain Assessment Details
+13 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+Fall Risk Assessment Tool
+
+Total Fall Risk Score(sum of all points per category) : 14
+Age : Below 60 Years - 0
+Fall History : One fall within 6 months before admission- 5
+Elimination,Bowel and Urine : Incontinence- 2
+Medications:
+ON 1 HIGH FALL RISK DRUG - 3
+Patient care Equipment : One Present- 1
+Mobility : Requires assisstance or supervision for mobility,transfer or ambulation - 2
+Cognition : Altered awareness of immediate physical environment- 1
+Type of Assessment : Shift Assessment
+Patient Acuity Tool
+Stable patient 1 to 11
+Moderate Risk Patient 12 to 22
+Complex Patient 22 to 33
+High Risk Patient >34
+Total Score :31
+Questionnaires
+Status : Entered
+Sex : Male
+A - Each Risk Factor Represents 1 Point : Age 41 - 60 years
+Total Tickmarks : 1
+Total Score A : 1
+Total Score (A+B+C+D+E) = : 1
+Risk Assessment : : High
+ADULT & PAEDIATRIC - ASPIRATION RISK ASSEMENT TOOL
+Status : Entered
+Score : 0
+CATEGORIES
+TOTAL SCORE : 5
+Intravascular Access Lines
+Status : Entered
+IntraVascular Access Type : Peripheral IV Line
+Peripheral IV Activity : Site assessed
+14 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+CVC Site Assesst
+Lumen color : PINK
+Central IV TPA Intervention
+Catheter position corrected / withdrawn
+Arterial Line Status
+Peripheral IV Assessment
+
+Forms
+Add Nursing Care Plan
+Status : Entered
+Nursing Care Plan discussed with Patient : Yes
+Nursing Care Plan discussed with Family : No
+Patient Measurable Goal for the day : TO PREVENT FOR FALLNursing Diagnosis : Risk for fall
+Education and comments: : PSYCHOLOGICAL SUPPORT
+Nursing Interventions : CLOSE OBSERVATION
+Evaluation : Continue
+Progress Note :
+Thanks for refer.
+O/E- Patient oriented, can follow commands. Left facial weakness.
+- Oromotor function, hyolaryngeal excursion, gag reflex, cough strength adequate.
+- Trial swallow- clinically no aspiration.
+
+Adv:
+1. Soft diet / Normal diet.
+2. Management of left facial palsy.
+3. SLP review.
+Initial Nutritional Assessment
+Status : Entered
+ANTHROPOMETRIC MEASUREMENTS
+Height (cms) : 160
+Weight (kgs) : 60
+IBW (kgs) : NA
+BMI : NA
+Recent weight loss/gain : None
+GI SYMPTOMS (Recent)
+None : Y
+Food allergies/Intolerance : No
+Subjective Global Assessment rating
+15 of 17
+
+
+Hospital No: 67051984
+Name:
+
+Visit No:
+Doctor Name:
+
+Mild/Moderately MalNourished : Y
+Nutritional intervention proposed/Diet advised : Soft diet, diet progression as per medical condition
+Select Type : Assessment
+Evaluation Criteria
+Adult Others:HTN.RT THALAMO CAPSULAR BLEED.
+Moderately Nourished
+SGA RATING : B
+Investigation Orders
+Laboratory :
+
+Radiology :
+Procedure :
+
+- Blood Urea(C)
+- C-Reactive Protein (CRP)
+- Creatinine- Serum
+- Lipid Profile
+- Liver Function Test
+- Potassium - Serum
+- Sodium - Serum
+- TSH (Thyroid Stimulating Hormone)
+- Blood Grouping & Rh Typing (1)
+- Urine Routine and Microscopy ( Qualitative Method)
+- APTT ( Automated / Clotting Assay )
+- Complete Blood Counts (Automated)
+- Prothrombin Time -PT ( Automated/ Clotting Assay )
+- CULTURED AEROBIC BACTERIA SENSITIVITY (URINE)
+- SEROLOGY PROFILE (HIV I & II, HBsAg, HCV)
+- Ultrasound Abdomen ( USG-Abdomen)
+- Xray chest AP (Port) (.)
+- BED SIDE ECHO
+.
+
+MEDICATION ORDERS
+Drug / Generic Item
+Dosage Qty Frequency
+Instructions/Notes
+MANNITOL 20% W/V 100 ML PVC BOTTLE SOLUTION FOR
+1 BT
+EVERY 8 HRS(8
+INFUSION PB
+HOURLY
+(MANNITOL 20 % INFUSION)
+( Q8H))
+LASIX 4 ML INJECTION
+20 MG
+EVERY 8 HRS(8
+(FUROSEMIDE (80004820))
+HOURLY
+( Q8H))
+EPILIVE (100mg) solution for injections [5ml]
+1 VL
+12 HOURLY
+(LEVETIRACETAM (80006107))
+( Q12H)
+IN DRIP
+NEUROBION FORTE-RF (1000mcg, 100mg, 100mg) solution for
+1
+ONCE
+injections [2ml]
+SOLUTION
+(THIOCTIC ACID~BENFOTIAMINE~CHROMIUM~FOLIC ACID~INOSITOL~VITAMIN
+FOR
+B12~PYRIDOXINE)
+INJECTIONS
+PANTOCID 40 MG/VIAL LYOPHILIZED POWDER FOR
+1 VL
+ONCE
+INJECTION
+
+Duration
+1 DAY(S)
+
+1 DAY(S)
+
+1 DAY(S)
+3 DAY(S)
+
+1 DAY(S)
+
+(PANTOPRAZOLE (80007606))
+
+MEDISET 4mg / 2 ML AMP INJ
+
+1 AMP
+
+SOS
+
+1 DAY(S)
+
+(ONDANSETRON (80007494))
+
+AMLODAC 5 MG TABLET 30S
+(AMLODIPINE (80000465))
+
+1
+ONCE
+COATEDTABLET
+
+TAB STAMLO (5MG) - OD & 10 DAY(S)
+SOS (MAXM 10MG/DAY)
+
+16 of 17
+
+
+Hospital No: 67051984
+Name:
+BABY MASSAGE OIL-COCONUT 100ML,
+
+Visit No:
+Doctor Name:
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+(OIL (PHARMACY NON-DRUG))
+
+NORMAL SALINE 09% W/V AQUA PULSE 500 ML
+(SODIUM CHLORIDE (80009680))
+
+CLOHEX 0.2% W/V MOUTHWASH 150 ML
+(CHLORHEXIDINE (80002691))
+
+UNDERPAD DIGNITY 60 CM X 90 CM, ROMSONS
+STERIX BED BATH WIPES, PKT OF 10, 300 MM* 300 MM MAKE
+BAPUJI SURGICAL
+MICROSHIELD HANDRUB 0.5% W/V TOPICAL SOLUTION 500
+ML, REORDER NO: 636
+
+1 BT
+
+EVERY 8 HRS(8
+HOURLY
+( Q8H))
+1
+ONCE
+OROMUCOSALSOLUTION
+2 PC
+ONCE
+1 PC
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+2 PC
+
+ONCE
+
+1 DAY(S)
+
+1 PC
+
+ONCE
+
+1 DAY(S)
+
+3 PC
+
+ONCE
+
+1 DAY(S)
+
+1 DAY(S)
+1 DAY(S)
+1 DAY(S)
+
+(TOPICAL ANTISEPTIC/DISINFECTANT SOLUTION (PHARMACY NON-DRUG))
+
+POLYFLUSH PRE-FILLED SYRINGE 5 ML # 90319, POLY
+MEDICURE LTD
+(SYRINGE (PHARMACY NON-DRUG))
+
+20ML SYRINGE WITH NEEDLE DISPOVAN
+(SYRINGE (PHARMACY NON-DRUG))
+
+POLYFLUSH PRE-FILLED SYRINGE 5 ML # 90319, POLY
+MEDICURE LTD
+(SYRINGE (PHARMACY NON-DRUG))
+
+17 of 17
+
+
