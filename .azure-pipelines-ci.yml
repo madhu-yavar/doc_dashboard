@@ -18,7 +18,7 @@ pool:
 
 variables:
   acrName: 'zgridcontainerregistry'
-  acrResourceGroup: 'z-grid-dev'
+  acrResourceGroup: 'Z-INFRA-STACK-DEV'
   imageName: 'doctor-dashboard'
   dockerfilePath: 'doctor_dashboard/Dockerfile'
   buildContext: 'doctor_dashboard'
@@ -51,7 +51,7 @@ stages:
     - task: AzureCLI@2
       displayName: 'Azure CLI Login to ACR'
       inputs:
-        azureSubscription: 'z-grid-dev-connection'  # Update with your service connection name
+        azureSubscription: 'Z-INFRA-STACK-DEV-connection'  # Update with your service connection name
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |

@@ -16,10 +16,10 @@ pool:
 
 variables:
   acrName: 'zgridcontainerregistry'
-  acrResourceGroup: 'z-grid-dev'
+  acrResourceGroup: 'Z-INFRA-STACK-DEV'
   imageName: 'doctor-dashboard'
   subscriptionId: '759c3e4d-1b5f-481d-b10d-5d93bf2aaeea'
-  resourceGroup: 'z-grid-dev'
+  resourceGroup: 'Z-INFRA-STACK-DEV'
   containerAppName: 'doctor-dashboard'
   containerAppEnv: 'doctor-dashboard-env'
   location: 'eastus'
@@ -40,7 +40,7 @@ stages:
           - task: AzureCLI@2
             displayName: 'Deploy to Azure Container Apps'
             inputs:
-              azureSubscription: 'z-grid-dev-connection'  # Update with your service connection name
+              azureSubscription: 'Z-INFRA-STACK-DEV-connection'  # Update with your service connection name
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
@@ -78,7 +78,7 @@ stages:
     - task: AzureCLI@2
       displayName: 'Check Container App Health'
       inputs:
-        azureSubscription: 'z-grid-dev-connection'
+        azureSubscription: 'Z-INFRA-STACK-DEV-connection'
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
