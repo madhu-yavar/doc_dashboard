@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "doctor-dashboard.fullname" . }}-config
+  namespace: {{ include "doctor-dashboard.namespace" . }}
+  labels:
+    {{- include "doctor-dashboard.labels" . | nindent 4 }}
+data:
+  # Application configuration (non-sensitive values)
+  NODE_ENV: {{ .Values.config.nodeEnv | quote }}
+  PORT: {{ .Values.config.port | quote }}
+  GEMMA_URL: {{ .Values.config.gemmaUrl | quote }}
+  GEMMA_MODEL: {{ .Values.config.gemmaModel | quote }}
+  USE_GEMINI_FOR_EXTERNAL: {{ .Values.config.useGeminiForExternal | quote }}
+  GEMINI_MODEL: {{ .Values.config.geminiModel | quote }}

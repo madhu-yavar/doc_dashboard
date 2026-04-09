@@ -1,0 +1,17 @@
+apiVersion: v2
+name: doctor-dashboard
+description: Medical document processing dashboard with AI chat - extracts structured data from hospital discharge summaries using Gemma LLM
+type: application
+version: 1.0.0
+appVersion: "0.0.0"
+keywords:
+  - medical
+  - dashboard
+  - document-processing
+  - ai-chat
+  - gemma
+maintainers:
+  - name: Doctor Dashboard Team
+home: https://github.com/your-org/doctor-dashboard
+sources:
+  - https://github.com/your-org/doctor-dashboard

@@ -122,7 +122,8 @@
       "Bash(find:*)",
       "Bash(docker images:*)",
       "Bash(git show:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(git add:*)"
     ]
   }
 }
