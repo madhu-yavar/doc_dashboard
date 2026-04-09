@@ -9,6 +9,8 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "doctor-dashboard.selectorLabels" . | nindent 6 }}
@@ -29,6 +31,18 @@ spec:
       serviceAccountName: {{ include "doctor-dashboard.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.networking.fixMtu }}
+      initContainers:
+      - name: fix-mtu
+        image: busybox:1.36
+        command: ["/bin/sh", "-c", "ip link set dev eth0 mtu {{ .Values.networking.mtu }} && echo 'MTU set to' $(cat /sys/class/net/eth0/mtu)"]
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN"]
+          runAsUser: 0
+          runAsNonRoot: false
+          allowPrivilegeEscalation: true
+      {{- end }}
       containers:
       - name: {{ .Chart.Name }}
         securityContext:

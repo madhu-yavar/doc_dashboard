@@ -6,7 +6,7 @@
 image:
   repository: zinfradevv1.azurecr.io/doctor-dashboard
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 # Deployment configuration
 replicaCount: 1
@@ -134,3 +134,10 @@ affinity: {}
 
 # Namespace override (for development/testing)
 namespaceOverride: ""
+
+# Networking fix for Azure CNI overlay / PMTU blackhole issue.
+# Large HTTP requests (>1150 bytes body) hang due to TCP timestamps + MTU mismatch.
+# Setting eth0 MTU=1400 ensures TCP segments stay within the effective path MTU.
+networking:
+  fixMtu: true
+  mtu: 1400

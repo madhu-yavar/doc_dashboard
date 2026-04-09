@@ -384,7 +384,11 @@ app.get("/api/documents/:id", async (req, res) => {
 app.use(express.static(distDir));
 
 app.get(/^\/(?!api).*/, (_req, res) => {
-  res.sendFile(path.join(distDir, "index.html"));
+  const indexHtml = path.join(distDir, "index.html");
+  if (!require("fs").existsSync(indexHtml)) {
+    return res.status(503).send("Frontend not built. Run `npm run build` or use Vite dev server at :8080.");
+  }
+  res.sendFile(indexHtml);
 });
 
 app.post("/api/documents/upload", upload.array("files"), async (req, res) => {
