@@ -79,7 +79,8 @@ PDF Input
 │   │ 4. VitalsExtractor       → Vital signs extraction       │   │
 │   │ 5. FunctionalStatusExtractor → ADL assessment           │   │
 │   │ 6. ClinicalDataExtractor → Diagnoses, meds, labs        │   │
-│   │ 7. CrossValidator        → Source verification          │   │
+│   │ 7. PendingItemsExtractor → Pending items (LLM-only)     │   │
+│   │ 8. CrossValidator        → Source verification          │   │
 │   └─────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
     ↓
@@ -443,6 +444,7 @@ const AGENT_REGISTRY = {
       'VitalsExtractorSkill',
       'FunctionalStatusExtractorSkill',
       'ClinicalDataExtractorSkill',
+      'PendingItemsExtractorSkill',  // LLM-only pending items extraction
       'CrossValidatorSkill'
     ]
   },

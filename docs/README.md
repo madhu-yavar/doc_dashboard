@@ -60,6 +60,7 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 | **Doctor Chat Assistant** | Interactive Q&A with internal + external knowledge |
 | **Dashboard Presentation** | Transform extracted data into UI components |
 | **Safety Guardrails** | Prevent hallucinations and unsafe medical advice |
+| **LLM-Only Pending Items Extraction** | Pure LLM-based extraction of pending labs, radiology, follow-ups, and discharge items |
 
 ### Technology Stack
 
@@ -161,11 +162,21 @@ The system uses a **multi-agent architecture** with specialized agents:
 
 Skills are **reusable AI capabilities** that can be composed into agents:
 
-- **Extraction Skills** - Document parsing, data extraction
+- **Extraction Skills** - Document parsing, data extraction, LLM-only pending items extraction
 - **Validation Skills** - Cross-validation, citation tracking
 - **Generation Skills** - Chart note composition
 - **Presentation Skills** - Dashboard data transformation
 - **Chat Skills** - Query handling, response formatting
+
+### LLM-Only Architecture
+
+The system features a pure LLM-based extraction approach for pending items:
+
+- **No Regex Patterns** - Semantic understanding via Gemma LLM
+- **7-Step Process** - Structured thinking for clinical items
+- **Provenance Tracking** - Source sections and excerpts included
+- **Priority Classification** - Clinical judgment (high/medium/low)
+- **Graceful Fallback** - Returns empty result on parse failure
 
 ### Tools Layer
 
@@ -187,6 +198,7 @@ Tools are **lower-level utilities** used by skills and agents:
 - Chart note generation
 - Dashboard UI components
 - ReAct reasoning framework
+- LLM-only pending items extraction (PendingItemsExtractorSkill)
 
 ### In Progress 🚧
 

@@ -271,6 +271,7 @@ class Skill {
 | `VitalsExtractorSkill` | Extract vital signs | `{ bp, pulse, temp, spo2, resp_rate }` |
 | `FunctionalStatusExtractorSkill` | Extract ADL assessment | `{ functional_status, assistance_needs }` |
 | `ClinicalDataExtractorSkill` | Extract diagnoses/meds/labs | `{ diagnosis, medications, lab_results }` |
+| `PendingItemsExtractorSkill` | LLM-only pending items extraction | `{ pending_labs, pending_radiology, pending_followups, medication_reconciliation, pending_discharge_items }` |
 
 #### 2. Validation Skills
 
@@ -300,6 +301,161 @@ class Skill {
 | `NoteUpdateSuggesterSkill` | Suggest chart note updates | `{ proposed_updates: [...] }` |
 | `AbnormalFlagActionSkill` | Action for abnormal values | `{ proposed_actions: [...] }` |
 | `ChatExportBuilderSkill` | Export chat to appendix | `{ chart_note_appendix: string }` |
+
+---
+
+## LLM-Only Extraction Architecture
+
+### Pending Items Extractor (Pure LLM Approach)
+
+The `PendingItemsExtractorSkill` represents a **pure LLM-based extraction approach** that eliminates brittle regex patterns in favor of semantic understanding.
+
+#### Architecture Comparison
+
+**Before (Regex-Based):**
+```javascript
+// Regex patterns in clinical_data_extractor.skill.cjs
+isRadiologyItem()      // /\b(?:xray|x-ray|ct|mri|usg...)\b/i
+isFollowUpItem()       // /(follow-?up|review|appointment...)\b/i
+isVitalLikeLabResult() // /^(?:bp|blood pressure|pulse...)\b/i
+extractSection()       // Regex-based section extraction
+collectList()          // Split by newlines, strip prefixes
+```
+
+**After (LLM-Only):**
+```javascript
+// Pure Gemma LLM extraction
+promptBuilder.build("pending_items_extractor", { pdfText })
+gemmaClient.execute(prompt, { temperature: 0.1, maxTokens: 3000 })
+```
+
+#### 7-Step LLM Process
+
+```
+STEP 1: Identify Sections
+├─ Look for: "Residents Notes", "Doctor's Handover", "Nursing Endorsement"
+└─ Note headers and subsections
+
+STEP 2: Extract PENDING LABS
+├─ Keywords: "SEND BLOOD FOR", "Lab pending", "Awaiting reports"
+└─ Output: test_name, expected_date, reason, priority
+
+STEP 3: Extract PENDING RADIOLOGY/IMAGING
+├─ Keywords: CT scans, MRI, X-rays, Ultrasounds, Echocardiograms
+└─ Output: type, body_part, scheduled_date, reason, priority
+
+STEP 4: Extract PENDING FOLLOW-UPS
+├─ Keywords: "Follow-up", "Review", "Appointment", "Outpatient visit"
+└─ Output: department, provider, date, time, purpose, priority
+
+STEP 5: Extract MEDICATION RECONCILIATION STATUS
+├─ Look for: medication lists, allergy documentation, interaction notes
+└─ Categorize: "complete" or "attention_needed"
+
+STEP 6: Extract DISCHARGE PENDING ITEMS
+├─ Look for: pending procedures, consultations, incomplete documentation
+└─ Output: items requiring completion before discharge
+
+STEP 7: Assess PRIORITY
+├─ HIGH: Critical labs, imaging for acute conditions
+├─ MEDIUM: Routine follow-ups, non-urgent tests
+└─ LOW: Optional monitoring, wellness items
+```
+
+#### Output Schema
+
+```json
+{
+  "pending_labs": [
+    {
+      "test_name": "Lipid Panel",
+      "expected_date": "March 21, 2026",
+      "reason": "Cardiac risk assessment",
+      "priority": "high",
+      "source_section": "Residents Notes",
+      "source_excerpt": "SEND BLOOD FOR Lipid Panel - cardiac risk assessment"
+    }
+  ],
+  "pending_radiology": [
+    {
+      "type": "CT Chest",
+      "body_part": "Chest",
+      "scheduled_date": "March 21, 2026",
+      "reason": "Pulmonary nodule surveillance",
+      "priority": "high",
+      "source_section": "Doctor's Handover",
+      "source_excerpt": "CT Chest scheduled for March 21 - pulmonary nodule surveillance"
+    }
+  ],
+  "pending_followups": [
+    {
+      "department": "Cardiology",
+      "provider": "Dr. Smith",
+      "date": "April 15, 2026",
+      "time": "10:00 AM",
+      "purpose": "Post-MI follow-up",
+      "priority": "medium",
+      "source_section": "Discharge Plan",
+      "source_excerpt": "Follow-up with Cardiology, Dr. Smith on April 15 at 10:00 AM"
+    }
+  ],
+  "medication_reconciliation": {
+    "status": "complete",
+    "medication_count": 5,
+    "allergy_count": 1,
+    "concerns": "",
+    "source_section": "Medication List",
+    "source_excerpt": "Medications reconciled - no interactions detected"
+  },
+  "pending_discharge_items": [
+    {
+      "item": "Final lab results review",
+      "reason": "Awaiting cardiac enzyme panel",
+      "priority": "high",
+      "source_section": "Nursing Endorsement",
+      "source_excerpt": "Pending: cardiac enzyme panel results before discharge"
+    }
+  ],
+  "summary": {
+    "total_pending": 5,
+    "needs_attention": 2,
+    "scheduled": 2,
+    "complete": 1
+  }
+}
+```
+
+#### Benefits of LLM-Only Approach
+
+| Benefit | Description |
+|---------|-------------|
+| **No Brittle Regex** | Works with any document format, no pattern matching |
+| **Clinical Understanding** | Interprets context, not just text patterns |
+| **Provenance Built-in** | LLM extracts source references automatically |
+| **Priority Judgment** | Clinical reasoning for categorization |
+| **Extensible** | Add new categories by updating prompt only |
+| **Graceful Fallback** | Returns empty result on parse failure |
+
+#### Configuration
+
+```javascript
+const PendingItemsExtractor = require('./skills/extraction/pending_items_extractor.skill.cjs');
+
+const pendingExtractor = new PendingItemsExtractorSkill(config);
+const result = await pendingExtractor.execute({
+  pdfText,
+  gemmaClient,
+  promptBuilder
+});
+
+// LLM Configuration
+{
+  temperature: 0.1,    // Low for consistent extraction
+  maxTokens: 3000      // Enough for structured output
+}
+```
+
+---
 
 ---
 

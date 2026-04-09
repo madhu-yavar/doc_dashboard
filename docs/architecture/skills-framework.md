@@ -53,6 +53,7 @@ Extract structured clinical data from unstructured text.
 | `VitalsExtractorSkill` | Extract vital signs | `{ bp, pulse, temp, spo2, resp_rate }` |
 | `FunctionalStatusExtractorSkill` | Extract ADL assessment | `{ functional_status, assistance_needs }` |
 | `ClinicalDataExtractorSkill` | Extract diagnoses/meds/labs | `{ diagnosis, medications, lab_results }` |
+| `PendingItemsExtractorSkill` | LLM-only pending items extraction | `{ pending_labs, pending_radiology, pending_followups, medication_reconciliation, pending_discharge_items }` |
 
 #### DocumentAnalyzerSkill
 
@@ -132,6 +133,105 @@ Include units and timestamps if available
     "value": 72,
     "unit": "bpm"
   }
+}
+```
+
+#### PendingItemsExtractorSkill
+
+**Purpose:** LLM-only extraction of pending items from discharge summaries
+
+**Architecture:** Pure LLM-based (no regex patterns)
+
+**File:** `doctor_dashboard/skills/extraction/pending_items_extractor.skill.cjs`
+
+**Prompt Pattern:**
+```
+Extract PENDING ITEMS using a 7-step process:
+
+STEP 1: Identify sections with pending items
+STEP 2: Extract PENDING LABS (tests, expected dates, reasons)
+STEP 3: Extract PENDING RADIOLOGY (CT, MRI, X-ray, USG scheduled)
+STEP 4: Extract PENDING FOLLOW-UPS (appointments, reviews)
+STEP 5: Extract MEDICATION RECONCILIATION STATUS
+STEP 6: Extract DISCHARGE PENDING ITEMS
+STEP 7: Assess PRIORITY (high/medium/low) for each item
+
+CRITICAL: Use ONLY explicitly stated information. Extract source_section and source_excerpt for provenance.
+```
+
+**Output Schema:**
+```json
+{
+  "pending_labs": [
+    {
+      "test_name": "Lipid Panel",
+      "expected_date": "March 21, 2026",
+      "reason": "Cardiac risk assessment",
+      "priority": "high",
+      "source_section": "Residents Notes",
+      "source_excerpt": "SEND BLOOD FOR Lipid Panel"
+    }
+  ],
+  "pending_radiology": [
+    {
+      "type": "CT Chest",
+      "body_part": "Chest",
+      "scheduled_date": "March 21, 2026",
+      "reason": "Pulmonary nodule surveillance",
+      "priority": "high",
+      "source_section": "Doctor's Handover",
+      "source_excerpt": "CT Chest scheduled for March 21"
+    }
+  ],
+  "pending_followups": [
+    {
+      "department": "Cardiology",
+      "provider": "Dr. Smith",
+      "date": "April 15, 2026",
+      "time": "10:00 AM",
+      "purpose": "Post-MI follow-up",
+      "priority": "medium",
+      "source_section": "Discharge Plan",
+      "source_excerpt": "Follow-up with Cardiology, Dr. Smith"
+    }
+  ],
+  "medication_reconciliation": {
+    "status": "complete",
+    "medication_count": 5,
+    "allergy_count": 1,
+    "concerns": "",
+    "source_section": "Medication List",
+    "source_excerpt": "Medications reconciled"
+  },
+  "pending_discharge_items": [
+    {
+      "item": "Final lab results review",
+      "reason": "Awaiting cardiac enzyme panel",
+      "priority": "high",
+      "source_section": "Nursing Endorsement",
+      "source_excerpt": "Pending: cardiac enzyme panel"
+    }
+  ],
+  "summary": {
+    "total_pending": 5,
+    "needs_attention": 2,
+    "scheduled": 2,
+    "complete": 1
+  }
+}
+```
+
+**Key Features:**
+- **Zero Regex**: Pure semantic understanding via LLM
+- **Provenance Tracking**: Each item includes source_section and source_excerpt
+- **Priority Classification**: Clinical judgment for high/medium/low priority
+- **Graceful Fallback**: Returns empty result on JSON parse failure
+
+**LLM Configuration:**
+```javascript
+{
+  temperature: 0.1,    // Low for consistent extraction
+  maxTokens: 3000      // Enough for structured output
 }
 ```
 
@@ -334,6 +434,7 @@ const skills = [
   new VitalsExtractorSkill(),
   new FunctionalStatusExtractorSkill(),
   new ClinicalDataExtractorSkill(),
+  new PendingItemsExtractorSkill(),  // LLM-only pending items extraction
   new CrossValidatorSkill()
 ];
 
@@ -371,6 +472,7 @@ const SKILL_REGISTRY = {
   DemographicsExtractor: { class: DemographicsExtractorSkill, version: '1.0.0' },
   VitalsExtractor: { class: VitalsExtractorSkill, version: '1.0.0' },
   ClinicalDataExtractor: { class: ClinicalDataExtractorSkill, version: '1.0.0' },
+  PendingItemsExtractor: { class: PendingItemsExtractorSkill, version: '2.0.0' },  // LLM-only
 
   // Validation Skills
   CrossValidator: { class: CrossValidatorSkill, version: '1.0.0' },

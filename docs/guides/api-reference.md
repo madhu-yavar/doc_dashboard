@@ -142,6 +142,14 @@ Get a single processed document.
     "sample_patient_data": { /* patient data */ },
     "presentation": { /* presentation data */ },
     "extracted_data": { /* full extracted data */ },
+    "pending_items": {
+      "pending_labs": [...],
+      "pending_radiology": [...],
+      "pending_followups": [...],
+      "medication_reconciliation": {...},
+      "pending_discharge_items": [...],
+      "summary": {...}
+    },
     "provenance": { /* citation data */ }
   }
 }
