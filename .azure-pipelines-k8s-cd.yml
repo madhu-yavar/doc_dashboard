@@ -1,0 +1,109 @@
+# Alternative CD Pipeline - Deploy to AKS (if using Kubernetes instead of Container Apps)
+# Use this instead of .azure-pipelines-cd.yml if deploying to AKS
+
+trigger: none
+pr: none
+
+resources:
+  pipelines:
+  - pipeline: doctor-dashboard-ci
+    source: doctor-dashboard-ci
+    trigger:
+      branches:
+      - main
+      - dev
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  acrName: 'zgridcontainerregistry'
+  imageName: 'doctor-dashboard'
+  k8sNamespace: 'doctor-dashboard'
+  subscriptionId: '759c3e4d-1b5f-481d-b10d-5d93bf2aaeea'
+  aksResourceGroup: 'z-grid-dev'
+  aksClusterName: 'z-grid-aks'  # Update with your actual AKS cluster name
+
+stages:
+- stage: Deploy_K8s
+  displayName: 'Deploy to Kubernetes'
+  jobs:
+  - deployment: DeployK8s
+    displayName: 'Deploy to AKS'
+    environment: 'doctor-dashboard-k8s'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+            submodules: true
+
+          # Get Kubeconfig and set context
+          - task: AzureCLI@2
+            displayName: 'Get AKS Credentials'
+            inputs:
+              azureSubscription: 'z-grid-dev-connection'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                echo "Getting AKS credentials..."
+                az aks get-credentials \
+                  --resource-group $(aksResourceGroup) \
+                  --name $(aksClusterName) \
+                  --admin \
+                  --subscription $(subscriptionId)
+
+          # Ensure namespace exists
+          - script: |
+                kubectl create namespace $(k8sNamespace) --dry-run=client -o yaml | kubectl apply -f -
+                kubectl annotate namespace $(k8sNamespace) "kubectl.kubernetes.io/last-applied-configuration=$(date +%s)" --overwrite
+              displayName: 'Ensure Namespace Exists'
+
+          # Create image pull secret
+          - task: AzureCLI@2
+            displayName: 'Create ACR Pull Secret'
+            inputs:
+              azureSubscription: 'z-grid-dev-connection'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                ACR_PASSWORD=$(az acr credential show \
+                  --name $(acrName) \
+                  --query passwords[0].value -o tsv)
+
+                kubectl create secret docker-registry acr-secret \
+                  --namespace $(k8sNamespace) \
+                  --docker-server=$(acrName).azurecr.io \
+                  --docker-username=$(acrName) \
+                  --docker-password="$ACR_PASSWORD" \
+                  --dry-run=client -o yaml | kubectl apply -f -
+
+          # Deploy using Helm
+          - script: |
+                IMAGE_TAG="$(resources.pipeline.doctor-dashboard-ci.runName)"
+                if [ -z "$IMAGE_TAG" ] || [ "$IMAGE_TAG" == "null" ]; then
+                  IMAGE_TAG="latest"
+                fi
+
+                echo "Deploying with Helm..."
+                helm upgrade --install doctor-dashboard ./helm/doctor-dashboard \
+                  --namespace $(k8sNamespace) \
+                  --create-namespace \
+                  --set image.repository=$(acrName).azurecr.io/$(imageName) \
+                  --set image.tag=$IMAGE_TAG \
+                  --set image.pullSecret=acr-secret \
+                  --set ingress.enabled=true \
+                  --set ingress.hosts[0].host=doctor-dashboard.zagent.dev.yavar.ai \
+                  --set ingress.tls[0].hosts[0]=doctor-dashboard.zagent.dev.yavar.ai \
+                  --wait \
+                  --timeout 5m
+              displayName: 'Deploy with Helm'
+
+          # Verify deployment
+          - script: |
+                echo "Waiting for rollout to complete..."
+                kubectl rollout status deployment/doctor-dashboard -n $(k8sNamespace) --timeout=300s
+
+                echo "Deployment successful!"
+                kubectl get pods -n $(k8sNamespace) -l app.kubernetes.io/name=doctor-dashboard
+              displayName: 'Verify Deployment'

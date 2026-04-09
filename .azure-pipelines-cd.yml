@@ -1,4 +1,4 @@
-# CD Pipeline - Deploy to Kubernetes
+# CD Pipeline - Deploy Doctor Dashboard to Azure Container Apps
 trigger: none
 pr: none
 
@@ -9,53 +9,101 @@ resources:
     trigger:
       branches:
       - main
+      - dev
 
 pool:
   vmImage: 'ubuntu-latest'
 
 variables:
   acrName: 'zgridcontainerregistry'
+  acrResourceGroup: 'z-grid-dev'
   imageName: 'doctor-dashboard'
-  k8sNamespace: 'doctor-dashboard'
-  acrResourceId: '/subscriptions/759c3e4d-1b5f-481d-b10d-5d93bf2aaeea/resourceGroups/z-grid-dev/providers/Microsoft.ContainerRegistry/registries/zgridcontainerregistry'
-  aksResourceGroup: 'z-grid-dev'
-  aksClusterName: 'z-girid-dev'
+  subscriptionId: '759c3e4d-1b5f-481d-b10d-5d93bf2aaeea'
+  resourceGroup: 'z-grid-dev'
+  containerAppName: 'doctor-dashboard'
+  containerAppEnv: 'doctor-dashboard-env'
+  location: 'eastus'
 
 stages:
-- stage: Deploy
-  displayName: 'Deploy to Kubernetes'
+- stage: Deploy_ACA
+  displayName: 'Deploy to Azure Container Apps'
   jobs:
-  - deployment: Deploy
-    displayName: 'Deploy to AKS'
-    environment: 'doctor-dashboard'
+  - deployment: DeployACA
+    displayName: 'Deploy to Azure Container Apps'
+    environment: 'doctor-dashboard-aca'
     strategy:
       runOnce:
         deploy:
           steps:
           - checkout: none
 
-          - task: DownloadPipelineArtifact@2
+          - task: AzureCLI@2
+            displayName: 'Deploy to Azure Container Apps'
             inputs:
-              artifactName: manifests
-              targetPath: $(System.ArtifactsDirectory)/manifests
+              azureSubscription: 'z-grid-dev-connection'  # Update with your service connection name
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                echo "Deploying doctor-dashboard to Azure Container Apps..."
 
-          - task: KubernetesManifest@1
-            displayName: 'Deploy to Kubernetes'
-            inputs:
-              action: deploy
-              namespace: $(k8sNamespace)
-              manifests: |
-                $(System.ArtifactsDirectory)/manifests/deployment.yaml
-                $(System.ArtifactsDirectory)/manifests/service.yaml
-                $(System.ArtifactsDirectory)/manifests/ingress.yaml
-                $(System.ArtifactsDirectory)/manifests/configmap.yaml
-              containers: |
-                $(acrName).azurecr.io/$(imageName):$(resources.pipeline.doctor-dashboard-ci.runName)
+                # Get the image tag from CI pipeline
+                IMAGE_TAG="$(resources.pipeline.doctor-dashboard-ci.runName)"
+                if [ -z "$IMAGE_TAG" ] || [ "$IMAGE_TAG" == "null" ]; then
+                  IMAGE_TAG="latest"
+                fi
 
-          - task: KubernetesManifest@1
-            displayName: 'Verify Deployment'
-            inputs:
-              action: verify
-              namespace: $(k8sNamespace)
-              manifests: |
-                $(System.ArtifactsDirectory)/manifests/deployment.yaml
+                FULL_IMAGE="$(acrName).azurecr.io/$(imageName):$IMAGE_TAG"
+                echo "Deploying image: $FULL_IMAGE"
+
+                # Update the Container App with new image
+                az containerapp update \
+                  --name $(containerAppName) \
+                  --resource-group $(resourceGroup) \
+                  --image "$FULL_IMAGE" \
+                  --revision-suffix "rev-$(Build.BuildId)" \
+                  --set-env-vars NODE_ENV=production PORT=8001
+
+                echo "Deployment completed successfully!"
+                echo "Container App: $(containerAppName)"
+                echo "Resource Group: $(resourceGroup)"
+                echo "Image: $FULL_IMAGE"
+
+- stage: Verify_Deployment
+  displayName: 'Verify Deployment'
+  dependsOn: Deploy_ACA
+  jobs:
+  - job: Verify
+    displayName: 'Health Check'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Check Container App Health'
+      inputs:
+        azureSubscription: 'z-grid-dev-connection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Waiting for deployment to stabilize..."
+          sleep 30
+
+          # Get the Container App URL
+          APP_URL=$(az containerapp show \
+            --name $(containerAppName) \
+            --resource-group $(resourceGroup) \
+            --query properties.configuration.ingress.fqdn -o tsv)
+
+          echo "Checking health endpoint: https://$APP_URL/api/health"
+
+          # Health check
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://$APP_URL/api/health || echo "000")
+            if [ "$STATUS" == "200" ]; then
+              echo "✓ Health check passed!"
+              curl -s https://$APP_URL/api/health
+              exit 0
+            fi
+            echo "Attempt $i: Health check returned $STATUS, retrying in 10s..."
+            sleep 10
+          done
+
+          echo "✗ Health check failed after 10 attempts"
+          exit 1

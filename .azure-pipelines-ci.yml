@@ -1,12 +1,15 @@
-# CI Pipeline - Build and Push Docker Image
+# CI Pipeline - Build and Push Docker Image for Doctor Dashboard
 trigger:
   branches:
     include:
     - main
+    - dev
   paths:
     include:
-    - doctor_dashboard/*
+    - doctor_dashboard
     - .azure-pipelines-ci.yml
+    - Dockerfile
+    - .dockerignore
 
 pr: none
 
@@ -15,6 +18,7 @@ pool:
 
 variables:
   acrName: 'zgridcontainerregistry'
+  acrResourceGroup: 'z-grid-dev'
   imageName: 'doctor-dashboard'
   dockerfilePath: 'doctor_dashboard/Dockerfile'
   buildContext: 'doctor_dashboard'
@@ -30,28 +34,70 @@ stages:
   displayName: 'Build and Push Docker Image'
   jobs:
   - job: Build
-    displayName: 'Build Docker Image'
+    displayName: 'Build Doctor Dashboard'
     steps:
+    # Checkout with submodules to get doctor_dashboard code
+    - checkout: self
+      submodules: true
+      fetchDepth: 0
+
+    # Install Node.js for potential build scripts
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '20.x'
+      displayName: 'Install Node.js'
+
+    # Log in to Azure Container Registry
+    - task: AzureCLI@2
+      displayName: 'Azure CLI Login to ACR'
+      inputs:
+        azureSubscription: 'z-grid-dev-connection'  # Update with your service connection name
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Logging in to ACR: $(acrName).azurecr.io"
+          az acr login --name $(acrName)
+
+    # Set up Docker buildx for better caching
+    - script: |
+        docker buildx version
+        docker buildx create --use --name builder || echo "Builder already exists"
+      displayName: 'Set up Docker Buildx'
+
+    # Build and push Docker image
     - task: Docker@2
       displayName: 'Build Docker Image'
       inputs:
-        repository: $(imageName)
+        repository: $(acrName).azurecr.io/$(imageName)
         command: build
         Dockerfile: $(dockerfilePath)
         buildContext: $(buildContext)
         tags: |
           $(Build.BuildId)
+          $(Build.SourceBranchName)-latest
           latest
-        arguments: '--cache-from=$(imageName):latest'
+        arguments: '--cache-from=$(acrName).azurecr.io/$(imageName):latest --build-arg BUILDKIT_INLINE_CACHE=1'
 
     - task: Docker@2
       displayName: 'Push Docker Image'
       inputs:
+        repository: $(acrName).azurecr.io/$(imageName)
         command: push
-        repository: $(imageName)
         tags: |
           $(Build.BuildId)
+          $(Build.SourceBranchName)-latest
           latest
 
-    - publish: $(buildContext)/k8s
-      artifact: manifests
+    # Tag image with branch name for easier tracking
+    - script: |
+        docker tag $(acrName).azurecr.io/$(imageName):$(Build.BuildId) \
+                    $(acrName).azurecr.io/$(imageName):$(Build.SourceBranchName)-$(Build.BuildId)
+        docker push $(acrName).azurecr.io/$(imageName):$(Build.SourceBranchName)-$(Build.BuildId)
+      displayName: 'Tag and Push Branch-Specific Image'
+
+    # Publish image tag as variable for CD pipeline
+    - script: |
+        echo "##vso[task.setvariable variable=imageTag]$(Build.BuildId)"
+        echo "##vso[task.setvariable variable=imageFullName]$(acrName).azurecr.io/$(imageName):$(Build.BuildId)"
+        echo "Built image: $(acrName).azurecr.io/$(imageName):$(Build.BuildId)"
+      displayName: 'Set Image Tag Variables'
