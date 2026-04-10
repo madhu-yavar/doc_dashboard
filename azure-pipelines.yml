@@ -1,0 +1,117 @@
+trigger:
+  branches:
+    include:
+      - test-pipeline
+
+variables:
+  DOCKER_BUILDKIT: 1
+  dockerRegistryServiceConnection: 'acrPushRegistry'
+  acrName: 'zinfradevv1'
+  imageRepository: doctor-dashboard
+  acrloginserver: zinfradevv1.azurecr.io
+  DEV_TAG: latest-dev
+
+stages:
+- stage: BuildAndTest
+  displayName: 'Build, Test, and Push'
+  jobs:
+  - job: CI
+    displayName: 'Docker Build, Test, and Push'
+    pool:
+      vmImage: ubuntu-latest
+
+    services:
+      docker:
+        image: docker:dind
+        options: "--dns 8.8.8.8"
+
+    steps:
+      # 1️⃣ Checkout
+      - checkout: self
+        displayName: 'Checkout source code'
+
+      # 2️⃣ Install Docker Compose
+      - script: |
+          sudo apt-get update -y
+          sudo apt-get install -y docker-compose-plugin
+          docker compose version
+        displayName: 'Install Docker Compose plugin'
+
+      # 3️⃣ Build images
+      - script: |
+          echo "Building Docker images..."
+          docker compose build --no-cache
+        displayName: 'Build Docker images'
+
+      # 4️⃣ Start containers
+      - script: |
+          echo "Starting containers..."
+          docker compose up -d
+          docker ps
+        displayName: 'Start containers'
+
+      # 5️⃣ Wait for API
+      - script: |
+          echo "Waiting for doctor-dashboard container to be ready..."
+          sleep 15
+          docker logs doctor-dashboard || true
+        displayName: 'Wait for API to be ready'
+
+      # 6️⃣ Run tests
+      - script: |
+          echo "Running tests inside doctor-dashboard container..."
+          docker exec doctor-dashboard npm run test
+          docker cp doctor-dashboard:/app/coverage ./coverage || true
+        displayName: 'Run Vitest tests inside container'
+
+      # 7️⃣ Publish test results
+      - task: PublishTestResults@2
+        inputs:
+          testResultsFiles: '**/test-results/**/*.xml'
+          testRunTitle: 'Vitest Results'
+        condition: succeededOrFailed()
+        displayName: 'Publish test results'
+
+      # 🔟 Push image for test-pipeline branch
+      - task: Docker@2
+        displayName: 'Push doctor-dashboard image to ACR'
+        condition: eq(variables['Build.SourceBranchName'], 'test-pipeline')
+        inputs:
+          containerRegistry: 'acrPushRegistry'
+          repository: '$(imageRepository)'
+          command: 'buildAndPush'
+          Dockerfile: 'Dockerfile'
+          buildContext: '.'
+          tags: |
+            $(DEV_TAG)
+
+      # 8️⃣ Update Helm values file
+      - script: |
+          echo "Updating Helm values.yaml with new image tag..."
+          git fetch origin
+          git checkout $(Build.SourceBranchName) || true
+
+          if [ -f helm/doctor-dashboard/values.yaml ]; then
+            sed -i "s|repository:.*|repository: $(imageRepository)|g" helm/doctor-dashboard/values.yaml
+            sed -i "s|tag:.*|tag: $(DEV_TAG)|g" helm/doctor-dashboard/values.yaml
+
+            echo "Updated values.yaml:"
+            cat helm/doctor-dashboard/values.yaml
+
+            git config user.name "Azure DevOps"
+            git config user.email "azuredevops@ci"
+            git add helm/doctor-dashboard/values.yaml
+            git commit -m "ci: update image tag to $(DEV_TAG)" || echo "No changes"
+            git push origin $(Build.SourceBranchName) || echo "Push failed or no changes"
+          else
+            echo "helm/doctor-dashboard/values.yaml not found — skipping update"
+          fi
+        displayName: 'Update values.yaml with image tag'
+        condition: eq(variables['Build.SourceBranchName'], 'test-pipeline')
+
+      # 9️⃣ Cleanup
+      - script: |
+          echo "Cleaning up containers and volumes..."
+          docker compose down -v
+        displayName: 'Cleanup containers'
+        condition: always()

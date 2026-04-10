@@ -5,11 +5,18 @@
 # Image configuration
 image:
   repository: zinfradevv1.azurecr.io/doctor-dashboard
-  tag: latest
+  tag: latest-dev
   pullPolicy: Always
 
 # Deployment configuration
 replicaCount: 1
+
+# Deployment strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1        # Maximum number of pods that can be created above desired replicas
+    maxUnavailable: 0  # Maximum number of pods that can be unavailable during update
 
 imagePullSecrets: []
 nameOverride: ""
