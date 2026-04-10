@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-      - test-pipeline
+      - main
 
 variables:
   DOCKER_BUILDKIT: 1
