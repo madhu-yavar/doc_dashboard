@@ -72,10 +72,10 @@ stages:
         condition: succeededOrFailed()
         displayName: 'Publish test results'
 
-      # 🔟 Push image for test-pipeline branch
+      # 🔟 Push image for main and test-pipeline branches
       - task: Docker@2
         displayName: 'Push doctor-dashboard image to ACR'
-        condition: eq(variables['Build.SourceBranchName'], 'test-pipeline')
+        condition: or(eq(variables['Build.SourceBranchName'], 'test-pipeline'), eq(variables['Build.SourceBranchName'], 'main'))
         inputs:
           containerRegistry: 'acrPushRegistry'
           repository: '$(imageRepository)'
@@ -84,6 +84,8 @@ stages:
           buildContext: '.'
           tags: |
             $(DEV_TAG)
+            $(Build.BuildId)
+            latest
 
       # 8️⃣ Update Helm values file
       - script: |
@@ -107,7 +109,7 @@ stages:
             echo "helm/doctor-dashboard/values.yaml not found — skipping update"
           fi
         displayName: 'Update values.yaml with image tag'
-        condition: eq(variables['Build.SourceBranchName'], 'test-pipeline')
+        condition: or(eq(variables['Build.SourceBranchName'], 'test-pipeline'), eq(variables['Build.SourceBranchName'], 'main'))
 
       # 9️⃣ Cleanup
       - script: |

@@ -5,7 +5,7 @@
 # Image configuration
 image:
   repository: zinfradevv1.azurecr.io/doctor-dashboard
-  tag: latest-dev
+  tag: "20260410.3"
   pullPolicy: Always
 
 # Deployment configuration
