@@ -8,12 +8,14 @@ spec:
   type: Microsoft.App/containerApps
   apiVersion: '2023-05-01'
   properties:
-    environmentId: /subscriptions/759c3e4d-1b5f-481d-b10d-5d93bf2aaeea/resourceGroups/z-grid-dev/providers/Microsoft.App/environments/doctor-dashboard-env
+    environmentId: /subscriptions/759c3e4d-1b5f-481d-b10d-5d93bf2aaeea/resourceGroups/Z-INFRA-STACK-DEV/providers/Microsoft.App/environments/doctor-dashboard-env
     configuration:
       activeRevisionsMode: Single
       secrets:
         - name: gemma-url
           value: "http://206.1.62.28:8000/v1/chat/completions"
+        - name: gemini-api-key
+          value: "YOUR_GEMINI_API_KEY_HERE"  # Replace with actual Gemini API key
       ingress:
         external: true
         targetPort: 8001
@@ -24,7 +26,7 @@ spec:
     template:
       containers:
         - name: doctor-dashboard
-          image: zgridcontainerregistry.azurecr.io/doctor-dashboard:latest
+          image: zinfradevv1.azurecr.io/doctor-dashboard:latest-dev
           env:
             - name: NODE_ENV
               value: "production"
@@ -36,6 +38,8 @@ spec:
               value: "google/gemma-4-26B-A4B-it"
             - name: USE_GEMINI_FOR_EXTERNAL
               value: "true"
+            - name: GEMINI_API_KEY
+              secretRef: gemini-api-key
           resources:
             cpu:
               core: 0.5
