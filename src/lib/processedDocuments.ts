@@ -1,4 +1,5 @@
-import { patientData, type DashboardPatientData } from "@/data/patientData";
+import { normalizeRiskEntry, normalizeRiskLevel } from "@/lib/riskNormalization";
+import type { DashboardPatientData } from "@/data/patientData";
 
 const API_ROOT = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
@@ -68,6 +69,56 @@ export type GemmaDashboardResult = {
       handed_over_to?: string;
       source_excerpt?: string[];
     }>;
+    pending_items?: {
+      pending_labs?: Array<{
+        test_name?: string;
+        expected_date?: string;
+        reason?: string;
+        priority?: "high" | "medium" | "low";
+        source_section?: string;
+        source_excerpt?: string;
+      }>;
+      pending_radiology?: Array<{
+        type?: string;
+        body_part?: string;
+        scheduled_date?: string;
+        reason?: string;
+        priority?: "high" | "medium" | "low";
+        source_section?: string;
+        source_excerpt?: string;
+      }>;
+      pending_followups?: Array<{
+        department?: string;
+        provider?: string;
+        date?: string;
+        time?: string;
+        purpose?: string;
+        priority?: "high" | "medium" | "low";
+        source_section?: string;
+        source_excerpt?: string;
+      }>;
+      medication_reconciliation?: {
+        status?: "complete" | "attention_needed";
+        medication_count?: number;
+        allergy_count?: number;
+        concerns?: string;
+        source_section?: string;
+        source_excerpt?: string;
+      };
+      pending_discharge_items?: Array<{
+        item?: string;
+        reason?: string;
+        priority?: "high" | "medium" | "low";
+        source_section?: string;
+        source_excerpt?: string;
+      }>;
+      summary?: {
+        total_pending?: number;
+        needs_attention?: number;
+        scheduled?: number;
+        complete?: number;
+      };
+    };
     lab_results?: Array<{ test_name?: string; test?: string; value?: string; reference?: string; ref?: string; flag?: string; status?: string }>;
     provenance?: {
       vitals?: {
@@ -506,6 +557,41 @@ const mapCardStatus = (value?: string) => {
   }
 };
 
+const parseClinicalNoteTimestamp = (value?: string, fallbackYear?: number) => {
+  const normalized = String(value || "").trim();
+  if (!normalized) return Number.NEGATIVE_INFINITY;
+
+  const slashMatch = normalized.match(
+    /^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/
+  );
+  if (slashMatch) {
+    const [, day, month, year, hour = "0", minute = "0", second = "0"] = slashMatch;
+    const fullYear = year.length === 2 ? `20${year}` : year;
+    const timestamp = Date.UTC(
+      Number(fullYear),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second)
+    );
+    if (!Number.isNaN(timestamp)) return timestamp;
+  }
+
+  const direct = Date.parse(normalized);
+  if (!Number.isNaN(direct)) return direct;
+
+  if (fallbackYear) {
+    const withCommaYear = Date.parse(`${normalized}, ${fallbackYear}`);
+    if (!Number.isNaN(withCommaYear)) return withCommaYear;
+
+    const withYear = Date.parse(`${normalized} ${fallbackYear}`);
+    if (!Number.isNaN(withYear)) return withYear;
+  }
+
+  return Number.NEGATIVE_INFINITY;
+};
+
 export const getProcessedDocumentPatientName = (document: ProcessedDocument) =>
   document.result?.sample_patient_data?.name?.trim() || "";
 
@@ -566,6 +652,20 @@ const dedupeStrings = (items: Array<string | null | undefined>) => {
     if (seen.has(key)) continue;
     seen.add(key);
     output.push(normalized);
+  }
+
+  return output;
+};
+
+const dedupeBy = <T,>(items: T[], getKey: (item: T) => string) => {
+  const seen = new Set<string>();
+  const output: T[] = [];
+
+  for (const item of items) {
+    const key = getKey(item);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    output.push(item);
   }
 
   return output;
@@ -911,6 +1011,14 @@ const toSentence = (value: string) => {
   return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
 };
 
+const riskWatchAliases: Record<string, string[]> = {
+  Fall: ["fall", "falls", "fall risk"],
+  Aspiration: ["aspiration", "aspiration risk"],
+  "Pressure Ulcer": ["pressure", "pressure ulcer", "pressure sore", "braden"],
+  DVT: ["dvt", "deep vein thrombosis", "dvt risk"],
+  EWS: ["ews", "early warning score"],
+};
+
 export const transformProcessedDocument = (document: ProcessedDocument): DashboardPatientData => {
   const result = document.result || {};
   const cards = result.dashboard_cards || {};
@@ -1085,6 +1193,10 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     : [];
   const instructionCount = cards.discharge_plan_card?.instruction_count || 0;
   const followUpCount = cards.follow_up_card?.appointment_count || 0;
+  const noteFallbackYear = (() => {
+    const parsed = Date.parse(cards.clinical_notes_card?.last_update || document.processedAt || document.uploadedAt || "");
+    return Number.isNaN(parsed) ? undefined : new Date(parsed).getUTCFullYear();
+  })();
   const explicitClinicalNotes = (cards.clinical_notes_card?.notes || extracted.clinical_notes || [])
     .map((note) => ({
       date: note.date || "",
@@ -1114,7 +1226,17 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
         note.handed_over_to,
         ...note.source_excerpt,
       ].some((value) => String(value || "").trim().length > 0)
-    );
+    )
+    .map((note, index) => ({
+      ...note,
+      __sortIndex: index,
+      __timestamp: parseClinicalNoteTimestamp(note.date, noteFallbackYear),
+    }))
+    .sort((a, b) => {
+      if (a.__timestamp === b.__timestamp) return a.__sortIndex - b.__sortIndex;
+      return b.__timestamp - a.__timestamp;
+    })
+    .map(({ __sortIndex, __timestamp, ...note }) => note);
   const totalNotes = Math.max(cards.clinical_notes_card?.total_notes || 0, explicitClinicalNotes.length);
   const handoverNotes = handoverSectionSupported && handoverSectionProvenance.hasRaw
     ? explicitClinicalNotes.filter((note) =>
@@ -1129,7 +1251,14 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   const handoverNote = explicitClinicalNotes.find((note) => /handover/i.test(note.type));
   const residentNote = explicitClinicalNotes.find((note) => /resident/i.test(note.type));
   const admissionNote = explicitClinicalNotes.find((note) => /initial assessment|admission/i.test(note.type));
-  const riskScores = extracted.risk_scores || {};
+  const rawRiskScores = extracted.risk_scores || {};
+  const riskScores = {
+    ...rawRiskScores,
+    fall_risk: normalizeRiskEntry(rawRiskScores.fall_risk),
+    dvt_risk: normalizeRiskEntry(rawRiskScores.dvt_risk),
+    pressure_ulcer_risk: normalizeRiskEntry(rawRiskScores.pressure_ulcer_risk),
+    aspiration_risk: normalizeRiskEntry(rawRiskScores.aspiration_risk),
+  };
   const derivedComorbidities = dedupeStrings([
     ...(Array.isArray(extractedDiagnosis.comorbidities) ? extractedDiagnosis.comorbidities : []),
     ...secondaryDiagnoses.filter((item) => isComorbidityLikeDiagnosis(item)),
@@ -1289,15 +1418,91 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     ? safeTreatmentProcedureItems.map((item) => item.value)
     : explicitProcedures;
   const riskItems = dedupeStrings([
-    riskScores.fall_risk?.level ? `Fall risk ${riskScores.fall_risk.level}${riskScores.fall_risk.score ? ` (score ${riskScores.fall_risk.score})` : ""}` : "",
-    riskScores.aspiration_risk?.level ? `Aspiration risk ${riskScores.aspiration_risk.level}${riskScores.aspiration_risk.score ? ` (score ${riskScores.aspiration_risk.score})` : ""}` : "",
-    riskScores.pressure_ulcer_risk?.level ? `Pressure ulcer risk ${riskScores.pressure_ulcer_risk.level}${riskScores.pressure_ulcer_risk.score ? ` (score ${riskScores.pressure_ulcer_risk.score})` : ""}` : "",
-    riskScores.dvt_risk?.level ? `DVT risk ${riskScores.dvt_risk.level}${riskScores.dvt_risk.score ? ` (score ${riskScores.dvt_risk.score})` : ""}` : "",
+    riskScores.fall_risk?.level ? `Fall risk ${riskScores.fall_risk.level}` : "",
+    riskScores.aspiration_risk?.level ? `Aspiration risk ${riskScores.aspiration_risk.level}` : "",
+    riskScores.pressure_ulcer_risk?.level ? `Pressure ulcer risk ${riskScores.pressure_ulcer_risk.level}` : "",
+    riskScores.dvt_risk?.level ? `DVT risk ${riskScores.dvt_risk.level}` : "",
     allergies
       .filter((allergen) => !allergen.toLowerCase().includes("nkf") && !allergen.toLowerCase().includes("not known"))
       .map((allergen) => `Allergy documented: ${allergen}`)
       .join(" "),
   ]);
+  const buildRiskWatchCitations = (label: string, score: number | null, level: string) => {
+    const aliases = riskWatchAliases[label] || [label.toLowerCase()];
+    const citations = explicitClinicalNotes.flatMap((note) => {
+      const noteCandidates = [note.summary, note.assessment, note.recommendations, ...note.source_excerpt]
+        .map((value) => String(value || "").trim())
+        .filter(Boolean);
+      const matchingExcerpt = noteCandidates.find((candidate) => {
+        const normalized = candidate.toLowerCase();
+        const aliasMatch = aliases.some((alias) => normalized.includes(alias));
+        const scoreMatch = typeof score === "number" ? normalized.includes(String(score)) : false;
+        const levelMatch = level ? normalized.includes(level.toLowerCase()) : false;
+        return aliasMatch && (scoreMatch || levelMatch || /risk/.test(normalized));
+      });
+
+      if (!matchingExcerpt) return [];
+      return [{
+        value: `${label}${level ? `: ${level}` : ""}`,
+        sourceSection: note.type || "Clinical Note",
+        sourceExcerpt: matchingExcerpt,
+        sourcePage: null,
+        confidence: 0.7,
+        provenanceType: "normalized" as const,
+      }];
+    });
+
+    return dedupeBy(citations, (item) => `${item.sourceSection}|${item.sourceExcerpt}`);
+  };
+  const riskWatchItems = [
+    { label: "Fall", level: riskScores.fall_risk?.level || "", score: riskScores.fall_risk?.score ?? null },
+    { label: "Aspiration", level: riskScores.aspiration_risk?.level || "", score: riskScores.aspiration_risk?.score ?? null },
+    { label: "Pressure Ulcer", level: riskScores.pressure_ulcer_risk?.level || "", score: riskScores.pressure_ulcer_risk?.score ?? null },
+    { label: "DVT", level: riskScores.dvt_risk?.level || "", score: riskScores.dvt_risk?.score ?? null },
+  ]
+    .filter((item) => item.level)
+    .map((item) => ({
+      ...item,
+      summary: `${item.label}${item.level ? `: ${item.level}` : ""}`,
+      citations: buildRiskWatchCitations(item.label, item.score, item.level),
+    }));
+  const riskWatchSectionProvenance = buildSectionProvenance(
+    riskWatchItems.flatMap((item) => item.citations || []),
+    ["quoted", "normalized"]
+  );
+  const elevatedRiskWatchItems = riskWatchItems.filter((item) => /high|moderate/i.test(String(item.level || "")));
+  const documentedRiskWatchItems = riskWatchItems.filter((item) => Boolean(normalizeRiskLevel(item.level)));
+  const highRiskWatchItems = riskWatchItems.filter((item) => /high/i.test(String(item.level || "")));
+  const riskWatchStatus =
+    typeof riskScores.ews_score === "number" && riskScores.ews_score >= 5
+      ? "critical"
+      : highRiskWatchItems.length > 0
+        ? "critical"
+        : elevatedRiskWatchItems.length > 0 || (typeof riskScores.ews_score === "number" && riskScores.ews_score > 0)
+          ? "warning"
+          : "normal";
+  const riskWatchHeadlineMetric =
+    highRiskWatchItems.length > 0
+      ? `${highRiskWatchItems.length}`
+      : typeof riskScores.ews_score === "number" && riskScores.ews_score > 0
+        ? `${riskScores.ews_score}`
+        : "0";
+  const riskWatchSecondaryLine =
+    highRiskWatchItems.length > 0
+      ? highRiskWatchItems.length === 1
+        ? "high-risk signal"
+        : "high-risk signals"
+      : elevatedRiskWatchItems.length > 0
+        ? elevatedRiskWatchItems.length === 1
+          ? "elevated watch item"
+          : "elevated watch items"
+        : documentedRiskWatchItems.length > 0
+          ? documentedRiskWatchItems.length === 1
+            ? "watch item documented"
+            : "watch items documented"
+        : typeof riskScores.ews_score === "number" && riskScores.ews_score > 0
+          ? "ews score"
+          : "not documented";
   const handoverSections = [
     {
       title: "Presentation",
@@ -1558,11 +1763,26 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     ...explicitClinicalNotes.flatMap((note) => note.pending_items || []),
     cards.follow_up_card?.next_appointment ? `Next appointment: ${cards.follow_up_card.next_appointment}` : "",
   ]).map(toSentence);
+
+  // NEW: Add LLM-extracted pending_items
+  const llmPendingItems = extracted.pending_items || {};
+  const llmLabsPending = llmPendingItems.pending_labs?.map(lab => lab.test_name || lab.reason || "Pending lab") || [];
+  const llmRadiologyPending = llmPendingItems.pending_radiology?.map(rad => `${rad.type}${rad.body_part ? ` of ${rad.body_part}` : ''}${rad.scheduled_date ? ` - ${rad.scheduled_date}` : ''}`) || [];
+  const llmFollowUpsPending = llmPendingItems.pending_followups?.map(fu => `${fu.department}${fu.provider ? ` with ${fu.provider}` : ''}${fu.date ? ` on ${fu.date}` : ''}${fu.time ? ` at ${fu.time}` : ''}`) || [];
   const dischargeDispositionNote = dischargePlanExplicitlyAbsent
     ? "No explicit discharge disposition was documented in this record. The items below reflect current inpatient care instructions and pending workup."
     : dischargePendingItems.length > 0
       ? "Follow-up and pending items are listed exactly as documented in the source record."
       : "";
+
+  // Merge LLM-extracted pending items with existing pending items
+  const allPendingItems = [
+    ...dischargePendingItems,
+    ...llmLabsPending,
+    ...llmRadiologyPending,
+    ...llmFollowUpsPending,
+    ...(llmPendingItems.pending_discharge_items?.map(item => item.item || item.reason) || []),
+  ];
   const dischargeCondition = dischargePlanExplicitlyAbsent
     ? "Not documented"
     : dedupeStrings(
@@ -1653,6 +1873,52 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       status: complicationsDocumented ? "warning" : "normal",
       provenanceStatus: treatmentSectionProvenance.status,
     },
+    care_gaps: {
+      section: "pending",
+      title: "Care Gaps",
+      headlineMetric: `${pendingImagingStudies.length + (extracted.pending_items?.pending_labs?.length || 0) + allPendingItems.length}`,
+      secondaryLine:
+        pendingImagingStudies.length + (extracted.pending_items?.pending_labs?.length || 0) + allPendingItems.length === 1
+          ? "open care gap"
+          : "open care gaps",
+      supportingPoints: dedupeStrings([
+        [extracted.pending_items?.pending_labs?.length ? `${extracted.pending_items.pending_labs.length} labs` : "", pendingImagingStudies.length ? `${pendingImagingStudies.length} imaging` : ""]
+          .filter(Boolean)
+          .join(" · "),
+        allPendingItems.length ? `${allPendingItems.length} discharge actions` : followUpAppointments.length ? `${followUpAppointments.length} follow-up appointments booked` : "Follow-up not scheduled",
+      ]).slice(0, 2),
+      status:
+        followUpAppointments.length === 0 && (pendingImagingStudies.length + (extracted.pending_items?.pending_labs?.length || 0) + allPendingItems.length) > 0
+          ? "critical"
+          : pendingImagingStudies.length + (extracted.pending_items?.pending_labs?.length || 0) + allPendingItems.length > 0
+            ? "warning"
+            : "normal",
+      provenanceStatus:
+        [labsSectionProvenance.status, radiologySectionProvenance.status, dischargeSectionProvenance.status, followUpSectionProvenance.status].includes("source_backed")
+          ? "source_backed"
+          : [labsSectionProvenance.status, radiologySectionProvenance.status, dischargeSectionProvenance.status, followUpSectionProvenance.status].includes("mixed")
+            ? "mixed"
+            : [labsSectionProvenance.status, radiologySectionProvenance.status, dischargeSectionProvenance.status, followUpSectionProvenance.status].includes("derived_only")
+              ? "derived_only"
+              : "insufficient_evidence",
+    },
+    risk_watch: {
+      section: "riskwatch",
+      title: "Risk Watch",
+      headlineMetric: riskWatchHeadlineMetric,
+      secondaryLine: riskWatchSecondaryLine,
+      supportingPoints: dedupeStrings([
+        elevatedRiskWatchItems.length > 0
+          ? elevatedRiskWatchItems.slice(0, 2).map((item) => item.summary).join(" · ")
+          : documentedRiskWatchItems
+              .slice(0, 2)
+              .map((item) => item.summary)
+              .join(" · "),
+        documentedRiskWatchItems.length === 0 && typeof riskScores.ews_score !== "number" ? "No explicit risk levels documented" : "",
+      ]).slice(0, 2),
+      status: riskWatchStatus,
+      provenanceStatus: riskWatchSectionProvenance.status,
+    },
   };
   const normalizedPresentationSummaryCards = Object.fromEntries(
     Object.entries(presentationSummaryCardsRaw).map(([key, card]) => [
@@ -1672,7 +1938,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   ) as Record<string, PresentationCard>;
   const presentationSummaryCards =
     Object.keys(normalizedPresentationSummaryCards).length > 0
-      ? { ...fallbackPresentationSummaryCards, ...normalizedPresentationSummaryCards }
+      ? { ...fallbackPresentationSummaryCards, ...normalizedPresentationSummaryCards, risk_watch: fallbackPresentationSummaryCards.risk_watch }
       : fallbackPresentationSummaryCards;
   const fallbackNotesRail: PresentationRailItem[] = handoverNotes
     .slice(0, 6)
@@ -1860,14 +2126,17 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       cbc: [],
       metabolic: [],
       troponinTrend: [],
-      pending: [],
+      pending: extracted.pending_items?.pending_labs?.map(lab => lab.test_name || lab.reason || "Pending lab") || [],
     },
     radiology: {
       completedStudies: documentedImagingStudies.length,
       pendingStudies: pendingImagingStudies.length,
       criticalFindings: documentedImagingStudies.filter((study) => study.critical).length,
       studies: documentedImagingStudies,
-      pending: pendingImagingStudies,
+      pending: [
+        ...pendingImagingStudies,
+        ...(extracted.pending_items?.pending_radiology?.map(rad => `${rad.type}${rad.body_part ? ` of ${rad.body_part}` : ''}${rad.scheduled_date ? ` - ${rad.scheduled_date}` : ''}`) || [])
+      ],
     },
     treatment: {
       procedures: gatedProcedures.map((name) => ({
@@ -1883,6 +2152,10 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       complications: 0,
       complicationsDocumented,
       complicationsLabel,
+    },
+    riskWatch: {
+      ewsScore: typeof riskScores.ews_score === "number" ? riskScores.ews_score : null,
+      items: riskWatchItems,
     },
     clinicalNotes: {
       totalNotes,
@@ -1903,8 +2176,16 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
         duration: "Documented plan",
         afterRestriction: dischargeDispositionNote,
       },
-      pendingItems: dischargePendingItems,
+      pendingItems: allPendingItems,
       redFlags: dischargeRedFlags,
+    },
+    // NEW: Add pending_items_summary for easy access
+    pending_items_summary: {
+      pending_labs: llmLabsPending,
+      pending_radiology: llmRadiologyPending,
+      pending_followups: llmFollowUpsPending,
+      medication_reconciliation: llmPendingItems.medication_reconciliation,
+      summary: llmPendingItems.summary || { total_pending: 0, needs_attention: 0, scheduled: 0, complete: 0 },
     },
     followUp: followUpAppointments,
     presentation: {
@@ -1919,6 +2200,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
         labs: labsSectionProvenance,
         radiology: radiologySectionProvenance,
         treatment: treatmentSectionProvenance,
+        riskwatch: riskWatchSectionProvenance,
         handover: handoverSectionProvenance,
         followup: followUpSectionProvenance,
         discharge: dischargeSectionProvenance,
@@ -1927,4 +2209,5 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   };
 };
 
-export const fallbackDashboardData = patientData;
+// Note: Fallback data removed to prevent bundling mock data in production
+// The UI handles null/missing data appropriately

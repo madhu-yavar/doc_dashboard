@@ -218,6 +218,11 @@ export const patientData = {
     complicationsDocumented: true,
     complicationsLabel: "None documented",
   },
+  riskWatch: {
+    ewsScore: null,
+    items: [],
+    citations: [],
+  },
   clinicalNotes: {
     totalNotes: 7,
     lastUpdate: "2026-03-20T12:00:00Z",
@@ -377,6 +382,24 @@ export const patientData = {
         status: "normal",
         provenanceStatus: "source_backed",
       },
+      care_gaps: {
+        section: "pending",
+        title: "Care Gaps",
+        headlineMetric: "5",
+        secondaryLine: "open care gaps",
+        supportingPoints: ["2 labs · 1 imaging pending", "2 discharge actions"],
+        status: "warning",
+        provenanceStatus: "source_backed",
+      },
+      risk_watch: {
+        section: "riskwatch",
+        title: "Risk Watch",
+        headlineMetric: "0",
+        secondaryLine: "not documented",
+        supportingPoints: ["No structured risk scores documented"],
+        status: "neutral",
+        provenanceStatus: "derived_only",
+      },
     },
     notesRail: [
       {
@@ -502,6 +525,11 @@ export const patientData = {
             provenanceType: "normalized",
           },
         ],
+      },
+      riskwatch: {
+        status: "insufficient_evidence",
+        hasRaw: false,
+        items: [],
       },
       handover: {
         status: "mixed",
