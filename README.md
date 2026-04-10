@@ -237,3 +237,4 @@ If the container starts but processing fails:
 - verify Gemma is healthy on port `8000`
 - confirm the configured model name matches the served model
 - inspect backend logs for request timeout or upstream connection errors
+# Trigger build to push latest image
