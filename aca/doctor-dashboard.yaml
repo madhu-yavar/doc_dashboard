@@ -1,8 +1,8 @@
-resourceGroupName=z-grid-dev
+resourceGroupName=Z-INFRA-STACK-DEV
 location=eastus
 appName=doctor-dashboard
 containerName=doctor-dashboard
-acrName=zgridcontainerregistry
+acrName=zinfradevv1
 imageName=doctor-dashboard
 namespace=z-dev
 
