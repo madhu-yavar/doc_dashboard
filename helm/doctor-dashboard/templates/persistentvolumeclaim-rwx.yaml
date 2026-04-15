@@ -1,8 +1,8 @@
-{{- if not .Values.storage.existingClaim }}
+{{- if .Values.storage.existingClaim }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "doctor-dashboard.fullname" . }}-storage
+  name: {{ .Values.storage.existingClaim }}
   namespace: {{ include "doctor-dashboard.namespace" . }}
   labels:
     {{- include "doctor-dashboard.labels" . | nindent 4 }}
