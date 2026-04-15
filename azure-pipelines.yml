@@ -94,7 +94,7 @@ stages:
           git checkout $(Build.SourceBranchName) || true
 
           if [ -f helm/doctor-dashboard/values.yaml ]; then
-            sed -i "s|repository:.*|repository: $(imageRepository)|g" helm/doctor-dashboard/values.yaml
+            sed -i "s|repository:.*|repository: $(acrloginserver)/$(imageRepository)|g" helm/doctor-dashboard/values.yaml
             sed -i "s|tag:.*|tag: $(DEV_TAG)|g" helm/doctor-dashboard/values.yaml
 
             echo "Updated values.yaml:"

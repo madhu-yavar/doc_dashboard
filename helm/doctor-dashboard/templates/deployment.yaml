@@ -10,7 +10,7 @@ spec:
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   strategy:
-    type: Recreate
+    {{- toYaml .Values.strategy | nindent 4 }}
   selector:
     matchLabels:
       {{- include "doctor-dashboard.selectorLabels" . | nindent 6 }}
