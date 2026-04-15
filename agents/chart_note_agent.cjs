@@ -60,93 +60,105 @@ class ChartNoteAgent {
 
       if (onProgress) onProgress({ step: "structure", status: "complete", data: structureStep });
 
-      // STEP 3: Generate ALLERGIES section (THINK + WRITE)
-      console.log("📝 Step 3: Generating ALLERGIES section...");
-      const allergiesStep = await this.generateAllergies(extractedData);
-      reasoningSteps.push({ step: "allergies", ...allergiesStep });
-      totalTokens += allergiesStep.usage?.totalTokens || 0;
+      const allergiesPromise = this.runStepWithProgress("allergies", () => {
+        console.log("📝 Step 3: Generating ALLERGIES section...");
+        return this.generateAllergies(extractedData);
+      }, onProgress);
 
-      if (onProgress) onProgress({ step: "allergies", status: "complete" });
+      const subjectivePromise = this.runStepWithProgress("subjective", () => {
+        console.log("📝 Step 4: Generating CHIEF COMPLAINT & HISTORY section...");
+        return this.generateSubjective(extractedData, structureStep.subjective);
+      }, onProgress);
 
-      // STEP 4: Generate CHIEF COMPLAINT & HISTORY section (THINK + WRITE)
-      console.log("📝 Step 4: Generating CHIEF COMPLAINT & HISTORY section...");
-      const subjectiveStep = await this.generateSubjective(extractedData, structureStep.subjective);
-      reasoningSteps.push({ step: "subjective", ...subjectiveStep });
-      totalTokens += subjectiveStep.usage?.totalTokens || 0;
+      const comorbiditiesPromise = this.runStepWithProgress("comorbidities", () => {
+        console.log("📝 Step 5: Generating COMORBIDITIES section...");
+        return this.generateComorbidities(extractedData);
+      }, onProgress);
 
-      if (onProgress) onProgress({ step: "subjective", status: "complete" });
+      const objectivePromise = this.runStepWithProgress("objective", () => {
+        console.log("📝 Step 6: Generating PHYSICAL EXAMINATION section...");
+        return this.generateObjective(extractedData, structureStep.objective);
+      }, onProgress);
 
-      // STEP 5: Generate COMORBIDITIES section (THINK + WRITE)
-      console.log("📝 Step 5: Generating COMORBIDITIES section...");
-      const comorbiditiesStep = await this.generateComorbidities(extractedData);
-      reasoningSteps.push({ step: "comorbidities", ...comorbiditiesStep });
-      totalTokens += comorbiditiesStep.usage?.totalTokens || 0;
+      const proceduresPromise = this.runStepWithProgress("procedures", () => {
+        console.log("📝 Step 7: Generating PROCEDURES & INTERVENTIONS section...");
+        return this.generateProcedures(extractedData);
+      }, onProgress);
 
-      if (onProgress) onProgress({ step: "comorbidities", status: "complete" });
+      const assessmentPromise = this.runStepWithProgress("assessment", () => {
+        console.log("📝 Step 9: Generating ASSESSMENT section...");
+        return this.generateAssessment(extractedData, structureStep.assessment);
+      }, onProgress);
 
-      // STEP 6: Generate PHYSICAL EXAMINATION section (THINK + WRITE)
-      console.log("📝 Step 6: Generating PHYSICAL EXAMINATION section...");
-      const objectiveStep = await this.generateObjective(extractedData, structureStep.objective);
-      reasoningSteps.push({ step: "objective", ...objectiveStep });
-      totalTokens += objectiveStep.usage?.totalTokens || 0;
+      const pendingPromise = this.runStepWithProgress("pending", () => {
+        console.log("📝 Step 10: Generating PENDING INVESTIGATIONS section...");
+        return this.generatePendingInvestigations(extractedData);
+      }, onProgress);
 
-      if (onProgress) onProgress({ step: "objective", status: "complete" });
+      const planPromise = this.runStepWithProgress("plan", () => {
+        console.log("📝 Step 11: Generating PLAN section...");
+        return this.generatePlan(extractedData, structureStep.plan);
+      }, onProgress);
 
-      // STEP 7: Generate PROCEDURES & INTERVENTIONS section (THINK + WRITE)
-      console.log("📝 Step 7: Generating PROCEDURES & INTERVENTIONS section...");
-      const proceduresStep = await this.generateProcedures(extractedData);
-      reasoningSteps.push({ step: "procedures", ...proceduresStep });
-      totalTokens += proceduresStep.usage?.totalTokens || 0;
+      const nursingPromise = this.runStepWithProgress("nursing", () => {
+        console.log("📝 Step 12: Generating NURSING CARE NEEDS section...");
+        return this.generateNursingCare(extractedData);
+      }, onProgress);
 
-      if (onProgress) onProgress({ step: "procedures", status: "complete" });
+      const riskFlagsPromise = this.runStepWithProgress("risk_flags", () => {
+        console.log("📝 Step 13: Generating RISK FLAGS section...");
+        return this.generateRiskFlags(extractedData);
+      }, onProgress);
 
-      // STEP 8: Generate HOSPITAL COURSE section (THINK + WRITE)
-      console.log("📝 Step 8: Generating HOSPITAL COURSE section...");
-      const hospitalCourseStep = await this.generateHospitalCourse(extractedData, subjectiveStep.content);
-      reasoningSteps.push({ step: "hospital_course", ...hospitalCourseStep });
-      totalTokens += hospitalCourseStep.usage?.totalTokens || 0;
+      const hospitalCoursePromise = subjectivePromise.then((subjectiveStep) => this.runStepWithProgress("hospital_course", () => {
+        console.log("📝 Step 8: Generating HOSPITAL COURSE section...");
+        return this.generateHospitalCourse(extractedData, subjectiveStep.content);
+      }, onProgress));
 
-      if (onProgress) onProgress({ step: "hospital_course", status: "complete" });
+      const [
+        allergiesStep,
+        subjectiveStep,
+        comorbiditiesStep,
+        objectiveStep,
+        proceduresStep,
+        hospitalCourseStep,
+        assessmentStep,
+        pendingStep,
+        planStep,
+        nursingStep,
+        riskFlagsStep
+      ] = await Promise.all([
+        allergiesPromise,
+        subjectivePromise,
+        comorbiditiesPromise,
+        objectivePromise,
+        proceduresPromise,
+        hospitalCoursePromise,
+        assessmentPromise,
+        pendingPromise,
+        planPromise,
+        nursingPromise,
+        riskFlagsPromise
+      ]);
 
-      // STEP 9: Generate ASSESSMENT section (THINK + WRITE)
-      console.log("📝 Step 9: Generating ASSESSMENT section...");
-      const assessmentStep = await this.generateAssessment(extractedData, structureStep.assessment);
-      reasoningSteps.push({ step: "assessment", ...assessmentStep });
-      totalTokens += assessmentStep.usage?.totalTokens || 0;
+      const generatedSteps = [
+        { step: "allergies", data: allergiesStep },
+        { step: "subjective", data: subjectiveStep },
+        { step: "comorbidities", data: comorbiditiesStep },
+        { step: "objective", data: objectiveStep },
+        { step: "procedures", data: proceduresStep },
+        { step: "hospital_course", data: hospitalCourseStep },
+        { step: "assessment", data: assessmentStep },
+        { step: "pending", data: pendingStep },
+        { step: "plan", data: planStep },
+        { step: "nursing", data: nursingStep },
+        { step: "risk_flags", data: riskFlagsStep }
+      ];
 
-      if (onProgress) onProgress({ step: "assessment", status: "complete" });
-
-      // STEP 10: Generate PENDING INVESTIGATIONS section (THINK + WRITE)
-      console.log("📝 Step 10: Generating PENDING INVESTIGATIONS section...");
-      const pendingStep = await this.generatePendingInvestigations(extractedData);
-      reasoningSteps.push({ step: "pending", ...pendingStep });
-      totalTokens += pendingStep.usage?.totalTokens || 0;
-
-      if (onProgress) onProgress({ step: "pending", status: "complete" });
-
-      // STEP 11: Generate PLAN section (THINK + WRITE)
-      console.log("📝 Step 11: Generating PLAN section...");
-      const planStep = await this.generatePlan(extractedData, structureStep.plan);
-      reasoningSteps.push({ step: "plan", ...planStep });
-      totalTokens += planStep.usage?.totalTokens || 0;
-
-      if (onProgress) onProgress({ step: "plan", status: "complete" });
-
-      // STEP 12: Generate NURSING CARE NEEDS section (THINK + WRITE)
-      console.log("📝 Step 12: Generating NURSING CARE NEEDS section...");
-      const nursingStep = await this.generateNursingCare(extractedData);
-      reasoningSteps.push({ step: "nursing", ...nursingStep });
-      totalTokens += nursingStep.usage?.totalTokens || 0;
-
-      if (onProgress) onProgress({ step: "nursing", status: "complete" });
-
-      // STEP 13: Generate RISK FLAGS section (THINK + WRITE)
-      console.log("📝 Step 13: Generating RISK FLAGS section...");
-      const riskFlagsStep = await this.generateRiskFlags(extractedData);
-      reasoningSteps.push({ step: "risk_flags", ...riskFlagsStep });
-      totalTokens += riskFlagsStep.usage?.totalTokens || 0;
-
-      if (onProgress) onProgress({ step: "risk_flags", status: "complete" });
+      generatedSteps.forEach(({ step, data }) => {
+        reasoningSteps.push({ step, ...data });
+        totalTokens += data.usage?.totalTokens || 0;
+      });
 
       // STEP 14: Review and refine (THINK)
       console.log("📝 Step 14: Reviewing and refining chart note...");
@@ -162,7 +174,9 @@ class ChartNoteAgent {
         plan: planStep.content,
         nursing: nursingStep.content,
         riskFlags: riskFlagsStep.content,
-        validationSummary
+        validationSummary,
+        extractedData,
+        citationData
       });
       reasoningSteps.push({ step: "review", ...reviewStep });
       totalTokens += reviewStep.usage?.totalTokens || 0;
@@ -856,7 +870,11 @@ RISK FLAGS SECTION:
    * STEP 14: Review and refine
    */
   async reviewAndRefine(sections) {
+    const dataSnapshot = this.buildConsolidationDataSnapshot(sections.extractedData);
     const prompt = `Review the following chart note for quality, completeness, and clinical accuracy.
+
+DATA SNAPSHOT:
+${JSON.stringify(dataSnapshot, null, 2)}
 
 ALLERGIES:
 ${sections.allergies || 'N/A'}
@@ -893,56 +911,93 @@ ${sections.riskFlags || 'N/A'}
 
 Validation: ${sections.validationSummary}
 
-Review each section and provide:
-1. Quality assessment (Excellent/Good/Fair/Poor)
-2. Missing elements (if any)
-3. Suggestions for improvement (if needed)
+TASK:
+1. Review each section for truncation, contradictions, placeholders, and missing clinical detail.
+2. If a section is already clinically sound, return KEEP for that section.
+3. If a section is weak or incomplete, rewrite it using the data snapshot.
+4. Never output END OF RECORD, Generated, Note:, or Validation Summary inside refined sections.
 
-IMPORTANT: Return the review ONLY. Do NOT include refined versions in your response.
-Format your response as:
+Return EXACTLY in this tagged format:
 
-REVIEW:
-ALLERGIES: [Quality rating and brief feedback]
-CHIEF COMPLAINT: [Quality rating and brief feedback]
-COMORBIDITIES: [Quality rating and brief feedback]
-PHYSICAL EXAM: [Quality rating and brief feedback]
-PROCEDURES: [Quality rating and brief feedback]
-HOSPITAL COURSE: [Quality rating and brief feedback]
-ASSESSMENT: [Quality rating and brief feedback]
-PENDING: [Quality rating and brief feedback]
-PLAN: [Quality rating and brief feedback]
-NURSING: [Quality rating and brief feedback]
-RISK FLAGS: [Quality rating and brief feedback]`;
+[[REVIEW]]
+[brief review summary]
+
+[[ALLERGIES]]
+KEEP or rewritten content
+
+[[SUBJECTIVE]]
+KEEP or rewritten content
+
+[[COMORBIDITIES]]
+KEEP or rewritten content
+
+[[OBJECTIVE]]
+KEEP or rewritten content
+
+[[PROCEDURES]]
+KEEP or rewritten content
+
+[[HOSPITAL_COURSE]]
+KEEP or rewritten content
+
+[[ASSESSMENT]]
+KEEP or rewritten content
+
+[[PENDING]]
+KEEP or rewritten content
+
+[[PLAN]]
+KEEP or rewritten content
+
+[[NURSING]]
+KEEP or rewritten content
+
+[[RISK_FLAGS]]
+KEEP or rewritten content`;
 
     const result = await this.gemmaClient.execute(prompt, {
       temperature: 0.3,
-      maxTokens: 1500
+      maxTokens: 2500
     });
 
     const content = result.success ? result.content : "";
+    const tagged = this.parseTaggedBlocks(content, [
+      "REVIEW",
+      "ALLERGIES",
+      "SUBJECTIVE",
+      "COMORBIDITIES",
+      "OBJECTIVE",
+      "PROCEDURES",
+      "HOSPITAL_COURSE",
+      "ASSESSMENT",
+      "PENDING",
+      "PLAN",
+      "NURSING",
+      "RISK_FLAGS"
+    ]);
 
-    // Don't do refinements - just return the review
     const refined = {
-      allergies: null,
-      subjective: null,
-      comorbidities: null,
-      objective: null,
-      procedures: null,
-      hospitalCourse: null,
-      assessment: null,
-      pending: null,
-      plan: null,
-      nursing: null,
-      riskFlags: null
+      allergies: this.normalizeRefinedSection(tagged.ALLERGIES),
+      subjective: this.normalizeRefinedSection(tagged.SUBJECTIVE),
+      comorbidities: this.normalizeRefinedSection(tagged.COMORBIDITIES),
+      objective: this.normalizeRefinedSection(tagged.OBJECTIVE),
+      procedures: this.normalizeRefinedSection(tagged.PROCEDURES),
+      hospitalCourse: this.normalizeRefinedSection(tagged.HOSPITAL_COURSE),
+      assessment: this.normalizeRefinedSection(tagged.ASSESSMENT),
+      pending: this.normalizeRefinedSection(tagged.PENDING),
+      plan: this.normalizeRefinedSection(tagged.PLAN),
+      nursing: this.normalizeRefinedSection(tagged.NURSING),
+      riskFlags: this.normalizeRefinedSection(tagged.RISK_FLAGS)
     };
 
     console.log("  📝 Review completed:", {
       reviewLength: content.length,
-      preview: content.substring(0, 200)
+      preview: content.substring(0, 200),
+      refinedSections: Object.entries(refined).filter(([, value]) => !!value).map(([key]) => key)
     });
 
     return {
-      review: content,
+      review: tagged.REVIEW || content,
       refined: refined,
       usage: result.usage
     };
@@ -956,18 +1011,18 @@ RISK FLAGS: [Quality rating and brief feedback]`;
     const admission = sections.extractedData.admission || {};
     const diagnosis = sections.extractedData.diagnosis || {};
 
-    // Ensure sections have content, provide fallback if empty
-    const allergies = sections.allergies?.trim() || "No Known Allergies (NKDA)";
-    const subjective = sections.subjective?.trim() || this.generateFallbackSubjective(sections.extractedData);
-    const comorbidities = sections.comorbidities?.trim() || this.generateFallbackComorbidities(sections.extractedData);
-    const objective = sections.objective?.trim() || this.generateFallbackObjective(sections.extractedData);
-    const procedures = sections.procedures?.trim() || "No major procedures performed during this admission.";
-    const hospitalCourse = sections.hospitalCourse?.trim() || this.generateFallbackHospitalCourse(sections.extractedData);
-    const assessment = sections.assessment?.trim() || this.generateFallbackAssessment(sections.extractedData);
-    const pending = sections.pending?.trim() || "No pending investigations documented at discharge.";
-    const plan = sections.plan?.trim() || this.generateFallbackPlan(sections.extractedData);
-    const nursing = sections.nursing?.trim() || this.generateFallbackNursingCare(sections.extractedData);
-    const riskFlags = sections.riskFlags?.trim() || this.generateFallbackRiskFlags(sections.extractedData);
+    // Ensure sections have usable content before final assembly.
+    const allergies = this.resolveSectionContent("allergies", sections.allergies, sections.extractedData, () => "No Known Allergies (NKDA)");
+    const subjective = this.resolveSectionContent("subjective", sections.subjective, sections.extractedData, () => this.generateFallbackSubjective(sections.extractedData));
+    const comorbidities = this.resolveSectionContent("comorbidities", sections.comorbidities, sections.extractedData, () => this.generateFallbackComorbidities(sections.extractedData));
+    const objective = this.resolveSectionContent("objective", sections.objective, sections.extractedData, () => this.generateFallbackObjective(sections.extractedData));
+    const procedures = this.resolveSectionContent("procedures", sections.procedures, sections.extractedData, () => "No major procedures performed during this admission.");
+    const hospitalCourse = this.resolveSectionContent("hospitalCourse", sections.hospitalCourse, sections.extractedData, () => this.generateFallbackHospitalCourse(sections.extractedData));
+    const assessment = this.resolveSectionContent("assessment", sections.assessment, sections.extractedData, () => this.generateFallbackAssessment(sections.extractedData));
+    const pending = this.resolveSectionContent("pending", sections.pending, sections.extractedData, () => "No pending investigations documented at discharge.");
+    const plan = this.resolveSectionContent("plan", sections.plan, sections.extractedData, () => this.generateFallbackPlan(sections.extractedData));
+    const nursing = this.resolveSectionContent("nursing", sections.nursing, sections.extractedData, () => this.generateFallbackNursingCare(sections.extractedData));
+    const riskFlags = this.resolveSectionContent("riskFlags", sections.riskFlags, sections.extractedData, () => this.generateFallbackRiskFlags(sections.extractedData));
 
     console.log("  📋 Final chart note compiled:", {
       totalLength: allergies.length + subjective.length + comorbidities.length + objective.length +
@@ -1047,19 +1102,53 @@ Validation Summary: ${sections.validationSummary}
     const diagnosis = data.diagnosis?.principal || "Not documented";
     const secondary = data.diagnosis?.secondary?.length > 0
       ? data.diagnosis.secondary.slice(0, 3).join(", ")
-      : "None documented";
-    return `Principal Diagnosis: ${diagnosis}\nSecondary Diagnoses: ${secondary}`;
+      : "";
+    const comorbidities = data.diagnosis?.comorbidities?.length > 0
+      ? data.diagnosis.comorbidities.slice(0, 3).join(", ")
+      : "";
+    const treatmentApproach = data.treatment?.current_approach || "";
+    const response = data.response_to_treatment || data.treatment?.response || "";
+    const disposition = data.admission?.discharge_disposition || data.meta?.discharge_disposition || "clinically stable for discharge";
+
+    return [
+      `Principal diagnosis: ${diagnosis}.`,
+      secondary ? `Secondary diagnoses: ${secondary}.` : "",
+      comorbidities ? `Relevant comorbidities: ${comorbidities}.` : "",
+      treatmentApproach ? `Hospital stay was managed with ${treatmentApproach}.` : "",
+      response ? `Response to treatment: ${response}.` : "",
+      `At discharge, the patient was considered ${disposition}.`
+    ].filter(Boolean).join(" ");
   }
 
   generateFallbackPlan(data) {
-    const meds = data.medications || [];
-    let content = "Discharge Medications:\n";
+    const meds = data.discharge_medications || data.medications || [];
+    const followUp = data.follow_up || {};
+    const diet = Array.isArray(data.discharge_instructions?.diet) ? data.discharge_instructions.diet : [];
+    const activity = Array.isArray(data.discharge_instructions?.activity) ? data.discharge_instructions.activity : [];
+    const warnings = Array.isArray(data.discharge_instructions?.red_flags) ? data.discharge_instructions.red_flags : [];
+
+    let content = "Discharge medications:\n";
     if (meds.length > 0) {
       meds.slice(0, 5).forEach(med => {
-        content += `- ${med.name || med} ${med.dose || ''} ${med.frequency || ''} ${med.route || ''}\n`;
+        content += `- ${med.name || med} ${med.dose || ''} ${med.frequency || ''} ${med.route || ''}`.trimEnd() + "\n";
       });
     } else {
-      content += "No medications documented.\n";
+      content += "- No medications documented.\n";
+    }
+    if (activity.length > 0) {
+      content += `Activity instructions: ${activity.slice(0, 3).join(", ")}.\n`;
+    }
+    if (diet.length > 0) {
+      content += `Diet instructions: ${diet.slice(0, 3).join(", ")}.\n`;
+    }
+    if (warnings.length > 0) {
+      content += `Return precautions: ${warnings.slice(0, 3).join(", ")}.\n`;
+    }
+    const followUpItems = Array.isArray(followUp.items) ? followUp.items : [];
+    if (followUpItems.length > 0) {
+      content += `Follow-up: ${followUpItems.slice(0, 3).join(", ")}.\n`;
+    } else if (followUp.when || followUp.specialty || followUp.provider) {
+      content += `Follow-up: ${[followUp.specialty, followUp.provider, followUp.when].filter(Boolean).join(" - ")}.\n`;
     }
     return content;
   }
@@ -1172,7 +1261,121 @@ Validation Summary: ${sections.validationSummary}
     }
     // Also remove leading colon if content starts with it
     cleaned = lines.join('\n').replace(/^:\s*/, '').trim();
+    cleaned = cleaned
+      .replace(/\n?\*+\s*END OF RECORD\s*\*+/gi, '')
+      .replace(/\n?_{3,}\n?/g, '\n')
+      .replace(/\n?(Generated|Note|Validation Summary):[^\n]*/gi, '')
+      .trim();
     return cleaned;
+  }
+
+  runStepWithProgress(stepName, work, onProgress) {
+    return Promise.resolve()
+      .then(work)
+      .then((result) => {
+        if (onProgress) onProgress({ step: stepName, status: "complete", data: result });
+        return result;
+      });
+  }
+
+  buildConsolidationDataSnapshot(extractedData = {}) {
+    return {
+      patient: extractedData.patient || {},
+      admission: extractedData.admission || extractedData.meta || {},
+      diagnosis: extractedData.diagnosis || {},
+      treatment: extractedData.treatment || {},
+      vitals: extractedData.vitals || extractedData.latest || {},
+      medications: (extractedData.discharge_medications || extractedData.medications || []).slice(0, 8),
+      lab_results: (extractedData.lab_results || []).slice(0, 5),
+      follow_up: extractedData.follow_up || {},
+      discharge_instructions: extractedData.discharge_instructions || {},
+      functional_status: extractedData.functional_status || {},
+      risk_scores: extractedData.risk_scores || {},
+      nursing_needs: extractedData.nursing_needs || []
+    };
+  }
+
+  parseTaggedBlocks(content, tags) {
+    const blocks = {};
+    if (!content) return blocks;
+
+    for (let i = 0; i < tags.length; i++) {
+      const tag = tags[i];
+      const nextTags = tags.slice(i + 1).join("|");
+      const regex = new RegExp(`\\[\\[${tag}\\]\\]([\\s\\S]*?)(?=${nextTags ? `\\[\\[(?:${nextTags})\\]\\]` : "$"})`, "i");
+      const match = content.match(regex);
+      if (match) {
+        blocks[tag] = match[1].trim();
+      }
+    }
+
+    return blocks;
+  }
+
+  normalizeRefinedSection(content) {
+    const cleaned = this.cleanSectionContent(content || "");
+    if (!cleaned) return null;
+    if (/^KEEP\.?$/i.test(cleaned)) return null;
+    return cleaned;
+  }
+
+  resolveSectionContent(sectionName, rawContent, extractedData, fallbackBuilder) {
+    const sanitized = this.cleanSectionContent(rawContent || '');
+    if (this.isSectionContentUsable(sectionName, sanitized, extractedData)) {
+      return sanitized;
+    }
+
+    const fallback = this.cleanSectionContent(fallbackBuilder());
+    console.log(`    ⚠️ Using fallback ${sectionName} content`, {
+      receivedLength: sanitized.length,
+      fallbackLength: fallback.length
+    });
+    return fallback;
+  }
+
+  isSectionContentUsable(sectionName, content, extractedData) {
+    if (!content) return false;
+
+    const normalized = content.replace(/\s+/g, ' ').trim();
+    if (!normalized) return false;
+    if (/END OF RECORD/i.test(content)) return false;
+
+    const minimumLengths = {
+      allergies: 8,
+      subjective: 40,
+      comorbidities: 12,
+      objective: 30,
+      procedures: 20,
+      hospitalCourse: 40,
+      assessment: 60,
+      pending: 10,
+      plan: 70,
+      nursing: 12,
+      riskFlags: 12
+    };
+
+    if (normalized.length < (minimumLengths[sectionName] || 20)) {
+      return false;
+    }
+
+    if (sectionName === "assessment") {
+      const principalDiagnosis = this.getNestedValue(extractedData, ["diagnosis", "principal"]);
+      if (principalDiagnosis && normalized === `Principal Diagnosis: ${principalDiagnosis}`) {
+        return false;
+      }
+      if (/(?:\bat\s+\d+\s*$|\bwith\s*$|\bfor\s*$|\bdue to\s*$|\bsecondary to\s*$)/i.test(normalized)) {
+        return false;
+      }
+    }
+
+    if (sectionName === "plan") {
+      const hasPlanSignal = /(medication|follow[- ]?up|review|return|diet|activity|warning|education|precaution)/i.test(normalized);
+      if (!hasPlanSignal) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**
