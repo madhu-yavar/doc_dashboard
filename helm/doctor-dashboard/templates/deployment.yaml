@@ -111,8 +111,13 @@ spec:
           mountPath: /app/server/storage
       volumes:
       - name: storage
+        {{- if .Values.storage.existingClaim }}
+        persistentVolumeClaim:
+          claimName: {{ .Values.storage.existingClaim }}
+        {{- else }}
         persistentVolumeClaim:
           claimName: {{ include "doctor-dashboard.fullname" . }}-storage
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

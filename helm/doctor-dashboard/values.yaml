@@ -84,9 +84,10 @@ autoscaling:
 
 # Persistent storage configuration
 storage:
-  className: ""  # Default storage class will be used if empty
+  className: "azurefile-csi"  # Use Azure Files for ReadWriteMany support
   size: 5Gi
-  accessMode: ReadWriteOnce
+  accessMode: ReadWriteMany  # Allow multiple pods to access storage simultaneously
+  existingClaim: "r-and-d-doctor-dashboard-storage-rwx"  # Use new ReadWriteMany PVC
   annotations: {}
 
 # Container configuration
