@@ -5,11 +5,12 @@ trigger:
     - main
     - dev
   paths:
-    include:
-    - doctor_dashboard
-    - .azure-pipelines-ci.yml
-    - Dockerfile
-    - .dockerignore
+    exclude:
+    - docs/**
+    - '*.md'
+    - '.gitignore'
+    - '.dockerignore'
+    - 'data/**'
 
 pr: none
 
@@ -20,12 +21,12 @@ variables:
   acrName: 'zgridcontainerregistry'
   acrResourceGroup: 'Z-INFRA-STACK-DEV'
   imageName: 'doctor-dashboard'
-  dockerfilePath: 'doctor_dashboard/Dockerfile'
-  buildContext: 'doctor_dashboard'
+  dockerfilePath: 'Dockerfile'
+  buildContext: '.'
 
 resources:
   repositories:
-  - repository: doctor_dashboard
+  - repository: self
     type: git
     name: Z-Platforms-Infra/r_and_d
 
@@ -36,7 +37,7 @@ stages:
   - job: Build
     displayName: 'Build Doctor Dashboard'
     steps:
-    # Checkout with submodules to get doctor_dashboard code
+    # Checkout with submodules
     - checkout: self
       submodules: true
       fetchDepth: 0
@@ -51,7 +52,7 @@ stages:
     - task: AzureCLI@2
       displayName: 'Azure CLI Login to ACR'
       inputs:
-        azureSubscription: 'Z-INFRA-STACK-DEV-connection'  # Update with your service connection name
+        azureSubscription: 'Z-INFRA-STACK-DEV-connection'
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
