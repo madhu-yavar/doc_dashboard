@@ -152,4 +152,35 @@ describe("UploadCenter", () => {
 
     expect(screen.getByText("Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf")).toBeInTheDocument();
   });
+
+  it("supports selecting and deleting queued documents", async () => {
+    const { container } = render(
+      <MemoryRouter>
+        <UploadCenter />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText(/no documents found/i);
+
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(["dummy"], "Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf", {
+      type: "application/pdf",
+    });
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    const rowCheckbox = await screen.findByRole("checkbox", {
+      name: /select custom\.mexx\.report\.zen\.dischargesummary3\.cls\.pdf/i,
+    });
+
+    fireEvent.click(rowCheckbox);
+
+    expect(screen.getByRole("button", { name: /delete selected/i })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: /delete selected/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/no documents found/i)).toBeInTheDocument();
+    });
+  });
 });

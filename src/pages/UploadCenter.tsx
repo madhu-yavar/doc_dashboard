@@ -6,6 +6,7 @@ import AuditTrailSheet from "@/components/dashboard/AuditTrailSheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   API_BASE,
@@ -45,6 +46,7 @@ const UploadCenter = () => {
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [processingProgress, setProcessingProgress] = useState<Record<string, {
     stepNumber: number;
     totalSteps: number;
@@ -71,6 +73,10 @@ const UploadCenter = () => {
       });
   }, []);
 
+  useEffect(() => {
+    setSelectedIds((current) => current.filter((id) => documents.some((document) => document.id === id)));
+  }, [documents]);
+
   const filteredDocuments = useMemo(() => {
     return documents.filter((document) => {
       const matchesTab =
@@ -93,6 +99,31 @@ const UploadCenter = () => {
   }, [documents]);
 
   const queueReady = stats.queued > 0 && stats.processing === 0 && !isProcessingBatch;
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const selectedDocuments = useMemo(
+    () => documents.filter((document) => selectedIdSet.has(document.id)),
+    [documents, selectedIdSet],
+  );
+  const visibleSelectableIds = useMemo(
+    () => filteredDocuments.filter((document) => document.status !== "processing").map((document) => document.id),
+    [filteredDocuments],
+  );
+  const selectedVisibleCount = useMemo(
+    () => visibleSelectableIds.filter((id) => selectedIdSet.has(id)).length,
+    [selectedIdSet, visibleSelectableIds],
+  );
+  const allVisibleSelected = visibleSelectableIds.length > 0 && selectedVisibleCount === visibleSelectableIds.length;
+  const someVisibleSelected = selectedVisibleCount > 0 && !allVisibleSelected;
+  const selectedQueuedDocuments = useMemo(
+    () => selectedDocuments.filter((document) => document.status === "queued"),
+    [selectedDocuments],
+  );
+  const selectedProcessingCount = useMemo(
+    () => selectedDocuments.filter((document) => document.status === "processing").length,
+    [selectedDocuments],
+  );
+  const canProcessSelected = selectedQueuedDocuments.length > 0 && stats.processing === 0 && !isProcessingBatch;
+  const canDeleteSelected = selectedIds.length > 0 && selectedProcessingCount === 0 && !isProcessingBatch;
 
   const openFilePicker = () => {
     const input = inputRef.current;
@@ -159,8 +190,26 @@ const UploadCenter = () => {
     event.target.value = "";
   };
 
-  const handleProcessQueue = async () => {
-    const queuedDocuments = documents.filter((document) => document.status === "queued");
+  const toggleSelection = (id: string, checked: boolean) => {
+    setSelectedIds((current) => {
+      if (checked) {
+        return current.includes(id) ? current : [...current, id];
+      }
+      return current.filter((currentId) => currentId !== id);
+    });
+  };
+
+  const toggleVisibleSelection = (checked: boolean) => {
+    setSelectedIds((current) => {
+      if (checked) {
+        return Array.from(new Set([...current, ...visibleSelectableIds]));
+      }
+      const visibleSet = new Set(visibleSelectableIds);
+      return current.filter((id) => !visibleSet.has(id));
+    });
+  };
+
+  const processDocuments = async (queuedDocuments: ProcessedDocument[]) => {
     if (queuedDocuments.length === 0) return;
 
     setIsProcessingBatch(true);
@@ -275,6 +324,14 @@ const UploadCenter = () => {
     toast.success(`Batch processing complete.`);
   };
 
+  const handleProcessQueue = async () => {
+    await processDocuments(documents.filter((document) => document.status === "queued"));
+  };
+
+  const handleProcessSelected = async () => {
+    await processDocuments(selectedQueuedDocuments);
+  };
+
   const formatStepName = (step: string) => {
     return step.split(/[_-]+/).filter(Boolean).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
@@ -286,8 +343,36 @@ const UploadCenter = () => {
         throw new Error("Unable to delete document.");
       }
       setDocuments((current) => current.filter((document) => document.id !== id));
+      setSelectedIds((current) => current.filter((currentId) => currentId !== id));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to delete document.");
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!canDeleteSelected) return;
+
+    const deleteResults = await Promise.allSettled(
+      selectedIds.map(async (id) => {
+        const response = await fetch(`${API_BASE}/documents/${id}`, { method: "DELETE" });
+        if (!response.ok) {
+          throw new Error(id);
+        }
+      }),
+    );
+
+    const failedDeletes = deleteResults.filter((result) => result.status === "rejected").length;
+
+    if (failedDeletes > 0) {
+      toast.error(`Unable to delete ${failedDeletes} selected document${failedDeletes > 1 ? "s" : ""}.`);
+    }
+
+    if (failedDeletes < selectedIds.length) {
+      setDocuments((current) => current.filter((document) => !selectedIdSet.has(document.id)));
+      setSelectedIds([]);
+      toast.success(
+        `${selectedIds.length - failedDeletes} document${selectedIds.length - failedDeletes > 1 ? "s" : ""} deleted.`,
+      );
     }
   };
 
@@ -375,20 +460,46 @@ const UploadCenter = () => {
           {/* Documents Queue */}
           <Card>
             <div className="p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                {["all", "queued", "processed", "failed"].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab as QueueTab)}
-                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                      activeTab === tab
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted"
-                    }`}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  {["all", "queued", "processed", "failed"].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab as QueueTab)}
+                      className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                        activeTab === tab
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {selectedIds.length > 0 ? `${selectedIds.length} selected` : "Select rows for batch actions"}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleProcessSelected}
+                    disabled={!canProcessSelected}
                   >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Process Selected
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={handleDeleteSelected}
+                    disabled={!canDeleteSelected}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Selected
+                  </Button>
+                </div>
               </div>
               <div className="relative w-full sm:w-64">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -405,6 +516,13 @@ const UploadCenter = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        aria-label="Select all visible documents"
+                        checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
+                        onCheckedChange={(checked) => toggleVisibleSelection(checked === true)}
+                      />
+                    </TableHead>
                     <TableHead>Document</TableHead>
                     <TableHead>Size</TableHead>
                     <TableHead>Status</TableHead>
@@ -415,13 +533,13 @@ const UploadCenter = () => {
                 <TableBody>
                   {isLoadingDocuments ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         Loading documents...
                       </TableCell>
                     </TableRow>
                   ) : filteredDocuments.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8">
+                      <TableCell colSpan={6} className="text-center py-8">
                         <FileStack className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
                         <p className="text-muted-foreground">No documents found</p>
                       </TableCell>
@@ -433,6 +551,14 @@ const UploadCenter = () => {
 
                       return (
                         <TableRow key={document.id}>
+                          <TableCell>
+                            <Checkbox
+                              aria-label={`Select ${document.name}`}
+                              checked={selectedIdSet.has(document.id)}
+                              disabled={document.status === "processing"}
+                              onCheckedChange={(checked) => toggleSelection(document.id, checked === true)}
+                            />
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <FileText className="h-5 w-5 text-muted-foreground" />
