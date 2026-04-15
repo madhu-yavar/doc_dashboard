@@ -90,11 +90,62 @@ class CrossValidatorSkill {
     // Ensure steps is an array
     const stepsArray = Array.isArray(steps) ? steps : [];
 
-    // Collect all data from steps
-    const allData = {};
+    // Collect all data from steps using the same schema the rest of the app expects
+    const allData = {
+      patient: {},
+      vitals: {},
+      risk_scores: {},
+    };
     stepsArray.forEach(step => {
       if (step.data) {
-        Object.assign(allData, step.data);
+        const stepData = step.data;
+
+        Object.assign(allData, stepData);
+
+        if (stepData.name || stepData.mrn || stepData.age || stepData.gender) {
+          Object.assign(allData.patient, {
+            name: stepData.name || allData.patient.name,
+            mrn: stepData.mrn || allData.patient.mrn,
+            age: stepData.age || allData.patient.age,
+            gender: stepData.gender || allData.patient.gender,
+            admission_date: stepData.admission_date || allData.patient.admission_date,
+            discharge_date: stepData.discharge_date || allData.patient.discharge_date,
+          });
+        }
+
+        if (stepData.patient && typeof stepData.patient === "object") {
+          Object.assign(allData.patient, stepData.patient);
+        }
+
+        if (
+          stepData.latest ||
+          Array.isArray(stepData.readings) ||
+          stepData.reference_ranges ||
+          stepData.bp ||
+          stepData.pulse ||
+          stepData.spo2 ||
+          stepData.temperature
+        ) {
+          allData.vitals = {
+            ...allData.vitals,
+            ...stepData,
+            latest: stepData.latest || allData.vitals.latest || {},
+            readings: Array.isArray(stepData.readings) ? stepData.readings : (allData.vitals.readings || []),
+            reference_ranges: stepData.reference_ranges || allData.vitals.reference_ranges || {},
+          };
+        }
+
+        if (stepData.vitals && typeof stepData.vitals === "object") {
+          allData.vitals = {
+            ...allData.vitals,
+            ...stepData.vitals,
+            latest: stepData.vitals.latest || allData.vitals.latest || {},
+            readings: Array.isArray(stepData.vitals.readings)
+              ? stepData.vitals.readings
+              : (allData.vitals.readings || []),
+            reference_ranges: stepData.vitals.reference_ranges || allData.vitals.reference_ranges || {},
+          };
+        }
       }
     });
 
@@ -103,6 +154,8 @@ class CrossValidatorSkill {
     stepsArray.forEach(step => {
       if (step.data?.patient?.age) {
         ages.push(step.data.patient.age);
+      } else if (step.data?.age) {
+        ages.push(step.data.age);
       }
     });
     if (ages.length > 1) {
@@ -115,8 +168,8 @@ class CrossValidatorSkill {
     // Check for risk score consistency
     const fallScores = [];
     stepsArray.forEach(step => {
-      if (step.data?.risk_scores?.fall_risk?.score || step.data?.fall_risk_score) {
-        fallScores.push(step.data.risk_scores?.fall_risk?.score || step.data.fall_risk_score);
+      if (step.data?.risk_scores?.fall_risk?.score || step.data?.fall_risk?.score || step.data?.fall_risk_score) {
+        fallScores.push(step.data.risk_scores?.fall_risk?.score || step.data.fall_risk?.score || step.data.fall_risk_score);
       }
     });
     if (fallScores.length > 1) {
@@ -127,17 +180,15 @@ class CrossValidatorSkill {
     }
 
     // Check for missing critical fields
-    const required = ["patient.name", "patient.mrn", "vitals.bp"];
-    required.forEach(field => {
-      const parts = field.split(".");
-      let obj = allData;
-      for (const part of parts) {
-        obj = obj?.[part];
-      }
-      if (!obj) {
-        missing.push(field);
-      }
-    });
+    if (!this.hasValue(allData.patient?.name)) {
+      missing.push("patient.name");
+    }
+    if (!this.hasValue(allData.patient?.mrn)) {
+      missing.push("patient.mrn");
+    }
+    if (!this.hasVitalsBp(allData.vitals)) {
+      missing.push("vitals.bp");
+    }
 
     return {
       inconsistencies: inconsistencies,
@@ -147,6 +198,36 @@ class CrossValidatorSkill {
         `Found ${inconsistencies.length} inconsistencies, ${missing.length} missing fields` :
         "All data consistent"
     };
+  }
+
+  hasValue(value) {
+    if (value === null || value === undefined) return false;
+    if (typeof value === "string") return value.trim().length > 0;
+    if (Array.isArray(value)) return value.length > 0;
+    if (typeof value === "object") return Object.keys(value).length > 0;
+    return true;
+  }
+
+  hasVitalsBp(vitals = {}) {
+    if (!vitals || typeof vitals !== "object") return false;
+
+    const latestBp = vitals.latest?.bp;
+    if (latestBp && (this.hasValue(latestBp.systolic) || this.hasValue(latestBp.diastolic))) {
+      return true;
+    }
+
+    const directBp = vitals.bp;
+    if (directBp && (this.hasValue(directBp.systolic) || this.hasValue(directBp.diastolic))) {
+      return true;
+    }
+
+    if (Array.isArray(vitals.readings)) {
+      return vitals.readings.some(
+        (reading) => this.hasValue(reading?.bp_systolic) || this.hasValue(reading?.bp_diastolic)
+      );
+    }
+
+    return false;
   }
 
   /**

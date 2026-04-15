@@ -4,13 +4,16 @@
 
 **Version:** 2.0.0
 **Environment:** Production
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15
 
 ---
 
 ## Overview
 
 This guide covers deploying the Doctor Dashboard system to production environments, including infrastructure setup, configuration, and monitoring.
+
+> Note
+> The current repository ships a file-backed Express server in `server/index.cjs`. The environment block below documents the variables actually read by that server today; storage path remapping, TLS, auth, and log shipping are deployment concerns around the app rather than toggles built into the current root server.
 
 ---
 
@@ -160,25 +163,23 @@ PORT=8001
 # Gemma LLM
 GEMMA_URL=http://your-gemma-service:8000
 GEMMA_MODEL=google/gemma-4-26B-A4B-it
-GEMMA_TIMEOUT=180000
 
-# Storage
-STORAGE_PATH=/var/www/storage
+# Optional Gemini external-knowledge mode
+USE_GEMINI_FOR_EXTERNAL=true
+GEMINI_MODEL=gemini-2.5-flash
+GEMINI_API_KEY=your-gemini-api-key
 
-# Logging
-LOG_LEVEL=info
-LOG_FILE=/var/log/doctor-dashboard/app.log
-
-# Security (implement as needed)
-# API_KEY=your-api-key
-# JWT_SECRET=your-jwt-secret
+# Optional extractor tuning
+EXTRACTION_PER_DOCUMENT_CONCURRENCY=3
+ENABLE_PENDING_ITEMS_EXTRACTION=true
+ENABLE_DOCUMENT_ANALYZER=false
 ```
 
 ### 3. Create Storage Directory
 
 ```bash
-sudo mkdir -p /var/www/storage/uploads
-sudo chown -R www-data:www-data /var/www/storage
+sudo mkdir -p /var/www/doctor-dashboard/server/storage/uploads
+sudo chown -R www-data:www-data /var/www/doctor-dashboard/server/storage
 ```
 
 ---
@@ -516,4 +517,4 @@ Add to crontab for every 5 minutes:
 ---
 
 **Document Version:** 1.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15

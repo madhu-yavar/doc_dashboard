@@ -4,123 +4,91 @@
 
 **Version:** 2.0.0
 **Base URL:** `http://localhost:8001/api`
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15
 
 ---
 
 ## Overview
 
-The Doctor Dashboard provides a REST API for document processing, chat interactions, and chart note generation. All endpoints return JSON responses unless otherwise specified.
+The Doctor Dashboard provides a REST API for document processing, audit logging, chat interactions, and chart note generation. All endpoints return JSON responses unless otherwise specified.
+
+> Note
+> This reference documents the current Express server in `server/index.cjs`. Some older architecture docs in this repository describe historical or planned systems and may not match these endpoint shapes.
 
 ---
 
-## Authentication
+## Health & Status
 
-Currently, the API does not require authentication for development. For production deployment, implement appropriate authentication mechanisms.
+### GET /health
 
----
-
-## Response Format
-
-### Success Response
-
-```json
-{
-  "success": true,
-  "data": { /* response data */ }
-}
-```
-
-### Error Response
-
-```json
-{
-  "success": false,
-  "error": {
-    "message": "Error description",
-    "code": "ERROR_CODE"
-  }
-}
-```
-
----
-
-## Endpoints
-
-### Health & Status
-
-#### GET /health
-
-Check API and service health.
+Check API health and server identity.
 
 **Response:**
 ```json
 {
-  "status": "healthy",
-  "timestamp": "2026-04-07T10:00:00Z",
-  "services": {
-    "api": "ok",
-    "gemma": "ok",
-    "storage": "ok"
-  }
+  "status": "ok",
+  "server": "root",
+  "version": "2.0.0",
+  "model": "google/gemma-4-26B-A4B-it",
+  "audit": {
+    "enabled": true
+  },
+  "timestamp": "2026-04-15T10:00:00Z"
 }
 ```
 
-#### GET /agent/status
+### GET /agent/status
 
 Get AI agent system status.
 
 **Response:**
 ```json
 {
-  "status": "ready",
-  "version": "2.0.0",
-  "agents": {
-    "DischargeExtractorAgent": "ready",
-    "DoctorAssistantAgent": "ready",
-    "ChartNoteAgent": "ready"
+  "agent": {
+    "name": "Document Type Router",
+    "version": "1.0.0",
+    "type": "router",
+    "skillsCount": 7,
+    "toolsCount": 4
   },
   "gemma": {
-    "connected": true,
+    "url": "http://gemma-api:8000",
     "model": "google/gemma-4-26B-A4B-it"
+  },
+  "dashboardMapper": {
+    "name": "Dashboard Mapper",
+    "version": "1.0.0"
   }
 }
 ```
 
 ---
 
-### Document Management
+## Document Management
 
-#### GET /documents
+### GET /documents
 
 List all processed documents.
-
-**Query Parameters:**
-- `limit` (optional): Number of documents to return (default: 50)
-- `offset` (optional): Pagination offset (default: 0)
 
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "documents": [
-      {
-        "id": "uuid",
-        "filename": "discharge_summary.pdf",
-        "uploaded_at": "2026-04-07T10:00:00Z",
-        "processed": true,
-        "patient_name": "John Doe"
-      }
-    ],
-    "total": 100,
-    "limit": 50,
-    "offset": 0
-  }
+  "documents": [
+    {
+      "id": "uuid",
+      "name": "discharge_summary.pdf",
+      "size": 250000,
+      "uploadedAt": "2026-04-15T10:00:00Z",
+      "status": "processed",
+      "department": "Cardiology / Cath Lab",
+      "result": { /* dashboard data */ },
+      "auditRunId": "run-uuid"
+    }
+  ]
 }
 ```
 
-#### GET /documents/:id
+### GET /documents/:id
 
 Get a single processed document.
 
@@ -130,58 +98,51 @@ Get a single processed document.
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "meta": {
-      "id": "uuid",
-      "pdf_file": "discharge_summary.pdf",
-      "processed_at": "2026-04-07T10:00:00Z",
-      "agent_version": "2.0.0"
+  "document": {
+    "id": "uuid",
+    "name": "discharge_summary.pdf",
+    "result": {
+      "meta": { /* metadata */ },
+      "dashboard_cards": { /* card data */ },
+      "sample_patient_data": { /* patient data */ },
+      "presentation": { /* presentation data */ },
+      "extracted_data": { /* full data including pending_items */ }
     },
-    "dashboard_cards": { /* card data */ },
-    "sample_patient_data": { /* patient data */ },
-    "presentation": { /* presentation data */ },
-    "extracted_data": { /* full extracted data */ },
-    "pending_items": {
-      "pending_labs": [...],
-      "pending_radiology": [...],
-      "pending_followups": [...],
-      "medication_reconciliation": {...},
-      "pending_discharge_items": [...],
-      "summary": {...}
-    },
-    "provenance": { /* citation data */ }
+    "auditRunId": "run-uuid"
   }
 }
 ```
 
-#### POST /documents/upload
+### POST /documents/upload
 
 Upload one or more PDF files.
 
 **Request:** `multipart/form-data`
-- `file`: PDF file(s) - can be multiple
+- `files`: PDF file(s) - up to 50 files, 25MB each
 
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "uploaded": [
-      {
-        "id": "uuid",
-        "filename": "discharge_summary.pdf",
-        "size": 250000,
-        "path": "/storage/uploads/discharge_summary.pdf"
-      }
-    ]
-  }
+  "documents": [
+    {
+      "id": "uuid",
+      "name": "discharge_summary.pdf",
+      "size": 250000,
+      "uploadedAt": "2026-04-15T10:00:00Z"
+    }
+  ],
+  "duplicates": [
+    {
+      "name": "duplicate.pdf",
+      "existingDocument": { /* ... */ }
+    }
+  ]
 }
 ```
 
-#### POST /documents/process
+### POST /documents/process
 
-Process uploaded documents.
+Process uploaded documents (batch mode).
 
 **Request Body:**
 ```json
@@ -193,72 +154,166 @@ Process uploaded documents.
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "processing": ["uuid1", "uuid2"]
-  }
+  "documents": [
+    {
+      "id": "uuid",
+      "status": "processed",
+      "auditRunId": "run-uuid"
+    }
+  ]
 }
 ```
 
-#### GET /documents/process/progress
+### GET /documents/process/progress
 
-Subscribe to processing progress via Server-Sent Events.
+Subscribe to processing progress via Server-Sent Events (SSE).
 
 **Query Parameters:**
 - `documentId`: Document UUID to track
 
 **Response:** SSE stream with events:
 ```json
-// Event: start
-{
-  "type": "start",
-  "pdfName": "discharge_summary.pdf",
-  "totalSteps": 7
-}
+// Event: connected
+{"type": "connected", "documentId": "uuid"}
 
 // Event: step
 {
   "type": "step",
-  "step": "VitalsExtractor",
-  "stepNumber": 4,
-  "status": "in_progress",
-  "data": { /* partial results */ }
+  "step": "Risk Scores Extractor",
+  "stepNumber": 2,
+  "totalSteps": 7,
+  "status": "complete",
+  "data": {
+    "tokens": 1200,
+    "latency": 3500
+  }
 }
 
-// Event: complete
+// Event: done
 {
-  "type": "complete",
-  "latency": 35000,
-  "tokensUsed": 6000,
-  "confidence": 0.92
+  "type": "done",
+  "documentId": "uuid",
+  "document": { /* processed document */ }
 }
 
 // Event: error
 {
   "type": "error",
+  "documentId": "uuid",
   "error": "Processing failed"
 }
 ```
 
-#### DELETE /documents/:id
+### DELETE /documents/:id
 
-Delete a document.
+Delete a document and its file.
+
+**Response:** `204 No Content`
+
+---
+
+## Audit Trail
+
+### GET /audit/runs
+
+List audit runs with optional filtering.
+
+**Query Parameters:**
+- `workflow` (optional): Filter by workflow type (`extraction`, `chart_note`, `chat`)
+- `documentId` (optional): Filter by document ID
+- `status` (optional): Filter by status (`running`, `completed`, `failed`)
+- `limit` (optional): Max results (default: 50)
 
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "deleted": "uuid"
+  "runs": [
+    {
+      "runId": "uuid",
+      "workflow": "extraction",
+      "documentId": "doc-uuid",
+      "title": "discharge_summary.pdf",
+      "status": "completed",
+      "startedAt": "2026-04-15T10:00:00Z",
+      "completedAt": "2026-04-15T10:03:00Z",
+      "durationMs": 180000,
+      "summary": {
+        "agentName": "Discharge Summary Extractor",
+        "tokensUsed": 15000,
+        "stepsCount": 7
+      }
+    }
+  ]
+}
+```
+
+### GET /audit/runs/:runId
+
+Get a specific audit run.
+
+**Path Parameters:**
+- `runId`: Audit run UUID
+
+**Response:**
+```json
+{
+  "run": {
+    "runId": "uuid",
+    "workflow": "extraction",
+    "documentId": "doc-uuid",
+    "title": "discharge_summary.pdf",
+    "status": "completed",
+    "startedAt": "2026-04-15T10:00:00Z",
+    "completedAt": "2026-04-15T10:03:00Z",
+    "durationMs": 180000,
+    "summary": { /* ... */ }
   }
+}
+```
+
+### GET /audit/runs/:runId/events
+
+Get events for a specific audit run.
+
+**Path Parameters:**
+- `runId`: Audit run UUID
+
+**Query Parameters:**
+- `limit` (optional): Max events (default: 500)
+
+**Response:**
+```json
+{
+  "events": [
+    {
+      "id": "event-uuid",
+      "timestamp": "2026-04-15T10:00:00Z",
+      "type": "run_started",
+      "status": "info",
+      "title": "discharge_summary.pdf"
+    },
+    {
+      "id": "event-uuid",
+      "timestamp": "2026-04-15T10:00:05Z",
+      "type": "agent_progress",
+      "status": "info",
+      "title": "Vitals Extractor"
+    },
+    {
+      "id": "event-uuid",
+      "timestamp": "2026-04-15T10:03:00Z",
+      "type": "run_completed",
+      "status": "success"
+    }
+  ]
 }
 ```
 
 ---
 
-### Chat
+## Chat
 
-#### POST /chat/query
+### POST /chat/query
 
 Submit a chat query.
 
@@ -268,88 +323,75 @@ Submit a chat query.
   "documentId": "uuid",
   "message": "What is the patient's blood pressure?",
   "sectionContext": ["vitals"],
-  "chatId": "optional-chat-uuid"
+  "chatId": "optional-chat-uuid",
+  "geminiApiKey": "optional-gemini-key"
 }
 ```
 
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "answer": "The patient's blood pressure is 130/85 mmHg, which is within normal range.",
-    "citations": [
-      {
-        "value": "130/85 mmHg",
-        "source": "internal",
-        "page": 3,
-        "line": 15,
-        "confidence": 0.95
-      }
-    ],
+  "response": {
+    "answer": "The patient's blood pressure is 130/85 mmHg...",
+    "citations": [ /* citation data */ ],
     "confidence": 85,
-    "confidence_label": "high",
-    "source_class": "internal",
-    "refused": false,
-    "proposed_actions": [
-      {
-        "id": "action-1",
-        "type": "monitoring",
-        "title": "Continue Monitoring",
-        "description": "Blood pressure is stable, continue routine monitoring."
-      }
-    ],
+    "proposed_actions": [ /* ... */ ]
+  },
+  "session": {
     "chatId": "uuid",
-    "messageId": "uuid"
+    "messages": [ /* ... */ ]
   }
 }
 ```
 
-#### GET /chat/history/:documentId
+### GET /chat/history/:documentId
 
 Get chat history for a document.
 
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
+  "session": {
     "chatId": "uuid",
-    "messages": [
-      {
-        "id": "uuid",
-        "role": "user",
-        "content": "What is the patient's blood pressure?",
-        "createdAt": "2026-04-07T10:00:00Z"
-      },
-      {
-        "id": "uuid",
-        "role": "assistant",
-        "content": "The patient's blood pressure is...",
-        "citations": [ /* ... */ ],
-        "confidence": 85,
-        "createdAt": "2026-04-07T10:00:01Z"
-      }
-    ]
+    "documentId": "doc-uuid",
+    "messages": [ /* message history */ ]
   }
 }
 ```
 
-#### DELETE /chat/history/:documentId
+### DELETE /chat/history/:documentId
 
 Clear chat history for a document.
+
+**Query Parameters:**
+- `chatId` (optional): Specific chat ID to clear
 
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "cleared": true
-  }
+  "cleared": true,
+  "chatId": "uuid"
 }
 ```
 
-#### POST /chat/action/confirm
+### GET /chat/source-health
+
+Check external knowledge source health.
+
+**Response:**
+```json
+{
+  "sources": [
+    {
+      "name": "gemini",
+      "status": "available",
+      "latency": 150
+    }
+  ]
+}
+```
+
+### POST /chat/action/confirm
 
 Confirm a proposed action.
 
@@ -357,7 +399,29 @@ Confirm a proposed action.
 ```json
 {
   "documentId": "uuid",
-  "actionId": "action-1",
+  "chatId": "uuid",
+  "actionId": "action-1"
+}
+```
+
+**Response:**
+```json
+{
+  "action": {
+    "id": "action-1",
+    "confirmedAt": "2026-04-15T10:00:00Z"
+  },
+  "session": { /* ... */ }
+}
+```
+
+### POST /chat/export/:documentId
+
+Export chat history for chart note appendix.
+
+**Request Body:**
+```json
+{
   "chatId": "optional-chat-uuid"
 }
 ```
@@ -365,124 +429,147 @@ Confirm a proposed action.
 **Response:**
 ```json
 {
-  "success": true,
-  "data": {
-    "confirmed": true,
-    "actionId": "action-1",
-    "confirmedAt": "2026-04-07T10:00:00Z"
+  "export": {
+    "id": "uuid",
+    "documentId": "doc-uuid",
+    "chart_note_appendix": { /* ... */ }
   }
 }
 ```
-
-#### POST /chat/export/:documentId
-
-Export chat history.
-
-**Request Body:**
-```json
-{
-  "format": "pdf" // or "text"
-}
-```
-
-**Response:** Returns file of requested format.
 
 ---
 
-### Chart Notes
+## Chart Notes
 
-#### GET /documents/:id/chart-note
+### GET /documents/:id/chart-note
 
-Get existing chart note.
+Get existing chart note (with optional regeneration).
+
+**Query Parameters:**
+- `regenerate` (optional): Force regeneration (`true`/`false`)
+- `force` (optional): Alias for regenerate
 
 **Response:**
+
+Cached response:
 ```json
 {
-  "success": true,
-  "data": {
-    "chart_note": {
-      "subjective": { /* ... */ },
-      "objective": { /* ... */ },
-      "assessment": { /* ... */ },
-      "plan": { /* ... */ }
-    },
-    "citations": [ /* ... */ ],
-    "metadata": {
-      "generated_at": "2026-04-07T10:00:00Z",
-      "confidence": 0.92
-    }
-  }
+  "chartNote": {
+    "content": "DISCHARGE SUMMARY CHART NOTE\n\nPatient: ...",
+    "generatedAt": "2026-04-15T10:00:00Z",
+    "tokensUsed": 2500,
+    "generationTime": 45000,
+    "agentType": "react",
+    "reasoningSteps": [ /* ... */ ],
+    "validation": { /* ... */ },
+    "citations": { /* ... */ },
+    "auditRunId": "run-uuid"
+  },
+  "cached": true
 }
 ```
 
-#### POST /documents/:id/chart-note
+Regenerated response:
+```json
+{
+  "chartNote": {
+    "content": "DISCHARGE SUMMARY CHART NOTE\n\nPatient: ...",
+    "generatedAt": "2026-04-15T10:00:00Z",
+    "tokensUsed": 2500,
+    "generationTime": 45000,
+    "agentType": "react",
+    "reasoningSteps": [ /* ... */ ],
+    "validation": { /* ... */ },
+    "citations": { /* ... */ }
+  },
+  "cached": false,
+  "regenerated": true
+}
+```
+
+### POST /documents/:id/chart-note
 
 Generate new chart note.
 
-**Request Body:**
+**Response:**
 ```json
 {
-  "include_reasoning": true,
-  "format": "soap" // or "narrative"
+  "chartNote": {
+    "content": "DISCHARGE SUMMARY CHART NOTE\n\nPatient: ...",
+    "generatedAt": "2026-04-15T10:00:00Z",
+    "tokensUsed": 2500,
+    "generationTime": 45000,
+    "agentType": "react",
+    "reasoningSteps": [ /* ... */ ],
+    "validation": { /* ... */ },
+    "citations": { /* ... */ },
+    "auditRunId": "run-uuid"
+  },
+  "needsReview": true
 }
 ```
+
+### POST /documents/:id/chart-note/pdf
+
+Export chart note as PDF.
+
+**Response:** Returns PDF file with headers:
+```
+Content-Type: application/pdf
+Content-Disposition: attachment; filename=discharge-summary-{id}.pdf
+```
+
+---
+
+## Testing
+
+### POST /agent/test-pdf
+
+Test agent with verbose output (development only).
+
+**Request:** `multipart/form-data`
+- `file`: PDF file to test
 
 **Response:**
 ```json
 {
   "success": true,
-  "data": {
-    "chart_note": { /* generated chart note */ },
-    "reasoning": [ /* step-by-step reasoning */ ],
-    "citations": [ /* ... */ ],
-    "metadata": { /* ... */ }
-  }
+  "summary": {
+    "pdfName": "test.pdf",
+    "agentName": "Discharge Summary Extractor",
+    "agentVersion": "2.0.0",
+    "totalLatency": 180000,
+    "tokensUsed": 15000,
+    "stepsCount": 7
+  },
+  "steps": [ /* step summaries */ ],
+  "validation": { /* validation summary */ },
+  "extractedData": { /* extracted data */ },
+  "rawResult": { /* full agent payload */ }
 }
 ```
 
-#### POST /documents/:id/chart-note/pdf
-
-Export chart note as PDF.
-
-**Response:** Returns PDF file.
-
 ---
 
-## Error Codes
+## Error Responses
 
-| Code | Description |
-|------|-------------|
-| `INVALID_REQUEST` | Malformed request body |
-| `NOT_FOUND` | Resource not found |
-| `PROCESSING_ERROR` | Document processing failed |
-| `GEMMA_ERROR` | LLM API error |
-| `VALIDATION_ERROR` | Input validation failed |
-| `STORAGE_ERROR` | File storage error |
-| `TIMEOUT` | Request timeout |
+All endpoints may return error responses:
 
----
+```json
+{
+  "error": "Error description"
+}
+```
 
-## Rate Limiting
+**Common Error Codes:**
 
-Currently, no rate limiting is enforced in development. For production, implement appropriate rate limits:
-
-- Document upload: 10 per minute
-- Chat queries: 30 per minute
-- Chart note generation: 5 per minute
-
----
-
-## Webhooks
-
-Webhooks can be configured for:
-
-- Document processing complete
-- Chat action confirmed
-- Error notifications
-
-Configure webhooks via environment variables or configuration file.
+| Status | Error | Description |
+|--------|-------|-------------|
+| 400 | Bad Request | Malformed request body or parameters |
+| 404 | Not Found | Resource not found |
+| 500 | Server Error | Processing error or exception |
 
 ---
 
 **Document Version:** 2.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15

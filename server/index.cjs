@@ -6,7 +6,7 @@ const multer = require("multer");
 const path = require("path");
 
 // Import Agent System
-const DischargeExtractorAgent = require("../agents/discharge_extractor_agent.cjs");
+const DocumentTypeRouter = require("../agents/document_type_router.cjs");
 const DashboardMapperSkill = require("../skills/clinical/dashboard_mapper.skill.cjs");
 const DoctorAssistantAgent = require("../agents/doctor_assistant_agent.cjs");
 const ChatExportBuilderSkill = require("../skills/chat/chat_export_builder.skill.cjs");
@@ -27,6 +27,8 @@ const chatSessionsPath = path.join(storageDir, "chat_sessions.json");
 const chatActionsPath = path.join(storageDir, "chat_actions.json");
 const chatExportsPath = path.join(storageDir, "chat_exports.json");
 const searchCachePath = path.join(storageDir, "search_cache.json");
+const auditRunsPath = path.join(storageDir, "audit_runs.json");
+const auditEventsPath = path.join(storageDir, "audit_events.jsonl");
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -34,6 +36,14 @@ const upload = multer({
     fileSize: 25 * 1024 * 1024,
     files: 50,
   },
+});
+
+// Import Audit Logger - initialized after storage paths are defined
+const AuditLogger = require("./audit_logger.cjs");
+const auditLogger = new AuditLogger({
+  storageDir,
+  runsPath: auditRunsPath,
+  eventsPath: auditEventsPath
 });
 
 app.use(cors());
@@ -65,6 +75,7 @@ async function ensureStorage() {
   await ensureCollectionFile(chatActionsPath, { actions: [] });
   await ensureCollectionFile(chatExportsPath, { exports: [] });
   await ensureCollectionFile(searchCachePath, { entries: [] });
+  await auditLogger.ensureStorage();
 }
 
 async function ensureCollectionFile(filePath, initialValue) {
@@ -169,13 +180,113 @@ function inferDepartment(filename) {
   return "Inpatient nursing / medical";
 }
 
+// Audit helper functions
+function buildAuditRequestId(prefix) {
+  return `${prefix}_${crypto.randomUUID()}`;
+}
+
+function sanitizeAuditSummary(value = {}) {
+  if (!value || typeof value !== "object") return {};
+
+  return JSON.parse(
+    JSON.stringify(value, (_key, current) => {
+      if (typeof current === "string" && current.length > 2000) {
+        return `${current.slice(0, 1997)}...`;
+      }
+      return current;
+    })
+  );
+}
+
+async function startAuditRunSafe(options) {
+  try {
+    return await auditLogger.startRun(options);
+  } catch (error) {
+    console.error("Audit start failure:", error);
+    return null;
+  }
+}
+
+function createAuditRunContext(run, base = {}) {
+  const pending = new Set();
+  const runId = run?.runId || null;
+  const requestId = run?.requestId || base.requestId || null;
+
+  const track = (operation) => {
+    if (!runId) return Promise.resolve(null);
+
+    const wrapped = Promise.resolve()
+      .then(operation)
+      .catch((error) => {
+        console.error("Audit logging failure:", error);
+        return null;
+      })
+      .finally(() => {
+        pending.delete(wrapped);
+      });
+
+    pending.add(wrapped);
+    return wrapped;
+  };
+
+  const wait = () => Promise.all(Array.from(pending));
+
+  const event = (type, status = "info", title = "", details = {}) => {
+    return track(() => auditLogger.logEvent(runId, {
+      workflow: base.workflow,
+      documentId: base.documentId,
+      chatId: base.chatId,
+      requestId,
+      type,
+      status,
+      title,
+      details,
+    }));
+  };
+
+  const complete = (summary = {}) => {
+    return wait()
+      .then(() => runId && auditLogger.completeRun(runId, sanitizeAuditSummary(summary)))
+      .catch((error) => {
+        console.error("Audit completion failure:", error);
+        return null;
+      });
+  };
+
+  const fail = (error, summary = {}) => {
+    return wait()
+      .then(() => runId && auditLogger.failRun(runId, error, sanitizeAuditSummary(summary)))
+      .catch((err) => {
+        console.error("Audit failure logging failure:", err);
+        return null;
+      });
+  };
+
+  return { runId, requestId, event, complete, fail, wait };
+}
+
+function extractStepSummary(progress = {}) {
+  const { type, step, stepNumber, totalSteps, status, data, error } = progress;
+  return {
+    type,
+    step,
+    stepNumber,
+    totalSteps,
+    status,
+    tokens: data?.tokens,
+    latency: data?.latency,
+    error,
+  };
+}
+
 // NOTE: Agent System now handles PDF processing and data extraction
 // The legacy functions have been replaced by:
-// - DischargeExtractorAgent (multi-step extraction with validation)
+// - DocumentTypeRouter (auto-detects doc type and routes to appropriate agent)
+// - DischargeExtractorAgent, OutpatientExtractorAgent, LabReportExtractorAgent, ChartNoteExtractorAgent
 // - DashboardMapperSkill (transforms data to dashboard card format)
 
-// Initialize Agent
-const dischargeAgent = new DischargeExtractorAgent({
+// Initialize Document Router (auto-detects document type and routes to appropriate extractor)
+const documentRouter = new DocumentTypeRouter({
   gemma: {
     baseUrl: GEMMA_URL,
     model: MODEL,
@@ -343,11 +454,18 @@ function buildFallbackPatientData(data) {
 }
 
 app.get("/api/health", async (_req, res) => {
-  res.json({ status: "ok", model: MODEL });
+  res.json({
+    status: "ok",
+    server: "root",
+    version: "2.0.0",
+    model: MODEL,
+    audit: { enabled: true },
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.get("/api/agent/status", async (_req, res) => {
-  const agentStatus = dischargeAgent.getStatus();
+  const agentStatus = documentRouter.getStatus();
   res.json({
     agent: {
       name: agentStatus.name,
@@ -373,6 +491,38 @@ app.get("/api/agent/status", async (_req, res) => {
       version: dashboardMapper.version
     }
   });
+});
+
+// Audit endpoints
+app.get("/api/audit/runs", async (req, res) => {
+  try {
+    const { workflow, documentId, chatId, status, limit } = req.query;
+    const runs = await auditLogger.getRuns({ workflow, documentId, chatId, status, limit });
+    res.json({ runs });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch audit runs" });
+  }
+});
+
+app.get("/api/audit/runs/:runId", async (req, res) => {
+  try {
+    const run = await auditLogger.getRun(req.params.runId);
+    if (!run) {
+      return res.status(404).json({ error: "Audit run not found" });
+    }
+    res.json({ run });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch audit run" });
+  }
+});
+
+app.get("/api/audit/runs/:runId/events", async (req, res) => {
+  try {
+    const events = await auditLogger.getEvents(req.params.runId, req.query.limit);
+    res.json({ events });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch audit events" });
+  }
 });
 
 app.get("/api/documents", async (_req, res) => {
@@ -492,9 +642,34 @@ app.post("/api/documents/process", async (req, res) => {
   for (const document of queuedDocuments) {
     if (!document) continue;
 
+    const auditRun = await startAuditRunSafe({
+      workflow: "extraction",
+      documentId: document.id,
+      requestId: buildAuditRequestId("extract"),
+      title: document.name,
+      actor: "system",
+      metadata: {
+        department: document.department,
+        mode: "batch",
+      },
+    });
+
+    const audit = createAuditRunContext(auditRun, {
+      workflow: "extraction",
+      documentId: document.id,
+      requestId: auditRun?.requestId || null,
+    });
+
     try {
-      const agentResult = await dischargeAgent.process(document.filePath, {
+      await audit.event("document_processing_started", "info", "Document processing started", {
+        name: document.name,
+      });
+
+      const agentResult = await documentRouter.process(document.filePath, {
         pdfName: document.name,
+        onProgress: (progress) => {
+          void audit.event("agent_progress", progress.type === "error" ? "error" : "info", progress.step || progress.type || "progress", extractStepSummary(progress));
+        },
       });
 
       if (!agentResult.success) {
@@ -509,8 +684,20 @@ app.post("/api/documents/process", async (req, res) => {
         currentDocument.agentInfo = buildAgentInfo(agentResult);
         currentDocument.error = null;
         currentDocument.processedAt = new Date().toISOString();
+        currentDocument.auditRunId = auditRun?.runId;
+      });
+
+      await audit.complete({
+        documentId: document.id,
+        agentName: agentResult.agent,
+        latency: agentResult.latency,
+        tokensUsed: agentResult.tokensUsed,
+        stepsCount: agentResult.steps?.length || 0,
       });
     } catch (error) {
+      await audit.fail(error, {
+        documentId: document.id,
+      });
       await updateDocument(document.id, async (currentDocument) => {
         currentDocument.status = "failed";
         currentDocument.error = error instanceof Error ? error.message : "Unknown processing error";
@@ -550,6 +737,8 @@ app.get("/api/documents/process/progress", async (req, res) => {
   res.write(`data: ${JSON.stringify({ type: "connected", documentId })}\n\n`);
 
   // Process the document with progress callbacks
+  let audit = createAuditRunContext(null);
+
   try {
     const documents = await readDocuments();
     const document = documents.find((item) => item.id === documentId);
@@ -565,10 +754,32 @@ app.get("/api/documents/process/progress", async (req, res) => {
       currentDocument.error = null;
     });
 
-    const agentResult = await dischargeAgent.process(document.filePath, {
+    const auditRun = await startAuditRunSafe({
+      workflow: "extraction",
+      documentId: document.id,
+      requestId: buildAuditRequestId("extract"),
+      title: document.name,
+      actor: "system",
+      metadata: {
+        department: document.department,
+        mode: "interactive_sse",
+      },
+    });
+    audit = createAuditRunContext(auditRun, {
+      workflow: "extraction",
+      documentId: document.id,
+      requestId: auditRun?.requestId || null,
+    });
+
+    await audit.event("document_processing_started", "info", "Document processing started", {
+      name: document.name,
+    });
+
+    const agentResult = await documentRouter.process(document.filePath, {
       pdfName: document.name,
       onProgress: (progress) => {
         res.write(`data: ${JSON.stringify({ ...progress, documentId })}\n\n`);
+        void audit.event("agent_progress", progress.type === "error" ? "error" : "info", progress.step || progress.type || "progress", extractStepSummary(progress));
       }
     });
 
@@ -584,6 +795,15 @@ app.get("/api/documents/process/progress", async (req, res) => {
       currentDocument.agentInfo = buildAgentInfo(agentResult);
       currentDocument.error = null;
       currentDocument.processedAt = new Date().toISOString();
+      currentDocument.auditRunId = auditRun?.runId;
+    });
+
+    await audit.complete({
+      documentId: document.id,
+      agentName: agentResult.agent,
+      latency: agentResult.latency,
+      tokensUsed: agentResult.tokensUsed,
+      stepsCount: agentResult.steps?.length || 0,
     });
 
     res.write(`data: ${JSON.stringify({
@@ -592,6 +812,9 @@ app.get("/api/documents/process/progress", async (req, res) => {
       document: updatedDocument ? publicDocument(updatedDocument) : null
     })}\n\n`);
   } catch (error) {
+    await audit.fail(error, {
+      documentId: documentId,
+    });
     await updateDocument(documentId, async (currentDocument) => {
       currentDocument.status = "failed";
       currentDocument.error = error instanceof Error ? error.message : "Unknown error";
@@ -627,7 +850,7 @@ app.post("/api/agent/test-pdf", upload.single("file"), async (req, res) => {
 
   try {
     // Process with the agent - logs will appear in console
-    const agentResult = await dischargeAgent.process(filePath, {
+    const agentResult = await documentRouter.process(filePath, {
       pdfName: req.file.originalname
     });
 
@@ -987,6 +1210,26 @@ app.post("/api/documents/:id/chart-note", async (req, res) => {
   }
 
   try {
+    const auditRun = await startAuditRunSafe({
+      workflow: "chart_note",
+      documentId: document.id,
+      requestId: buildAuditRequestId("chart_note"),
+      title: document.name,
+      actor: "system",
+      metadata: {
+        regenerated: false,
+        hasCachedChartNote: !!document.chartNote,
+      },
+    });
+
+    const audit = createAuditRunContext(auditRun, {
+      workflow: "chart_note",
+      documentId: document.id,
+      requestId: auditRun?.requestId || null,
+    });
+
+    await audit.event("chart_note_generation_started", "info", "Chart note generation started");
+
     // Initialize ReAct-style Chart Note Agent
     const ChartNoteAgent = require("../agents/chart_note_agent.cjs");
     const CrossValidationAgentSkill = require("../skills/validation/cross_validation_agent.skill.cjs");
@@ -1033,6 +1276,11 @@ app.post("/api/documents/:id/chart-note", async (req, res) => {
       }
     }
 
+    await audit.event("pdf_validation_complete", "info", "PDF validation complete", {
+      validationEnabled,
+      pdfTextLength: pdfText.length,
+    });
+
     let validationResult = null;
     let citationSummary = null;
 
@@ -1061,6 +1309,12 @@ app.post("/api/documents/:id/chart-note", async (req, res) => {
       citationSummary = validationResult.data.citations.summary;
     }
 
+    await audit.event("cross_validation_complete", "info", "Cross-validation complete", {
+      confidence: citationSummary.overallConfidence,
+      fieldsReviewed: citationSummary.fieldsReviewed,
+      totalFields: citationSummary.totalFields,
+    });
+
     const needsReview = validationResult.data.fieldsNeedingReview.length > 0;
     const validationSummaryText = `Confidence: ${(citationSummary.overallConfidence * 100).toFixed(0)}% | Fields reviewed: ${citationSummary.fieldsReviewed}/${citationSummary.totalFields} | Flags: ${validationResult.data.validation.flags.length}`;
 
@@ -1073,9 +1327,13 @@ app.post("/api/documents/:id/chart-note", async (req, res) => {
       validationSummary: validationSummaryText
     }, (progress) => {
       console.log(`   Progress: ${progress.step} - ${progress.status}`);
+      void audit.event("chart_note_progress", "info", `Progress: ${progress.step}`, {
+        status: progress.status,
+      });
     });
 
     if (!chartNoteResult.success) {
+      await audit.fail(chartNoteResult.error, { step: "chart_note_generation" });
       return res.status(500).json({ error: chartNoteResult.error });
     }
 
@@ -1089,8 +1347,17 @@ app.post("/api/documents/:id/chart-note", async (req, res) => {
         agentType: "react",
         reasoningSteps: chartNoteResult.data.reasoning_steps,
         validation: validationResult.data.validation,
-        citations: validationResult.data.citations
+        citations: validationResult.data.citations,
+        auditRunId: auditRun?.runId,
       };
+    });
+
+    await audit.complete({
+      documentId: document.id,
+      tokensUsed: chartNoteResult.data.metadata.total_tokens || 0,
+      generationTime: chartNoteResult.data.metadata.generation_time_ms || 0,
+      reasoningSteps: chartNoteResult.data.reasoning_steps?.length || 0,
+      needsReview,
     });
 
     res.json({
@@ -1102,7 +1369,8 @@ app.post("/api/documents/:id/chart-note", async (req, res) => {
         agentType: "react",
         reasoningSteps: chartNoteResult.data.reasoning_steps,
         validation: validationResult.data.validation,
-        citations: validationResult.data.citations
+        citations: validationResult.data.citations,
+        auditRunId: auditRun?.runId,
       },
       needsReview: needsReview
     });

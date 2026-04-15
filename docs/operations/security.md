@@ -3,13 +3,23 @@
 ## Doctor Dashboard - Clinical Intelligence System
 
 **Version:** 2.0.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15
 
 ---
 
 ## Overview
 
 This document outlines the security measures and compliance requirements for the Doctor Dashboard system, which handles Protected Health Information (PHI) and must comply with healthcare regulations.
+
+> Important
+> This document describes the target deployment posture for handling PHI. The current application code in this repository does include audit logging and local data segregation under `server/storage`, but it does not by itself provide production-grade authentication, RBAC, TLS termination, or encrypted-at-rest storage. Those controls must be supplied by deployment infrastructure and additional application hardening.
+
+## Current Repository Status
+
+- Backend runtime is an Express server in `server/index.cjs`.
+- Data is persisted to local JSON/files under `server/storage/`.
+- `cors()` is enabled broadly and no authentication middleware is enforced on the documented API routes.
+- Audit run/event logging is present, but user identity and role enforcement are not implemented in the current server.
 
 ---
 
@@ -19,8 +29,8 @@ This document outlines the security measures and compliance requirements for the
 
 | Requirement | Implementation | Status |
 |-------------|----------------|--------|
-| **Privacy Rule** | PHI access controls, minimum necessary standard | ✅ Implemented |
-| **Security Rule** | Administrative, physical, and technical safeguards | ✅ Implemented |
+| **Privacy Rule** | PHI access controls, minimum necessary standard | ⚠️ Deployment-dependent |
+| **Security Rule** | Administrative, physical, and technical safeguards | ⚠️ Deployment-dependent |
 | **Breach Notification** | Incident response procedures | 📋 In Progress |
 | **Business Associate Agreements** | BAA templates and processes | 📋 In Progress |
 
@@ -40,12 +50,12 @@ This document outlines the security measures and compliance requirements for the
 
 | Measure | Implementation |
 |---------|----------------|
-| **Encryption** | AES-256 encryption for storage |
-| **Access Controls** | Role-based access control (RBAC) |
-| **Audit Logging** | All access logged with timestamps |
-| **Data Retention** | Configurable retention policies |
+| **Encryption** | Deployment-dependent disk or volume encryption |
+| **Access Controls** | Planned application-level RBAC plus infrastructure controls |
+| **Audit Logging** | Audit events are stored by the application; user identity coverage is deployment-dependent |
+| **Data Retention** | Policy to be defined by deployment/operations |
 
-**Encryption Configuration:**
+**Example infrastructure configuration:**
 ```bash
 # Encrypt storage directory
 sudo cryptsetup -y -v luksFormat /dev/sdX
@@ -56,11 +66,11 @@ sudo cryptsetup luksOpen /dev/sdX encrypted_storage
 
 | Measure | Implementation |
 |---------|----------------|
-| **TLS** | TLS 1.3 for all API communication |
-| **Certificate Management** | Automated certificate renewal |
-| **API Security** | API key authentication (production) |
+| **TLS** | Expected to be terminated by reverse proxy / ingress |
+| **Certificate Management** | Deployment concern |
+| **API Security** | Not implemented in the current root Express server |
 
-**Nginx TLS Configuration:**
+**Example Nginx TLS configuration:**
 ```nginx
 ssl_protocols TLSv1.2 TLSv1.3;
 ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
@@ -77,12 +87,12 @@ ssl_session_timeout 10m;
 
 | Method | Status | Notes |
 |--------|--------|-------|
-| **API Keys** | ✅ Implemented | Development only |
+| **API Keys** | ⚠️ Not implemented in current server | Can be added at proxy or app layer |
 | **JWT Tokens** | 📋 Planned | Production |
 | **OAuth 2.0** | 📋 Planned | SSO integration |
 | **MFA** | 📋 Planned | Enhanced security |
 
-### Authorization
+### Authorization Targets
 
 | Role | Permissions |
 |------|-------------|
@@ -92,7 +102,7 @@ ssl_session_timeout 10m;
 | **Researcher** | De-identified data only |
 | **Auditor** | Read-only audit logs |
 
-### Implementation Example
+### Example RBAC Model
 
 ```javascript
 // Role-based access control
@@ -119,12 +129,12 @@ const roles = {
 
 | Event Category | Examples |
 |----------------|----------|
-| **Authentication** | Login, logout, failed attempts |
+| **Authentication** | Login, logout, failed attempts when an auth layer exists |
 | **Data Access** | View patient data, export data |
 | **Data Modification** | Update notes, confirm actions |
 | **System Events** | Processing, errors, configuration changes |
 
-### Log Format
+### Example Log Format
 
 ```json
 {
@@ -139,7 +149,7 @@ const roles = {
 }
 ```
 
-### Log Retention
+### Example Log Retention Policy
 
 | Log Type | Retention Period |
 |----------|------------------|
@@ -213,8 +223,8 @@ For research/analytics, PHI can be de-identified per HIPAA Safe Harbor:
 | **Citation Tracking** | Source all claims | ✅ Implemented |
 | **Confidence Scoring** | Indicate certainty | ✅ Implemented |
 | **Refusal Policy** | Decline inappropriate requests | ✅ Implemented |
-| **Hallucination Detection** | Cross-validate outputs | ✅ Implemented |
-| **Human-in-the-Loop** | Clinician review required | ✅ Implemented |
+| **Hallucination Detection** | Cross-validate outputs where available | ⚠️ Partial / workflow-dependent |
+| **Human-in-the-Loop** | Clinician review required | ⚠️ Process requirement, not an enforced UI gate everywhere |
 
 ### Confidence Thresholds
 
@@ -305,5 +315,5 @@ Use a secrets manager for production:
 ---
 
 **Document Version:** 1.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15
 **Next Review:** 2026-07-07

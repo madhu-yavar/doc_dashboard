@@ -1,10 +1,13 @@
 # Doctor Assistant Chatbot - Architecture Document
 
 **Project:** Manipal Hospital Doctor Dashboard
-**Date:** 2026-04-05
+**Date:** 2026-04-15
 **Version:** 1.0
 
 ---
+
+> Historical Document
+> This file is a concept architecture draft, not an exact description of the current repository. The current implementation is a React frontend with an Express backend in `server/index.cjs`, multi-agent chat logic under `agents/`, reusable skills under `skills/`, self-hosted Gemma for primary inference, and optional Gemini-backed external knowledge lookup.
 
 ## Table of Contents
 
@@ -389,12 +392,12 @@ React 18+ (already in use)
 
 ### Backend
 ```
-Python 3.11+ / FastAPI
-├─ LangChain (LLM orchestration)
-├─ Anthropic Claude API (reasoning)
-├─ Pinecone / Weaviate (vector DB)
-├─ Redis (message queue, caching)
-└─ PostgreSQL (conversation history)
+Node.js / Express (current repo)
+├─ Multi-agent orchestration in `agents/`
+├─ Self-hosted Gemma inference client
+├─ Optional Gemini external knowledge mode
+├─ JSON/file-backed persistence in `server/storage/`
+└─ Audit logging in `server/audit_logger.cjs`
 ```
 
 ### External APIs
@@ -410,6 +413,8 @@ Python 3.11+ / FastAPI
 ---
 
 ## Implementation Phases
+
+These phases describe the original concept rollout plan and should be read as historical planning notes rather than the current implementation status.
 
 ### Phase 1: Foundation (Week 1-2)
 

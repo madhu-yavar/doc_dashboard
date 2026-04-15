@@ -2,10 +2,13 @@
 
 **Project:** Doctor Dashboard - Clinical Intelligence System
 **Version:** 2.0.0
-**Date:** 2026-04-07
+**Date:** 2026-04-15
 **Environment:** Production
 
 ---
+
+> Note
+> These figures should be read as target or point-in-time benchmark numbers, not as continuously verified SLOs for the current repository state. The current app uses local file/JSON persistence rather than a database-backed production stack.
 
 ## Overview
 
@@ -136,24 +139,24 @@ This document contains comprehensive performance benchmarks for the Doctor Dashb
 
 ---
 
-## Database Performance
+## Storage Performance
 
 ### Storage Operations
 
 | Operation | Avg Time | P95 Time | Notes |
 |-----------|----------|----------|-------|
-| Read Document | 50ms | 100ms | File-based storage |
-| Write Document | 100ms | 200ms | With validation |
-| Read Session | 30ms | 60ms | Memory cached |
-| Write Session | 50ms | 100ms | Periodic flush |
+| Read Document | 50ms | 100ms | File-based storage estimate |
+| Write Document | 100ms | 200ms | JSON rewrite with validation estimate |
+| Read Session | 30ms | 60ms | File-backed session lookup estimate |
+| Write Session | 50ms | 100ms | File-backed session persistence estimate |
 
 ### Cache Performance
 
 | Cache Type | Hit Rate | Avg Latency |
 |------------|----------|-------------|
-| Document Cache | 85% | 10ms |
-| Session Cache | 95% | 5ms |
-| LLM Response Cache | 70% | 0ms (instant) |
+| Document Cache | Not continuously measured | N/A |
+| Session Cache | Not continuously measured | N/A |
+| LLM Response Cache | Not verified in current root server | N/A |
 
 ---
 
@@ -205,9 +208,9 @@ This document contains comprehensive performance benchmarks for the Doctor Dashb
 
 | Area | Strategy | Impact |
 |------|----------|--------|
-| LLM Calls | Prompt caching | 30% reduction |
+| LLM Calls | Prompt reuse/prompt optimization where applicable | Workload-dependent |
 | PDF Processing | Lazy loading | Handle 50+ page PDFs |
-| Data Storage | In-memory caching | Sub-100ms retrieval |
+| Data Storage | File-backed reads with lightweight in-process reuse | Workload-dependent |
 | Frontend | React Query caching | Smooth UI updates |
 
 ### Planned Optimizations
@@ -259,5 +262,5 @@ This document contains comprehensive performance benchmarks for the Doctor Dashb
 ---
 
 **Document Version:** 1.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15
 **Next Review:** 2026-05-07

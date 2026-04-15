@@ -163,9 +163,9 @@ const VitalsCard: React.FC<VitalsCardProps> = ({ metrics }) => {
 ### 9. Dashboard Integration
 
 **Prototype Built:**
-- `api_server.py` - FastAPI backend with Gemma integration
-- `index.html` - React frontend with interactive dashboard
-- `README.md` - Quick start guide
+- Historical prototype assets from an earlier validation phase
+- Current implementation has since moved to the root Express server and React app in this repository
+- Treat the prototype references in this section as background context, not active source files
 
 **Capabilities Validated:**
 - ✅ Full API with 6 endpoints

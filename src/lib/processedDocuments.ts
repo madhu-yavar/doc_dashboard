@@ -462,6 +462,7 @@ export type ProcessedDocument = {
   uploadedAt: string;
   status: QueueStatus;
   department: string;
+  auditRunId?: string | null;
   result?: GemmaDashboardResult | null;
   error?: string | null;
   processedAt?: string;
@@ -483,6 +484,9 @@ export type ProcessedDocument = {
       missing_critical_fields: string[];
     };
   };
+  chartNote?: {
+    auditRunId?: string | null;
+  } | null;
 };
 
 export const extractProcessedDocumentResponse = (payload: unknown): ProcessedDocument | null => {

@@ -4,9 +4,12 @@
 
 **Project:** Doctor Dashboard
 **Version:** 2.0.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15
 
 ---
+
+> Note
+> This document reflects the current agent design, but some path references below used an older `doctor_dashboard/` folder prefix. The current repository paths are rooted directly at `agents/`, `skills/`, `tools/`, and `server/`.
 
 ## Overview
 
@@ -55,7 +58,7 @@ The Doctor Dashboard uses a **multi-agent architecture** where each agent specia
 
 **Purpose:** Transform unstructured PDF discharge summaries into structured clinical data
 
-**File:** `doctor_dashboard/agents/discharge_extractor_agent.cjs`
+**File:** `agents/discharge_extractor_agent.cjs`
 
 #### Architecture
 
@@ -151,7 +154,7 @@ Structured JSON Output
 
 **Purpose:** Interactive clinical chat with context-aware responses
 
-**File:** `doctor_dashboard/agents/doctor_assistant_agent.cjs`
+**File:** `agents/doctor_assistant_agent.cjs`
 
 #### Architecture
 
@@ -235,7 +238,7 @@ Response with Citations + Action Proposals
 
 **Purpose:** Generate clinical SOAP notes from extracted data
 
-**File:** `doctor_dashboard/agents/chart_note_agent.cjs`
+**File:** `agents/chart_note_agent.cjs`
 
 #### Architecture
 
@@ -418,55 +421,26 @@ class Agent {
 
 ## Agent Configuration
 
-### Environment Variables
+### Runtime Configuration
+
+The current root server directly reads:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `GEMMA_URL` | Gemma LLM API endpoint | Required |
 | `GEMMA_MODEL` | Model identifier | `google/gemma-4-26B-A4B-it` |
-| `AGENT_TIMEOUT` | Max execution time per step | `180000` (3 min) |
-| `MAX_TOKENS` | Max tokens per response | `4096` |
-| `TEMPERATURE` | LLM temperature | `0.1` |
+| `USE_GEMINI_FOR_EXTERNAL` | Enable Gemini-backed external lookup | `true` |
+| `GEMINI_MODEL` | Gemini model for external lookup | `gemini-2.5-flash` |
 
-### Agent Registry
+Some individual agents and workflows also read optional extractor-specific settings such as `EXTRACTION_PER_DOCUMENT_CONCURRENCY`, `ENABLE_PENDING_ITEMS_EXTRACTION`, and `ENABLE_DOCUMENT_ANALYZER`.
 
-Agents are registered in `doctor_dashboard/agents/agent_registry.cjs`:
+### Agent Wiring
 
-```javascript
-const AGENT_REGISTRY = {
-  DischargeExtractorAgent: {
-    class: DischargeExtractorAgent,
-    version: '2.0.0',
-    skills: [
-      'DocumentAnalyzerSkill',
-      'DemographicsExtractorSkill',
-      'RiskScoresExtractorSkill',
-      'VitalsExtractorSkill',
-      'FunctionalStatusExtractorSkill',
-      'ClinicalDataExtractorSkill',
-      'PendingItemsExtractorSkill',  // LLM-only pending items extraction
-      'CrossValidatorSkill'
-    ]
-  },
-  DoctorAssistantAgent: {
-    class: DoctorAssistantAgent,
-    version: '2.0.0',
-    subAgents: [
-      'QueryIntentAgent',
-      'RecordContextAgent',
-      'ExternalKnowledgeAgent',
-      'SafetyGuardAgent',
-      'AnswerComposerAgent',
-      'ActionRouterAgent'
-    ]
-  },
-  ChartNoteAgent: {
-    class: ChartNoteAgent,
-    version: '2.0.0',
-    skills: ['ChartNoteComposerSkill']
-  }
-};
-```
+The current repository does not use a standalone `agent_registry.cjs` file. Agents are imported and instantiated directly by the Express server and by other agents as needed. In practice:
+
+- `server/index.cjs` wires the document router, doctor assistant, chart-note generation, and audit flow.
+- The document router composes extractor agents based on document type.
+- Chat orchestration delegates to sub-agents such as query intent, record context, external knowledge, safety guard, answer composer, and action router.
 
 ---
 
@@ -503,4 +477,4 @@ Each agent emits the following metrics:
 ---
 
 **Document Version:** 2.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15

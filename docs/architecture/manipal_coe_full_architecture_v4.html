@@ -329,37 +329,297 @@
     }
 
     /* ===== DATA FLOW STYLES ===== */
-    .flow-diagram {
+    .dataflow-shell {
+      background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(12, 18, 32, 1) 100%);
+      border: 1px solid #1e293b;
+      border-radius: 24px;
+      padding: 28px;
+      color: #e2e8f0;
+      box-shadow: 0 22px 60px rgba(15, 23, 42, 0.28);
+      position: relative;
+      overflow: hidden;
+    }
+    .dataflow-shell::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(148,163,184,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,0.05) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+    .dataflow-header,
+    .dataflow-band,
+    .dataflow-columns,
+    .dataflow-lane,
+    .dataflow-footer {
+      position: relative;
+      z-index: 1;
+    }
+    .dataflow-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      margin-bottom: 22px;
+    }
+    .dataflow-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+    .dataflow-heading {
+      font-size: 28px;
+      font-weight: 800;
+      color: #f8fafc;
+      margin-bottom: 6px;
+    }
+    .dataflow-subtitle {
+      font-size: 14px;
+      color: #94a3b8;
+      max-width: 760px;
+      line-height: 1.5;
+    }
+    .dataflow-key {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      min-width: 250px;
+    }
+    .dataflow-pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      border: 1px solid transparent;
+      background: rgba(15, 23, 42, 0.72);
+      white-space: nowrap;
+    }
+    .pill-write {
+      color: #bbf7d0;
+      border-color: rgba(34, 197, 94, 0.45);
+    }
+    .pill-read {
+      color: #cbd5e1;
+      border-color: rgba(148, 163, 184, 0.4);
+    }
+    .pill-llm {
+      color: #fde68a;
+      border-color: rgba(245, 158, 11, 0.45);
+    }
+    .dataflow-band {
+      display: grid;
+      grid-template-columns: 220px 48px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .band-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid #334155;
+      border-radius: 18px;
+      padding: 18px 20px;
+      min-height: 104px;
+    }
+    .band-card h3 {
+      font-size: 15px;
+      color: #f8fafc;
+      margin-bottom: 8px;
+    }
+    .band-card p {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.45;
+    }
+    .band-card-workspace {
+      border-color: rgba(59, 130, 246, 0.5);
+      background: linear-gradient(135deg, rgba(20, 44, 78, 0.95), rgba(21, 63, 103, 0.88));
+    }
+    .band-arrow {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #94a3b8;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .band-tags {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .band-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: #dbeafe;
+      background: rgba(255,255,255,0.12);
+      border-radius: 999px;
+      padding: 6px 10px;
+    }
+    .dataflow-columns {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 34px minmax(180px, 1.1fr) 34px minmax(180px, 1.1fr) 34px minmax(180px, 1fr) 34px minmax(180px, 1fr);
+      gap: 0;
+      margin-bottom: 10px;
+      padding: 0 6px;
+    }
+    .dataflow-columns div {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+    .dataflow-columns .arrow-spacer {
+      opacity: 0;
+    }
+    .dataflow-lanes {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 15px;
+      gap: 16px;
     }
-    .flow-row {
+    .dataflow-lane {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 34px minmax(180px, 1.1fr) 34px minmax(180px, 1.1fr) 34px minmax(180px, 1fr) 34px minmax(180px, 1fr);
+      align-items: stretch;
+      gap: 0;
+      padding: 6px;
+      border-radius: 22px;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(51, 65, 85, 0.55);
+    }
+    .lane-arrow {
       display: flex;
       align-items: center;
-      gap: 20px;
-      width: 100%;
       justify-content: center;
-    }
-    .flow-box {
-      padding: 12px 20px;
-      border-radius: 8px;
-      text-align: center;
-      min-width: 140px;
-    }
-    .flow-box-title {
-      font-weight: 600;
-      font-size: 12px;
-      margin-bottom: 4px;
-    }
-    .flow-box-desc {
-      font-size: 10px;
-      opacity: 0.8;
-    }
-    .flow-arrow {
       color: #64748b;
-      font-size: 20px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .df-card {
+      min-height: 132px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-left: 5px solid #334155;
+      border-radius: 18px;
+      padding: 16px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      margin: 0 2px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .df-card-kicker {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 10px;
+    }
+    .df-card h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 8px;
+      line-height: 1.25;
+    }
+    .df-card p {
+      font-size: 13px;
+      line-height: 1.45;
+      color: #94a3b8;
+    }
+    .df-card-metric {
+      margin-top: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #e2e8f0;
+    }
+    .df-card-request { border-left-color: #8b5cf6; }
+    .df-card-action { border-left-color: #38bdf8; }
+    .df-card-storage { border-left-color: #22c55e; }
+    .df-card-reason { border-left-color: #f59e0b; }
+    .df-card-result { border-left-color: #94a3b8; }
+    .dataflow-footer {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .footer-card {
+      background: rgba(15, 23, 42, 0.78);
+      border: 1px solid rgba(51, 65, 85, 0.55);
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .footer-card h4 {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+    }
+    .footer-card p {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #94a3b8;
+    }
+    .footer-card strong {
+      color: #f8fafc;
+    }
+    .footer-write { border-left: 4px solid #22c55e; }
+    .footer-read { border-left: 4px solid #94a3b8; }
+    .footer-llm { border-left: 4px solid #f59e0b; }
+    .footer-time { border-left: 4px solid #38bdf8; }
+    @media (max-width: 1220px) {
+      .dataflow-columns {
+        display: none;
+      }
+      .dataflow-lane {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .lane-arrow {
+        min-height: 22px;
+        font-size: 18px;
+        transform: rotate(90deg);
+      }
+      .dataflow-footer {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 900px) {
+      .dataflow-header,
+      .dataflow-band {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+      .band-arrow {
+        transform: rotate(90deg);
+        min-height: 18px;
+      }
+      .dataflow-shell {
+        padding: 20px;
+      }
+      .dataflow-heading {
+        font-size: 23px;
+      }
+      .dataflow-key {
+        justify-content: flex-start;
+      }
+      .dataflow-footer {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -374,7 +634,7 @@
       <a href="#agent-architecture" class="nav-btn">🔄 Agent Architecture</a>
       <a href="#data-flow" class="nav-btn">📊 Data Flow</a>
       <a href="#skills-framework" class="nav-btn">🛠️ Skills Framework</a>
-      <a href="#safety-security" class="nav-btn">🛡️ Safety & Security</a>
+      <a href="#safety-security" class="nav-btn">🛡️ Safety &amp; Security</a>
     </div>
 
     <!-- ===== SECTION 1: AGENT ARCHITECTURE ===== -->
@@ -401,8 +661,28 @@
           <span class="level-title">Level 4</span>
           <div class="level-content">
             <div class="box agent active">
-              <div class="box-title">📄 PDF Extractor</div>
+              <div class="box-title">📋 Document Type Router</div>
+              <div class="box-desc">Auto-detects doc type • Routes to specialist</div>
+              <span class="tag">Classifier</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">📄 Discharge Extractor</div>
               <div class="box-desc">8 Skills • 30-45s</div>
+              <span class="tag">ReAct</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">🏥 Outpatient Extractor</div>
+              <div class="box-desc">OPD Records • Consultation data</div>
+              <span class="tag">ReAct</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">🧪 Lab Report Extractor</div>
+              <div class="box-desc">Lab results • Reference ranges</div>
+              <span class="tag">ReAct</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">📝 Chart Note Extractor</div>
+              <div class="box-desc">Progress notes • SOAP format</div>
               <span class="tag">ReAct</span>
             </div>
             <div class="box agent active">
@@ -411,7 +691,7 @@
               <span class="tag">Multi-Agent</span>
             </div>
             <div class="box agent active">
-              <div class="box-title">📝 Chart Note</div>
+              <div class="box-title">✍️ Chart Note Composer</div>
               <div class="box-desc">1 Skill • 15-25s</div>
               <span class="tag">ReAct</span>
             </div>
@@ -462,6 +742,9 @@
               <div class="box-title">📊 Document Analyzer</div>
             </div>
             <div class="box skill active">
+              <div class="box-title">🔍 Doc Type Classifier</div>
+            </div>
+            <div class="box skill active">
               <div class="box-title">👤 Demographics</div>
             </div>
             <div class="box skill active">
@@ -478,6 +761,15 @@
             </div>
             <div class="box skill active">
               <div class="box-title">📋 Pending Items</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🧪 Lab Results</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">📅 Consultation Data</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">📝 Progress Notes</div>
             </div>
             <div class="box skill active">
               <div class="box-title">✅ Cross Validator</div>
@@ -519,6 +811,9 @@
             </div>
             <div class="box tool active">
               <div class="box-title">🧠 Gemma Client</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🧠 Gemini Client</div>
             </div>
             <div class="box tool active">
               <div class="box-title">📝 Prompt Builder</div>
@@ -565,6 +860,12 @@
             <div class="box tool active">
               <div class="box-title">🌐 Web Search</div>
             </div>
+            <div class="box tool active">
+              <div class="box-title">📋 Audit Logger</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">⚡ Parallel Runner</div>
+            </div>
           </div>
         </div>
 
@@ -608,15 +909,15 @@
           </div>
           <div class="legend-item">
             <div class="legend-box legend-agent"></div>
-            <span>Primary Agents (4) • Sub-Agents (7)</span>
+            <span>Primary Agents (8) • Sub-Agents (7)</span>
           </div>
           <div class="legend-item">
             <div class="legend-box legend-skill"></div>
-            <span>Skills (16)</span>
+            <span>Skills (20)</span>
           </div>
           <div class="legend-item">
             <div class="legend-box legend-tool"></div>
-            <span>Tools (32)</span>
+            <span>Tools (35)</span>
           </div>
           <div class="legend-item">
             <div class="legend-box legend-llm"></div>
@@ -630,267 +931,242 @@
     <!-- ===== SECTION 2: DATA FLOW ===== -->
     <div class="section" id="data-flow">
       <h2 class="section-title">📊 Data Flow Architecture</h2>
-      <svg class="diagram-svg" viewBox="0 0 1400 1000" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="userGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#64748b"/>
-            <stop offset="100%" style="stop-color:#475569"/>
-          </linearGradient>
-          <linearGradient id="storageGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#22c55e"/>
-            <stop offset="100%" style="stop-color:#16a34a"/>
-          </linearGradient>
-          <linearGradient id="uiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#0ea5e9"/>
-            <stop offset="100%" style="stop-color:#0284c7"/>
-          </linearGradient>
-          <linearGradient id="llmGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#f59e0b"/>
-            <stop offset="100%" style="stop-color:#d97706"/>
-          </linearGradient>
-          <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1"/>
-          </filter>
-          <marker id="arrowWrite" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
-            <polygon points="0 0, 8 2.5, 0 5" fill="#22c55e"/>
-          </marker>
-          <marker id="arrowRead" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
-            <polygon points="0 0, 8 2.5, 0 5" fill="#94a3b8"/>
-          </marker>
-          <marker id="arrowUser" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
-            <polygon points="0 0, 8 2.5, 0 5" fill="#64748b"/>
-          </marker>
-          <marker id="arrowLlm" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
-            <polygon points="0 0, 8 2.5, 0 5" fill="#f59e0b"/>
-          </marker>
-        </defs>
+      <p style="text-align: center; font-size: 14px; color: #64748b; margin-bottom: 20px;">Three operational flows, one storage boundary, and a single grounded path back to the clinician</p>
 
-        <rect width="100%" height="100%" fill="#f8fafc"/>
-        <text x="700" y="35" text-anchor="middle" font-size="20" font-weight="700" fill="#1e293b">DATA FLOW ARCHITECTURE</text>
-        <text x="700" y="55" text-anchor="middle" font-size="11" fill="#64748b">Complete request/response cycles with bidirectional data flows</text>
+      <div class="dataflow-shell">
+        <div class="dataflow-header">
+          <div>
+            <div class="dataflow-eyebrow">Operations View</div>
+            <div class="dataflow-heading">Clinical Request to Grounded Output</div>
+            <div class="dataflow-subtitle">Read this left to right. Each lane shows what the clinician starts, what the agents do, what gets persisted, how the output is validated, and what returns to the workspace.</div>
+          </div>
+          <div class="dataflow-key">
+            <span class="dataflow-pill pill-write">Write to Storage</span>
+            <span class="dataflow-pill pill-read">Read from Storage</span>
+            <span class="dataflow-pill pill-llm">LLM + Safety Check</span>
+          </div>
+        </div>
 
-        <!-- User -->
-        <g transform="translate(580, 80)">
-          <rect x="0" y="0" width="240" height="55" rx="10" fill="url(#userGrad)" filter="url(#dropShadow)"/>
-          <circle x="35" cy="27" r="20" fill="rgba(255,255,255,0.2)"/>
-          <text x="35" y="35" text-anchor="middle" font-size="20">👤</text>
-          <text x="130" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="white">USER / CLINICIAN</text>
-          <text x="130" y="40" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">Initiates requests • Views results</text>
-        </g>
+        <div class="dataflow-band">
+          <div class="band-card">
+            <div class="dataflow-eyebrow">Origin</div>
+            <h3>Clinician</h3>
+            <p>Uploads records, asks chart questions, and drafts notes inside the workspace.</p>
+          </div>
+          <div class="band-arrow">→</div>
+          <div class="band-card band-card-workspace">
+            <div class="dataflow-eyebrow" style="color:#bfdbfe;">Interaction Surface</div>
+            <h3>Clinical Workspace</h3>
+            <p>One interface for patient summary, doctor chat, chart-note editing, timeline review, and citation inspection.</p>
+            <div class="band-tags">
+              <span class="band-tag">Patient Summary</span>
+              <span class="band-tag">Doctor Chat</span>
+              <span class="band-tag">Chart Note Editor</span>
+              <span class="band-tag">Timeline</span>
+              <span class="band-tag">Citation Viewer</span>
+            </div>
+          </div>
+        </div>
 
-        <!-- UI Layer -->
-        <g transform="translate(450, 155)">
-          <rect x="0" y="0" width="500" height="60" rx="10" fill="url(#uiGrad)" filter="url(#dropShadow)"/>
-          <text x="250" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="white">🖥️ DASHBOARD UI LAYER</text>
-          <g transform="translate(20, 30)">
-            <rect x="0" y="0" width="110" height="22" rx="5" fill="rgba(255,255,255,0.2)"/>
-            <text x="55" y="15" text-anchor="middle" font-size="9" font-weight="600" fill="white">Patient Summary</text>
-            <rect x="120" y="0" width="110" height="22" rx="5" fill="rgba(255,255,255,0.2)"/>
-            <text x="175" y="15" text-anchor="middle" font-size="9" font-weight="600" fill="white">Chat Interface</text>
-            <rect x="240" y="0" width="110" height="22" rx="5" fill="rgba(255,255,255,0.2)"/>
-            <text x="295" y="15" text-anchor="middle" font-size="9" font-weight="600" fill="white">Chart Note Editor</text>
-            <rect x="360" y="0" width="110" height="22" rx="5" fill="rgba(255,255,255,0.2)"/>
-            <text x="415" y="15" text-anchor="middle" font-size="9" font-weight="600" fill="white">Timeline</text>
-          </g>
-        </g>
+        <div class="dataflow-columns">
+          <div>Request</div>
+          <div class="arrow-spacer">.</div>
+          <div>Agent Action</div>
+          <div class="arrow-spacer">.</div>
+          <div>Storage Boundary</div>
+          <div class="arrow-spacer">.</div>
+          <div>Inference / Validation</div>
+          <div class="arrow-spacer">.</div>
+          <div>Workspace Result</div>
+        </div>
 
-        <!-- Agents Column -->
-        <g transform="translate(80, 260)">
-          <rect x="0" y="0" width="340" height="85" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1.5" filter="url(#dropShadow)"/>
-          <rect x="0" y="0" width="5" height="85" rx="2" fill="#2563eb"/>
-          <text x="18" y="16" font-size="11" font-weight="700" fill="#1e293b">📄 PDF Extraction Agent</text>
-          <g transform="translate(15, 28)">
-            <rect x="0" y="0" width="60" height="18" rx="4" fill="#eff6ff"/>
-            <text x="30" y="12" text-anchor="middle" font-size="8" font-weight="600" fill="#1e40af">Upload</text>
-            <text x="65" y="12" font-size="9" fill="#94a3b8">→</text>
-            <rect x="75" y="0" width="60" height="18" rx="4" fill="#eff6ff"/>
-            <text x="105" y="12" text-anchor="middle" font-size="8" font-weight="600" fill="#1e40af">Extract</text>
-            <text x="140" y="12" font-size="9" fill="#94a3b8">→</text>
-            <rect x="150" y="0" width="60" height="18" rx="4" fill="#dbeafe"/>
-            <text x="180" y="12" text-anchor="middle" font-size="8" font-weight="700" fill="#1e40af">Validate</text>
-            <text x="215" y="12" font-size="9" fill="#94a3b8">→</text>
-            <rect x="225" y="0" width="60" height="18" rx="4" fill="#1e40af"/>
-            <text x="255" y="12" text-anchor="middle" font-size="8" font-weight="600" fill="white">Store</text>
-          </g>
-          <rect x="15" y="52" width="310" height="14" rx="4" fill="#f8fafc" stroke="#e2e8f0"/>
-          <text x="170" y="63" text-anchor="middle" font-size="8" fill="#64748b">8 Skills • 30-45s • Character-level citations</text>
-        </g>
+        <div class="dataflow-lanes">
+          <div class="dataflow-lane">
+            <div class="df-card df-card-request">
+              <div>
+                <div class="df-card-kicker">Lane 1</div>
+                <h4>Document Ingestion</h4>
+                <p>Clinician uploads discharge, outpatient, lab, or chart-note source material.</p>
+              </div>
+              <div class="df-card-metric">Upload + route start</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-action">
+              <div>
+                <div class="df-card-kicker">Agent Action</div>
+                <h4>Router + Specialist Extraction</h4>
+                <p>Document type router selects the correct extractor, then extraction agents normalize content into structured fields with citations.</p>
+              </div>
+              <div class="df-card-metric">Router &lt;1s • Extraction 30-45s</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-storage">
+              <div>
+                <div class="df-card-kicker">Write</div>
+                <h4>Structured Clinical Store</h4>
+                <p>Patient entities, vitals, labs, risk scores, citations, and audit metadata are persisted as the system record.</p>
+              </div>
+              <div class="df-card-metric">Single source of truth</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-reason">
+              <div>
+                <div class="df-card-kicker">Validation</div>
+                <h4>Grounding Check</h4>
+                <p>Outputs are checked for structured completeness, provenance, and policy compliance before they can be shown.</p>
+              </div>
+              <div class="df-card-metric">No ungrounded extraction output</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-result">
+              <div>
+                <div class="df-card-kicker">Result</div>
+                <h4>Summary + Timeline Ready</h4>
+                <p>The workspace renders normalized data into patient summary cards, timeline events, and evidence-linked views.</p>
+              </div>
+              <div class="df-card-metric">Read models for UI</div>
+            </div>
+          </div>
 
-        <g transform="translate(80, 365)">
-          <rect x="0" y="0" width="340" height="85" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1.5" filter="url(#dropShadow)"/>
-          <rect x="0" y="0" width="5" height="85" rx="2" fill="#0ea5e9"/>
-          <text x="18" y="16" font-size="11" font-weight="700" fill="#1e293b">💬 Doctor Assistant Agent</text>
-          <text x="18" y="32" font-size="9" fill="#64748b">7 Sub-Agents: Query Intent, Record Context, External Knowledge,</text>
-          <text x="18" y="44" font-size="9" fill="#64748b">Safety Guard, Answer Composer, Action Router, Session Memory</text>
-          <rect x="15" y="52" width="310" height="14" rx="4" fill="#f8fafc" stroke="#e2e8f0"/>
-          <text x="170" y="63" text-anchor="middle" font-size="8" fill="#64748b">3-8s response • Multi-step reasoning • Citations included</text>
-        </g>
+          <div class="dataflow-lane">
+            <div class="df-card df-card-request">
+              <div>
+                <div class="df-card-kicker">Lane 2</div>
+                <h4>Doctor Question</h4>
+                <p>Clinician asks a patient-specific question in chat from the active workspace session.</p>
+              </div>
+              <div class="df-card-metric">Conversation start</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-action">
+              <div>
+                <div class="df-card-kicker">Agent Action</div>
+                <h4>Doctor Assistant Mesh</h4>
+                <p>Intent, record context, safety, answer composition, and session memory collaborate to prepare a grounded response request.</p>
+              </div>
+              <div class="df-card-metric">Chat 3-8s</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-storage">
+              <div>
+                <div class="df-card-kicker">Read + Write</div>
+                <h4>Context, Session, Citations</h4>
+                <p>The assistant reads prior extractions and chat state, then writes response state, citations, and audit entries back to storage.</p>
+              </div>
+              <div class="df-card-metric">Session memory stays persisted</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-reason">
+              <div>
+                <div class="df-card-kicker">LLM Path</div>
+                <h4>Gemma + Safety Validation</h4>
+                <p>Self-hosted inference generates the answer, then refusal policy, confidence checks, and source grounding validate it before return.</p>
+              </div>
+              <div class="df-card-metric">PHI remains on-premise</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-result">
+              <div>
+                <div class="df-card-kicker">Result</div>
+                <h4>Cited Assistant Reply</h4>
+                <p>The workspace shows a grounded answer with source-backed citations instead of a free-floating LLM response.</p>
+              </div>
+              <div class="df-card-metric">Evidence visible to clinician</div>
+            </div>
+          </div>
 
-        <g transform="translate(80, 470)">
-          <rect x="0" y="0" width="340" height="85" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1.5" filter="url(#dropShadow)"/>
-          <rect x="0" y="0" width="5" height="85" rx="2" fill="#64748b"/>
-          <text x="18" y="16" font-size="11" font-weight="700" fill="#1e293b">📝 Chart Note Agent</text>
-          <text x="18" y="32" font-size="9" fill="#64748b">ReAct Pattern: Think → Write → Reflect for each SOAP section</text>
-          <rect x="15" y="42" width="90" height="22" rx="4" fill="#f1f5f9" stroke="#e2e8f0"/>
-          <text x="60" y="56" text-anchor="middle" font-size="8" fill="#64748b">Subjective</text>
-          <rect x="115" y="42" width="90" height="22" rx="4" fill="#f1f5f9" stroke="#e2e8f0"/>
-          <text x="160" y="56" text-anchor="middle" font-size="8" fill="#64748b">Objective</text>
-          <rect x="215" y="42" width="90" height="22" rx="4" fill="#f1f5f9" stroke="#e2e8f0"/>
-          <text x="260" y="56" text-anchor="middle" font-size="8" fill="#64748b">Assessment</text>
-          <rect x="15" y="68" width="90" height="22" rx="4" fill="#f1f5f9" stroke="#e2e8f0"/>
-          <text x="60" y="82" text-anchor="middle" font-size="8" fill="#64748b">Plan</text>
-          <rect x="235" y="68" width="90" height="22" rx="4" fill="#64748b"/>
-          <text x="280" y="82" text-anchor="middle" font-size="8" fill="white">Review</text>
-        </g>
+          <div class="dataflow-lane">
+            <div class="df-card df-card-request">
+              <div>
+                <div class="df-card-kicker">Lane 3</div>
+                <h4>Chart-Note Drafting</h4>
+                <p>Clinician opens a SOAP workflow to generate or refine a chart note from current patient context.</p>
+              </div>
+              <div class="df-card-metric">Draft + review start</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-action">
+              <div>
+                <div class="df-card-kicker">Agent Action</div>
+                <h4>Chart Note Composer</h4>
+                <p>The composer runs section-by-section drafting for subjective, objective, assessment, and plan with review checkpoints.</p>
+              </div>
+              <div class="df-card-metric">SOAP 15-25s</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-storage">
+              <div>
+                <div class="df-card-kicker">Write</div>
+                <h4>Drafts, Versions, Provenance</h4>
+                <p>Every note revision is versioned with supporting citations, timestamps, and actor attribution for downstream auditability.</p>
+              </div>
+              <div class="df-card-metric">Version history retained</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-reason">
+              <div>
+                <div class="df-card-kicker">Validation</div>
+                <h4>Review Before Finalization</h4>
+                <p>Generated note content is checked for grounding and safety before it is surfaced as a candidate clinical draft.</p>
+              </div>
+              <div class="df-card-metric">Human-in-the-loop required</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-result">
+              <div>
+                <div class="df-card-kicker">Result</div>
+                <h4>Final Note in Workspace</h4>
+                <p>The clinician receives a reviewable draft with lineage intact, rather than an opaque final document.</p>
+              </div>
+              <div class="df-card-metric">Review, edit, approve</div>
+            </div>
+          </div>
+        </div>
 
-        <!-- Storage Layer -->
-        <g transform="translate(500, 260)">
-          <rect x="0" y="0" width="400" height="295" rx="10" fill="white" stroke="#e2e8f0" stroke-width="1.5" filter="url(#dropShadow)"/>
-          <rect x="0" y="0" width="400" height="32" rx="10" fill="url(#storageGrad)"/>
-          <text x="200" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="white">💾 STORAGE LAYER (Single Source of Truth)</text>
-
-          <g transform="translate(20, 45)">
-            <text x="0" y="0" font-size="10" font-weight="600" fill="#1e293b">Data Types:</text>
-            <g transform="translate(0, 12)">
-              <circle cx="5" cy="5" r="3" fill="#2563eb"/>
-              <text x="12" y="8" font-size="9" fill="#475569">Extracted JSON (patient data, vitals, labs)</text>
-              <circle cx="5" cy="22" r="3" fill="#0ea5e9"/>
-              <text x="12" y="25" font-size="9" fill="#475569">Chat history with session memory</text>
-              <circle cx="5" cy="39" r="3" fill="#64748b"/>
-              <text x="12" y="42" font-size="9" fill="#475569">SOAP notes drafts</text>
-              <circle cx="5" cy="56" r="3" fill="#22c55e"/>
-              <text x="12" y="59" font-size="9" fill="#475569">Citations (character-level provenance)</text>
-              <circle cx="5" cy="73" r="3" fill="#ef4444"/>
-              <text x="12" y="76" font-size="9" fill="#475569">Audit logs (all reads/writes tracked)</text>
-            </g>
-          </g>
-
-          <line x1="20" y1="135" x2="380" y2="135" stroke="#e2e8f0" stroke-width="1"/>
-
-          <g transform="translate(20, 150)">
-            <text x="0" y="0" font-size="10" font-weight="600" fill="#1e293b">Data Consistency Rules:</text>
-            <text x="0" y="18" font-size="9" fill="#64748b">• All agents read/write through this layer</text>
-            <text x="0" y="32" font-size="9" fill="#64748b">• ACID transactions for data integrity</text>
-            <text x="0" y="46" font-size="9" fill="#64748b">• Versioning enabled for audit trail</text>
-            <text x="0" y="60" font-size="9" fill="#64748b">• PHI encryption at rest</text>
-          </g>
-
-          <rect x="20" y="220" width="360" height="55" rx="6" fill="#dcfce7" stroke="#22c55e"/>
-          <text x="200" y="238" text-anchor="middle" font-size="10" font-weight="600" fill="#166534">✓ All writes include provenance metadata</text>
-          <text x="200" y="253" text-anchor="middle" font-size="9" fill="#15803d">Complete audit trail for clinical decision support</text>
-        </g>
-
-        <!-- LLM Layer -->
-        <g transform="translate(980, 260)">
-          <rect x="0" y="0" width="380" height="180" rx="10" fill="white" stroke="#e2e8f0" stroke-width="1.5" filter="url(#dropShadow)"/>
-          <rect x="0" y="0" width="380" height="32" rx="10" fill="#f59e0b"/>
-          <text x="190" y="20" text-anchor="middle" font-size="12" font-weight="700" fill="white">🧠 LLM PROCESSING LAYER</text>
-
-          <rect x="18" y="45" width="345" height="50" rx="6" fill="#fef3c7"/>
-          <text x="190" y="62" text-anchor="middle" font-size="10" font-weight="600" fill="#92400e">Gemma 4-26B-A4B-it (Self-Hosted)</text>
-          <text x="190" y="76" text-anchor="middle" font-size="8" fill="#b45309">24K context • Temp 0.1-0.4 • Prompt caching • PHI on-premises</text>
-          <text x="190" y="87" text-anchor="middle" font-size="8" fill="#b45309">No external API calls for inference</text>
-
-          <text x="18" y="115" font-size="9" font-weight="600" fill="#1e293b">Safety Features:</text>
-          <g transform="translate(18, 125)">
-            <text x="0" y="0" font-size="8" fill="#1e293b">• Structured output • Citation requirement • Confidence scoring</text>
-            <text x="0" y="12" font-size="8" fill="#1e293b">• Refusal policy • Source grounding • Real-time validation</text>
-          </g>
-
-          <rect x="18" y="145" width="345" height="25" rx="6" fill="#dcfce7" stroke="#22c55e"/>
-          <text x="190" y="161" text-anchor="middle" font-size="9" fill="#166534">✓ SafetyGuardAgent verifies every output before return</text>
-        </g>
-
-        <!-- Error Handling -->
-        <g transform="translate(80, 600)">
-          <rect x="0" y="0" width="600" height="70" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
-          <rect x="0" y="0" width="5" height="70" rx="2" fill="#ef4444"/>
-          <text x="18" y="18" font-size="11" font-weight="700" fill="#dc2626">⚠️ Error Handling (all flows)</text>
-          <g transform="translate(18, 30)">
-            <rect x="0" y="0" width="75" height="22" rx="4" fill="#fee2e2" stroke="#ef4444"/>
-            <text x="37" y="14" text-anchor="middle" font-size="8" font-weight="600" fill="#dc2626">Detect</text>
-            <text x="82" y="14" font-size="9" fill="#ef4444">→</text>
-            <rect x="92" y="0" width="75" height="22" rx="4" fill="#fee2e2" stroke="#ef4444"/>
-            <text x="129" y="14" text-anchor="middle" font-size="8" font-weight="600" fill="#dc2626">Log & Classify</text>
-            <text x="173" y="14" font-size="9" fill="#ef4444">→</text>
-            <rect x="183" y="0" width="75" height="22" rx="4" fill="#fee2e2" stroke="#ef4444"/>
-            <text x="220" y="14" text-anchor="middle" font-size="8" font-weight="600" fill="#dc2626">User Message</text>
-            <text x="265" y="14" font-size="9" fill="#ef4444">→</text>
-            <rect x="275" y="0" width="60" height="22" rx="4" fill="#fee2e2" stroke="#ef4444"/>
-            <text x="305" y="14" text-anchor="middle" font-size="8" font-weight="600" fill="#dc2626">Retry</text>
-          </g>
-          <text x="18" y="62" font-size="8" fill="#b91c1c">All errors logged. Critical = admin alert. User never sees raw exceptions.</text>
-        </g>
-
-        <!-- Response Times -->
-        <g transform="translate(720, 600)">
-          <rect x="0" y="0" width="240" height="70" rx="8" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
-          <text x="120" y="18" font-size="11" font-weight="700" fill="#1e293b">⏱️ Response Times</text>
-          <g transform="translate(15, 28)">
-            <rect x="0" y="0" width="65" height="30" rx="5" fill="#eff6ff" stroke="#3b82f6"/>
-            <text x="32" y="13" text-anchor="middle" font-size="8" font-weight="600" fill="#1e40af">Extract</text>
-            <text x="32" y="23" text-anchor="middle" font-size="10" font-weight="700" fill="#2563eb">30-45s</text>
-            <rect x="75" y="0" width="65" height="30" rx="5" fill="#e0f2fe" stroke="#0ea5e9"/>
-            <text x="107" y="13" text-anchor="middle" font-size="8" font-weight="600" fill="#0369a1">Chat</text>
-            <text x="107" y="23" text-anchor="middle" font-size="10" font-weight="700" fill="#0ea5e9">3-8s</text>
-            <rect x="150" y="0" width="65" height="30" rx="5" fill="#f1f5f9" stroke="#64748b"/>
-            <text x="182" y="13" text-anchor="middle" font-size="8" font-weight="600" fill="#334155">SOAP</text>
-            <text x="182" y="23" text-anchor="middle" font-size="10" font-weight="700" fill="#64748b">15-25s</text>
-          </g>
-        </g>
-
-        <!-- Key Insights -->
-        <g transform="translate(1020, 600)">
-          <rect x="0" y="0" width="340" height="70" rx="8" fill="#f0fdf4" stroke="#84cc16" stroke-width="1.5"/>
-          <text x="170" y="18" font-size="11" font-weight="700" fill="#3f6212">💡 Key Insights</text>
-          <g transform="translate(15, 30)">
-            <text x="0" y="0" font-size="8" fill="#365314">• Storage = single source of truth for all agents</text>
-            <text x="0" y="12" font-size="8" fill="#365314">• All writes include provenance for audit trail</text>
-            <text x="0" y="24" font-size="8" fill="#365314">• Human-in-the-loop for clinical decisions</text>
-            <text x="170" y="0" font-size="8" fill="#365314">• LLM outputs pre-validated</text>
-            <text x="170" y="12" font-size="8" fill="#365314">• PHI never leaves system</text>
-            <text x="170" y="24" font-size="8" fill="#365314">• Complete audit trail maintained</text>
-          </g>
-        </g>
-
-        <!-- Connection arrows -->
-        <line x1="700" y1="135" x2="700" y2="155" stroke="#64748b" stroke-width="2" marker-end="url(#arrowUser)"/>
-        <line x1="700" y1="215" x2="700" y2="260" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowWrite)"/>
-        <line x1="700" y1="260" x2="700" y2="215" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowRead)" stroke-dasharray="3,3"/>
-        <line x1="420" y1="302" x2="500" y2="302" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowWrite)"/>
-        <line x1="500" y1="350" x2="420" y2="350" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowRead)" stroke-dasharray="3,3"/>
-        <line x1="420" y1="407" x2="500" y2="400" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowWrite)"/>
-        <line x1="500" y1="420" x2="420" y2="420" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowRead)" stroke-dasharray="3,3"/>
-        <line x1="420" y1="512" x2="500" y2="500" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowWrite)"/>
-        <line x1="900" y1="350" x2="980" y2="350" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowLlm)"/>
-        <line x1="980" y1="365" x2="900" y2="365" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowLlm)"/>
-        <text x="915" y="340" font-size="7" fill="#f59e0b">LLM</text>
-
-        <!-- Legend -->
-        <g transform="translate(80, 720)">
-          <rect x="0" y="0" width="20" height="20" rx="4" fill="#22c55e"/>
-          <text x="28" y="14" font-size="11" fill="#1e293b">Write</text>
-          <line x1="60" y1="10" x2="85" y2="10" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowWrite)"/>
-          <rect x="100" y="0" width="20" height="20" rx="4" fill="#94a3b8"/>
-          <text x="128" y="14" font-size="11" fill="#1e293b">Read</text>
-          <line x1="160" y1="10" x2="185" y2="10" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowRead)" stroke-dasharray="3,3"/>
-          <rect x="200" y="0" width="20" height="20" rx="4" fill="#f59e0b"/>
-          <text x="228" y="14" font-size="11" fill="#1e293b">LLM</text>
-          <line x1="260" y1="10" x2="285" y2="10" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowLlm)"/>
-        </g>
-      </svg>
+        <div class="dataflow-footer">
+          <div class="footer-card footer-write">
+            <h4>Storage Discipline</h4>
+            <p><strong>All writes</strong> pass through the same storage boundary. Extraction output, chat state, note drafts, citations, and audit events are persisted in one place.</p>
+          </div>
+          <div class="footer-card footer-read">
+            <h4>Read Discipline</h4>
+            <p><strong>The UI does not bypass storage.</strong> Summary panels, chat context, and timelines are all hydrated from stored read models rather than ad hoc state.</p>
+          </div>
+          <div class="footer-card footer-llm">
+            <h4>Inference Guardrail</h4>
+            <p><strong>Gemma is self-hosted.</strong> PHI stays on-premise, and every response path is expected to meet grounding and validation checks before display.</p>
+          </div>
+          <div class="footer-card footer-time">
+            <h4>Operational Envelope</h4>
+            <p><strong>Router &lt;1s</strong> • <strong>Chat 3-8s</strong> • <strong>SOAP 15-25s</strong> • <strong>Extraction 30-45s</strong></p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ===== SECTION 3: SKILLS FRAMEWORK ===== -->
     <div class="section" id="skills-framework">
       <h2 class="section-title">🛠️ Skills Framework</h2>
-      <p style="text-align: center; font-size: 14px; color: #64748b; margin-bottom: 20px;">16 Reusable AI Capabilities organized by category</p>
+      <p style="text-align: center; font-size: 14px; color: #64748b; margin-bottom: 20px;">20 Reusable AI Capabilities organized by category</p>
 
       <div class="skills-grid">
-        <!-- Extraction Skills (8) -->
+        <!-- Document Classification (1) -->
         <div class="skill-category">
           <div class="skill-category-header header-extraction">
-            📊 Extraction Skills (8)
+            📋 Document Classification (1)
+          </div>
+          <div class="skill-items">
+            <div class="skill-item">
+              <span class="skill-name">Document Type Classifier</span>
+              <span class="skill-tools">Auto-detect doc type</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Extraction Skills (10) -->
+        <div class="skill-category">
+          <div class="skill-category-header header-extraction">
+            📊 Extraction Skills (10)
           </div>
           <div class="skill-items">
             <div class="skill-item">
@@ -920,6 +1196,18 @@
             <div class="skill-item">
               <span class="skill-name">Pending Items Extractor</span>
               <span class="skill-tools">LLM-Only • Labs • Radiology</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Lab Results Extractor</span>
+              <span class="skill-tools">CBC • Chemistry • Ref ranges</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Consultation Data Extractor</span>
+              <span class="skill-tools">OPD • Clinic notes</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Progress Notes Extractor</span>
+              <span class="skill-tools">SOAP • Resident notes</span>
             </div>
             <div class="skill-item">
               <span class="skill-name">Cross Validator</span>
@@ -1004,7 +1292,15 @@
       <!-- Tools Layer -->
       <div style="margin-top: 30px;">
         <div style="background: #1e293b; border-radius: 10px; padding: 25px; color: white;">
-          <h3 style="font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 20px;">Tools Layer (32 utilities)</h3>
+          <h3 style="font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 20px;">Tools Layer (35 utilities)</h3>
+
+          <!-- Document Router Tools -->
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Document Router (1)</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📋 Type Classifier</div>
+            </div>
+          </div>
 
           <!-- PDF Tools -->
           <div style="margin-bottom: 18px;">
@@ -1031,6 +1327,15 @@
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🩺 Vitals Interpreter</div>
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📊 Provenance Builder</div>
+            </div>
+          </div>
+
+          <!-- Orchestration Tools -->
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Orchestration (2)</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <div style="background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📋 Audit Logger</div>
+              <div style="background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">⚡ Parallel Runner</div>
             </div>
           </div>
 

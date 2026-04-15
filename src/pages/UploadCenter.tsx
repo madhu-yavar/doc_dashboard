@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, FileText, FileStack, Search, Sparkles, Trash2, Upload } from "lucide-react";
+import { ClipboardList, Eye, FileText, FileStack, Search, Sparkles, Trash2, Upload } from "lucide-react";
 
+import AuditTrailSheet from "@/components/dashboard/AuditTrailSheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -465,6 +466,15 @@ const UploadCenter = () => {
                           <TableCell className="text-muted-foreground">{formatDateTime(document.uploadedAt)}</TableCell>
                           <TableCell>
                             <div className="flex items-center justify-end gap-2">
+                              <AuditTrailSheet
+                                documentId={document.id}
+                                processedDocument={document}
+                                trigger={
+                                  <Button variant="ghost" size="icon" title="Audit trail" aria-label={`Open audit trail for ${document.name}`}>
+                                    <ClipboardList className="h-4 w-4" />
+                                  </Button>
+                                }
+                              />
                               <Button
                                 variant="ghost"
                                 size="icon"

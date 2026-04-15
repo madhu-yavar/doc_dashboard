@@ -3,9 +3,12 @@
 ## Doctor Dashboard - Clinical Intelligence System
 
 **Version:** 2.0.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15
 
 ---
+
+> Note
+> This document reflects the current skills design, but some path references below used an older `doctor_dashboard/` folder prefix. The current repository paths are rooted directly at `skills/`.
 
 ## Overview
 
@@ -142,7 +145,7 @@ Include units and timestamps if available
 
 **Architecture:** Pure LLM-based (no regex patterns)
 
-**File:** `doctor_dashboard/skills/extraction/pending_items_extractor.skill.cjs`
+**File:** `skills/extraction/pending_items_extractor.skill.cjs`
 
 **Prompt Pattern:**
 ```
@@ -453,38 +456,13 @@ for (const skill of skills) {
 
 ## Skill Configuration
 
-### Environment Variables
+### Runtime Configuration
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `SKILL_TIMEOUT` | Max execution time per skill | `60000` (60s) |
-| `SKILL_MAX_RETRIES` | Retry attempts on failure | `2` |
-| `SKILL_CACHE_ENABLED` | Enable result caching | `true` |
+There is no central skill-specific environment variable contract in the current repository. Skills inherit runtime configuration from the agents and route handlers that instantiate them, most commonly through Gemma client settings and extractor workflow options.
 
-### Skill Registry
+### Skill Wiring
 
-Skills are registered in `doctor_dashboard/skills/skill_registry.cjs`:
-
-```javascript
-const SKILL_REGISTRY = {
-  // Extraction Skills
-  DocumentAnalyzer: { class: DocumentAnalyzerSkill, version: '1.0.0' },
-  DemographicsExtractor: { class: DemographicsExtractorSkill, version: '1.0.0' },
-  VitalsExtractor: { class: VitalsExtractorSkill, version: '1.0.0' },
-  ClinicalDataExtractor: { class: ClinicalDataExtractorSkill, version: '1.0.0' },
-  PendingItemsExtractor: { class: PendingItemsExtractorSkill, version: '2.0.0' },  // LLM-only
-
-  // Validation Skills
-  CrossValidator: { class: CrossValidatorSkill, version: '1.0.0' },
-
-  // Generation Skills
-  ChartNoteComposer: { class: ChartNoteComposerSkill, version: '1.0.0' },
-
-  // Presentation Skills
-  DashboardMapper: { class: DashboardMapperSkill, version: '1.0.0' },
-  SummaryCardBuilder: { class: SummaryCardBuilderSkill, version: '1.0.0' }
-};
-```
+The current repository does not use a standalone `skill_registry.cjs` file. Skills are imported directly by agents and route handlers where they are needed.
 
 ---
 
@@ -513,7 +491,7 @@ class MyCustomSkill extends Skill {
 }
 ```
 
-2. **Register in skill_registry.cjs**
+2. **Import and wire the skill into the agent or route that needs it**
 
 3. **Add to agent configuration if needed**
 
@@ -535,4 +513,4 @@ class MyCustomSkill extends Skill {
 ---
 
 **Document Version:** 2.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15

@@ -3,9 +3,12 @@
 ## Doctor Dashboard - Clinical Intelligence System
 
 **Version:** 2.0.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15
 
 ---
+
+> Note
+> This guide reflects the current root application in this repository: a React frontend plus an Express backend in `server/index.cjs`. Optional extractor tuning flags are included below, but the backend boot path itself reads a smaller set of environment variables than some older docs describe.
 
 ## Prerequisites
 
@@ -14,101 +17,108 @@
 | Software | Version | Purpose |
 |----------|---------|---------|
 | Node.js | 18+ | Frontend/Backend runtime |
-| Python | 3.8+ | LLM API (optional) |
 | Git | Latest | Version control |
 
 ### Required Services
 
 | Service | Purpose | How to Get |
 |---------|---------|------------|
-| Gemma LLM API | AI inference | Contact infrastructure team |
-| PDF Storage | File storage | Local filesystem or cloud |
+| Gemma LLM API | AI inference (primary) | Contact infrastructure team |
+| Gemini API | External knowledge (optional) | Google Cloud Console |
 
 ---
 
 ## Quick Start
 
-### 1. Clone the Repository
-
-```bash
-git clone <repository-url>
-cd doctor_dashboard
-```
-
-### 2. Install Dependencies
+### 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 3. Configure Environment
+### 2. Configure Environment
 
-Create a `.env` file in the `doctor_dashboard` directory:
+Create a `.env` file in the root directory:
 
 ```env
-# Gemma LLM Configuration
-GEMMA_URL=http://your-gemma-api:8000
+# Gemma LLM Configuration (Primary - for extraction)
+GEMMA_URL=http://206.1.62.28:8000/v1/chat/completions
 GEMMA_MODEL=google/gemma-4-26B-A4B-it
+
+# Gemini API Configuration (Optional - for external knowledge)
+GEMINI_API_KEY=your-gemini-api-key
+USE_GEMINI_FOR_EXTERNAL=true
 
 # Server Configuration
 PORT=8001
 NODE_ENV=development
 
-# Storage Configuration
-STORAGE_PATH=./storage
+# Extraction Configuration
+EXTRACTION_PER_DOCUMENT_CONCURRENCY=3
+ENABLE_PENDING_ITEMS_EXTRACTION=true
 ```
 
-### 4. Start the Development Server
+### 3. Start the Development Server
 
 ```bash
 # Terminal 1: Start backend
 npm run server
 
-# Terminal 2: Start frontend
+# Terminal 2: Start frontend (for development)
 npm run dev
 ```
 
-### 5. Access the Application
+### 4. Access the Application
 
-- **Frontend:** http://localhost:5173
+- **Frontend (dev):** http://localhost:5173
 - **Backend API:** http://localhost:8001
 - **API Health Check:** http://localhost:8001/api/health
+- **Agent Status:** http://localhost:8001/api/agent/status
 
 ---
 
 ## Project Structure
 
 ```
-doctor_dashboard/
-├── src/                          # Frontend React code
-│   ├── components/               # React components
-│   │   └── dashboard/           # Dashboard-specific components
-│   ├── pages/                   # Page components
-│   ├── lib/                     # Utility functions
-│   └── main.tsx                 # App entry point
-├── server/                      # Backend Express server
-│   └── index.cjs                # API server
+manipal-coe/
+├── server/                      # Root backend server
+│   ├── index.cjs                # Main Express server with audit
+│   └── audit_logger.cjs         # Audit logging system
 ├── agents/                      # AI Agents
+│   ├── document_type_router.cjs # Auto-detects doc type
 │   ├── discharge_extractor_agent.cjs
-│   ├── doctor_assistant_agent.cjs
-│   └── chart_note_agent.cjs
+│   ├── outpatient_extractor_agent.cjs
+│   ├── lab_report_extractor_agent.cjs
+│   ├── chart_note_extractor_agent.cjs
+│   └── [other agents...]
 ├── skills/                      # Reusable Skills
-│   ├── extraction/
-│   ├── validation/
-│   ├── generation/
-│   ├── presentation/
-│   └── chat/
+│   ├── extraction/              # Extraction skills
+│   │   ├── pending_items_extractor.skill.cjs
+│   │   ├── risk_scores_extractor.skill.cjs
+│   │   ├── vitals_extractor.skill.cjs
+│   │   └── [other extraction skills...]
+│   ├── validation/              # Validation skills
+│   ├── generation/              # Generation skills
+│   ├── presentation/            # Presentation skills
+│   └── chat/                    # Chat skills
 ├── tools/                       # Utility tools
-│   ├── pdf/
-│   ├── llm/
-│   ├── clinical/
-│   ├── presentation/
-│   └── chat/
-├── storage/                     # Data storage
+│   ├── pdf/                     # PDF processing
+│   ├── llm/                     # LLM clients
+│   ├── clinical/                # Clinical tools
+│   └── presentation/            # Presentation tools
+├── src/                         # Frontend React code
+│   ├── components/
+│   │   └── dashboard/
+│   ├── pages/
+│   ├── lib/
+│   └── main.tsx
+├── server/storage/              # Data storage
 │   ├── uploads/                 # PDF files
 │   ├── documents.json           # Processed documents
+│   ├── audit_runs.json          # Audit run metadata
+│   ├── audit_events.jsonl       # Audit event log
 │   └── chat_sessions.json       # Chat history
-└── tests/                       # Test files
+└── docs/                        # Documentation
 ```
 
 ---
@@ -117,11 +127,9 @@ doctor_dashboard/
 
 ### 1. Upload a PDF
 
-Use the Upload Center to upload discharge summary PDFs:
-
 ```bash
 curl -X POST http://localhost:8001/api/documents/upload \
-  -F "file=@/path/to/discharge_summary.pdf"
+  -F "files=@/path/to/discharge_summary.pdf"
 ```
 
 ### 2. Process the Document
@@ -132,20 +140,36 @@ curl -X POST http://localhost:8001/api/documents/process \
   -d '{"ids": ["document-id-from-upload"]}'
 ```
 
-### 3. View the Dashboard
+### 3. View Audit Trail
+
+```bash
+# List all audit runs
+curl http://localhost:8001/api/audit/runs
+
+# Get specific run details
+curl http://localhost:8001/api/audit/runs/{runId}
+
+# Get run events
+curl http://localhost:8001/api/audit/runs/{runId}/events
+```
+
+### 4. View the Dashboard
 
 Navigate to the dashboard page using the document ID:
 ```
-http://localhost:5173/dashboard/<document-id>
+http://localhost:5173/dashboard?documentId=<document-id>
 ```
-
-### 4. Chat with the Assistant
-
-Use the chat panel to ask questions about the patient data.
 
 ---
 
 ## API Endpoints
+
+### Health & Status
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/health` | Server health with identity |
+| `GET /api/agent/status` | Agent system status |
 
 ### Document Management
 
@@ -158,15 +182,21 @@ Use the chat panel to ask questions about the patient data.
 | `/api/documents/process/progress` | GET | SSE progress stream |
 | `/api/documents/:id` | DELETE | Delete document |
 
+### Audit Trail
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/audit/runs` | List audit runs |
+| `GET /api/audit/runs/:runId` | Get specific run |
+| `GET /api/audit/runs/:runId/events` | Get run events |
+
 ### Chat
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/chat/query` | POST | Submit chat query |
 | `/api/chat/history/:documentId` | GET | Get chat history |
-| `/api/chat/history/:documentId` | DELETE | Clear chat |
-| `/api/chat/action/confirm` | POST | Confirm action |
-| `/api/chat/export/:documentId` | POST | Export chat |
+| `/api/chat/source-health` | GET | Check external sources |
 
 ### Chart Notes
 
@@ -186,16 +216,17 @@ Use the chat panel to ask questions about the patient data.
 |----------|-------------|---------|
 | `GEMMA_URL` | LLM API endpoint | Required |
 | `GEMMA_MODEL` | Model identifier | `google/gemma-4-26B-A4B-it` |
-| `GEMMA_TIMEOUT` | Request timeout | `180000` (3 min) |
-| `GEMMA_MAX_TOKENS` | Max tokens per response | `4096` |
+| `USE_GEMINI_FOR_EXTERNAL` | Enable Gemini-backed external knowledge lookups | `true` |
+| `GEMINI_MODEL` | Gemini model for external knowledge mode | `gemini-2.5-flash` |
+| `GEMINI_API_KEY` | Gemini API key for external lookups | Optional |
 
-### Agent Configuration
+### Extraction Configuration
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `AGENT_MAX_RETRIES` | Retry attempts | `2` |
-| `AGENT_TIMEOUT` | Step timeout | `180000` |
-| `AGENT_TEMPERATURE` | LLM temperature | `0.1` |
+| `EXTRACTION_PER_DOCUMENT_CONCURRENCY` | Parallel extraction steps | `3` |
+| `ENABLE_PENDING_ITEMS_EXTRACTION` | Enable pending items extraction | `true` |
+| `ENABLE_DOCUMENT_ANALYZER` | Enable document analysis step | `false` |
 
 ---
 
@@ -203,17 +234,14 @@ Use the chat panel to ask questions about the patient data.
 
 ### Common Issues
 
-**Issue:** "Gemma connection refused"
-- **Solution:** Check `GEMMA_URL` is correct and service is running
+**Issue:** "Template not found: pending_items_extractor"
+- **Solution:** Ensure `tools/llm/prompt_builder.tool.cjs` includes the template
 
-**Issue:** "PDF processing fails"
-- **Solution:** Ensure PDF is text-based (not scanned images)
+**Issue:** "Audit run not found"
+- **Solution:** Check `server/storage/audit_runs.json` exists and has data
 
-**Issue:** "Chat responses are slow"
-- **Solution:** Check Gemma API latency, consider caching
-
-**Issue:** "Dashboard shows no data"
-- **Solution:** Check browser console for errors, verify document processing completed
+**Issue:** "Parallel extraction not working"
+- **Solution:** Check `EXTRACTION_PER_DOCUMENT_CONCURRENCY` is set to > 1
 
 ---
 
@@ -222,18 +250,8 @@ Use the chat panel to ask questions about the patient data.
 1. **Review Architecture:** Read the [AI Architecture](../architecture/ai-architecture.md) document
 2. **Explore Components:** Browse the component library
 3. **Customize:** Modify components and prompts for your use case
-4. **Deploy:** Follow the deployment guide for production setup
-
----
-
-## Support
-
-For issues or questions:
-- Check the [documentation index](../README.md)
-- Review existing issues in the project repository
-- Contact the development team
 
 ---
 
 **Document Version:** 2.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15

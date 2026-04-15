@@ -2,10 +2,13 @@
 
 **Project:** Doctor Dashboard - Clinical Intelligence System
 **Version:** 2.0.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15
 **Status:** Production
 
 ---
+
+> Note
+> This docs set mixes current-state operational guides with some older architecture and planning documents. When a document is marked as `historical`, `concept`, or `planning-oriented`, treat it as design context rather than a description of the exact code currently running in this repository.
 
 ## Quick Navigation
 
@@ -24,20 +27,17 @@
 ### Prerequisites
 
 - Node.js 18+
-- Python 3.8+ (for backend services)
-- Access to Gemma LLM API
+- Access to Gemma LLM API or Gemini API
 
 ### Quick Start
 
 ```bash
-# Navigate to the doctor dashboard
-cd doctor_dashboard
-
 # Install dependencies
 npm install
 
-# Start development server
-npm run dev
+# Start development servers
+npm run dev   # Frontend on :5173
+npm run server # Backend on :8001
 ```
 
 For detailed setup instructions, see [Getting Started Guide](./guides/getting-started.md).
@@ -55,20 +55,23 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 | Capability | Description |
 |------------|-------------|
 | **PDF Understanding** | Extract structured data from unstructured clinical PDFs |
+| **Document Type Detection** | Auto-detects discharge summaries, outpatient records, lab reports, chart notes |
+| **Parallel Extraction** | Concurrent extraction steps for improved performance |
 | **Data Validation** | Cross-validate extracted data against source with citations |
 | **Chart Note Generation** | Generate clinical SOAP notes with ReAct reasoning |
 | **Doctor Chat Assistant** | Interactive Q&A with internal + external knowledge |
 | **Dashboard Presentation** | Transform extracted data into UI components |
 | **Safety Guardrails** | Prevent hallucinations and unsafe medical advice |
-| **LLM-Only Pending Items Extraction** | Pure LLM-based extraction of pending labs, radiology, follow-ups, and discharge items |
+| **Pending Items Extraction** | LLM-only extraction of pending labs, radiology, follow-ups |
+| **Audit Trail** | Complete audit logging for all operations |
 
 ### Technology Stack
 
-- **Frontend:** React + TypeScript + Tailwind CSS
+- **Frontend:** React + TypeScript + Tailwind CSS + Vite
 - **Backend:** Express.js + Node.js
-- **AI/LLM:** Google Gemma 4-26B-A4B-it
+- **AI/LLM:** Google Gemma 4-26B-A4B-it (primary), Gemini 2.5 Flash (external)
 - **PDF Processing:** Custom PDF extraction tools
-- **Architecture:** Multi-agent ReAct pattern
+- **Architecture:** Multi-agent ReAct pattern with parallel execution
 
 ---
 
@@ -83,8 +86,6 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 | Skills Framework | Reusable AI skills documentation | [View](./architecture/skills-framework.md) |
 | Chatbot Architecture | Doctor Assistant chat system | [View](./architecture/chatbot-architecture.md) |
 | Chart Note React Agent | Chart note generation architecture | [View](./architecture/CHART_NOTE_REACT_AGENT.md) |
-| Agent Architecture Flow | Interactive flow diagram | [View](./architecture/agent_architecture_flow.html) |
-| Full Architecture v4 | Complete system architecture diagram | [View](./architecture/manipal_coe_full_architecture_v4.html) |
 
 ### 2. Project Planning & Research
 
@@ -100,16 +101,13 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 | Document | Description | Link |
 |----------|-------------|------|
 | Getting Started | Setup and installation guide | [View](./guides/getting-started.md) |
-| Development Workflow | Development best practices | [View](./guides/development-workflow.md) |
 | API Reference | Complete API endpoint documentation | [View](./guides/api-reference.md) |
-| Component Library | React component documentation | [View](./guides/components.md) |
 
 ### 4. Testing & Evaluation
 
 | Document | Description | Link |
 |----------|-------------|------|
-| Gemma LLM Evaluation | Complete LLM capability assessment | [View](./testing/llm-evaluation.md) |
-| PDF Test Results | Real PDF processing test results | [View](./testing/pdf-test-results.md) |
+| LLM Evaluation | Complete LLM capability assessment | [View](./testing/llm-evaluation.md) |
 | Performance Benchmarks | System performance metrics | [View](./testing/performance.md) |
 
 ### 5. Deployment & Operations
@@ -118,57 +116,116 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 |----------|-------------|------|
 | Deployment Guide | Production deployment instructions | [View](./operations/deployment.md) |
 | Security & Compliance | HIPAA and security documentation | [View](./operations/security.md) |
-| Monitoring & Logging | System monitoring setup | [View](./operations/monitoring.md) |
+| Gemini API Key Deployment | Gemini API key deployment guide | [View](./operations/deployment-gemini-api-key.md) |
 
 ---
 
 ## Project Structure
 
+**Root Stack (Current):**
 ```
 manipal-coe/
-├── doctor_dashboard/          # Main application
-│   ├── src/                   # Frontend React code
-│   ├── server/                # Backend Express server
-│   ├── agents/                # AI Agents
-│   ├── skills/                # Reusable Skills
-│   ├── tools/                 # Utility tools
-│   ├── storage/               # Data storage
-│   └── tests/                 # Test files
-├── docs/                      # Documentation (this folder)
-│   ├── architecture/          # Architecture documents
-│   ├── research/              # Research and planning
-│   ├── guides/                # Development guides
-│   ├── testing/               # Test results
-│   └── operations/            # Operations docs
-├── data/                      # Sample data files
-├── prototype/                 # Early prototype
-└── gemma_test/                # LLM evaluation tests
+├── server/                    # Root backend server
+│   ├── index.cjs              # Main Express server with audit
+│   └── audit_logger.cjs       # Audit logging system
+├── agents/                    # AI Agents
+│   ├── document_type_router.cjs           # Auto-detects doc type
+│   ├── discharge_extractor_agent.cjs      # Discharge summary extraction
+│   ├── outpatient_extractor_agent.cjs     # OPD record extraction
+│   ├── lab_report_extractor_agent.cjs      # Lab report extraction
+│   ├── chart_note_extractor_agent.cjs      # Chart note extraction
+│   ├── doctor_assistant_agent.cjs          # Doctor chat assistant
+│   ├── chart_note_agent.cjs                # Chart note generation
+│   ├── action_router_agent.cjs             # Chat action routing
+│   ├── answer_composer_agent.cjs           # Chat response composition
+│   ├── external_knowledge_agent.cjs        # External knowledge queries
+│   ├── query_intent_agent.cjs              # Chat intent detection
+│   ├── record_context_agent.cjs            # Record context retrieval
+│   ├── safety_guard_agent.cjs              # Safety validation
+│   └── session_memory_agent.cjs            # Chat session management
+├── skills/                   # Reusable Skills
+│   ├── extraction/
+│   │   ├── pending_items_extractor.skill.cjs  # LLM-only pending items
+│   │   ├── risk_scores_extractor.skill.cjs     # Risk assessment scores
+│   │   ├── vitals_extractor.skill.cjs           # Vital signs extraction
+│   │   ├── demographics_extractor.skill.cjs     # Patient demographics
+│   │   ├── functional_status_extractor.skill.cjs # ADL assessment
+│   │   ├── clinical_data_extractor.skill.cjs     # Clinical data extraction
+│   │   └── document_analyzer.skill.cjs            # Document analysis
+│   ├── validation/
+│   │   ├── cross_validator.skill.cjs             # Cross-validation
+│   │   └── cross_validation_agent.skill.cjs       # Agent-based validation
+│   ├── generation/
+│   │   └── chart_note_composer.skill.cjs          # Chart note generation
+│   ├── presentation/
+│   │   ├── dashboard_mapper.skill.cjs             # Dashboard card mapping
+│   │   ├── summary_card_builder.skill.cjs          # Summary card creation
+│   │   └── notes_rail_builder.skill.cjs            # Notes rail creation
+│   └── chat/
+│       ├── chat_export_builder.skill.cjs          # Chat export
+│       ├── abnormal_flag_action.skill.cjs         # Abnormal flag actions
+│       └── note_update_suggester.skill.cjs        # Note update suggestions
+├── tools/                    # Utility tools
+│   ├── pdf/
+│   │   └── pdf_reader.tool.cjs                    # PDF text extraction
+│   ├── llm/
+│   │   ├── gemma_client.tool.cjs                  # Gemma LLM client
+│   │   ├── prompt_builder.tool.cjs                # Prompt templates
+│   │   └── citation_tracker.tool.cjs              # Citation tracking
+│   ├── clinical/
+│   │   └── provenance_builder.tool.cjs            # Provenance data
+│   └── presentation/
+│       ├── timeline_formatter.tool.cjs           # Timeline formatting
+│       └── note_selector.tool.cjs                 # Note selection
+├── src/                      # Frontend React code
+│   ├── components/
+│   │   └── dashboard/
+│   ├── pages/
+│   ├── lib/
+│   └── main.tsx
+├── server/storage/           # Data storage
+│   ├── uploads/              # PDF files
+│   ├── documents.json        # Processed documents
+│   ├── audit_runs.json       # Audit run metadata
+│   ├── audit_events.jsonl    # Audit event log
+│   └── chat_sessions.json    # Chat history
+└── docs/                     # Documentation (this folder)
 ```
 
 ---
 
 ## Key Concepts
 
-### Multi-Agent Architecture
+### Document Type Routing
 
-The system uses a **multi-agent architecture** with specialized agents:
+The system automatically detects document types and routes to specialized extractors:
 
-1. **DischargeExtractorAgent** - Extracts structured data from PDFs
-2. **DoctorAssistantAgent** - Interactive chat with clinical Q&A
-3. **ChartNoteAgent** - Generates SOAP notes with reasoning
-4. **SafetyGuardAgent** - Ensures safe, validated outputs
+| Document Type | Indicators | Extractor Used |
+|---------------|------------|----------------|
+| Discharge Summary | "discharge", risk scores, EWS | DischargeExtractorAgent |
+| Outpatient Record | "OPD", "clinic", "consultation" | OutpatientExtractorAgent |
+| Lab Report | "lab results", "CBC", "reference range" | LabReportExtractorAgent |
+| Chart Note | "progress note", "SOAP", "resident note" | ChartNoteExtractorAgent |
 
-### Skills Framework
+### Parallel Extraction Architecture
 
-Skills are **reusable AI capabilities** that can be composed into agents:
+The root stack implements concurrent extraction for improved performance:
 
-- **Extraction Skills** - Document parsing, data extraction, LLM-only pending items extraction
-- **Validation Skills** - Cross-validation, citation tracking
-- **Generation Skills** - Chart note composition
-- **Presentation Skills** - Dashboard data transformation
-- **Chat Skills** - Query handling, response formatting
+- **Execution Plan:** Dynamically builds metadata → extraction → validation phases
+- **Worker Pool:** Configurable concurrency (default: 3 parallel steps)
+- **Rich Timing:** Tracks `startedAt`, `endedAt`, `latencyMs` per step
+- **Progress Callbacks:** SSE-based real-time progress updates
 
-### LLM-Only Architecture
+### Audit Trail System
+
+Complete audit logging for compliance and debugging:
+
+- **Run Tracking:** Each extraction/chart/chat operation creates an audit run
+- **Event Timeline:** Step-by-step event logging with details
+- **Query API:** Filter runs by workflow, document, status
+- **Storage:** JSON runs + JSONL events for efficient append-only writes
+
+### LLM-Only Pending Items Extraction
 
 The system features a pure LLM-based extraction approach for pending items:
 
@@ -176,15 +233,7 @@ The system features a pure LLM-based extraction approach for pending items:
 - **7-Step Process** - Structured thinking for clinical items
 - **Provenance Tracking** - Source sections and excerpts included
 - **Priority Classification** - Clinical judgment (high/medium/low)
-- **Graceful Fallback** - Returns empty result on parse failure
-
-### Tools Layer
-
-Tools are **lower-level utilities** used by skills and agents:
-
-- PDF reading, LLM client, prompt building
-- Clinical interpretation, provenance tracking
-- Data presentation, citation assembly
+- **Failure Visibility** - Failed steps are tracked explicitly in `data.failed_steps`
 
 ---
 
@@ -192,19 +241,21 @@ Tools are **lower-level utilities** used by skills and agents:
 
 ### Completed ✅
 
-- Multi-agent architecture
-- PDF extraction with validation
+- Multi-agent architecture with ReAct reasoning
+- Document type detection and routing
+- Parallel extraction orchestration
+- PDF extraction with cross-validation
+- Pending items extraction (LLM-only)
 - Interactive chat assistant
 - Chart note generation
 - Dashboard UI components
-- ReAct reasoning framework
-- LLM-only pending items extraction (PendingItemsExtractorSkill)
+- Audit trail system
+- Rich step timing metadata
 
 ### In Progress 🚧
 
 - Multi-document comparison
 - Real-time EMR integration
-- Mobile application
 
 ### Planned 📋
 
@@ -217,7 +268,7 @@ Tools are **lower-level utilities** used by skills and agents:
 
 ## Contributing
 
-For contribution guidelines, see [Development Workflow](./guides/development-workflow.md).
+For contribution guidelines, contact the development team.
 
 ---
 
@@ -234,4 +285,4 @@ For questions or support, contact the development team.
 ---
 
 *Documentation maintained by the AI Architecture Team*
-*Last updated: April 7, 2026*
+*Last updated: April 15, 2026*

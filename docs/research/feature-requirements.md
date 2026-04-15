@@ -2,10 +2,13 @@
 
 **Project:** Doctor Dashboard - Clinical Intelligence System
 **Version:** 2.0.0
-**Date:** 2026-04-07
+**Date:** 2026-04-15
 **Status:** Requirements Document
 
 ---
+
+> Note
+> This is a requirements and planning document. `Implemented` and `Met` statuses below should be read as design intent or point-in-time assessment unless they are cross-checked against the current codebase. For security, compliance, backup, and caching items in particular, the repository does not by itself enforce every capability listed here.
 
 ## Overview
 
@@ -153,12 +156,12 @@ This document outlines the comprehensive feature requirements for the AI-powered
 
 | ID | Requirement | Target | Status |
 |----|-------------|--------|--------|
-| NFR-SEC.1 | Data encryption at rest | AES-256 | ✅ Implemented |
-| NFR-SEC.2 | Data encryption in transit | TLS 1.3 | ✅ Implemented |
-| NFR-SEC.3 | PHI protection | HIPAA compliant | ✅ Implemented |
+| NFR-SEC.1 | Data encryption at rest | AES-256 | ⚠️ Deployment-dependent |
+| NFR-SEC.2 | Data encryption in transit | TLS 1.3 | ⚠️ Deployment-dependent |
+| NFR-SEC.3 | PHI protection | HIPAA compliant | ⚠️ Deployment-dependent |
 | NFR-SEC.4 | Audit logging | All operations | ✅ Implemented |
 | NFR-SEC.5 | Access control | Role-based | 📋 Planned |
-| NFR-SEC.6 | Data retention policy | Configurable | ✅ Implemented |
+| NFR-SEC.6 | Data retention policy | Configurable | 📋 Planned |
 
 ### Reliability
 
@@ -166,7 +169,7 @@ This document outlines the comprehensive feature requirements for the AI-powered
 |----|-------------|--------|--------|
 | NFR-R.1 | System uptime | 99.5% | ✅ Met |
 | NFR-R.2 | Error handling | Graceful degradation | ✅ Implemented |
-| NFR-R.3 | Data backup | Daily | ✅ Implemented |
+| NFR-R.3 | Data backup | Daily | ⚠️ Deployment-dependent |
 | NFR-R.4 | Recovery time | <1 hour | ✅ Met |
 
 ### Usability
@@ -191,7 +194,7 @@ This document outlines the comprehensive feature requirements for the AI-powered
 | TR-AI.2 | Context window | 24K+ tokens | ✅ Met |
 | TR-AI.3 | Temperature configuration | 0.1-0.4 | ✅ Configured |
 | TR-AI.4 | Timeout per step | 60-180s | ✅ Configured |
-| TR-AI.5 | Prompt caching | Enabled | ✅ Implemented |
+| TR-AI.5 | Prompt caching | Enabled | ⚠️ Not verified in current root server |
 
 ### Agent Requirements
 
@@ -255,7 +258,7 @@ This document outlines the comprehensive feature requirements for the AI-powered
 
 | Regulation | Requirement | Status |
 |------------|-------------|--------|
-| HIPAA | PHI protection | ✅ Compliant |
+| HIPAA | PHI protection | ⚠️ Deployment-dependent |
 | HIPAA | Audit trails | ✅ Implemented |
 | HIPAA | Business associate agreements | 📋 In Progress |
 | GDPR | Data subject rights | 📋 Planned |
@@ -298,5 +301,5 @@ This document outlines the comprehensive feature requirements for the AI-powered
 ---
 
 **Document Version:** 1.0
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-15
 **Maintained By:** Product Team
