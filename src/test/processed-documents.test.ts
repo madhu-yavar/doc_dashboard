@@ -235,4 +235,66 @@ describe("transformProcessedDocument", () => {
       discontinued: [],
     });
   });
+
+  it("normalizes object-shaped allergies and investigations and falls back to document_type for department", () => {
+    const transformed = transformProcessedDocument(
+      createProcessedDocument({
+        department: "Inpatient nursing / medical",
+        result: {
+          meta: {
+            pdf_file: "Clinical_Summary.pdf",
+            document_type: "outpatient_record",
+            router: {
+              detected_type: "outpatient_record",
+            },
+          },
+          sample_patient_data: {
+            name: "Atiar Rahaman Molla",
+            age: 30,
+            mrn: "MH004962073",
+            admission_date: "",
+            discharge_date: "2025-02-27",
+          },
+          dashboard_cards: {
+            medications_card: {
+              allergies: [
+                { name: "Sulpha Drugs", status: "No" },
+                { name: "Penicillin", status: "No" },
+              ],
+            },
+            labs_card: {
+              investigations_list: [
+                {
+                  test_name: "Ultrasonography",
+                  finding: "Mild urinary bladder wall thickening with significant postvoid residue.",
+                },
+                { test_name: "ECG", finding: "WNL" },
+              ],
+            },
+          },
+          extracted_data: {
+            patient: {
+              gender: "Male",
+            },
+            investigations: [
+              {
+                test_name: "Echo Cardiography",
+                finding: "Normal",
+              },
+            ],
+          },
+        },
+      }),
+    );
+
+    expect(transformed.admission.department).toBe("Outpatient Record");
+    expect(transformed.medications.allergies).toEqual([
+      expect.objectContaining({ allergen: "Sulpha Drugs: No" }),
+      expect.objectContaining({ allergen: "Penicillin: No" }),
+    ]);
+    expect(transformed.labs.investigations).toEqual([
+      "Ultrasonography: Mild urinary bladder wall thickening with significant postvoid residue.",
+      "ECG: WNL",
+    ]);
+  });
 });

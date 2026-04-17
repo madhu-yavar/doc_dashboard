@@ -13,6 +13,14 @@ export type GemmaDashboardResult = {
     report_complexity?: string;
     estimated_pages?: number;
     department_type?: string;
+    document_type?: string;
+    extraction_focus?: string;
+    router?: {
+      detected_type?: string;
+      router_version?: string;
+      confidence?: string;
+      filename_used?: string;
+    };
     drg?: string;
   };
   extracted_data?: {
@@ -44,8 +52,8 @@ export type GemmaDashboardResult = {
       mobility_notes?: string;
     };
     medications?: Array<{ name?: string; dose?: string; frequency?: string }>;
-    allergies?: string[];
-    investigations?: string[];
+    allergies?: Array<string | { name?: string; status?: string; severity?: string; reaction?: string }>;
+    investigations?: Array<string | { test_name?: string; finding?: string; test?: string; value?: string }>;
     treatment?: {
       current_approach?: string;
       management_items?: string[];
@@ -357,7 +365,7 @@ export type GemmaDashboardResult = {
     medications_card?: {
       active_count?: number;
       allergy_count?: number;
-      allergies?: string[];
+      allergies?: Array<string | { name?: string; status?: string; severity?: string; reaction?: string }>;
       categories?: Array<string | { name?: string; count?: number }>;
       medication_list?: Array<{ name?: string; dose?: string; frequency?: string }>;
     };
@@ -368,7 +376,7 @@ export type GemmaDashboardResult = {
       pending_count?: number;
       top_abnormal?: string;
       lab_results?: Array<{ test?: string; value?: string; reference?: string; flag?: string }>;
-      investigations_list?: string[];
+      investigations_list?: Array<string | { test_name?: string; finding?: string; test?: string; value?: string }>;
       has_results?: boolean;
       note?: string;
     };
@@ -729,6 +737,96 @@ const splitDelimitedItems = (value?: string) =>
     .split(/[;,]/)
     .map(cleanClinicalItem)
     .filter(Boolean);
+
+const formatDocumentTypeLabel = (value?: string) => {
+  const normalized = String(value || "").trim();
+  if (!normalized) return "";
+
+  return normalized
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+};
+
+const resolveDepartmentLabel = (result: GemmaDashboardResult, document: ProcessedDocument) =>
+  result.meta?.department_type ||
+  formatDocumentTypeLabel(result.meta?.document_type || result.meta?.router?.detected_type) ||
+  document.department ||
+  "General";
+
+const normalizeAllergyEntries = (
+  rawEntries: Array<string | { name?: string; status?: string; severity?: string; reaction?: string } | null | undefined>
+) => {
+  const seen = new Set<string>();
+  const output: Array<{
+    allergen: string;
+    severity: string;
+    reaction: string;
+    lastReaction: string;
+    action: string;
+    alternative: string;
+  }> = [];
+
+  for (const entry of rawEntries) {
+    if (!entry) continue;
+
+    if (typeof entry === "string") {
+      const allergen = entry.trim();
+      if (!allergen) continue;
+      const key = allergen.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      output.push({
+        allergen,
+        severity: "",
+        reaction: "",
+        lastReaction: "",
+        action: "",
+        alternative: "",
+      });
+      continue;
+    }
+
+    const allergen = String(entry.name || "").trim();
+    if (!allergen) continue;
+
+    const status = String(entry.status || "").trim();
+    const severity = String(entry.severity || "").trim();
+    const reaction = String(entry.reaction || "").trim();
+    const label = status ? `${allergen}: ${status}` : allergen;
+    const key = label.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    output.push({
+      allergen: label,
+      severity,
+      reaction,
+      lastReaction: "",
+      action: "",
+      alternative: "",
+    });
+  }
+
+  return output.filter((entry) => !isUnknownAllergyMarker(entry.allergen));
+};
+
+const normalizeInvestigationEntries = (
+  rawEntries: Array<string | { test_name?: string; finding?: string; test?: string; value?: string } | null | undefined>
+) =>
+  dedupeStrings(
+    rawEntries.map((entry) => {
+      if (!entry) return "";
+      if (typeof entry === "string") return cleanClinicalItem(entry);
+
+      const testName = cleanClinicalItem(entry.test_name || entry.test || "");
+      const finding = cleanClinicalItem(entry.finding || entry.value || "");
+
+      if (testName && finding) return `${testName}: ${finding}`;
+      return testName || finding;
+    })
+  );
 
 const splitInstructionList = (value?: string) => {
   const input = cleanClinicalItem(value || "");
@@ -1151,9 +1249,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   const secondaryDiagnoses = dedupeStrings(
     diagnosisSectionSupported ? (cards.diagnosis_card?.secondary_diagnoses || extractedDiagnosis.secondary || []) : []
   );
-  const allergies = (cards.medications_card?.allergies || extracted.allergies || [])
-    .map((allergen) => allergen?.trim())
-    .filter((allergen): allergen is string => Boolean(allergen) && !isUnknownAllergyMarker(allergen));
+  const allergies = normalizeAllergyEntries(cards.medications_card?.allergies || extracted.allergies || []);
   const medicationList = medicationsSectionSupported
     ? dedupeMedicationEntries(cards.medications_card?.medication_list || extracted.medications || [])
     : [];
@@ -1175,7 +1271,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       )
     : [];
   const hasActualLabResults = (cards.labs_card?.has_results || false) && labResults.length > 0;
-  const ungatedInvestigationList = cards.labs_card?.investigations_list || extracted.investigations || [];
+  const ungatedInvestigationList = normalizeInvestigationEntries(cards.labs_card?.investigations_list || extracted.investigations || []);
   const investigationList = labsSectionSupported
     ? (
         labsSectionProvenance.hasRaw
@@ -1427,8 +1523,8 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     riskScores.pressure_ulcer_risk?.level ? `Pressure ulcer risk ${riskScores.pressure_ulcer_risk.level}` : "",
     riskScores.dvt_risk?.level ? `DVT risk ${riskScores.dvt_risk.level}` : "",
     allergies
-      .filter((allergen) => !allergen.toLowerCase().includes("nkf") && !allergen.toLowerCase().includes("not known"))
-      .map((allergen) => `Allergy documented: ${allergen}`)
+      .filter((allergen) => !allergen.allergen.toLowerCase().includes("nkf") && !allergen.allergen.toLowerCase().includes("not known"))
+      .map((allergen) => `Allergy documented: ${allergen.allergen}`)
       .join(" "),
   ]);
   const buildRiskWatchCitations = (label: string, score: number | null, level: string) => {
@@ -1797,7 +1893,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   const followUpAppointments =
     followUpSectionSupported && followUpSectionProvenance.hasRaw
       ? safeFollowUpItems.map((item) => ({
-          department: result.meta?.department_type || document.department || "",
+          department: resolveDepartmentLabel(result, document),
           physician: "",
           date: "",
           time: "",
@@ -1805,7 +1901,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
         }))
       : cards.follow_up_card?.next_appointment
         ? [{
-            department: result.meta?.department_type || document.department || "",
+            department: resolveDepartmentLabel(result, document),
             physician: "",
             date: cards.follow_up_card.next_appointment,
             time: "",
@@ -2013,7 +2109,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       // This allows the UI to show "Not discharged" instead of the processing timestamp
       dischargeDate: sample.discharge_date || null,
       lengthOfStay: sample.los_days || 0,
-      department: result.meta?.department_type || document.department || "General",
+      department: resolveDepartmentLabel(result, document),
       ward: "",
       bed: "",
       attendingPhysician: {
@@ -2088,14 +2184,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
         start: "",
         instructions: "",
       })),
-      allergies: allergies.map((allergen) => ({
-        allergen,
-        severity: "",
-        reaction: "",
-        lastReaction: "",
-        action: "",
-        alternative: "",
-      })),
+      allergies,
       changes: {
         added: [],
         adjusted: [],
