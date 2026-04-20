@@ -7,8 +7,10 @@ const DischargeExtractorAgent = require("./discharge_extractor_agent.cjs");
 const OutpatientExtractorAgent = require("./outpatient_extractor_agent.cjs");
 const LabReportExtractorAgent = require("./lab_report_extractor_agent.cjs");
 const ChartNoteExtractorAgent = require("./chart_note_extractor_agent.cjs");
+const PrescriptionReactExtractorAgent = require("./prescription_react_extractor_agent.cjs");
 
 const PDFReaderTool = require("../tools/pdf/pdf_reader.tool.cjs");
+const HandwritingDetectorSkill = require("../skills/detection/handwriting_detector.skill.cjs");
 const path = require("path");
 
 class DocumentTypeRouter {
@@ -24,22 +26,25 @@ class DocumentTypeRouter {
       discharge_summary: new DischargeExtractorAgent(config.gemma || {}),
       outpatient_record: new OutpatientExtractorAgent(config.gemma || {}),
       lab_report: new LabReportExtractorAgent(config.gemma || {}),
-      chart_note: new ChartNoteExtractorAgent(config.gemma || {})
+      chart_note: new ChartNoteExtractorAgent(config.gemma || {}),
+      prescription: new PrescriptionReactExtractorAgent(config.qwen || {})
     };
 
     this.pdfReader = new PDFReaderTool(config);
+    this.handwritingDetector = new HandwritingDetectorSkill(config.qwen || {});
   }
 
   /**
    * Get classification reason for debugging
    */
   getClassificationReason(detectedType, scores) {
-    const { labScore, noteScore, opdScore, dischargeScore, hasInpatientRiskSignals, hasChartNoteStructure } = scores;
+    const { labScore, noteScore, opdScore, dischargeScore, prescriptionScore, hasInpatientRiskSignals, hasChartNoteStructure, hasHandwriting } = scores;
     const reasons = {
       lab_report: labScore >= 2 ? `lab_score_${labScore}` : "filename",
       chart_note: noteScore >= 2 ? `note_score_${noteScore}` : (hasChartNoteStructure ? "chart_note_structure" : "filename"),
       outpatient_record: opdScore >= 2 ? `opd_score_${opdScore}` : "filename",
-      discharge_summary: dischargeScore >= 2 ? `discharge_score_${dischargeScore}` : (hasInpatientRiskSignals ? "inpatient_risk_signals" : "filename_or_default")
+      discharge_summary: dischargeScore >= 2 ? `discharge_score_${dischargeScore}` : (hasInpatientRiskSignals ? "inpatient_risk_signals" : "filename_or_default"),
+      prescription: prescriptionScore >= 2 ? `prescription_score_${prescriptionScore}` : (hasHandwriting ? "handwriting_detected" : "filename")
     };
     return reasons[detectedType] || "unknown";
   }
@@ -57,6 +62,7 @@ class DocumentTypeRouter {
 
     // Filename-based HINTS (not absolute - content can override)
     const filenameHints = {
+      prescription: fileName.includes("prescription") || fileName.includes("rx") || fileName.includes("medication") || fileName.includes("doxper"),
       lab_report: fileName.includes("lab") || fileName.includes("investigation") || (fileName.includes("report") && fileName.includes("lab")),
       chart_note: fileName.includes("chart") || fileName.includes("note") || fileName.includes("progress"),
       outpatient_record: fileName.includes("opd") || fileName.includes("outpatient") || fileName.includes("clinic"),
@@ -74,6 +80,7 @@ class DocumentTypeRouter {
 
     if (!pdfText || pdfText.length < 200) {
       // No content available, fall back to filename hints
+      if (filenameHints.prescription) return "prescription";
       if (filenameHints.lab_report) return "lab_report";
       if (filenameHints.chart_note) return "chart_note";
       if (filenameHints.outpatient_record) return "outpatient_record";
@@ -82,6 +89,14 @@ class DocumentTypeRouter {
     }
 
     const textLower = pdfText.toLowerCase();
+
+    // Prescription indicators
+    const prescriptionIndicators = [
+      "prescription", "rx", "medication", "dosage", "frequency", "sig:",
+      "tab.", "cap.", "inj.", "syrup", "od", "bd", "tds", "qid", "sos",
+      "take", "after meal", "before meal", "at bedtime", "three times", "twice daily"
+    ];
+    const prescriptionScore = prescriptionIndicators.filter(indicator => textLower.includes(indicator)).length;
 
     // Lab report indicators
     const labIndicators = [
@@ -118,6 +133,23 @@ class DocumentTypeRouter {
     const hasDischargeKeywords = /discharge summary|discharge planning|discharge medication/i.test(pdfText);
     const hasExplicitChartNote = /\bchart note\b/i.test(pdfText); // Exact "chart note" phrase
 
+    // Quick handwriting detection for prescription routing (skip if filename strongly suggests prescription)
+    let hasHandwriting = false;
+    if (filenameHints.prescription || prescriptionScore >= 2) {
+      try {
+        const handwritingCheck = await this.handwritingDetector.quickDetect(pdfPath);
+        hasHandwriting = handwritingCheck.hasHandwriting;
+      } catch (e) {
+        // If handwriting detection fails, continue without it
+        console.log("Handwriting detection failed, continuing with text analysis");
+      }
+    }
+
+    // Filename hint for "prescription" or "doxper" is very strong
+    if (filenameHints.prescription) {
+      return "prescription";
+    }
+
     // Filename hint for "chart-note" or "chart note" is very strong - prioritize it
     if (filenameHints.chart_note || hasExplicitChartNote) {
       return "chart_note";
@@ -133,8 +165,9 @@ class DocumentTypeRouter {
       return "discharge_summary";
     }
 
-    // FIX 2: Reordered decision rules - discharge before OPD, require stronger OPD evidence
+    // FIX 2: Reordered decision rules - prescription and discharge before OPD
     // Determine winner based on scores
+    if (prescriptionScore >= 2) return "prescription";  // Highest priority for medications
     if (labScore >= 2) return "lab_report";
     if (noteScore >= 2) return "chart_note";
     if (dischargeScore >= 2) return "discharge_summary";  // Higher priority now
@@ -150,7 +183,8 @@ class DocumentTypeRouter {
     }
 
     // If scores are tied/low, use filename hints as tiebreaker
-    // But give priority to discharge/chart over outpatient if filename is ambiguous
+    // But give priority to prescription/discharge/chart over outpatient if filename is ambiguous
+    if (filenameHints.prescription) return "prescription";
     if (filenameHints.discharge_summary && !filenameHints.outpatient_record) return "discharge_summary";
     if (filenameHints.chart_note && !filenameHints.outpatient_record) return "chart_note";
     if (filenameHints.lab_report && !filenameHints.outpatient_record) return "lab_report";

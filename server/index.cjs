@@ -291,6 +291,11 @@ const documentRouter = new DocumentTypeRouter({
     baseUrl: GEMMA_URL,
     model: MODEL,
     timeout: 180000
+  },
+  qwen: {
+    qwenUrl: process.env.QWEN_URL || "http://206.1.62.28:8001/v1/chat/completions",
+    qwenModel: process.env.QWEN_MODEL || "cyankiwi/Qwen3-VL-30B-A3B-Instruct-AWQ-4bit",
+    timeout: 180000
   }
 });
 
@@ -318,6 +323,24 @@ const doctorAssistantAgent = new DoctorAssistantAgent({
 
 // Helper function to transform agent result to dashboard format
 async function transformAgentResultToDashboard(agentResult) {
+  const data = agentResult.data || {};
+
+  // Check if agent already returned dashboard-formatted data (e.g., PrescriptionExtractorAgent)
+  // This prevents double-mapping which can lose data
+  if (data.dashboard_cards && data.sample_patient_data && data.presentation) {
+    // Agent already provided dashboard format - use it directly
+    return {
+      meta: data.meta || {},
+      dashboard_cards: data.dashboard_cards,
+      sample_patient_data: data.sample_patient_data,
+      presentation: data.presentation || {
+        summary_cards: {},
+        notes_rail: [],
+      },
+      extracted_data: data.extracted_data || data
+    };
+  }
+
   // Use the dashboard mapper skill to transform the data
   const mapperResult = await dashboardMapper.execute({ agentResult });
 
