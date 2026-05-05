@@ -23,6 +23,87 @@ class VitalsExtractorSkill {
     return String(value || "").replace(/\s+/g, " ").trim();
   }
 
+  isMeaningfulNumber(value) {
+    return Number.isFinite(Number(value)) && Number(value) > 0;
+  }
+
+  hasMeaningfulBp(bp) {
+    return Boolean(bp && (this.isMeaningfulNumber(bp.systolic) || this.isMeaningfulNumber(bp.diastolic)));
+  }
+
+  normalizeReading(reading) {
+    if (!reading || typeof reading !== "object") return null;
+
+    const normalized = { ...reading };
+    if (!this.isMeaningfulNumber(normalized.bp_systolic)) delete normalized.bp_systolic;
+    if (!this.isMeaningfulNumber(normalized.bp_diastolic)) delete normalized.bp_diastolic;
+    if (!this.isMeaningfulNumber(normalized.pulse)) delete normalized.pulse;
+    if (!this.isMeaningfulNumber(normalized.temperature)) delete normalized.temperature;
+    if (!this.isMeaningfulNumber(normalized.spo2)) delete normalized.spo2;
+    if (!this.isMeaningfulNumber(normalized.resp_rate)) delete normalized.resp_rate;
+
+    const hasMeasurement =
+      this.isMeaningfulNumber(normalized.bp_systolic) ||
+      this.isMeaningfulNumber(normalized.bp_diastolic) ||
+      this.isMeaningfulNumber(normalized.pulse) ||
+      this.isMeaningfulNumber(normalized.temperature) ||
+      this.isMeaningfulNumber(normalized.spo2) ||
+      this.isMeaningfulNumber(normalized.resp_rate);
+
+    return hasMeasurement ? normalized : null;
+  }
+
+  normalizeLatestVitals(latest = {}) {
+    if (!latest || typeof latest !== "object") return {};
+
+    const normalized = {};
+
+    if (this.hasMeaningfulBp(latest.bp)) {
+      normalized.bp = { ...latest.bp };
+    }
+
+    if (this.isMeaningfulNumber(latest.pulse?.value)) {
+      normalized.pulse = { ...latest.pulse };
+    }
+
+    if (this.isMeaningfulNumber(latest.temperature?.value)) {
+      normalized.temperature = { ...latest.temperature };
+    }
+
+    if (this.isMeaningfulNumber(latest.resp_rate)) {
+      normalized.resp_rate = latest.resp_rate;
+    }
+
+    if (this.isMeaningfulNumber(latest.spo2?.value)) {
+      normalized.spo2 = { ...latest.spo2 };
+    }
+
+    if (this.isMeaningfulNumber(latest.pain_score?.value)) {
+      normalized.pain_score = { ...latest.pain_score };
+    }
+
+    if (this.isMeaningfulNumber(latest.grbs?.value)) {
+      normalized.grbs = { ...latest.grbs };
+    }
+
+    return normalized;
+  }
+
+  normalizeVitalsPayload(data = {}) {
+    const latest = this.normalizeLatestVitals(data.latest || {});
+    const readings = (Array.isArray(data.readings) ? data.readings : [])
+      .map((reading) => this.normalizeReading(reading))
+      .filter(Boolean);
+
+    return {
+      ...data,
+      latest,
+      readings,
+      abnormal_flags: Array.isArray(data.abnormal_flags) ? data.abnormal_flags.filter(Boolean) : [],
+      has_vitals: Object.keys(latest).length > 0 || readings.length > 0,
+    };
+  }
+
   getMetricFallback({ label, value, unit = "" }) {
     if (value == null || value === "" || Number(value) === 0) return null;
     return `${label} ${value}${unit ? ` ${unit}` : ""}`.trim();
@@ -202,14 +283,15 @@ class VitalsExtractorSkill {
     const { pdfText, gemmaClient, promptBuilder, provenanceBuilder } = context;
 
     const prompt = promptBuilder.build("vitals_extractor", { pdfText });
-    const result = await gemmaClient.execute(prompt, { temperature: 0.1, maxTokens: 2200 });
+    const maxOutputTokens = Number.parseInt(process.env.EXTRACTION_MAX_OUTPUT_TOKENS || "2000", 10);
+    const result = await gemmaClient.execute(prompt, { temperature: 0.1, maxTokens: Math.min(2200, maxOutputTokens) });
 
     if (!result.success) {
       return { success: false, step: "vitals_extractor", error: result.error };
     }
 
     try {
-      const data = this.parseModelJson(result.content);
+      const data = this.normalizeVitalsPayload(this.parseModelJson(result.content));
       const modelProvenance = this.sanitizeModelVitalsProvenance(data, provenanceBuilder);
       const fallbackProvenance = this.buildVitalsProvenance(data, pdfText, provenanceBuilder);
       data.provenance = {

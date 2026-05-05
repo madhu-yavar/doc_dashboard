@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-04-30T12:26:08.205Z",
+  "medication_name": "UMLEE",
+  "error_message": "Unable to parse model JSON response",
+  "raw_response": "{\n  \"corrected_brand\": \"ULCEE\",\n  \"generic_name\": \"Vitamin C\",\n  \"confidence\": \"low\",\n  \"reasoning\": \"The transcribed brand \\\"UMLEE\\\" is not a valid pharmaceutical brand. The prescription includes other supportive medications like Zincovit and D-Rise, suggesting treatment for an infection. \\\"ULCEE\\\" is a common Indian brand of Vitamin C 500mg, which fits the clinical context, dosage, and frequency (thrice daily). The handwriting for \\\"ULCEE\\\" could be misinterpreted as \\\"UMLEE\\\" if the letters 'L' and 'C' are written together hastily, making them resemble an 'M'. The first letter 'U' and the ending 'EE' are a good match.",
+  "response_length": 628,
+  "response_preview": "{\n  \"corrected_brand\": \"ULCEE\",\n  \"generic_name\": \"Vitamin C\",\n  \"confidence\": \"low\",\n  \"reasoning\": \"The transcribed brand \\\"UMLEE\\\" is not a valid pharmaceutical brand. The prescription includes oth"
+}

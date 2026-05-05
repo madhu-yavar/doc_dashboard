@@ -1,0 +1,74 @@
+{
+  "file": "Prescription_03.pdf",
+  "timestamp": "2026-04-27T09:34:12.206Z",
+  "pages_processed": 2,
+  "total_tokens": 6548,
+  "merged_data": {
+    "patient_complaints": [],
+    "history_of_present_illness": null,
+    "observations_findings": [],
+    "physical_examination": {},
+    "diagnosis": {
+      "principal": null,
+      "secondary": [],
+      "provisional": null
+    },
+    "vitals": {},
+    "allergies": [],
+    "medications": [
+      {
+        "name": "T MIRBEG",
+        "dose": "25mg",
+        "frequency": "Night: 1 (Morning: 0, Noon: 0)",
+        "duration": "40 days",
+        "route": "",
+        "instructions": ""
+      }
+    ],
+    "lab_tests_selected": [
+      "Urine Routine and Microscopy",
+      "Urine Culture"
+    ],
+    "radiology_tests_selected": [
+      "Ultrasound Abdomen & Pelvis"
+    ],
+    "procedures_selected": [
+      "Uroflowmetry"
+    ],
+    "instructions_notes": "+PVR (18)",
+    "follow_up": null
+  },
+  "page_results": [
+    {
+      "page": 1,
+      "data": null
+    },
+    {
+      "page": 2,
+      "data": {
+        "medications": [
+          {
+            "name": "T MIRBEG",
+            "dose": "25mg",
+            "frequency": "Night: 1 (Morning: 0, Noon: 0)",
+            "duration": "40 days",
+            "route": "",
+            "instructions": ""
+          }
+        ],
+        "lab_tests_selected": [
+          "Urine Routine and Microscopy",
+          "Urine Culture"
+        ],
+        "radiology_tests_selected": [
+          "Ultrasound Abdomen & Pelvis"
+        ],
+        "procedures_selected": [
+          "Uroflowmetry"
+        ],
+        "instructions_notes": "+PVR (18)",
+        "follow_up": ""
+      }
+    }
+  ]
+}

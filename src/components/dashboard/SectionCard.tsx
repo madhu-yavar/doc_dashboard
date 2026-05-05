@@ -12,8 +12,16 @@ interface SectionCardProps {
 
 const SectionCard = ({ icon, title, colorClass, children, onClick, headerBadge }: SectionCardProps) => {
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      }}
       className="section-card group relative flex h-full min-h-[156px] w-full flex-col overflow-hidden px-3 py-2.5 text-left"
     >
       <div className={`absolute inset-x-0 top-0 h-1 ${colorClass}`} />
@@ -32,7 +40,7 @@ const SectionCard = ({ icon, title, colorClass, children, onClick, headerBadge }
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-hidden text-[11px]">{children}</div>
-    </button>
+    </div>
   );
 };
 

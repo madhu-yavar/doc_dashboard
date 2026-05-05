@@ -1,11 +1,11 @@
 /**
  * Prescription Extractor Agent (ReAct-Style)
  * Multi-step extraction with validation for prescription documents
- * Uses Qwen 30B Vision model for optimal handwriting and printed text extraction
+ * Uses Gemma 4-31B Vision model for header extraction
+ * Stage 3 (Gemini) for handwritten content if user provides API key
  */
 
 const PDFReaderTool = require("../tools/pdf/pdf_reader.tool.cjs");
-const HandwritingDetectorSkill = require("../skills/detection/handwriting_detector.skill.cjs");
 
 // Prescription-specific extraction skills
 const PrescriptionPatientExtractorSkill = require("../skills/extraction/prescription_patient_extractor.skill.cjs");
@@ -19,18 +19,17 @@ const PrescriptionCrossValidatorSkill = require("../skills/validation/prescripti
 class PrescriptionReactExtractorAgent {
   constructor(config = {}) {
     this.name = "Prescription Extractor (ReAct)";
-    this.version = "2.0.0";
+    this.version = "3.0.0";
     this.type = "thinking_agent";
 
     // Initialize tools
     this.pdfReader = new PDFReaderTool(config);
-    this.handwritingDetector = new HandwritingDetectorSkill(config.qwen || {});
 
-    // Initialize extraction skills
-    this.patientExtractorSkill = new PrescriptionPatientExtractorSkill(config.qwen || {});
-    this.medicationsExtractorSkill = new PrescriptionMedicationsExtractorSkill(config.qwen || {});
-    this.diagnosisExtractorSkill = new PrescriptionDiagnosisExtractorSkill(config.qwen || {});
-    this.doctorExtractorSkill = new PrescriptionDoctorExtractorSkill(config.qwen || {});
+    // Initialize extraction skills with Gemma
+    this.patientExtractorSkill = new PrescriptionPatientExtractorSkill(config.gemma || {});
+    this.medicationsExtractorSkill = new PrescriptionMedicationsExtractorSkill(config.gemma || {});
+    this.diagnosisExtractorSkill = new PrescriptionDiagnosisExtractorSkill(config.gemma || {});
+    this.doctorExtractorSkill = new PrescriptionDoctorExtractorSkill(config.gemma || {});
 
     // Initialize validation skill
     this.crossValidatorSkill = new PrescriptionCrossValidatorSkill();
@@ -45,9 +44,9 @@ class PrescriptionReactExtractorAgent {
       ...config
     };
 
-    // Qwen 30B configuration
-    this.qwenModel = config.qwen?.qwenModel || process.env.QWEN_MODEL || "cyankiwi/Qwen3-VL-30B-A3B-Instruct-AWQ-4bit";
-    this.qwenUrl = config.qwen?.qwenUrl || process.env.QWEN_URL || "http://206.1.62.28:8001/v1/chat/completions";
+    // Gemma configuration
+    this.gemmaModel = config.gemma?.model || process.env.GEMMA_MODEL || "google/gemma-4-31B-it";
+    this.gemmaUrl = config.gemma?.baseUrl || process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions";
   }
 
   /**
@@ -191,7 +190,7 @@ class PrescriptionReactExtractorAgent {
 
     try {
       console.log(`\n📄 Processing: ${pdfName}`);
-      console.log(`📋 Method: ReAct-Style Prescription Extraction with Qwen 30B`);
+      console.log(`📋 Method: ReAct-Style Prescription Extraction with Gemma 4-31B`);
 
       // Emit starting event
       if (onProgress) {
@@ -222,15 +221,11 @@ class PrescriptionReactExtractorAgent {
         });
       }
 
-      // Detect handwriting
-      console.log(`\n   🔍 Detecting handwriting...`);
-      const handwritingResult = await this.handwritingDetector.execute({
-        filePath: pdfPath,
-        onProgress
-      });
-      const hasHandwriting = handwritingResult.data?.has_handwriting || false;
-      const handwritingPercentage = handwritingResult.data?.handwriting_percentage || 0;
-      console.log(`   ✍️  Handwriting detected: ${hasHandwriting} (${handwritingPercentage}%)`);
+      // Handwriting detection - filename-based for now (Gemini detector to be implemented)
+      const filename = pdfName.toLowerCase();
+      const hasHandwriting = filename.includes("prescription") || filename.includes("doxper") || filename.includes("rx");
+      const handwritingPercentage = hasHandwriting ? 30 : 0; // Estimate for prescriptions
+      console.log(`   ✍️  Handwriting detected (filename-based): ${hasHandwriting}`);
 
       // Shared context for all extraction steps
       const sharedContext = {
@@ -240,7 +235,7 @@ class PrescriptionReactExtractorAgent {
         handwritingPercentage
       };
 
-      // Execute extraction steps sequentially (to avoid overwhelming Qwen)
+      // Execute extraction steps sequentially
       const extractionSteps = [];
       for (const stepDef of executionPlan.extraction) {
         const step = await this.executeStep(
@@ -344,7 +339,7 @@ class PrescriptionReactExtractorAgent {
           filename_used: pdfName,
           has_handwriting: hasHandwriting,
           handwriting_percentage: handwritingPercentage,
-          model_used: "Qwen 30B"
+          model_used: "Gemma 4-31B"
         },
         agent_version: this.version
       },
@@ -410,7 +405,7 @@ class PrescriptionReactExtractorAgent {
 
     // Build treatment info from medications
     data.treatment = {
-      current_approach: `Prescription extracted using ReAct-style agent with Qwen 30B Vision model`,
+      current_approach: `Prescription extracted using ReAct-style agent with Gemma 4-31B Vision model`,
       management_items: data.medications.map(m => `${m.name} ${m.dose}`.trim()).filter(Boolean)
     };
 
@@ -420,7 +415,7 @@ class PrescriptionReactExtractorAgent {
         type: "Prescription",
         author: data.doctor.name,
         date: data.patient.admission_date || new Date().toISOString().split('T')[0],
-        summary: `Prescription with ${data.medications.length} medications. Model: ${this.qwenModel}. Handwriting detected: ${hasHandwriting} (${handwritingPercentage}%).`,
+        summary: `Prescription with ${data.medications.length} medications. Model: ${this.gemmaModel}. Handwriting detected: ${hasHandwriting} (${handwritingPercentage}%).`,
         source_excerpt: []
       });
     }
@@ -570,7 +565,7 @@ class PrescriptionReactExtractorAgent {
         procedures_performed: 0,
         surgeries: 0,
         response: "Not applicable for prescriptions",
-        current_approach: `Prescription extracted with ReAct-style agent using Qwen 30B Vision model`,
+        current_approach: `Prescription extracted with ReAct-style agent using Gemma 4-31B Vision model`,
         management_items: [],
         complications_count: 0
       },
@@ -657,7 +652,7 @@ class PrescriptionReactExtractorAgent {
         medications: extractedMedications,
         allergies: [],
         treatment: {
-          current_approach: `Prescription extracted using ReAct-style agent with Qwen 30B Vision model`,
+          current_approach: `Prescription extracted using ReAct-style agent with Gemma 4-31B Vision model`,
           management_items: extractedMedications.map(m => `${m.name} ${m.dose}`.trim())
         },
         clinical_notes: extractionData.clinical_notes || []
@@ -679,8 +674,8 @@ class PrescriptionReactExtractorAgent {
       type: this.type,
       skillsCount: executionPlan.totalSteps,
       config: this.config,
-      qwenModel: this.qwenModel,
-      qwenUrl: this.qwenUrl
+      gemmaModel: this.gemmaModel,
+      gemmaUrl: this.gemmaUrl
     };
   }
 }

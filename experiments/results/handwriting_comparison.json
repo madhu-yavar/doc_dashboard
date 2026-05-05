@@ -1,0 +1,178 @@
+[
+  {
+    "model": "Qwen 8B (bfloat16)",
+    "success": true,
+    "data": {
+      "patient": {
+        "name": "Mr Jerald PILLAI",
+        "age": "21 Yrs",
+        "gender": "Male",
+        "id": "MH005618878",
+        "date": "2022-01-08 09:09"
+      },
+      "doctor": {
+        "name": "Dr. NEHA MISHRA (MBBS, MD (GEN MED), POST DOCTORAL FELLOWSHIP IN INFECTIOUS DISEASES (CMC VELLORE))",
+        "registration_number": "TMN 2017 0001362 KTK",
+        "signature_present": false
+      },
+      "medications": [],
+      "diagnosis": {
+        "primary": null,
+        "symptoms": []
+      },
+      "notes": {
+        "warnings": [],
+        "follow_up": "",
+        "other_notes": ""
+      },
+      "extraction_metadata": {
+        "total_medications": 0,
+        "confidence": "high",
+        "issues": []
+      },
+      "meta": {
+        "extracted_at": "2026-04-17T07:53:02.682Z",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "tokens_used": 9347,
+        "latency_ms": 4757
+      }
+    },
+    "medications": [],
+    "notes": {
+      "warnings": [],
+      "follow_up": "",
+      "other_notes": ""
+    },
+    "diagnosis": {
+      "primary": null,
+      "symptoms": []
+    },
+    "duration": "4.76"
+  },
+  {
+    "model": "Qwen 30B (AWQ 4-bit)",
+    "success": true,
+    "data": {
+      "patient": {
+        "name": "Mr Jerald PILLAI",
+        "age": "21 Yrs",
+        "gender": "Male",
+        "id": "MH005618878",
+        "date": "2022-01-08 09:09"
+      },
+      "doctor": {
+        "name": "Dr. NEHA MISHRA (MBBS, MD (GEN MED), POST DOCTORAL FELLOWSHIP IN INFECTIOUS DISEASES (CMC VELLORE))",
+        "registration_number": "TMN 2017 0001362 KTK",
+        "signature_present": false
+      },
+      "medications": [
+        {
+          "name": "Levofloxacin",
+          "dosage": "500mg",
+          "form": "tablet",
+          "quantity": "10",
+          "frequency": "OD",
+          "duration": "5 days",
+          "route": "Oral",
+          "instructions": "",
+          "confidence": "high"
+        },
+        {
+          "name": "Paracetamol",
+          "dosage": "500mg",
+          "form": "tablet",
+          "quantity": "10",
+          "frequency": "BD",
+          "duration": "5 days",
+          "route": "Oral",
+          "instructions": "",
+          "confidence": "high"
+        },
+        {
+          "name": "Cefixime",
+          "dosage": "200mg",
+          "form": "tablet",
+          "quantity": "10",
+          "frequency": "BD",
+          "duration": "5 days",
+          "route": "Oral",
+          "instructions": "",
+          "confidence": "high"
+        }
+      ],
+      "diagnosis": {
+        "primary": "Upper Respiratory Tract Infection",
+        "symptoms": [
+          "Fever",
+          "Body ache",
+          "Headache"
+        ]
+      },
+      "notes": {
+        "warnings": [],
+        "follow_up": "",
+        "other_notes": ""
+      },
+      "extraction_metadata": {
+        "total_medications": 3,
+        "confidence": "high",
+        "issues": []
+      },
+      "meta": {
+        "extracted_at": "2026-04-17T07:53:21.604Z",
+        "model": "cyankiwi/Qwen3-VL-30B-A3B-Instruct-AWQ-4bit",
+        "tokens_used": 9603,
+        "latency_ms": 18919
+      }
+    },
+    "medications": [
+      {
+        "name": "Levofloxacin",
+        "dosage": "500mg",
+        "form": "tablet",
+        "quantity": "10",
+        "frequency": "OD",
+        "duration": "5 days",
+        "route": "Oral",
+        "instructions": "",
+        "confidence": "high"
+      },
+      {
+        "name": "Paracetamol",
+        "dosage": "500mg",
+        "form": "tablet",
+        "quantity": "10",
+        "frequency": "BD",
+        "duration": "5 days",
+        "route": "Oral",
+        "instructions": "",
+        "confidence": "high"
+      },
+      {
+        "name": "Cefixime",
+        "dosage": "200mg",
+        "form": "tablet",
+        "quantity": "10",
+        "frequency": "BD",
+        "duration": "5 days",
+        "route": "Oral",
+        "instructions": "",
+        "confidence": "high"
+      }
+    ],
+    "notes": {
+      "warnings": [],
+      "follow_up": "",
+      "other_notes": ""
+    },
+    "diagnosis": {
+      "primary": "Upper Respiratory Tract Infection",
+      "symptoms": [
+        "Fever",
+        "Body ache",
+        "Headache"
+      ]
+    },
+    "duration": "18.92"
+  }
+]

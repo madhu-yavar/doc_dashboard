@@ -1,5 +1,6 @@
 import type { DashboardPatientData } from "@/data/patientData";
 import { AlertTriangle, ArrowLeft, ClipboardList, Stethoscope } from "lucide-react";
+import NoteRichText from "./NoteRichText";
 import ProvenancePanel from "./ProvenancePanel";
 import SectionProvenanceBadge from "./SectionProvenanceBadge";
 
@@ -33,7 +34,9 @@ const ClinicalNotesDetail = ({ onBack, data }: ClinicalNotesDetailProps) => {
           <Stethoscope className="w-4 h-4 text-primary" />
           <h3 className="font-semibold text-sm text-foreground">Doctor Handover Summary</h3>
         </div>
-        <p className="text-sm text-foreground leading-6">{clinicalNotes.handover?.overview || "No clinical handover summary available."}</p>
+        <NoteRichText
+          text={clinicalNotes.handover?.overview || "No clinical handover summary available."}
+        />
       </div>
 
       {handoverSections.length > 0 && (
@@ -42,7 +45,7 @@ const ClinicalNotesDetail = ({ onBack, data }: ClinicalNotesDetailProps) => {
             <div
               key={section.title}
               className={`rounded-xl border p-5 ${
-                section.tone === "warning" ? "border-status-warning/25 bg-status-warning/5" : "bg-card"
+                section.tone === "warning" ? "border-status-warning/20 bg-amber-50/50" : "bg-card"
               }`}
             >
               <div className="flex items-center gap-2 mb-3">
@@ -55,9 +58,7 @@ const ClinicalNotesDetail = ({ onBack, data }: ClinicalNotesDetailProps) => {
               </div>
               <div className="space-y-2">
                 {section.items.map((item, index) => (
-                  <p key={`${section.title}-${index}`} className="text-sm text-foreground leading-6">
-                    {item}
-                  </p>
+                  <NoteRichText key={`${section.title}-${index}`} text={item} />
                 ))}
               </div>
             </div>
@@ -79,42 +80,63 @@ const ClinicalNotesDetail = ({ onBack, data }: ClinicalNotesDetailProps) => {
               </div>
             </div>
           ) : (
-            clinicalNotes.notes.map((note, i) => (
+            clinicalNotes.notes.map((note, i) => {
+              const isSynthetic = Boolean((note as { is_synthetic?: boolean }).is_synthetic);
+              return (
               <div key={i} className="relative pl-14">
                 <div className="absolute left-4 top-3 w-4 h-4 rounded-full bg-card border-2 border-primary z-10" />
-                <div className="bg-card rounded-xl border p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-mono text-muted-foreground">{note.date}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{note.type}</span>
+                <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_4px_14px_rgba(15,23,42,0.035)]">
+                  <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-foreground">{note.author}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-mono text-muted-foreground">{note.date}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{note.type}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-[0.04em] ${
+                          isSynthetic
+                            ? "bg-slate-100 text-slate-500"
+                            : "bg-emerald-100 text-emerald-700"
+                        }`}
+                      >
+                        {isSynthetic ? "Synthetic" : "Handwritten"}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-sm font-medium text-foreground mb-1">{note.author}</p>
+
                   {note.summary ? (
-                    <p className="text-sm text-muted-foreground whitespace-pre-line mb-3">{note.summary}</p>
+                    <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-3">
+                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Summary</p>
+                      <NoteRichText text={note.summary} muted />
+                    </div>
                   ) : null}
 
                   <div className="grid gap-3 md:grid-cols-2">
                     {note.situation ? (
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Situation</p>
-                        <p className="text-sm text-foreground">{note.situation}</p>
+                        <NoteRichText text={note.situation} />
                       </div>
                     ) : null}
                     {note.background ? (
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Background</p>
-                        <p className="text-sm text-foreground">{note.background}</p>
+                        <NoteRichText text={note.background} />
                       </div>
                     ) : null}
                     {note.assessment ? (
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Assessment</p>
-                        <p className="text-sm text-foreground">{note.assessment}</p>
+                        <NoteRichText text={note.assessment} />
                       </div>
                     ) : null}
                     {note.recommendations ? (
                       <div>
                         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Recommendations</p>
-                        <p className="text-sm text-foreground">{note.recommendations}</p>
+                        <NoteRichText text={note.recommendations} />
                       </div>
                     ) : null}
                   </div>
@@ -167,16 +189,16 @@ const ClinicalNotesDetail = ({ onBack, data }: ClinicalNotesDetailProps) => {
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Source Excerpts</p>
                       <div className="space-y-1">
                         {note.source_excerpt.map((item, index) => (
-                          <p key={`${item}-${index}`} className="text-sm text-muted-foreground">
-                            {item}
-                          </p>
+                          <div key={`${item}-${index}`} className="rounded-lg border-l-2 border-slate-200 bg-slate-50/70 px-3 py-2">
+                            <NoteRichText text={item} muted />
+                          </div>
                         ))}
                       </div>
                     </div>
                   ) : null}
                 </div>
               </div>
-            ))
+            )})
           )}
         </div>
       </div>

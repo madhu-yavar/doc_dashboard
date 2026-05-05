@@ -1,0 +1,257 @@
+{
+  "sample": "Summary3 - Cardiology (Chest Pain)",
+  "expected": {
+    "patient": "Priyadarshini PUNJA",
+    "diagnosis": "Chest Pain",
+    "complexity": "Medium"
+  },
+  "optionA": {
+    "method": "Option A (Single-Shot)",
+    "latency_ms": 41238,
+    "tokens_used": 3553,
+    "data": {
+      "patient": {
+        "name": "Mr.Priyadarshini PUNJA",
+        "mrn": "MH011199849",
+        "age": 64,
+        "gender": "Female"
+      },
+      "vitals": {
+        "bp": "110/70",
+        "pulse": 78,
+        "temp": "98.6",
+        "spo2": 98,
+        "resp_rate": 20,
+        "pain_score": 2,
+        "grbs": null,
+        "ews_score": 2
+      },
+      "risk_scores": {
+        "fall_risk_score": 3,
+        "fall_risk_level": "low risk",
+        "dvt_score": 2,
+        "dvt_level": "Moderate RISK",
+        "pressure_ulcer_score": 21,
+        "pressure_level": "no risk",
+        "aspiration_score": 0,
+        "aspiration_level": "LOW RISK"
+      },
+      "functional_status": {
+        "bathing": "Independent",
+        "dressing": "Independent",
+        "eating": "Independent",
+        "walking": "Independent",
+        "toilet_use": "Independent"
+      },
+      "gcs": {
+        "eyes": null,
+        "motor": null,
+        "verbal": null,
+        "total": 15
+      },
+      "diagnosis": {
+        "principal": "ASYMPTOMATIC (TMT - POSITIVE)",
+        "icd_code": null,
+        "secondary": [
+          "HTN",
+          "NORMAL LV FUNCTION",
+          "POSTED FOR CAG"
+        ]
+      },
+      "allergies": [
+        "unknown"
+      ],
+      "medications": [
+        "tab-telma 40mg -1-0-0",
+        "TAB PIVASTA 2MG 0-0-1",
+        "TAB EZEDOC 10MG 0-0-1",
+        "CAP D. RISE 60K ONCE A WEEK FOR 8 WEEKS THEN ONCE A MONTH"
+      ],
+      "investigations_ordered": [
+        "CBC",
+        "RP2 SEROLOGY",
+        "blood grouping and typing"
+      ],
+      "nursing_needs": [
+        "to restore normal cardiac function",
+        "to prevent from fall"
+      ],
+      "diet": "NPO",
+      "summary": "Patient presented with chest pain complaint; however, current status is asymptomatic. TMT was found to be positive on 16/03/2026. Patient has a history of Hypertension (HTN) for 1 year. Currently posted for CAG. Vital signs are stable. Risk assessments indicate low fall risk, moderate DVT risk, and no pressure ulcer risk."
+    },
+    "raw_response": "{\n  \"patient\": {\n    \"name\": \"Mr.Priyadarshini PUNJA\",\n    \"mrn\": \"MH011199849\",\n    \"age\": 64,\n    \"gender\": \"Female\"\n  },\n  \"vitals\": {\n    \"bp\": \"110/70\",\n    \"pulse\": 78,\n    \"temp\": \"98.6\",\n    \"spo2\": 98,\n    \"resp_rate\": 20,\n    \"pain_score\": 2,\n    \"grbs\": null,\n    \"ews_score\": 2\n  },\n  \"risk_scores\": {\n    \"fall_risk_score\": 3,\n    \"fall_risk_level\": \"low risk\",\n    \"dvt_score\": 2,\n    \"dvt_level\": \"Moderate RISK\",\n    \"pressure_ulcer_score\": 21,\n    \"pressure_level\": \"no risk\",\n    \"aspiration_score\": 0,\n    \"aspiration_level\": \"LOW RISK\"\n  },\n  \"functional_status\": {\n    \"bathing\": \"Independent\",\n    \"dressing\": \"Independent\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Independent\",\n    \"toilet_use\": \"Independent\"\n  },\n  \"gcs\": {\n    \"eyes\": null,\n    \"motor\": null,\n    \"verbal\": null,\n    \"total\": 15\n  },\n  \"diagnosis\": {\n    \"principal\": \"ASYMPTOMATIC (TMT - POSITIVE)\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"HTN\",\n      \"NORMAL LV FUNCTION\",\n      \"POSTED FOR CAG\"\n    ]\n  },\n  \"allergies\": [\n    \"unknown\"\n  ],\n  \"medications\": [\n    \"tab-telma 40mg -1-0-0\",\n    \"TAB PIVASTA 2MG 0-0-1\",\n    \"TAB EZEDOC 10MG 0-0-1\",\n    \"CAP D. RISE 60K ONCE A WEEK FOR 8 WEEKS THEN ONCE A MONTH\"\n  ],\n  \"investigations_ordered\": [\n    \"CBC\",\n    \"RP2 SEROLOGY\",\n    \"blood grouping and typing\"\n  ],\n  \"nursing_needs\": [\n    \"to restore normal cardiac function\",\n    \"to prevent from fall\"\n  ],\n  \"diet\": \"NPO\",\n  \"summary\": \"Patient presented with chest pain complaint; however, current status is asymptomatic. TMT was found to be positive on 16/03/2026. Patient has a history of Hypertension (HTN) for 1 year. Currently posted for CAG. Vital signs are stable. Risk assessments indicate low fall risk, moderate DVT risk, and no pressure ulcer risk.\"\n}",
+    "score": 61,
+    "scoreDetails": {
+      "patient_name": "10/10",
+      "mrn": "5/5",
+      "vitals_complete": "2/4 fields",
+      "risk_scores_complete": "0/5 fields",
+      "risk_scores_accurate": "N/A (no ground truth)",
+      "functional_status": "5/5 ADL fields",
+      "diagnosis": "10/10",
+      "allergies": "5/5",
+      "medications": "5/5",
+      "clinical_reasoning": "0/5 (N/A for Option A)"
+    }
+  },
+  "optionB": {
+    "method": "Option B (Thinking/ReAct)",
+    "latency_ms": 167679,
+    "tokens_used": 17917,
+    "steps": [
+      {
+        "step": "Step 1: Document Analysis",
+        "tokens": 2145
+      },
+      {
+        "step": "Step 2: Demographics Extraction",
+        "tokens": 2285
+      },
+      {
+        "step": "Step 3: Risk Scores Extraction (with validation)",
+        "tokens": 3079
+      },
+      {
+        "step": "Step 4: Vitals Extraction (with clinical interpretation)",
+        "tokens": 2434
+      },
+      {
+        "step": "Step 5: Functional Status Extraction",
+        "tokens": 2211
+      },
+      {
+        "step": "Step 6: Clinical Data Extraction",
+        "tokens": 2946
+      },
+      {
+        "step": "Step 7: Final Assembly & Validation",
+        "tokens": 2817
+      }
+    ],
+    "data": {
+      "patient": {
+        "name": "Priyadarshini PUNJA",
+        "mrn": "MH011199849",
+        "age": 64,
+        "gender": "Female"
+      },
+      "vitals": {
+        "bp": {
+          "systolic": 110,
+          "diastolic": 70
+        },
+        "pulse": 78,
+        "temperature": "98.6 F",
+        "spo2": 98,
+        "resp_rate": 20,
+        "pain_score": 2,
+        "grbs": null
+      },
+      "risk_scores": {
+        "fall_risk": {
+          "score": 3,
+          "level": "low risk"
+        },
+        "dvt_risk": {
+          "score": 2,
+          "level": "Moderate RISK"
+        },
+        "pressure_ulcer_risk": {
+          "score": 21,
+          "level": "no risk"
+        },
+        "aspiration_risk": {
+          "score": 0,
+          "level": "LOW RISK"
+        },
+        "ews_score": 2,
+        "gcs": {
+          "eyes": null,
+          "motor": null,
+          "verbal": null,
+          "total": 15
+        }
+      },
+      "functional_status": {
+        "bathing": "Independent",
+        "dressing": "Independent",
+        "eating": "Independent",
+        "walking": "Independent",
+        "toilet_use": "Independent",
+        "overall_assistance": "None"
+      },
+      "diagnosis": {
+        "principal": "TMT - POSITIVE (Posted for CAG)",
+        "icd_code": null,
+        "secondary": [
+          "Hypertension (HTN)",
+          "Chest pain"
+        ]
+      },
+      "allergies": [
+        "unknown"
+      ],
+      "medications": [
+        {
+          "name": "TAB TELMA",
+          "dose": "40mg",
+          "frequency": "1-0-0"
+        },
+        {
+          "name": "TAB PIVASTA",
+          "dose": "2mg",
+          "frequency": "0-0-1"
+        },
+        {
+          "name": "TAB EZEDOC",
+          "dose": "10mg",
+          "frequency": "0-0-1"
+        },
+        {
+          "name": "CAP D. RISE",
+          "dose": "60K",
+          "frequency": "ONCE A WEEK FOR 8 WEEKS THEN ONCE A MONTH"
+        }
+      ],
+      "investigations": [
+        "CBC",
+        "RP2 SEROLOGY",
+        "blood grouping and typing"
+      ],
+      "nursing_needs": [
+        "to restore normal cardiac function",
+        "to prevent from fall",
+        "Risk for fall",
+        "Risk for DVT",
+        "Acute pain ./ or post-operative pain"
+      ],
+      "validation_summary": {
+        "confidence_level": "high",
+        "inconsistencies_found": [
+          "Prefix 'Mr.' in name field contradicts gender 'Female'; gender verified as Female via multiple assessment sections."
+        ],
+        "missing_critical_fields": [
+          "GCS individual component scores (Eyes, Motor, Verbal)",
+          "GRBS value",
+          "ICD code for principal diagnosis"
+        ],
+        "data_quality_notes": "Demographics reconciled by prioritizing explicit gender fields over name prefix. Risk scores and vitals are consistent across assessment blocks. GCS total is provided but components are not documented."
+      }
+    },
+    "raw_thinking": "Step 1: Document Analysis:\n{\n  \"document_type\": \"Inpatient Nursing Assessment and Cath Lab Procedure Record\",\n  \"sections_identified\": [\n    \"Administrative Header\",\n    \"Vital Signs\",\n    \"Pain Assessment\",\n    \"Fall Risk Assessment\",\n    \"Cath Lab Pre and Post Procedure Checklist\",\n    \"Laboratory Investigations\",\n    \"Nursing Initial Assessment\",\n    \"Risk Assessment Scores (DVT, Aspiration, Pressure, EWS)\",\n    \"Physical Examination\"\n  ],\n  \"confidence\": \"high\",\n  \"extraction_strategy\": \"Use a multi-pass approach: 1. Extract administrative metadata from the header. 2. Use key-value pair parsing for Vital Signs and Lab results. 3. Implement section-specific logic for the 'Nursing Initial Assessment' to capture detailed demographics and social history. 4. Use regex to capture specific risk scores (EWS, GCS, Fall Risk) from their respective assessment blocks.\"\n}\n\n---\n\nStep 2: Demographics Extraction:\n{\n  \"name\": \"Mr.Priyadarshini PUNJA\",\n  \"mrn\": \"MH011199849\",\n  \"age\": 64,\n  \"gender\": \"Female\",\n  \"confidence_notes\": \"The name 'Mr.Priyadarshini PUNJA' contains a prefix 'Mr.' which contradicts the gender 'Female' listed immediately below it. However, the gender is explicitly stated as 'Female' in the Nursing Initial Assessment and the Questionnaires. The age is consistently listed as 64 Yrs. The MRN is clearly identified in the Nursing Assessment section.\",\n  \"sources\": [\n    \"Name: Found in 'NURSING INITIAL ASSESSMENT - NEW' section.\",\n    \"MRN: Found in 'NURSING INITIAL ASSESSMENT - NEW' section.\",\n    \"Age: Found in 'NURSING INITIAL ASSESSMENT - NEW' section.\",\n    \"Gender: Found in 'NURSING INITIAL ASSESSMENT - NEW' section and 'Questionnaires' section.\"\n  ]\n}\n\n---\n\nStep 3: Risk Scores Extraction (with validation):\n{\n  \"fall_risk\": {\n    \"score\": 3,\n    \"level\": \"low risk\",\n    \"verified\": true\n  },\n  \"dvt_risk\": {\n    \"score\": 2,\n    \"level\": \"Moderate RISK\",\n    \"verified\": true\n  },\n  \"pressure_ulcer_risk\": {\n    \"score\": 21,\n    \"level\": \"no risk\",\n    \"verified\": true\n  },\n  \"aspiration_risk\": {\n    \"score\": 0,\n    \"level\": \"LOW RISK\",\n    \"verified\": true\n  },\n  \"ews_score\": 2,\n  \"gcs\": {\n    \"eyes\": null,\n    \"motor\": null,\n    \"verbal\": null,\n    \"total\": 15\n  },\n  \"validation_notes\": \"Fall risk score (3-low) and Pressure score (21-no risk) are consistent across multiple sections. GCS total is explicitly stated as 15/15, but individual E, M, V components are not provided in the text. DVT risk is noted as 2-Moderate. Aspiration risk is 0-Low.\"\n}\n\n---\n\nStep 4: Vitals Extraction (with clinical interpretation):\n{\n  \"bp\": {\n    \"systolic\": 110,\n    \"diastolic\": 70,\n    \"status\": \"normal\"\n  },\n  \"pulse\": {\n    \"value\": 78,\n    \"status\": \"normal\"\n  },\n  \"temperature\": {\n    \"value\": 98.6,\n    \"unit\": \"F\"\n  },\n  \"resp_rate\": 20,\n  \"spo2\": {\n    \"value\": 98,\n    \"status\": \"normal\"\n  },\n  \"pain_score\": {\n    \"value\": 2,\n    \"scale\": 10\n  },\n  \"grbs\": {\n    \"value\": null,\n    \"interpretation\": \"not recorded\"\n  },\n  \"abnormal_flags\": []\n}\n\n---\n\nStep 5: Functional Status Extraction:\n{\n  \"functional_status\": {\n    \"bathing\": \"Independent\",\n    \"dressing\": \"Independent\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Independent\",\n    \"toilet_use\": \"Independent\"\n  },\n  \"overall_assistance_needs\": \"None\",\n  \"mobility_notes\": \"Braden Scale indicates mobility is 'Slightly Limited' (Score 3); Fall Risk Assessment indicates 'low risk' (Score 3).\"\n}\n\n---\n\nStep 6: Clinical Data Extraction:\n{\n  \"diagnosis\": {\n    \"principal\": \"TMT - POSITIVE (Posted for CAG)\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"Hypertension (HTN)\",\n      \"Chest pain\"\n    ]\n  },\n  \"allergies\": [\n    \"unknown\"\n  ],\n  \"medications\": [\n    {\n      \"name\": \"TAB TELMA\",\n      \"dose\": \"40mg\",\n      \"frequency\": \"1-0-0\"\n    },\n    {\n      \"name\": \"TAB PIVASTA\",\n      \"dose\": \"2mg\",\n      \"frequency\": \"0-0-1\"\n    },\n    {\n      \"name\": \"TAB EZEDOC\",\n      \"dose\": \"10mg\",\n      \"frequency\": \"0-0-1\"\n    },\n    {\n      \"name\": \"CAP D. RISE\",\n      \"dose\": \"60K\",\n      \"frequency\": \"ONCE A WEEK FOR 8 WEEKS THEN ONCE A MONTH\"\n    }\n  ],\n  \"investigations\": [\n    \"CBC\",\n    \"RP2 SEROLOGY\",\n    \"blood grouping and typing\"\n  ],\n  \"nursing_needs\": [\n    \"to restore normal cardiac function\",\n    \"to prevent from fall\",\n    \"Risk for fall\",\n    \"Risk for DVT\",\n    \"Acute pain ./ or post-operative pain\"\n  ]\n}\n\n---\n\nStep 7: Final Assembly & Validation:\n{\n  \"patient\": {\n    \"name\": \"Priyadarshini PUNJA\",\n    \"mrn\": \"MH011199849\",\n    \"age\": 64,\n    \"gender\": \"Female\"\n  },\n  \"vitals\": {\n    \"bp\": {\n      \"systolic\": 110,\n      \"diastolic\": 70\n    },\n    \"pulse\": 78,\n    \"temperature\": \"98.6 F\",\n    \"spo2\": 98,\n    \"resp_rate\": 20,\n    \"pain_score\": 2,\n    \"grbs\": null\n  },\n  \"risk_scores\": {\n    \"fall_risk\": {\n      \"score\": 3,\n      \"level\": \"low risk\"\n    },\n    \"dvt_risk\": {\n      \"score\": 2,\n      \"level\": \"Moderate RISK\"\n    },\n    \"pressure_ulcer_risk\": {\n      \"score\": 21,\n      \"level\": \"no risk\"\n    },\n    \"aspiration_risk\": {\n      \"score\": 0,\n      \"level\": \"LOW RISK\"\n    },\n    \"ews_score\": 2,\n    \"gcs\": {\n      \"eyes\": null,\n      \"motor\": null,\n      \"verbal\": null,\n      \"total\": 15\n    }\n  },\n  \"functional_status\": {\n    \"bathing\": \"Independent\",\n    \"dressing\": \"Independent\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Independent\",\n    \"toilet_use\": \"Independent\",\n    \"overall_assistance\": \"None\"\n  },\n  \"diagnosis\": {\n    \"principal\": \"TMT - POSITIVE (Posted for CAG)\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"Hypertension (HTN)\",\n      \"Chest pain\"\n    ]\n  },\n  \"allergies\": [\n    \"unknown\"\n  ],\n  \"medications\": [\n    {\n      \"name\": \"TAB TELMA\",\n      \"dose\": \"40mg\",\n      \"frequency\": \"1-0-0\"\n    },\n    {\n      \"name\": \"TAB PIVASTA\",\n      \"dose\": \"2mg\",\n      \"frequency\": \"0-0-1\"\n    },\n    {\n      \"name\": \"TAB EZEDOC\",\n      \"dose\": \"10mg\",\n      \"frequency\": \"0-0-1\"\n    },\n    {\n      \"name\": \"CAP D. RISE\",\n      \"dose\": \"60K\",\n      \"frequency\": \"ONCE A WEEK FOR 8 WEEKS THEN ONCE A MONTH\"\n    }\n  ],\n  \"investigations\": [\n    \"CBC\",\n    \"RP2 SEROLOGY\",\n    \"blood grouping and typing\"\n  ],\n  \"nursing_needs\": [\n    \"to restore normal cardiac function\",\n    \"to prevent from fall\",\n    \"Risk for fall\",\n    \"Risk for DVT\",\n    \"Acute pain ./ or post-operative pain\"\n  ],\n  \"validation_summary\": {\n    \"confidence_level\": \"high\",\n    \"inconsistencies_found\": [\n      \"Prefix 'Mr.' in name field contradicts gender 'Female'; gender verified as Female via multiple assessment sections.\"\n    ],\n    \"missing_critical_fields\": [\n      \"GCS individual component scores (Eyes, Motor, Verbal)\",\n      \"GRBS value\",\n      \"ICD code for principal diagnosis\"\n    ],\n    \"data_quality_notes\": \"Demographics reconciled by prioritizing explicit gender fields over name prefix. Risk scores and vitals are consistent across assessment blocks. GCS total is provided but components are not documented.\"\n  }\n}",
+    "score": 89,
+    "scoreDetails": {
+      "patient_name": "10/10",
+      "mrn": "5/5",
+      "vitals_complete": "4/4 fields",
+      "risk_scores_complete": "4/5 fields",
+      "risk_scores_accurate": "N/A (no ground truth)",
+      "functional_status": "5/5 ADL fields",
+      "diagnosis": "10/10",
+      "allergies": "5/5",
+      "medications": "5/5",
+      "clinical_reasoning": "5/5"
+    }
+  },
+  "winner": "B"
+}

@@ -1,0 +1,290 @@
+{
+  "file": "Prescription_01.pdf",
+  "timestamp": "2026-04-27T08:22:12.080Z",
+  "model": "google/gemma-4-31B-it",
+  "summary": {
+    "total_pages": 2,
+    "total_tokens": 3177,
+    "total_time_ms": 82148,
+    "avg_time_per_page": 41074,
+    "pages_with_tables": 1
+  },
+  "common_elements": {
+    "hospital_names": [
+      "manipalhospitals",
+      "Manipal Hospital, HAL Airport Road"
+    ],
+    "document_titles": [
+      "OUT PATIENT RECORD",
+      "LAB INVESTIGATIONS ADVISED"
+    ],
+    "departments": [
+      "ENT MHB"
+    ],
+    "doctors": [
+      "DR. E.V. RAMAN (D.L.O-79, M.S-1979, FICS-92)"
+    ]
+  },
+  "common_table_headers": {
+    "LAB INVESTIGATIONS ADVISED": [
+      "Complete Blood Counts (Automated)",
+      "Renal Panel - I - Fasting",
+      "Creatinine- Serum - I - Fasting",
+      "Blood Grouping & Rh Typing",
+      "ESR ( Automated )",
+      "Renal Panel - I - Random",
+      "Haemoglobin ( Automated )",
+      "Ear Swab Culture",
+      "Peripheral Smear Examination(P.S)",
+      "Platelet + IPP",
+      "Glycated Hemoglobin ( Hba1C )",
+      "Nasal Swab Culture",
+      "TSH (Thyroid Stimulating Hormone)",
+      "HbS&AG (Rapid Test)",
+      "Glucose - Post Prandial (Ppbs)",
+      "Throat Swab Culture",
+      "Thyroid Profile (T3 T4 TSH)",
+      "HIV I & II Antibody (Rapid Test)",
+      "Total Vitamin D",
+      "COVID 19 TEST(RT PCR METHOD)",
+      "Lipid Profile",
+      "Liver Function Test",
+      "Vitamin B12"
+    ],
+    "RADIOLOGY TESTS ADVISED": [
+      "Xray paranasal sinus between Water's view(S)",
+      "Xray skull Towne's / fronto-occipital 30 deg",
+      "MRI Brain",
+      "Xray Chest PA ( CXR)",
+      "USG guided FNAC",
+      "MRI Brain CP Angle Focus",
+      "Xray nasopharynx Lateral for adenoids",
+      "USG Neck",
+      "MRI Neck",
+      "Xray mastoid view schuller (bilateral)",
+      "CT PNS Coronal & Sagittal",
+      "MRI With Contrast",
+      "Xray skull Towne's / fronto-occipital 15 deg",
+      "CT Neck(N)",
+      "CT IAM / Temporal bone high resolution",
+      "Xray skull Towne's / fronto-occipital 20 deg",
+      "CT With Contrast"
+    ],
+    "PROCEDURES": [
+      "EXAMINATION AND SUCTION TOILET OF EAR",
+      "NASAL ENDOSCOPY",
+      "HEARING AID TRIAL",
+      "OAE",
+      "NASOPHARYNGOSCOPY (FIBRE OPTIC)",
+      "TRACHEOSTOMY TUBE CHANGE",
+      "HOPKINS",
+      "DRESSING MAJOR",
+      "FOREIGN BODY EAR",
+      "EAR PIERCING",
+      "BERA",
+      "DRESSING MINOR",
+      "FOREIGN BODY NOSE",
+      "PURE TONE AUDIOGRAM",
+      "BAHA",
+      "DRESSING MEDIUM",
+      "FOREIGN BODY PHARYNX",
+      "IMPEDANCE AUDIONETRY",
+      "VNG"
+    ],
+    "PRESCRIPTION": [
+      "Sr. No.",
+      "Name of Medicine",
+      "Dose",
+      "Morning",
+      "Noon",
+      "Night",
+      "No. of Days",
+      "Remarks"
+    ]
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "success": true,
+      "error": null,
+      "duration_ms": 23071,
+      "tokens": 1240,
+      "headers": {
+        "page_number": 1,
+        "document_headers": {
+          "hospital_name": "manipalhospitals",
+          "document_title": "OUT PATIENT RECORD",
+          "patient_info": {
+            "name": "MRS NAZNEEN JAMAL",
+            "id": "MH000001285",
+            "age": "71 Yrs",
+            "gender": "Female"
+          },
+          "dates": {
+            "report_date": "2026-03-24 13:02",
+            "visit_date": null,
+            "admission_date": null
+          },
+          "page_number": "Page 1 of 2",
+          "department": "ENT MHB",
+          "doctor": "DR. E.V. RAMAN (D.L.O-79, M.S-1979, FICS-92)",
+          "other_header_text": [
+            "LIFE'S ON",
+            "Episode No.: O00011800756",
+            "Patient Mob No.: 9448460565",
+            "E-mail ID :",
+            "KMC Reg No. : 14750",
+            "Height:",
+            "BP:",
+            "Allergies:",
+            "Diet:",
+            "Weight:",
+            "Vulnerable",
+            "Any Known Health conditions:",
+            "Doctor's Notes:"
+          ]
+        },
+        "table_headers": [],
+        "notes": [
+          "The document contains a structured header section but no formal tables with column headers.",
+          "Patient information and visit details are presented in a key-value pair format rather than a table."
+        ]
+      }
+    },
+    {
+      "page_number": 2,
+      "success": true,
+      "error": null,
+      "duration_ms": 59077,
+      "tokens": 1937,
+      "headers": {
+        "page_number": 2,
+        "document_headers": {
+          "hospital_name": "Manipal Hospital, HAL Airport Road",
+          "document_title": "LAB INVESTIGATIONS ADVISED",
+          "patient_info": {
+            "name": null,
+            "id": null,
+            "age": null,
+            "gender": null
+          },
+          "dates": {
+            "report_date": null,
+            "visit_date": null,
+            "admission_date": null
+          },
+          "page_number": "Page 2 of 2",
+          "department": null,
+          "doctor": null,
+          "other_header_text": [
+            "RADIOLOGY TESTS ADVISED",
+            "PROCEDURES",
+            "PRESCRIPTION (WRITE IN CAPITAL LETTERS)"
+          ]
+        },
+        "table_headers": [
+          {
+            "table_topic": "LAB INVESTIGATIONS ADVISED",
+            "columns": [
+              "Complete Blood Counts (Automated)",
+              "Renal Panel - I - Fasting",
+              "Creatinine- Serum - I - Fasting",
+              "Blood Grouping & Rh Typing",
+              "ESR ( Automated )",
+              "Renal Panel - I - Random",
+              "Haemoglobin ( Automated )",
+              "Ear Swab Culture",
+              "Peripheral Smear Examination(P.S)",
+              "Platelet + IPP",
+              "Glycated Hemoglobin ( Hba1C )",
+              "Nasal Swab Culture",
+              "TSH (Thyroid Stimulating Hormone)",
+              "HbS&AG (Rapid Test)",
+              "Glucose - Post Prandial (Ppbs)",
+              "Throat Swab Culture",
+              "Thyroid Profile (T3 T4 TSH)",
+              "HIV I & II Antibody (Rapid Test)",
+              "Total Vitamin D",
+              "COVID 19 TEST(RT PCR METHOD)",
+              "Lipid Profile",
+              "Liver Function Test",
+              "Vitamin B12"
+            ],
+            "row_count": "5",
+            "location": "top"
+          },
+          {
+            "table_topic": "RADIOLOGY TESTS ADVISED",
+            "columns": [
+              "Xray paranasal sinus between Water's view(S)",
+              "Xray skull Towne's / fronto-occipital 30 deg",
+              "MRI Brain",
+              "Xray Chest PA ( CXR)",
+              "USG guided FNAC",
+              "MRI Brain CP Angle Focus",
+              "Xray nasopharynx Lateral for adenoids",
+              "USG Neck",
+              "MRI Neck",
+              "Xray mastoid view schuller (bilateral)",
+              "CT PNS Coronal & Sagittal",
+              "MRI With Contrast",
+              "Xray skull Towne's / fronto-occipital 15 deg",
+              "CT Neck(N)",
+              "CT IAM / Temporal bone high resolution",
+              "Xray skull Towne's / fronto-occipital 20 deg",
+              "CT With Contrast"
+            ],
+            "row_count": "6",
+            "location": "top/middle"
+          },
+          {
+            "table_topic": "PROCEDURES",
+            "columns": [
+              "EXAMINATION AND SUCTION TOILET OF EAR",
+              "NASAL ENDOSCOPY",
+              "HEARING AID TRIAL",
+              "OAE",
+              "NASOPHARYNGOSCOPY (FIBRE OPTIC)",
+              "TRACHEOSTOMY TUBE CHANGE",
+              "HOPKINS",
+              "DRESSING MAJOR",
+              "FOREIGN BODY EAR",
+              "EAR PIERCING",
+              "BERA",
+              "DRESSING MINOR",
+              "FOREIGN BODY NOSE",
+              "PURE TONE AUDIOGRAM",
+              "BAHA",
+              "DRESSING MEDIUM",
+              "FOREIGN BODY PHARYNX",
+              "IMPEDANCE AUDIONETRY",
+              "VNG"
+            ],
+            "row_count": "5",
+            "location": "middle"
+          },
+          {
+            "table_topic": "PRESCRIPTION",
+            "columns": [
+              "Sr. No.",
+              "Name of Medicine",
+              "Dose",
+              "Morning",
+              "Noon",
+              "Night",
+              "No. of Days",
+              "Remarks"
+            ],
+            "row_count": "1",
+            "location": "bottom"
+          }
+        ],
+        "notes": [
+          "The document uses a grid-style layout for tests and procedures where the 'headers' are actually the selectable options themselves.",
+          "Hospital contact information is located in the footer but serves as a standard document header element.",
+          "Prescription table contains handwritten entries."
+        ]
+      }
+    }
+  ]
+}

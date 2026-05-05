@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Test - Thinking Visualization</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #0f5132 0%, #1d7c52 100%);
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #1d7c52 0%, #239b63 100%);
+      color: white;
+      padding: 24px;
+      text-align: center;
+    }
+    .header h1 { margin: 0 0 8px; font-size: 24px; }
+    .header p { margin: 0; opacity: 0.9; font-size: 14px; }
+    .upload-area {
+      padding: 40px;
+      text-align: center;
+      border: 3px dashed #cfe5d7;
+      margin: 24px;
+      border-radius: 16px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .upload-area:hover, .upload-area.dragover {
+      border-color: #239b63;
+      background: #f6fcf8;
+    }
+    .upload-area input { display: none; }
+    .upload-btn {
+      background: linear-gradient(90deg, #1d7c52, #239b63);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+    .upload-btn:hover { opacity: 0.95; }
+    .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .thinking-process {
+      display: none;
+      padding: 24px;
+    }
+    .thinking-process.active { display: block; }
+
+    .step {
+      margin-bottom: 16px;
+      padding: 16px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border-left: 4px solid #cbd5e1;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .step.running {
+      border-left-color: #f59e0b;
+      background: #fffbeb;
+    }
+    .step.success {
+      border-left-color: #10b981;
+      background: #f0fdf4;
+    }
+    .step.error {
+      border-left-color: #ef4444;
+      background: #fef2f2;
+    }
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .step-name {
+      font-weight: 600;
+      font-size: 15px;
+      color: #1e293b;
+    }
+    .step-status {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    .step-status.running { background: #fef3c7; color: #92400e; }
+    .step-status.success { background: #dcfce7; color: #166534; }
+    .step-status.error { background: #fee2e2; color: #991b1b; }
+
+    .step-details {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 8px;
+    }
+    .step-data-preview {
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 12px;
+      max-height: 150px;
+      overflow: auto;
+      border: 1px solid #e2e8f0;
+    }
+
+    .summary {
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      padding: 20px;
+      margin: 24px;
+      border-radius: 12px;
+      display: none;
+    }
+    .summary.active { display: block; }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .summary-item {
+      background: white;
+      padding: 16px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .summary-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #166534;
+    }
+    .summary-label {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid #e2e8f0;
+      border-top-color: #239b63;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 Agent Thinking Visualization</h1>
+      <p>Upload a PDF to see the multi-step Thinking/ReAct extraction process</p>
+    </div>
+
+    <div class="upload-area" id="uploadArea">
+      <input type="file" id="fileInput" accept=".pdf">
+      <div style="font-size: 48px; margin-bottom: 16px;">📄</div>
+      <h3 style="margin: 0 0 8px;">Drop a PDF discharge summary here</h3>
+      <p style="color: #64748b; margin: 0 0 16px;">or click to browse</p>
+      <button class="upload-btn" id="uploadBtn">Select PDF File</button>
+    </div>
+
+    <div class="thinking-process" id="thinkingProcess"></div>
+
+    <div class="summary" id="summary">
+      <h3 style="margin: 0; color: #166534;">✅ Processing Complete</h3>
+      <p style="margin: 8px 0 0; color: #64748b;" id="summaryText"></p>
+      <div class="summary-grid">
+        <div class="summary-item">
+          <div class="summary-value" id="summarySteps">0</div>
+          <div class="summary-label">Steps</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-value" id="summaryTokens">0</div>
+          <div class="summary-label">Tokens Used</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-value" id="summaryTime">0s</div>
+          <div class="summary-label">Processing Time</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-value" id="summaryConfidence">-</div>
+          <div class="summary-label">Confidence</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const thinkingProcess = document.getElementById('thinkingProcess');
+    const summary = document.getElementById('summary');
+
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('click', (e) => {
+      if (e.target !== uploadBtn) fileInput.click();
+    });
+
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      if (e.dataTransfer.files.length) {
+        processFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) {
+        processFile(e.target.files[0]);
+      }
+    });
+
+    async function processFile(file) {
+      if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
+        alert('Please upload a PDF file');
+        return;
+      }
+
+      // Reset UI
+      thinkingProcess.innerHTML = '';
+      thinkingProcess.classList.add('active');
+      summary.classList.remove('active');
+      uploadArea.style.pointerEvents = 'none';
+      uploadArea.style.opacity = '0.5';
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('http://localhost:8001/api/agent/test-pdf', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Display each step
+          result.steps.forEach((step, index) => {
+            setTimeout(() => {
+              const stepEl = createStepElement(step, index + 1);
+              thinkingProcess.appendChild(stepEl);
+            }, index * 300);
+          });
+
+          // Show summary after all steps
+          setTimeout(() => {
+            showSummary(result);
+          }, result.steps.length * 300 + 500);
+        } else {
+          thinkingProcess.innerHTML = `
+            <div class="step error">
+              <div class="step-header">
+                <span class="step-name">❌ Processing Failed</span>
+              </div>
+              <div class="step-details">${result.error}</div>
+            </div>
+          `;
+        }
+      } catch (error) {
+        thinkingProcess.innerHTML = `
+          <div class="step error">
+            <div class="step-header">
+              <span class="step-name">❌ Request Failed</span>
+            </div>
+            <div class="step-details">${error.message}</div>
+          </div>
+        `;
+      } finally {
+        uploadArea.style.pointerEvents = '';
+        uploadArea.style.opacity = '';
+      }
+    }
+
+    function createStepElement(step, num) {
+      const div = document.createElement('div');
+      div.className = `step ${step.success ? 'success' : 'error'}`;
+
+      const statusText = step.success ? '✓ Complete' : '✗ Failed';
+      const statusClass = step.success ? 'success' : 'error';
+
+      let dataPreview = '';
+      if (step.dataKeys && step.dataKeys.length > 0) {
+        dataPreview = `<div class="step-data-preview">Extracted: ${step.dataKeys.join(', ')}</div>`;
+      }
+
+      div.innerHTML = `
+        <div class="step-header">
+          <span class="step-name">${num}. ${formatStepName(step.step)}</span>
+          <span class="step-status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="step-details">
+          ${step.tokens > 0 ? `Tokens: ${step.tokens} • ` : ''}${step.latency > 0 ? `Time: ${step.latency}ms` : ''}
+          ${step.validationIssues > 0 ? ` • ⚠️ ${step.validationIssues} validation issue(s)` : ''}
+        </div>
+        ${dataPreview}
+      `;
+
+      return div;
+    }
+
+    function formatStepName(step) {
+      if (!step) return 'Unknown Step';
+      return step
+        .split(/[_-]+/)
+        .filter(Boolean)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+
+    function showSummary(result) {
+      summary.classList.add('active');
+      document.getElementById('summarySteps').textContent = result.summary.stepsCount;
+      document.getElementById('summaryTokens').textContent = result.summary.tokensUsed.toLocaleString();
+      document.getElementById('summaryTime').textContent = (result.summary.totalLatency / 1000).toFixed(1) + 's';
+
+      const confidence = result.validation?.confidence_level || 'unknown';
+      const confidenceEl = document.getElementById('summaryConfidence');
+      confidenceEl.textContent = confidence.charAt(0).toUpperCase() + confidence.slice(1);
+      confidenceEl.style.color = confidence === 'high' ? '#166534' : confidence === 'medium' ? '#f59e0b' : '#ef4444';
+
+      document.getElementById('summaryText').textContent =
+        `Agent: ${result.summary.agentName} v${result.summary.agentVersion}`;
+    }
+  </script>
+</body>
+</html>

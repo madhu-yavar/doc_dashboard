@@ -1,0 +1,26 @@
+{
+  "file": "Doxper.pdf",
+  "timestamp": "2026-04-27T07:27:25.578Z",
+  "gemma": {
+    "success": false,
+    "error": "HTTP 404: {\"error\":{\"message\":\"The model `google/gemma-4-31B-A4B-it` does not exist.\",\"type\":\"NotFoundError\",\"param\":\"model\",\"code\":404}}",
+    "duration": 1648,
+    "model": "google/gemma-4-31B-A4B-it"
+  },
+  "qwen": {
+    "success": false,
+    "error": "HTTP 404: {\"message\":\"Cannot POST /v1/chat/completions\",\"error\":\"Not Found\",\"statusCode\":404}",
+    "duration": 454,
+    "model": "cyankiwi/Qwen3-VL-30B-A3B-Instruct-AWQ-4bit"
+  },
+  "scores": {
+    "gemma": {
+      "score": 0,
+      "details": "No data extracted"
+    },
+    "qwen": {
+      "score": 0,
+      "details": "No data extracted"
+    }
+  }
+}

@@ -193,7 +193,7 @@ module.exports = {
       },
       config: {
         baseUrl: process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions",
-        model: process.env.GEMMA_MODEL || "google/gemma-4-26B-A4B-it",
+        model: process.env.GEMMA_MODEL || "google/gemma-4-31B-it",
         timeout: 90000
       }
     },

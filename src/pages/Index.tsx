@@ -15,6 +15,7 @@ import FollowUpDetail from "@/components/dashboard/FollowUpDetail";
 import PendingItemsDetail from "@/components/dashboard/PendingItemsDetail";
 import RiskWatchDetail from "@/components/dashboard/RiskWatchDetail";
 import ChatAssistantPanel from "@/components/dashboard/ChatAssistantPanel";
+import AlertApprovalDialog, { type AlertPreviewResponse, type DashboardAlertTarget } from "@/components/dashboard/AlertApprovalDialog";
 import type { DashboardPatientData } from "@/data/patientData";
 import {
   API_BASE,
@@ -22,12 +23,16 @@ import {
   getProcessedDocumentMrn,
   getProcessedDocumentPatientName,
   transformProcessedDocument,
+  shouldRenderCard,
+  isCardActive,
   type ProcessedDocument,
 } from "@/lib/processedDocuments";
-import { ArrowLeft, ChevronLeft, ChevronRight, Printer, Mail, FileDown, Search } from "lucide-react";
+import { ArrowLeft, Bell, ChevronLeft, ChevronRight, Printer, Mail, FileDown, Search, Key, Shield, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 type Section = null | "vitals" | "diagnosis" | "medications" | "labs" | "radiology" | "treatment" | "notes" | "discharge" | "followup" | "pending" | "riskwatch";
 const SECTIONS = new Set<Exclude<Section, null>>([
@@ -66,6 +71,11 @@ const formatDateLabel = (value?: string) => {
   });
 };
 
+const formatTokenCount = (value?: number | null) => {
+  if (typeof value !== "number" || Number.isNaN(value)) return "N/A";
+  return value.toLocaleString();
+};
+
 const clampLines = (lines: number) => ({
   display: "-webkit-box",
   WebkitLineClamp: lines,
@@ -96,6 +106,27 @@ const NOTE_PRIORITY_STYLES: Record<"normal" | "warning" | "critical", string> = 
   critical: "bg-rose-500",
 };
 
+const parseApiResponse = async (response: Response) => {
+  const raw = await response.text();
+  const contentType = response.headers.get("content-type") || "";
+  const looksJson = contentType.includes("application/json") || raw.trim().startsWith("{") || raw.trim().startsWith("[");
+
+  if (!looksJson) {
+    const preview = raw.trim().slice(0, 120);
+    throw new Error(
+      response.status === 404 || preview.startsWith("<!DOCTYPE")
+        ? "Alert API endpoint is unavailable. Restart the backend server and try again."
+        : "Unexpected non-JSON response from alert API."
+    );
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("Alert API returned invalid JSON.");
+  }
+};
+
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -105,48 +136,281 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [showMaskedImage, setShowMaskedImage] = useState(false);
+  const [alertPreviewOpen, setAlertPreviewOpen] = useState(false);
+  const [alertPreview, setAlertPreview] = useState<AlertPreviewResponse | null>(null);
+  const [isAlertPreviewLoading, setIsAlertPreviewLoading] = useState(false);
+  const [isAlertSending, setIsAlertSending] = useState(false);
 
   const documentId = searchParams.get("documentId");
   const activeSectionParam = searchParams.get("section");
   const activeSection: Section = activeSectionParam && SECTIONS.has(activeSectionParam as Exclude<Section, null>)
     ? (activeSectionParam as Exclude<Section, null>)
     : null;
+  const providerTokens = processedDocument?.agentInfo?.providerTokens;
   const d: DashboardPatientData | null = useMemo(
-    () => (processedDocument?.result ? transformProcessedDocument(processedDocument) : null),
+    () => {
+      const transformed = processedDocument?.result ? transformProcessedDocument(processedDocument) : null;
+      if (transformed) {
+        console.log('[Index] Transformed data:', {
+          maskedImageUrl: transformed.maskedImageUrl,
+          maskedImagePath: transformed.maskedImagePath,
+          hasMaskedImage: !!transformed.maskedImageUrl
+        });
+      }
+      return transformed;
+    },
     [processedDocument],
   );
+  const maskedPreviewPages = d?.maskedImagePages?.length
+    ? d.maskedImagePages
+    : d?.maskedImageUrl
+      ? [{ pageNumber: 1, imageUrl: d.maskedImageUrl, imageRole: "masked" as const, sentToExternal: true }]
+      : [];
   const summaryCards = d?.presentation?.summaryCards || {};
   const notesRail = d?.presentation?.notesRail || [];
   const careGapsCard = summaryCards.care_gaps;
   const riskWatchCard = summaryCards.risk_watch;
 
+  // Filter cards based on activation state
+  const visibleSummaryCards = useMemo(() => {
+    if (!processedDocument || !d?.cardActivation) {
+      return Object.keys(SUMMARY_CARD_CONFIG) as Array<keyof typeof SUMMARY_CARD_CONFIG>;
+    }
+    const hiddenCards = d.cardActivation.hiddenCards || [];
+    return (Object.keys(SUMMARY_CARD_CONFIG) as Array<keyof typeof SUMMARY_CARD_CONFIG>)
+      .filter(key => {
+        const cardKeyMap: Record<string, string> = {
+          vitals: 'vitals_card',
+          diagnosis: 'diagnosis_card',
+          medications: 'medications_card',
+          labs: 'labs_card',
+          radiology: 'radiology_card',
+          treatment: 'treatment_card',
+        };
+        const backendCardKey = cardKeyMap[key];
+        return !hiddenCards.includes(backendCardKey);
+      });
+  }, [processedDocument, d?.cardActivation]);
+
+  // Check if specific additional cards should be shown
+  const showDischargeCard = useMemo(() => {
+    if (!processedDocument) return true;
+    return shouldRenderCard(processedDocument, 'discharge_plan_card');
+  }, [processedDocument]);
+
+  const showFollowUpCard = useMemo(() => {
+    if (!processedDocument) return true;
+    return shouldRenderCard(processedDocument, 'follow_up_card');
+  }, [processedDocument]);
+
+  const getPendingLabOrders = () =>
+    Array.isArray(processedDocument?.result?.extracted_data?.investigations)
+      ? processedDocument.result.extracted_data.investigations.filter((item) => item?.status === "ordered").length
+      : 0;
+
+  const getPendingNuclearOrders = () =>
+    Array.isArray(processedDocument?.result?.extracted_data?.nuclear_medicine)
+      ? processedDocument.result.extracted_data.nuclear_medicine.filter((item) => item?.status === "ordered").length
+      : 0;
+
+  const getPendingRadiologyOrders = () =>
+    Array.isArray(processedDocument?.result?.extracted_data?.radiology)
+      ? processedDocument.result.extracted_data.radiology.filter((item) => item?.status === "ordered").length
+      : 0;
+
+  const getPendingProcedureOrders = () =>
+    Array.isArray(processedDocument?.result?.extracted_data?.procedures)
+      ? processedDocument.result.extracted_data.procedures.filter((item) => item?.status === "ordered" || item?.status === "mentioned").length
+      : 0;
+
+  const getVisibleLabCount = () => {
+    if (!d) return 0;
+    return Math.max(d.labs.totalTests, getPendingLabOrders() + getPendingNuclearOrders());
+  };
+
+  const getAlertActionMeta = (key: keyof typeof SUMMARY_CARD_CONFIG) => {
+    if (!processedDocument || !d) return null;
+
+    switch (key) {
+      case "medications": {
+        const itemCount = d.medications.active.length;
+        if (itemCount === 0) return null;
+        return {
+          target: "medications" as const,
+          label: "Alert pharmacy",
+          itemCount,
+          sent: Boolean(d.pharmacyAlert?.sent),
+        };
+      }
+      case "labs": {
+        const labOrderCount = getPendingLabOrders();
+        const nuclearOrderCount = getPendingNuclearOrders();
+        const itemCount = labOrderCount + nuclearOrderCount;
+        if (itemCount === 0) return null;
+        const labSent = d.departmentAlerts?.departments?.lab?.sent;
+        const nuclearSent = d.departmentAlerts?.departments?.nuclear_medicine?.sent;
+        return {
+          target: "labs" as const,
+          label: "Alert lab team",
+          itemCount,
+          sent: [
+            labOrderCount > 0 ? Boolean(labSent) : true,
+            nuclearOrderCount > 0 ? Boolean(nuclearSent) : true,
+          ].every(Boolean),
+        };
+      }
+      case "radiology": {
+        const itemCount = getPendingRadiologyOrders();
+        if (itemCount === 0) return null;
+        return {
+          target: "radiology" as const,
+          label: "Alert radiology",
+          itemCount,
+          sent: Boolean(d.departmentAlerts?.departments?.radiology?.sent),
+        };
+      }
+      case "treatment": {
+        const itemCount = getPendingProcedureOrders();
+        if (itemCount === 0) return null;
+        return {
+          target: "treatment" as const,
+          label: "Alert procedure team",
+          itemCount,
+          sent: Boolean(d.departmentAlerts?.departments?.procedures?.sent),
+        };
+      }
+      default:
+        return null;
+    }
+  };
+
+  const refreshProcessedQueue = async () => {
+    const response = await fetch(`${API_BASE}/documents`);
+    if (!response.ok) {
+      throw new Error("Unable to load processed queue.");
+    }
+
+    const payload = await response.json();
+    const queue = (payload.documents ?? []).filter((document: ProcessedDocument) =>
+      document.status === "processed" || document.status === "partial"
+    );
+    setProcessedQueue(queue);
+  };
+
+  const refreshCurrentDocument = async (id: string) => {
+    const response = await fetch(`${API_BASE}/documents/${id}`);
+    if (!response.ok) {
+      throw new Error("Unable to load processed dashboard document.");
+    }
+
+    const payload = await response.json();
+    setProcessedDocument(extractProcessedDocumentResponse(payload));
+  };
+
+  const handleOpenAlertPreview = async (target: DashboardAlertTarget) => {
+    if (!documentId) return;
+
+    setAlertPreviewOpen(true);
+    setAlertPreview(null);
+    setIsAlertPreviewLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/documents/${documentId}/alert-preview`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target }),
+      });
+      const payload = await parseApiResponse(response);
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || "Failed to build alert preview");
+      }
+
+      setAlertPreview(payload);
+    } catch (error) {
+      setAlertPreviewOpen(false);
+      toast.error(error instanceof Error ? error.message : "Failed to build alert preview");
+    } finally {
+      setIsAlertPreviewLoading(false);
+    }
+  };
+
+  const handleApproveAlertSend = async () => {
+    if (!documentId || !alertPreview) return;
+
+    setIsAlertSending(true);
+    try {
+      const response = await fetch(`${API_BASE}/documents/${documentId}/send-alerts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: alertPreview.target }),
+      });
+      const payload = await parseApiResponse(response);
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload.error || "Failed to send alert");
+      }
+
+      if (payload.document) {
+        setProcessedDocument(extractProcessedDocumentResponse({ document: payload.document }));
+      } else {
+        await refreshCurrentDocument(documentId);
+      }
+      await refreshProcessedQueue();
+
+      const recipientLabels = (alertPreview.deliveries || []).map((delivery) => delivery.label).join(", ");
+      toast.success(recipientLabels ? `Alert sent to ${recipientLabels}` : "Alert sent");
+      setAlertPreviewOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to send alert");
+    } finally {
+      setIsAlertSending(false);
+    }
+  };
+
   const renderSummaryCardContent = (key: keyof typeof SUMMARY_CARD_CONFIG) => {
     const card = summaryCards[key];
 
     if (key === "vitals") {
+      const systolic = d.vitals.latest.bloodPressure.systolic;
+      const diastolic = d.vitals.latest.bloodPressure.diastolic;
+      const heartRate = d.vitals.latest.heartRate.value;
+      const spo2 = d.vitals.latest.spo2.value;
+      const temperature = d.vitals.latest.temperature.value;
+      const hasDocumentedVitals = [systolic, diastolic, heartRate, spo2, temperature].some((value) => typeof value === "number" && value > 0);
+
       return (
         <div className="flex h-full flex-col justify-between gap-1 overflow-hidden">
-          <div className="space-y-1">
-            <div className={`flex items-center justify-between ${CARD_META_CLASS}`}>
-              <span>BP</span>
-              <span className="font-semibold text-slate-900">
-              {d.vitals.latest.bloodPressure.systolic}/{d.vitals.latest.bloodPressure.diastolic}
-                <span className="ml-1 text-[11px] font-medium text-slate-400">mmHg</span>
-              </span>
+          {hasDocumentedVitals ? (
+            <div className="space-y-1">
+              <div className={`flex items-center justify-between ${CARD_META_CLASS}`}>
+                <span>BP</span>
+                <span className="font-semibold text-slate-900">
+                  {systolic}/{diastolic}
+                  <span className="ml-1 text-[11px] font-medium text-slate-400">mmHg</span>
+                </span>
+              </div>
+              <div className={`flex items-center justify-between ${CARD_META_CLASS}`}>
+                <span>Pulse</span>
+                <span className="font-semibold text-slate-900">{heartRate} bpm</span>
+              </div>
+              <div className={`flex items-center justify-between ${CARD_META_CLASS}`}>
+                <span>SpO2</span>
+                <span className="font-semibold text-slate-900">{spo2}%</span>
+              </div>
+              <div className={`flex items-center justify-between ${CARD_META_CLASS}`}>
+                <span>Temp</span>
+                <span className="font-semibold text-slate-900">{temperature}°F</span>
+              </div>
             </div>
-            <div className={`flex items-center justify-between ${CARD_META_CLASS}`}>
-              <span>Pulse</span>
-              <span className="font-semibold text-slate-900">{d.vitals.latest.heartRate.value} bpm</span>
+          ) : (
+            <div className="space-y-1">
+              <p className="text-[12px] font-medium text-slate-800" style={clampLines(2)}>
+                No source-backed vitals documented.
+              </p>
             </div>
-            <div className={`flex items-center justify-between ${CARD_META_CLASS}`}>
-              <span>SpO2</span>
-              <span className="font-semibold text-slate-900">{d.vitals.latest.spo2.value}%</span>
-            </div>
-            <div className={`flex items-center justify-between ${CARD_META_CLASS}`}>
-              <span>Temp</span>
-              <span className="font-semibold text-slate-900">{d.vitals.latest.temperature.value}°F</span>
-            </div>
-          </div>
+          )}
           <div>
             <StatusBadge
               status={((card?.status || "neutral") === "info" ? "neutral" : card?.status || "neutral") as "normal" | "warning" | "critical" | "neutral"}
@@ -198,10 +462,13 @@ const Index = () => {
     }
 
     if (key === "labs") {
+      const visibleLabCount = getVisibleLabCount();
+      const visiblePendingCount = Math.max(d.labs.pendingCount, getPendingLabOrders() + getPendingNuclearOrders());
+
       return (
         <div className="flex h-full flex-col justify-between gap-1 overflow-hidden">
           <div className="flex items-baseline gap-1.5">
-            <span className={CARD_VALUE_CLASS}>{d.labs.totalTests}</span>
+            <span className={CARD_VALUE_CLASS}>{visibleLabCount}</span>
             <span className={CARD_LABEL_CLASS}>{d.labs.hasResults ? "tests completed" : "tests ordered"}</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -210,7 +477,7 @@ const Index = () => {
             {d.labs.abnormalCount === 0 && d.labs.criticalCount === 0 ? <StatusBadge status="normal" label="Normal" /> : null}
           </div>
           <p className={CARD_TEXT_CLASS} style={clampLines(2)}>
-            {card?.supportingPoints?.[0] || (d.labs.hasResults ? "Results available for review." : `${d.labs.pendingCount} investigations ordered.`)}
+            {card?.supportingPoints?.[0] || (d.labs.hasResults ? "Results available for review." : `${visiblePendingCount} investigations ordered.`)}
           </p>
         </div>
       );
@@ -264,21 +531,9 @@ const Index = () => {
   }, [documentId, navigate]);
 
   useEffect(() => {
-    fetch(`${API_BASE}/documents`)
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error("Unable to load processed queue.");
-        }
-
-        return response.json();
-      })
-      .then((payload) => {
-        const queue = (payload.documents ?? []).filter((document: ProcessedDocument) => document.status === "processed");
-        setProcessedQueue(queue);
-      })
-      .catch(() => {
-        setProcessedQueue([]);
-      });
+    refreshProcessedQueue().catch(() => {
+      setProcessedQueue([]);
+    });
   }, [documentId]);
 
   useEffect(() => {
@@ -303,6 +558,8 @@ const Index = () => {
       .then((payload) => {
         if (!cancelled) {
           setProcessedDocument(extractProcessedDocumentResponse(payload));
+          setAlertPreview(null);
+          setAlertPreviewOpen(false);
         }
       })
       .catch((error) => {
@@ -474,6 +731,15 @@ const Index = () => {
           >
             <FileDown className={`w-4 h-4 ${isExporting ? 'animate-spin' : ''}`} />
           </button>
+          {d?.maskedImageUrl && processedDocument?.result?.meta?.router?.detected_type === 'prescription' && (
+            <button
+              className="rounded-full p-2 text-emerald-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+              title="View Masked Image (Privacy Protected)"
+              onClick={() => setShowMaskedImage(true)}
+            >
+              <Shield className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -519,6 +785,30 @@ const Index = () => {
     );
   }
 
+  // Show warning for partial documents (needs handwriting extraction)
+  const isPartial = processedDocument?.status === "partial";
+  const partialWarning = isPartial ? (
+    <div className="rounded-xl border border-purple-200 bg-purple-50 p-4 mb-4">
+      <div className="flex items-center gap-3">
+        <Key className="h-5 w-5 text-purple-600" />
+        <div className="flex-1">
+          <h3 className="text-sm font-semibold text-purple-900">Handwriting Extraction Needed</h3>
+          <p className="text-xs text-purple-700 mt-1">
+            This document contains handwritten information. Go to the Upload Center to complete the extraction with your Gemini API key.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => navigate("/")}
+          className="border-purple-300 text-purple-700 hover:bg-purple-100"
+        >
+          Complete Extraction
+        </Button>
+      </div>
+    </div>
+  ) : null;
+
   if (activeSection === "vitals") return <PageWrapper>{dashboardToolbar}<VitalsDetail onBack={handleBack} data={d} />{assistantPanel}</PageWrapper>;
   if (activeSection === "diagnosis") return <PageWrapper>{dashboardToolbar}<DiagnosisDetail onBack={handleBack} data={d} />{assistantPanel}</PageWrapper>;
   if (activeSection === "medications") return <PageWrapper>{dashboardToolbar}<MedicationsDetail onBack={handleBack} data={d} />{assistantPanel}</PageWrapper>;
@@ -535,6 +825,8 @@ const Index = () => {
     <PageWrapper>
       {dashboardToolbar}
 
+      {partialWarning}
+
       {documentId && (
         <div className="mb-4 rounded-xl border bg-card p-4">
           <div className="flex items-center justify-between">
@@ -545,27 +837,42 @@ const Index = () => {
                   ? loadError
                   : `Showing processed output for ${processedDocument?.name || "processed document"}.`}
             </div>
-            {processedDocument?.agentInfo && (
+            {processedDocument?.agentInfo && (processedDocument.agentInfo.name || processedDocument.agentInfo.tokensUsed || processedDocument.agentInfo.steps) && (
               <div className="flex items-center gap-4 text-xs">
-                <div className="flex items-center gap-1">
-                  <span className="text-muted-foreground">Agent:</span>
-                  <span className="font-medium">{processedDocument.agentInfo.name}</span>
-                  <span className="text-muted-foreground">v{processedDocument.agentInfo.version}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-muted-foreground">Tokens:</span>
-                  <span className="font-medium">{processedDocument.agentInfo.tokensUsed?.toLocaleString() || 'N/A'}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-muted-foreground">Confidence:</span>
-                  <span className={`font-medium ${
-                    processedDocument.agentInfo.validation?.confidence_level === 'high' ? 'text-emerald-600' :
-                    processedDocument.agentInfo.validation?.confidence_level === 'medium' ? 'text-amber-600' :
-                    'text-rose-600'
-                  }`}>
-                    {processedDocument.agentInfo.validation?.confidence_level || 'N/A'}
-                  </span>
-                </div>
+                {processedDocument.agentInfo.name && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground">Agent:</span>
+                    <span className="font-medium">{processedDocument.agentInfo.name}</span>
+                    {processedDocument.agentInfo.version && <span className="text-muted-foreground">v{processedDocument.agentInfo.version}</span>}
+                  </div>
+                )}
+                {processedDocument.agentInfo.tokensUsed !== undefined && processedDocument.agentInfo.tokensUsed > 0 && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground">Tokens:</span>
+                    <span className="font-medium">{formatTokenCount(processedDocument.agentInfo.tokensUsed)}</span>
+                  </div>
+                )}
+                {providerTokens && ((providerTokens.gemma && providerTokens.gemma > 0) || (providerTokens.gemini && providerTokens.gemini > 0)) && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground">Providers:</span>
+                    <span className="font-medium">
+                      {providerTokens.gemma > 0 && <>Gemma {formatTokenCount(providerTokens.gemma)}{providerTokens.gemini > 0 ? " · " : ""}</>}
+                      {providerTokens.gemini > 0 && <>Gemini {formatTokenCount(providerTokens.gemini)}</>}
+                    </span>
+                  </div>
+                )}
+                {processedDocument.agentInfo.validation?.confidence_level && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground">Confidence:</span>
+                    <span className={`font-medium ${
+                      processedDocument.agentInfo.validation.confidence_level === 'high' ? 'text-emerald-600' :
+                      processedDocument.agentInfo.validation.confidence_level === 'medium' ? 'text-amber-600' :
+                      'text-rose-600'
+                    }`}>
+                      {processedDocument.agentInfo.validation.confidence_level}
+                    </span>
+                  </div>
+                )}
                 {processedDocument.agentInfo.steps && (
                   <div className="flex items-center gap-1">
                     <span className="text-muted-foreground">Steps:</span>
@@ -582,9 +889,10 @@ const Index = () => {
 
       <div className="mt-5 grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:auto-rows-[156px] xl:grid-cols-3">
-          {(Object.keys(SUMMARY_CARD_CONFIG) as Array<keyof typeof SUMMARY_CARD_CONFIG>).map((key) => {
+          {visibleSummaryCards.map((key) => {
             const config = SUMMARY_CARD_CONFIG[key];
             const card = summaryCards[key];
+            const alertMeta = getAlertActionMeta(key);
 
             return (
               <SectionCard
@@ -593,6 +901,26 @@ const Index = () => {
                 title={card?.title || config.section}
                 colorClass={config.colorClass}
                 onClick={() => updateSection(config.section)}
+                headerBadge={alertMeta ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`h-7 w-7 rounded-full border ${
+                      alertMeta.sent
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
+                        : "border-slate-200 bg-white text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                    }`}
+                    title={alertMeta.label}
+                    aria-label={alertMeta.label}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      handleOpenAlertPreview(alertMeta.target);
+                    }}
+                  >
+                    <Bell className="h-3.5 w-3.5" />
+                  </Button>
+                ) : null}
               >
                 {renderSummaryCardContent(key)}
               </SectionCard>
@@ -619,22 +947,24 @@ const Index = () => {
             </div>
           </SectionCard>
 
-        <SectionCard
-          icon={<span className="text-base">📋</span>}
-          title="Discharge Plan"
-          colorClass="bg-[hsl(var(--section-discharge))]"
-          onClick={() => updateSection("discharge")}
-          >
-            <div className="flex h-full flex-col justify-between gap-1 overflow-hidden">
-              <p className="text-[12px] font-medium text-slate-800" style={clampLines(1)}>Condition: <span className="font-semibold text-slate-900">{d.dischargePlan.condition}</span></p>
-              <p className={CARD_TEXT_CLASS} style={clampLines(2)}>
-                {d.dischargePlan.dietary.length + d.dischargePlan.activityRestrictions.doNot.length + d.dischargePlan.activityRestrictions.okToDo.length} documented instructions
-              </p>
-              <p className={CARD_META_CLASS} style={clampLines(1)}>
-                {d.dischargePlan.pendingItems.length} Pending • {d.dischargePlan.redFlags.length} Risks
-              </p>
-            </div>
-          </SectionCard>
+        {showDischargeCard && (
+          <SectionCard
+            icon={<span className="text-base">📋</span>}
+            title="Discharge Plan"
+            colorClass="bg-[hsl(var(--section-discharge))]"
+            onClick={() => updateSection("discharge")}
+            >
+              <div className="flex h-full flex-col justify-between gap-1 overflow-hidden">
+                <p className="text-[12px] font-medium text-slate-800" style={clampLines(1)}>Condition: <span className="font-semibold text-slate-900">{d.dischargePlan.condition}</span></p>
+                <p className={CARD_TEXT_CLASS} style={clampLines(2)}>
+                  {d.dischargePlan.dietary.length + d.dischargePlan.activityRestrictions.doNot.length + d.dischargePlan.activityRestrictions.okToDo.length} documented instructions
+                </p>
+                <p className={CARD_META_CLASS} style={clampLines(1)}>
+                  {d.dischargePlan.pendingItems.length} Pending • {d.dischargePlan.redFlags.length} Risks
+                </p>
+              </div>
+            </SectionCard>
+        )}
 
           <SectionCard
             icon={<span className="text-base">🛡️</span>}
@@ -656,24 +986,26 @@ const Index = () => {
             </div>
           </SectionCard>
 
-          <SectionCard
-            icon={<span className="text-base">📅</span>}
-            title="Next Appointment"
-            colorClass="bg-[hsl(var(--section-followup))]"
-            onClick={() => updateSection("followup")}
-          >
-            <div className="flex h-full flex-col justify-between gap-1 overflow-hidden">
-              <div className="flex items-baseline gap-1.5">
-                <span className={CARD_VALUE_CLASS}>{formatDateLabel(d.followUp[0]?.date)}</span>
+          {showFollowUpCard && (
+            <SectionCard
+              icon={<span className="text-base">📅</span>}
+              title="Next Appointment"
+              colorClass="bg-[hsl(var(--section-followup))]"
+              onClick={() => updateSection("followup")}
+            >
+              <div className="flex h-full flex-col justify-between gap-1 overflow-hidden">
+                <div className="flex items-baseline gap-1.5">
+                  <span className={CARD_VALUE_CLASS}>{formatDateLabel(d.followUp[0]?.date)}</span>
+                </div>
+                <p className="text-[12px] font-medium text-slate-800" style={clampLines(1)}>
+                  {d.followUp[0]?.department || "Not scheduled"}
+                </p>
+                <p className={CARD_META_CLASS} style={clampLines(1)}>
+                  {d.followUp.length > 0 ? `${d.followUp.length} appointment${d.followUp.length > 1 ? "s" : ""} planned` : "Needs scheduling"}
+                </p>
               </div>
-              <p className="text-[12px] font-medium text-slate-800" style={clampLines(1)}>
-                {d.followUp[0]?.department || "Not scheduled"}
-              </p>
-              <p className={CARD_META_CLASS} style={clampLines(1)}>
-                {d.followUp.length > 0 ? `${d.followUp.length} appointment${d.followUp.length > 1 ? "s" : ""} planned` : "Needs scheduling"}
-              </p>
-            </div>
-          </SectionCard>
+            </SectionCard>
+          )}
         </div>
 
         <div className="section-card flex min-h-[420px] flex-col overflow-hidden border-slate-200 bg-white xl:h-[492px] xl:min-h-[492px]">
@@ -724,6 +1056,115 @@ const Index = () => {
       </div>
 
       {assistantPanel}
+
+      {/* Masked Image Preview Dialog */}
+      <AlertApprovalDialog
+        open={alertPreviewOpen}
+        onOpenChange={setAlertPreviewOpen}
+        preview={alertPreview}
+        isLoading={isAlertPreviewLoading}
+        isSending={isAlertSending}
+        onApprove={handleApproveAlertSend}
+      />
+
+      <Dialog open={showMaskedImage} onOpenChange={setShowMaskedImage}>
+        <DialogContent className="w-[min(94vw,1120px)] max-w-none overflow-hidden border-slate-200 bg-white p-0 shadow-2xl">
+          <div className="border-b border-slate-200 bg-gradient-to-r from-emerald-50 via-white to-slate-50 px-5 py-4 sm:px-6">
+            <DialogHeader className="space-y-2 pr-10">
+              <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                  <Shield className="h-4 w-4" />
+                </span>
+                Privacy-Protected Image
+              </DialogTitle>
+              <DialogDescription className="max-w-3xl text-sm leading-6 text-slate-600">
+                This is the prescription page sent to the AI service. Patient identifiers are masked in the header while
+                clinical content remains visible for extraction review.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="grid max-h-[82vh] min-h-[520px] grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-5 xl:border-b-0 xl:border-r sm:px-6">
+              <div className="space-y-5">
+                <div className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Protection</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Header PHI is redacted before external processing. The clinical body stays readable so medications,
+                    vitals, labs, and notes are not lost during extraction.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">What To Check</p>
+                  <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+                    <li>Patient identifiers in the header are blacked out.</li>
+                    <li>Vitals and handwritten notes remain visible.</li>
+                    <li>No body text is masked unintentionally.</li>
+                  </ul>
+                </div>
+
+                <div className="flex gap-2">
+                  <DialogClose asChild>
+                    <Button variant="outline" className="flex-1 border-slate-300 text-slate-700 hover:bg-slate-100">
+                      Close
+                    </Button>
+                  </DialogClose>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex min-h-0 flex-col bg-slate-950">
+              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3 text-white/80 sm:px-5">
+                <div>
+                  <p className="text-sm font-medium text-white">Masked Preview</p>
+                  <p className="text-xs text-white/60">Scrollable review of the exact image used for external extraction</p>
+                </div>
+                <DialogClose asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-white/80 hover:bg-white/10 hover:text-white"
+                  >
+                    Close
+                  </Button>
+                </DialogClose>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-auto p-4 sm:p-5">
+                {maskedPreviewPages.length > 0 ? (
+                  <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col gap-5">
+                    {maskedPreviewPages.map((page) => (
+                      <div key={`${page.pageNumber}-${page.imageRole}`} className="overflow-hidden rounded-2xl border border-white/10 bg-white shadow-2xl">
+                        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                          <span>Page {page.pageNumber}</span>
+                          <span className="rounded-full bg-slate-900 px-2.5 py-1 font-medium text-white">
+                            {page.imageRole === "masked" ? "Masked" : "Original"}
+                          </span>
+                        </div>
+                        <img
+                          src={page.imageUrl}
+                          alt={`Prescription page ${page.pageNumber} used for external extraction`}
+                          className="h-auto w-full object-contain"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex h-full min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 text-center">
+                    <div>
+                      <p className="text-sm font-medium text-white">Masked image unavailable</p>
+                      <p className="mt-2 text-sm text-white/60">
+                        Reprocess the prescription to regenerate the privacy-protected preview.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageWrapper>
   );
 };

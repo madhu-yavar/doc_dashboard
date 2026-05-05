@@ -1,0 +1,189 @@
+{
+  "file": "Doxper.pdf",
+  "timestamp": "2026-04-27T09:34:55.160Z",
+  "pages_processed": 2,
+  "total_tokens": 5512,
+  "merged_data": {
+    "patient_complaints": [
+      {
+        "complaint": "body ache",
+        "duration": null,
+        "severity": null
+      },
+      {
+        "complaint": "headache",
+        "duration": null,
+        "severity": null
+      }
+    ],
+    "history_of_present_illness": "Contact COVID. Aoc.",
+    "observations_findings": [
+      "Any Known Health conditions: No"
+    ],
+    "physical_examination": {
+      "general": null,
+      "specific": []
+    },
+    "diagnosis": {
+      "principal": null,
+      "secondary": [],
+      "provisional": "COVID"
+    },
+    "vitals": {
+      "bp": null,
+      "pulse": null,
+      "temp": null,
+      "weight": null,
+      "spo2": null
+    },
+    "allergies": [
+      "No"
+    ],
+    "medications": [
+      {
+        "name": "UMLEE",
+        "dose": "500",
+        "frequency": "Once daily",
+        "duration": "15 days",
+        "route": "Oral",
+        "instructions": "Take at Noon"
+      },
+      {
+        "name": "ZINCOUT",
+        "dose": "OD",
+        "frequency": "Once daily",
+        "duration": "15 days",
+        "route": "Oral",
+        "instructions": "Take at Night"
+      },
+      {
+        "name": "Cap D-RHE",
+        "dose": "60k",
+        "frequency": "Once weekly",
+        "duration": "12 weeks",
+        "route": "Oral",
+        "instructions": ""
+      },
+      {
+        "name": "MONTEK-LE",
+        "dose": "OD",
+        "frequency": "Once daily",
+        "duration": "5 days",
+        "route": "Oral",
+        "instructions": "Take at Night"
+      },
+      {
+        "name": "DOLO",
+        "dose": "650mg",
+        "frequency": "SOS (as needed)",
+        "duration": "",
+        "route": "Oral",
+        "instructions": "For fever/bodyache"
+      }
+    ],
+    "lab_tests_selected": [],
+    "radiology_tests_selected": [
+      "PET - CT"
+    ],
+    "procedures_selected": [],
+    "instructions_notes": null,
+    "follow_up": null
+  },
+  "page_results": [
+    {
+      "page": 1,
+      "data": {
+        "patient_complaints": [
+          {
+            "complaint": "body ache",
+            "duration": null,
+            "severity": null
+          },
+          {
+            "complaint": "headache",
+            "duration": null,
+            "severity": null
+          }
+        ],
+        "history_of_present_illness": "Contact COVID. Aoc.",
+        "observations_findings": [
+          "Any Known Health conditions: No"
+        ],
+        "physical_examination": {
+          "general": null,
+          "specific": []
+        },
+        "diagnosis": {
+          "principal": null,
+          "secondary": [],
+          "provisional": "COVID"
+        },
+        "vitals": {
+          "bp": null,
+          "pulse": null,
+          "temp": null,
+          "weight": null,
+          "spo2": null
+        },
+        "allergies": [
+          "No"
+        ],
+        "other_notes_page1": null
+      }
+    },
+    {
+      "page": 2,
+      "data": {
+        "medications": [
+          {
+            "name": "UMLEE",
+            "dose": "500",
+            "frequency": "Once daily",
+            "duration": "15 days",
+            "route": "Oral",
+            "instructions": "Take at Noon"
+          },
+          {
+            "name": "ZINCOUT",
+            "dose": "OD",
+            "frequency": "Once daily",
+            "duration": "15 days",
+            "route": "Oral",
+            "instructions": "Take at Night"
+          },
+          {
+            "name": "Cap D-RHE",
+            "dose": "60k",
+            "frequency": "Once weekly",
+            "duration": "12 weeks",
+            "route": "Oral",
+            "instructions": ""
+          },
+          {
+            "name": "MONTEK-LE",
+            "dose": "OD",
+            "frequency": "Once daily",
+            "duration": "5 days",
+            "route": "Oral",
+            "instructions": "Take at Night"
+          },
+          {
+            "name": "DOLO",
+            "dose": "650mg",
+            "frequency": "SOS (as needed)",
+            "duration": "",
+            "route": "Oral",
+            "instructions": "For fever/bodyache"
+          }
+        ],
+        "lab_tests_selected": [],
+        "radiology_tests_selected": [
+          "PET - CT"
+        ],
+        "procedures_selected": [],
+        "instructions_notes": "",
+        "follow_up": ""
+      }
+    }
+  ]
+}

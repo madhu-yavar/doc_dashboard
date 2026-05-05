@@ -193,10 +193,11 @@ class CrossValidatorSkill {
     return {
       inconsistencies: inconsistencies,
       missing: missing,
-      confidence_level: inconsistencies.length === 0 ? "high" : "medium",
-      data_quality_notes: inconsistencies.length > 0 ?
-        `Found ${inconsistencies.length} inconsistencies, ${missing.length} missing fields` :
-        "All data consistent"
+      confidence_level: inconsistencies.length === 0 && missing.length === 0 ? "high" : "medium",
+      data_quality_notes:
+        inconsistencies.length > 0 || missing.length > 0
+          ? `Found ${inconsistencies.length} inconsistencies and ${missing.length} missing critical fields`
+          : "All data consistent"
     };
   }
 
@@ -210,20 +211,22 @@ class CrossValidatorSkill {
 
   hasVitalsBp(vitals = {}) {
     if (!vitals || typeof vitals !== "object") return false;
+    const hasMeaningfulVital = (value) =>
+      typeof value === "number" ? value > 0 : this.hasValue(value);
 
     const latestBp = vitals.latest?.bp;
-    if (latestBp && (this.hasValue(latestBp.systolic) || this.hasValue(latestBp.diastolic))) {
+    if (latestBp && (hasMeaningfulVital(latestBp.systolic) || hasMeaningfulVital(latestBp.diastolic))) {
       return true;
     }
 
     const directBp = vitals.bp;
-    if (directBp && (this.hasValue(directBp.systolic) || this.hasValue(directBp.diastolic))) {
+    if (directBp && (hasMeaningfulVital(directBp.systolic) || hasMeaningfulVital(directBp.diastolic))) {
       return true;
     }
 
     if (Array.isArray(vitals.readings)) {
       return vitals.readings.some(
-        (reading) => this.hasValue(reading?.bp_systolic) || this.hasValue(reading?.bp_diastolic)
+        (reading) => hasMeaningfulVital(reading?.bp_systolic) || hasMeaningfulVital(reading?.bp_diastolic)
       );
     }
 

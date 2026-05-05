@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ClipboardList, Eye, FileText, FileStack, Search, Sparkles, Trash2, Upload } from "lucide-react";
+import { ClipboardList, Eye, FileText, FileStack, RefreshCw, Search, Sparkles, Trash2, Upload, Key } from "lucide-react";
 
 import AuditTrailSheet from "@/components/dashboard/AuditTrailSheet";
+import { HandwritingCompletionDialog } from "@/components/dashboard/HandwritingCompletionDialog";
+import ProcessingInsights from "@/components/dashboard/ProcessingInsights";
+import PharmacyAlertBadge from "@/components/dashboard/PharmacyAlertBadge";
+import DepartmentAlertBadge from "@/components/dashboard/DepartmentAlertBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,16 +20,18 @@ import {
   type ProcessedDocument,
   type QueueStatus,
 } from "@/lib/processedDocuments";
+import { fetchLandingAnalyticsOverview, type LandingAnalyticsOverview } from "@/lib/landingAnalytics";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 
-type QueueTab = "all" | "queued" | "processed" | "failed";
+type QueueTab = "all" | "queued" | "processed" | "failed" | "partial";
 
 const statusClasses: Record<QueueStatus, string> = {
   queued: "border-transparent bg-emerald-50 text-emerald-700",
   processing: "border-transparent bg-amber-50 text-amber-700",
   processed: "border-transparent bg-blue-50 text-blue-700",
   failed: "border-transparent bg-red-50 text-red-700",
+  partial: "border-transparent bg-purple-50 text-purple-700",
 };
 
 const statusLabels: Record<QueueStatus, string> = {
@@ -33,6 +39,7 @@ const statusLabels: Record<QueueStatus, string> = {
   processing: "Processing",
   processed: "Processed",
   failed: "Failed",
+  partial: "Needs API Key",
 };
 
 const UploadCenter = () => {
@@ -44,15 +51,56 @@ const UploadCenter = () => {
   const [searchValue, setSearchValue] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [analyticsOverview, setAnalyticsOverview] = useState<LandingAnalyticsOverview | null>(null);
   const [processingProgress, setProcessingProgress] = useState<Record<string, {
     stepNumber: number;
     totalSteps: number;
     tokensUsed: number;
     stepName: string;
   }>>({});
+  const [geminiApiKey, setGeminiApiKey] = useState("");
+
+  // Handwriting completion dialog state
+  const [handwritingDialog, setHandwritingDialog] = useState<{
+    open: boolean;
+    documentId: string;
+    documentName: string;
+    maskedImageUrl?: string;
+    maskedImagePages?: Array<{
+      pageNumber: number;
+      imageUrl: string;
+      imageRole: "masked" | "original";
+    }>;
+    phiRegions?: Array<{
+      type: string;
+      bounding_box: { x: number; y: number; width: number; height: number };
+    }>;
+    stage3Policy?: string;
+    stage3TriggerReason?: string;
+  }>({
+    open: false,
+    documentId: "",
+    documentName: "",
+    maskedImagePages: [],
+  });
+
+  const logClientStage = (
+    level: "log" | "info" | "warn" | "error",
+    message: string,
+    details?: unknown
+  ) => {
+    const timestamp = new Date().toISOString();
+    const prefix = `[UploadCenter][${timestamp}] ${message}`;
+    if (details === undefined) {
+      console[level](prefix);
+      return;
+    }
+    console[level](prefix, details);
+  };
 
   const loadDocuments = async () => {
     const response = await fetch(`${API_BASE}/documents`);
@@ -63,6 +111,11 @@ const UploadCenter = () => {
     setDocuments(payload.documents ?? []);
   };
 
+  const loadAnalytics = async () => {
+    const overview = await fetchLandingAnalyticsOverview();
+    setAnalyticsOverview(overview);
+  };
+
   useEffect(() => {
     loadDocuments()
       .catch((error) => {
@@ -70,6 +123,14 @@ const UploadCenter = () => {
       })
       .finally(() => {
         setIsLoadingDocuments(false);
+      });
+
+    loadAnalytics()
+      .catch((error) => {
+        toast.error(error instanceof Error ? error.message : "Unable to load processing insights.");
+      })
+      .finally(() => {
+        setIsLoadingAnalytics(false);
       });
   }, []);
 
@@ -83,7 +144,8 @@ const UploadCenter = () => {
         activeTab === "all" ||
         (activeTab === "queued" && document.status === "queued") ||
         (activeTab === "processed" && document.status === "processed") ||
-        (activeTab === "failed" && document.status === "failed");
+        (activeTab === "failed" && document.status === "failed") ||
+        (activeTab === "partial" && document.status === "partial");
       return matchesTab && matchesProcessedDocumentQuery(document, searchValue);
     });
   }, [activeTab, documents, searchValue]);
@@ -95,6 +157,7 @@ const UploadCenter = () => {
       processing: documents.filter((document) => document.status === "processing").length,
       processed: documents.filter((document) => document.status === "processed").length,
       failed: documents.filter((document) => document.status === "failed").length,
+      partial: documents.filter((document) => document.status === "partial").length,
     };
   }, [documents]);
 
@@ -153,17 +216,25 @@ const UploadCenter = () => {
 
     try {
       setIsUploading(true);
+      logClientStage("info", `Uploading ${pdfFiles.length} PDF file(s)`, {
+        files: pdfFiles.map((file) => ({ name: file.name, size: file.size })),
+      });
       const response = await fetch(`${API_BASE}/documents/upload`, {
         method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
+        logClientStage("error", "Upload request failed", { status: response.status, statusText: response.statusText });
         throw new Error("Upload failed.");
       }
 
       const result = await response.json();
       const { documents: uploaded, duplicates = [] } = result;
+      logClientStage("info", "Upload request completed", {
+        uploaded: uploaded.map((doc: ProcessedDocument) => ({ id: doc.id, name: doc.name, status: doc.status })),
+        duplicates,
+      });
 
       await loadDocuments();
       setActiveTab("all");
@@ -214,8 +285,13 @@ const UploadCenter = () => {
 
     setIsProcessingBatch(true);
     setProcessingProgress({});
+    logClientStage("info", `Starting batch processing for ${queuedDocuments.length} document(s)`, {
+      documents: queuedDocuments.map((document) => ({ id: document.id, name: document.name, status: document.status })),
+      hasGeminiApiKey: Boolean(geminiApiKey),
+    });
 
-    const MAX_CONCURRENT = 3;
+    // Gemma 31B is currently stable only when inpatient/discharge runs are serialized.
+    const MAX_CONCURRENT = 1;
     const chunks = [];
     for (let i = 0; i < queuedDocuments.length; i += MAX_CONCURRENT) {
       chunks.push(queuedDocuments.slice(i, i + MAX_CONCURRENT));
@@ -223,6 +299,10 @@ const UploadCenter = () => {
 
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       const chunk = chunks[chunkIndex];
+      logClientStage("info", `Dispatching processing chunk ${chunkIndex + 1}/${chunks.length}`, {
+        chunkSize: chunk.length,
+        documents: chunk.map((document) => ({ id: document.id, name: document.name })),
+      });
 
       setDocuments((current) =>
         current.map((document) =>
@@ -236,32 +316,95 @@ const UploadCenter = () => {
 
       await Promise.all(chunk.map(async (document) => {
         try {
-          const eventSource = new EventSource(`${API_BASE}/documents/process/progress?documentId=${document.id}`);
+          const eventSourceUrl = geminiApiKey
+            ? `${API_BASE}/documents/process/progress?documentId=${document.id}&geminiApiKey=${encodeURIComponent(geminiApiKey)}`
+            : `${API_BASE}/documents/process/progress?documentId=${document.id}`;
+          logClientStage("info", `Opening SSE stream for ${document.name}`, {
+            documentId: document.id,
+            hasGeminiApiKey: Boolean(geminiApiKey),
+          });
+          const eventSource = new EventSource(eventSourceUrl);
+
+          eventSource.onopen = () => {
+            logClientStage("info", `SSE stream opened for ${document.name}`, { documentId: document.id });
+          };
 
           eventSource.onmessage = (event) => {
             try {
               const data = JSON.parse(event.data);
+              logClientStage("info", `SSE event for ${document.name}`, {
+                documentId: document.id,
+                type: data.type,
+                stage: data.stage,
+                step: data.step || data.stepName,
+                stepNumber: data.stepNumber,
+                totalSteps: data.totalSteps,
+                status: data.status,
+                tokens: data.data?.tokens,
+                tokensUsed: data.tokensUsed,
+                error: data.error,
+              });
               switch (data.type) {
+                case 'start':
+                  setProcessingProgress(prev => ({
+                    ...prev,
+                    [document.id]: {
+                      stepNumber: prev[document.id]?.stepNumber || 0,
+                      totalSteps: data.totalSteps || 5,
+                      tokensUsed: prev[document.id]?.tokensUsed || 0,
+                      stepName: data.stage === 'stage1' ? 'Processing Header' :
+                                data.stage === 'stage2' ? 'Masking PHI' :
+                                data.stage === 'stage3' ? 'Extracting Handwriting' :
+                                data.stage === 'stage4' ? 'Integrating Data' :
+                                'Starting...'
+                    }
+                  }));
+                  break;
                 case 'step':
                   setProcessingProgress(prev => ({
                     ...prev,
                     [document.id]: {
-                      stepNumber: data.stepNumber,
-                      totalSteps: data.totalSteps,
+                      stepNumber: data.stepNumber || prev[document.id]?.stepNumber || 1,
+                      totalSteps: data.totalSteps || prev[document.id]?.totalSteps || 5,
                       tokensUsed: (prev[document.id]?.tokensUsed || 0) + (data.data?.tokens || 0),
-                      stepName: formatStepName(data.step)
+                      stepName: formatStepName(data.step || data.stepName || 'Processing')
+                    }
+                  }));
+                  break;
+                case 'complete':
+                  setProcessingProgress(prev => ({
+                    ...prev,
+                    [document.id]: {
+                      stepNumber: prev[document.id]?.stepNumber || data.totalSteps || 0,
+                      totalSteps: prev[document.id]?.totalSteps || data.totalSteps || 5,
+                      tokensUsed: Math.max(prev[document.id]?.tokensUsed || 0, data.tokensUsed || 0),
+                      stepName: 'Finalizing'
                     }
                   }));
                   break;
                 case 'done':
+                  logClientStage("info", `Processing completed for ${document.name}`, {
+                    documentId: document.id,
+                    finalStatus: data.document?.status,
+                  });
                   setDocuments((current) =>
                     current.map((doc) =>
                       doc.id === document.id ? { ...data.document } : doc
                     ),
                   );
+                  // Clear progress state when done
+                  setProcessingProgress(prev => {
+                    const newProgress = { ...prev };
+                    delete newProgress[document.id];
+                    return newProgress;
+                  });
                   eventSource.close();
                   break;
                 case 'error':
+                  logClientStage("error", `Processing failed for ${document.name}`, {
+                    documentId: document.id,
+                    error: data.error,
+                  });
                   toast.error(`${document.name}: ${data.error}`);
                   setDocuments((current) =>
                     current.map((doc) =>
@@ -270,6 +413,12 @@ const UploadCenter = () => {
                         : doc
                     ),
                   );
+                  // Clear progress state on error
+                  setProcessingProgress(prev => {
+                    const newProgress = { ...prev };
+                    delete newProgress[document.id];
+                    return newProgress;
+                  });
                   eventSource.close();
                   break;
               }
@@ -279,6 +428,7 @@ const UploadCenter = () => {
           };
 
           eventSource.onerror = () => {
+            logClientStage("warn", `SSE stream error/closed for ${document.name}`, { documentId: document.id });
             eventSource.close();
           };
 
@@ -289,23 +439,42 @@ const UploadCenter = () => {
                 if (response.ok) {
                   const payload = await response.json();
                   const currentDoc = payload.documents?.find((d: any) => d.id === document.id);
-                  if (currentDoc && (currentDoc.status === 'processed' || currentDoc.status === 'failed')) {
+                  // Also consider 'partial' status as complete (when Stage 3 was skipped)
+                  if (currentDoc && (currentDoc.status === 'processed' || currentDoc.status === 'failed' || currentDoc.status === 'partial')) {
+                    logClientStage("info", `Polling observed terminal state for ${document.name}`, {
+                      documentId: document.id,
+                      status: currentDoc.status,
+                      error: currentDoc.error,
+                    });
                     clearInterval(checkInterval);
                     setDocuments((current) =>
                       current.map((doc) =>
                         doc.id === document.id ? currentDoc : doc
                       ),
                     );
+                    // Clear progress state when done
+                    setProcessingProgress(prev => {
+                      const newProgress = { ...prev };
+                      delete newProgress[document.id];
+                      return newProgress;
+                    });
                     eventSource.close();
                     resolve();
                   }
                 }
               } catch (e) {
-                // Ignore polling errors
+                logClientStage("warn", `Polling error for ${document.name}`, {
+                  documentId: document.id,
+                  error: e instanceof Error ? e.message : String(e),
+                });
               }
             }, 2000);
 
             setTimeout(() => {
+              logClientStage("warn", `Processing timeout reached for ${document.name}`, {
+                documentId: document.id,
+                timeoutMs: 300000,
+              });
               clearInterval(checkInterval);
               eventSource.close();
               resolve();
@@ -313,14 +482,20 @@ const UploadCenter = () => {
           });
 
         } catch (error) {
+          logClientStage("error", `Processing request failed for ${document.name}`, {
+            documentId: document.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
           toast.error(`${document.name}: ${error instanceof Error ? error.message : 'Processing failed'}`);
         }
       }));
     }
 
     await loadDocuments();
+    await loadAnalytics();
     setIsProcessingBatch(false);
     setProcessingProgress({});
+    logClientStage("info", "Batch processing flow completed");
     toast.success(`Batch processing complete.`);
   };
 
@@ -330,6 +505,19 @@ const UploadCenter = () => {
 
   const handleProcessSelected = async () => {
     await processDocuments(selectedQueuedDocuments);
+  };
+
+  const handleReprocess = async (documentId: string) => {
+    const document = documents.find((d) => d.id === documentId);
+    if (!document) return;
+
+    try {
+      setIsProcessingBatch(true);
+      logClientStage("info", `Reprocessing failed document: ${document.name}`, { documentId });
+      await processDocuments([document]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Reprocess failed.");
+    }
   };
 
   const formatStepName = (step: string) => {
@@ -344,6 +532,7 @@ const UploadCenter = () => {
       }
       setDocuments((current) => current.filter((document) => document.id !== id));
       setSelectedIds((current) => current.filter((currentId) => currentId !== id));
+      await loadAnalytics();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to delete document.");
     }
@@ -370,10 +559,67 @@ const UploadCenter = () => {
     if (failedDeletes < selectedIds.length) {
       setDocuments((current) => current.filter((document) => !selectedIdSet.has(document.id)));
       setSelectedIds([]);
+      await loadAnalytics();
       toast.success(
         `${selectedIds.length - failedDeletes} document${selectedIds.length - failedDeletes > 1 ? "s" : ""} deleted.`,
       );
     }
+  };
+
+  const handleCompleteHandwriting = async (documentId: string) => {
+    const document = documents.find((d) => d.id === documentId);
+    if (!document) return;
+
+    // Get metadata for PHI regions and error messages
+    const metadata = document.result?.meta;
+    const userActionPrompt = metadata?.user_action_prompt;
+
+    // Show error toast if Stage 3 failed with an error
+    if (userActionPrompt?.error_type && userActionPrompt.error_type !== "no_api_key") {
+      toast.error(userActionPrompt.title, {
+        description: userActionPrompt.message?.substring(0, 200) + (userActionPrompt.message?.length > 200 ? "..." : ""),
+      });
+    }
+
+    // Get Stage 3 policy metadata
+    const stage3Policy = metadata?.stage3_policy || "detected";
+    const stage3TriggerReason = metadata?.stage3_trigger_reason || "unknown";
+
+    const phiRegions = metadata?.stage2_masking?.masked_types
+      ? metadata.stage2_masking.masked_types.map((type: string) => ({
+          type,
+          bounding_box: { x: 0, y: 0, width: 0, height: 0 },
+        }))
+      : [];
+
+    // Check for masked image path
+    const maskedImagePath = metadata?.stage2_masking?.masked_image_path;
+    // Build full URL for masked image - need to include backend origin if in dev mode
+    const backendOrigin = import.meta.env.VITE_API_URL || window.location.origin;
+    const maskedImagePages = Array.isArray(metadata?.stage2_masking?.review_pages)
+      ? metadata.stage2_masking.review_pages
+          .map((page: { page_number?: number; image_path?: string; image_role?: "masked" | "original" }) => ({
+            pageNumber: page.page_number || 0,
+            imageUrl: page.image_path ? `${backendOrigin}/storage/masked_images/${page.image_path}` : "",
+            imageRole: page.image_role === "original" ? "original" : "masked",
+          }))
+          .filter((page: { imageUrl: string }) => Boolean(page.imageUrl))
+          .sort((a: { pageNumber: number }, b: { pageNumber: number }) => a.pageNumber - b.pageNumber)
+      : [];
+    const maskedImageUrl = maskedImagePath
+      ? `${backendOrigin}/storage/masked_images/${maskedImagePath}`
+      : undefined;
+
+    setHandwritingDialog({
+      open: true,
+      documentId,
+      documentName: document.name,
+      maskedImageUrl,
+      maskedImagePages,
+      phiRegions,
+      stage3Policy,
+      stage3TriggerReason,
+    });
   };
 
   return (
@@ -389,6 +635,8 @@ const UploadCenter = () => {
 
       <main className="mx-auto max-w-7xl px-5 py-6">
         <div className="grid gap-6">
+          <ProcessingInsights analytics={analyticsOverview} isLoading={isLoadingAnalytics} />
+
           {/* Upload Area */}
           <Card>
             <CardContent className="p-6">
@@ -461,8 +709,19 @@ const UploadCenter = () => {
           <Card>
             <div className="p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex flex-col gap-3">
+                {/* Gemini API Key Input */}
                 <div className="flex items-center gap-2">
-                  {["all", "queued", "processed", "failed"].map((tab) => (
+                  <Key className="h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="password"
+                    placeholder="Gemini API Key (for Stage 3 handwriting extraction)"
+                    value={geminiApiKey}
+                    onChange={(e) => setGeminiApiKey(e.target.value)}
+                    className="h-8 w-64 text-sm"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  {["all", "queued", "processed", "failed", "partial"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab as QueueTab)}
@@ -564,11 +823,24 @@ const UploadCenter = () => {
                               <FileText className="h-5 w-5 text-muted-foreground" />
                               <div>
                                 <p className="font-medium">{document.name}</p>
-                                {patientName && (
-                                  <p className="text-xs text-muted-foreground">
-                                    {patientName}{mrn ? ` · MRN ${mrn}` : ""}
-                                  </p>
-                                )}
+                                <div className="flex items-center gap-2">
+                                  {patientName && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {patientName}{mrn ? ` · MRN ${mrn}` : ""}
+                                    </p>
+                                  )}
+                                  {/* Alert Badges */}
+                                  <div className="flex items-center gap-1">
+                                    {/* Pharmacy Alert Badge */}
+                                    {(document.result?.pharmacyAlert || document.result?.pharmacy_alert) && (
+                                      <PharmacyAlertBadge pharmacyAlert={document.result?.pharmacyAlert || document.result?.pharmacy_alert} compact />
+                                    )}
+                                    {/* Department Alert Badge */}
+                                    {(document.result?.departmentAlerts || document.result?.department_alerts) && (
+                                      <DepartmentAlertBadge departmentAlerts={document.result?.departmentAlerts || document.result?.department_alerts} compact />
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </TableCell>
@@ -582,8 +854,20 @@ const UploadCenter = () => {
                                 </div>
                                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                   <span>{processingProgress[document.id].stepNumber}/{processingProgress[document.id].totalSteps}</span>
-                                  <span>· {processingProgress[document.id].tokensUsed.toLocaleString()} tokens</span>
+                                  <span>
+                                    · {processingProgress[document.id].tokensUsed > 0
+                                      ? `${processingProgress[document.id].tokensUsed.toLocaleString()} tokens`
+                                      : 'tokens pending'}
+                                  </span>
                                 </div>
+                              </div>
+                            ) : document.status === "partial" && document.result?.meta?.user_action_prompt?.error_type ? (
+                              <div className="flex items-center gap-2">
+                                <Badge className={statusClasses[document.status]}>{statusLabels[document.status]}</Badge>
+                                <span className="text-xs text-orange-600 dark:text-orange-400" title={document.result.meta.user_action_prompt.message}>
+                                  {document.result.meta.user_action_prompt.error_type === 'quota_exceeded' ? '⚠️ Quota' :
+                                   document.result.meta.user_action_prompt.error_type === 'extraction_failed' ? '⚠️ Failed' : '⚠️'}
+                                </span>
                               </div>
                             ) : (
                               <Badge className={statusClasses[document.status]}>{statusLabels[document.status]}</Badge>
@@ -601,14 +885,38 @@ const UploadCenter = () => {
                                   </Button>
                                 }
                               />
+                              {document.status === "partial" && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Complete handwriting extraction"
+                                  onClick={() => handleCompleteHandwriting(document.id)}
+                                >
+                                  <Key className="h-4 w-4 text-purple-600" />
+                                </Button>
+                              )}
+                              {document.status === "failed" && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  title="Reprocess document"
+                                  onClick={() => handleReprocess(document.id)}
+                                  disabled={isProcessingBatch}
+                                >
+                                  <RefreshCw className="h-4 w-4 text-amber-600" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() =>
-                                  document.status === "processed"
-                                    ? navigate(`/dashboard?documentId=${document.id}`)
-                                    : toast.info("Process this document first.")
-                                }
+                                onClick={() => {
+                                  if (document.status === "processed" || document.status === "partial") {
+                                    navigate(`/dashboard?documentId=${document.id}`);
+                                  } else {
+                                    toast.info("Process this document first.");
+                                  }
+                                }}
+                                disabled={document.status === "queued" || document.status === "processing" || document.status === "failed"}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -632,6 +940,23 @@ const UploadCenter = () => {
           </Card>
         </div>
       </main>
+
+      {/* Handwriting Completion Dialog */}
+      <HandwritingCompletionDialog
+        open={handwritingDialog.open}
+        onOpenChange={(open) => setHandwritingDialog(prev => ({ ...prev, open }))}
+        onCompleted={async () => {
+          await loadDocuments();
+          await loadAnalytics();
+        }}
+        documentName={handwritingDialog.documentName}
+        documentId={handwritingDialog.documentId}
+        maskedImageUrl={handwritingDialog.maskedImageUrl}
+        maskedImagePages={handwritingDialog.maskedImagePages}
+        phiRegions={handwritingDialog.phiRegions}
+        stage3Policy={handwritingDialog.stage3Policy}
+        stage3TriggerReason={handwritingDialog.stage3TriggerReason}
+      />
     </div>
   );
 };

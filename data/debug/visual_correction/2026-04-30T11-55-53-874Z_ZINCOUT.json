@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-04-30T11:55:53.874Z",
+  "medication_name": "ZINCOUT",
+  "error_message": "Unable to parse model JSON response",
+  "raw_response": "{\n  \"corrected_brand\": \"ZINCOVIT\",\n  \"generic_name\": \"Multivitamin, Multimineral, and Zinc\",\n  \"confidence\": \"high\",\n  \"reasoning\": \"The medication name 'ZINCOUT' is not a recognized pharmaceutical brand. Upon careful re-examination of the",
+  "response_length": 239,
+  "response_preview": "{\n  \"corrected_brand\": \"ZINCOVIT\",\n  \"generic_name\": \"Multivitamin, Multimineral, and Zinc\",\n  \"confidence\": \"high\",\n  \"reasoning\": \"The medication name 'ZINCOUT' is not a recognized pharmaceutical br"
+}

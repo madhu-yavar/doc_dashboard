@@ -297,4 +297,146 @@ describe("transformProcessedDocument", () => {
       "ECG: WNL",
     ]);
   });
+
+  it("does not duplicate source notes in the handover section cards", () => {
+    const transformed = transformProcessedDocument(
+      createProcessedDocument({
+        result: {
+          meta: {
+            pdf_file: "report.pdf",
+            department_type: "General",
+          },
+          sample_patient_data: {
+            name: "Test Patient",
+            age: 50,
+            mrn: "MRN-1",
+            admission_date: "2026-04-01",
+            discharge_date: "2026-04-05",
+          },
+          dashboard_cards: {},
+          extracted_data: {
+            patient: {
+              gender: "Male",
+            },
+            clinical_notes: [
+              {
+                type: "Handover Note",
+                author: "Dr. A",
+                date: "2026-04-05",
+                summary: "**Watch closely** for overnight desaturation.",
+                recommendations: "- Repeat pulse oximetry\n- Escalate if SpO2 drops",
+              },
+            ],
+          },
+        },
+      }),
+    );
+
+    expect(transformed.clinicalNotes.notes).toHaveLength(1);
+    expect(transformed.clinicalNotes.handover.sections.map((section) => section.title)).not.toContain("Source Notes");
+  });
+
+  it("preserves hospital number and exact department from stage1 prescription data", () => {
+    const transformed = transformProcessedDocument(
+      createProcessedDocument({
+        result: {
+          meta: {
+            pdf_file: "Prescription_04.pdf",
+            document_type: "prescription",
+            visit_type: "OPD",
+          },
+          sample_patient_data: {
+            name: "",
+            age: null,
+            mrn: "",
+            admission_date: "",
+            discharge_date: "",
+          },
+          dashboard_cards: {},
+          extracted_data: {
+            stage1: {
+              patient: {
+                name: "MR TEST PATIENT",
+                age: 59,
+                gender: "Male",
+                hospital_no: "MH000004664",
+              },
+              visit: {
+                department: "NEUROLOGY MHB",
+                visit_type: "OPD",
+                episode_number: "O00011843893",
+              },
+              doctor: {
+                specialty: "NEUROLOGY",
+              },
+              phi: {
+                hospital_no: "MH000004664",
+              },
+            },
+          },
+        },
+      }),
+    );
+
+    expect(transformed.patient.name).toBe("MR TEST PATIENT");
+    expect(transformed.patient.mrn).toBe("MH000004664");
+    expect(transformed.admission.department).toBe("NEUROLOGY MHB");
+    expect(transformed.admission.admissionDate).toBe("");
+  });
+
+  it("does not fabricate source-backed vitals for sparse outpatient prescriptions", () => {
+    const transformed = transformProcessedDocument(
+      createProcessedDocument({
+        result: {
+          meta: {
+            pdf_file: "Prescription_03.pdf",
+            document_type: "prescription",
+          },
+          sample_patient_data: {
+            name: "MRS HELEN MARTIS",
+            age: 77,
+            mrn: "MH000003683",
+            admission_date: "",
+            discharge_date: "",
+          },
+          dashboard_cards: {
+            vitals_card: {
+              summary: {
+                latest_bp: "",
+                pulse: null,
+                temp: null,
+                spo2: null,
+              },
+              data_points: 0,
+            },
+          },
+          extracted_data: {
+            vitals: {
+              latest: {
+                bp: { systolic: 0, diastolic: 0 },
+                pulse: { value: 0 },
+                temperature: { value: 0 },
+                spo2: { value: 0 },
+                resp_rate: { value: 0 },
+              },
+              has_vitals: false,
+            },
+          },
+          presentation: {
+            summary_cards: {
+              vitals: {
+                headline_metric: "0/0 mmHg",
+                secondary_line: "Pulse 0 bpm",
+                supporting_points: ["SpO2 0%"],
+                status: "warning",
+              },
+            },
+          },
+        },
+      }),
+    );
+
+    expect(transformed.presentation.summaryCards.vitals.headlineMetric).toBe("");
+    expect(transformed.presentation.summaryCards.vitals.supportingPoints).toContain("No source-backed vitals documented.");
+  });
 });

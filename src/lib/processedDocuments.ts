@@ -2,10 +2,104 @@ import { normalizeRiskEntry, normalizeRiskLevel } from "@/lib/riskNormalization"
 import type { DashboardPatientData } from "@/data/patientData";
 
 const API_ROOT = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+const BACKEND_ORIGIN = API_ROOT || (typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : "");
+
+// Extend DashboardPatientData to include card activation and masked image info
+declare module "@/data/patientData" {
+  export interface DashboardPatientData {
+    cardActivation?: {
+      documentType?: string;
+      activeCards?: string[];
+      inactiveCards?: string[];
+      hiddenCards?: string[];
+      states?: Record<string, CardActivationState>;
+    };
+    // Masked image for privacy verification
+    maskedImageUrl?: string;
+    maskedImagePath?: string;
+    maskedImagePages?: Array<{
+      pageNumber: number;
+      imageUrl: string;
+      imagePath?: string | null;
+      imageRole: "masked" | "original";
+      sentToExternal: boolean;
+    }>;
+    // Pharmacy alert information
+    pharmacyAlert?: {
+      sent?: boolean;
+      email_sent?: boolean;
+      whatsapp_sent?: boolean;
+      skipped?: boolean;
+      skip_reason?: string | null;
+      medications_count?: number;
+    } | null;
+    // Department alerts information (Lab, Radiology, Nuclear Medicine, Procedures)
+    departmentAlerts?: {
+      sent?: boolean;
+      skipped?: boolean;
+      skip_reason?: string | null;
+      error?: string | null;
+      departments?: {
+        lab?: { sent?: boolean; itemCount?: number };
+        radiology?: { sent?: boolean; itemCount?: number };
+        nuclear_medicine?: { sent?: boolean; itemCount?: number };
+        procedures?: { sent?: boolean; itemCount?: number };
+      };
+    } | null;
+  }
+}
 
 export const API_BASE = `${API_ROOT}/api`;
 
-export type QueueStatus = "queued" | "processing" | "processed" | "failed";
+const resolveMaskedImageUrl = (
+  maskedImageUrl?: string | null,
+  maskedImagePath?: string | null
+) => {
+  const normalizeUrl = (value?: string | null) => {
+    if (!value) return null;
+    if (/^https?:\/\//i.test(value) || value.startsWith("data:")) return value;
+    if (value.startsWith("/")) return `${BACKEND_ORIGIN}${value}`;
+    return `${BACKEND_ORIGIN}/storage/masked_images/${value.split("/").pop()}`;
+  };
+
+  return normalizeUrl(maskedImageUrl) || normalizeUrl(maskedImagePath);
+};
+
+const resolveMaskedImagePages = (
+  pages?: Array<{
+    page_number?: number;
+    image_url?: string | null;
+    image_path?: string | null;
+    image_role?: "masked" | "original";
+    sent_to_external?: boolean;
+  }> | null
+) => {
+  if (!Array.isArray(pages)) return [];
+
+  return pages
+    .map((page) => {
+      const imageUrl = resolveMaskedImageUrl(page.image_url, page.image_path);
+      if (!imageUrl) return null;
+
+      return {
+        pageNumber: typeof page.page_number === "number" ? page.page_number : 0,
+        imageUrl,
+        imagePath: page.image_path || null,
+        imageRole: page.image_role === "original" ? "original" : "masked",
+        sentToExternal: page.sent_to_external !== false,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.pageNumber - b.pageNumber) as Array<{
+      pageNumber: number;
+      imageUrl: string;
+      imagePath?: string | null;
+      imageRole: "masked" | "original";
+      sentToExternal: boolean;
+    }>;
+};
+
+export type QueueStatus = "queued" | "processing" | "processed" | "failed" | "partial";
 
 export type GemmaDashboardResult = {
   meta?: {
@@ -354,6 +448,7 @@ export type GemmaDashboardResult = {
       trend?: string;
       data_points?: number;
       has_alerts?: boolean;
+      _activation?: { state?: 'active' | 'inactive' | 'hidden'; documentType?: string };
     };
     diagnosis_card?: {
       principal_diagnosis?: string;
@@ -361,6 +456,7 @@ export type GemmaDashboardResult = {
       secondary_count?: number;
       secondary_diagnoses?: string[];
       procedures_count?: number;
+      _activation?: { state?: 'active' | 'inactive' | 'hidden'; documentType?: string };
     };
     medications_card?: {
       active_count?: number;
@@ -368,6 +464,7 @@ export type GemmaDashboardResult = {
       allergies?: Array<string | { name?: string; status?: string; severity?: string; reaction?: string }>;
       categories?: Array<string | { name?: string; count?: number }>;
       medication_list?: Array<{ name?: string; dose?: string; frequency?: string }>;
+      _activation?: { state?: 'active' | 'inactive' | 'hidden'; documentType?: string };
     };
     labs_card?: {
       total_tests?: number;
@@ -379,11 +476,13 @@ export type GemmaDashboardResult = {
       investigations_list?: Array<string | { test_name?: string; finding?: string; test?: string; value?: string }>;
       has_results?: boolean;
       note?: string;
+      _activation?: { state?: 'active' | 'inactive' | 'hidden'; documentType?: string };
     };
     radiology_card?: {
       studies_completed?: number;
       critical_findings?: number;
       key_finding?: string;
+      _activation?: { state?: 'active' | 'inactive' | 'hidden'; documentType?: string };
     };
     treatment_card?: {
       procedures_performed?: number;
@@ -392,6 +491,7 @@ export type GemmaDashboardResult = {
       current_approach?: string;
       management_items?: string[];
       complications_count?: number;
+      _activation?: { state?: 'active' | 'inactive' | 'hidden'; documentType?: string };
     };
     clinical_notes_card?: {
       total_notes?: number;
@@ -410,25 +510,70 @@ export type GemmaDashboardResult = {
         handed_over_by?: string;
         handed_over_to?: string;
         source_excerpt?: string[];
+        source_type?: string;
+        is_synthetic?: boolean;
+        page_number?: number | null;
+        confidence?: string;
+        confidence_reason?: string;
+        is_inferred?: boolean;
       }>;
+      _activation?: { state?: 'active' | 'inactive' | 'hidden'; documentType?: string };
     };
     discharge_plan_card?: {
       condition?: string;
       instruction_count?: number;
       red_flags?: number;
+      _activation?: { state?: 'active' | 'inactive' | 'hidden'; documentType?: string };
     };
     follow_up_card?: {
       next_appointment?: string;
       appointment_count?: number;
+      _activation?: { state?: 'active' | 'inactive' | 'hidden'; documentType?: string };
     };
   };
+  card_activation?: {
+    documentType?: string;
+    activeCards?: string[];
+    hiddenCards?: string[];
+    inactiveCards?: string[];
+  };
+  masked_image_path?: string | null;
+  masked_image_url?: string | null;
+  masked_image_pages?: Array<{
+    page_number?: number;
+    image_url?: string | null;
+    image_path?: string | null;
+    image_role?: "masked" | "original";
+    sent_to_external?: boolean;
+  }>;
+  pharmacy_alert?: {
+    sent?: boolean;
+    email_sent?: boolean;
+    whatsapp_sent?: boolean;
+    skipped?: boolean;
+    skip_reason?: string | null;
+    error?: string | null;
+    medications_count?: number;
+  } | null;
+  department_alerts?: {
+    sent?: boolean;
+    skipped?: boolean;
+    skip_reason?: string | null;
+    error?: string | null;
+    departments?: {
+      lab?: { sent?: boolean; itemCount?: number };
+      radiology?: { sent?: boolean; itemCount?: number };
+      nuclear_medicine?: { sent?: boolean; itemCount?: number };
+      procedures?: { sent?: boolean; itemCount?: number };
+    };
+  } | null;
   sample_patient_data?: {
     name?: string;
-    age?: number;
+    age?: number | null;
     mrn?: string;
     admission_date?: string;
     discharge_date?: string;
-    los_days?: number;
+    los_days?: number | null;
     summary?: string;
   };
   presentation?: {
@@ -479,6 +624,10 @@ export type ProcessedDocument = {
     version: string;
     latency: number;
     tokensUsed: number;
+    providerTokens?: {
+      gemma?: number;
+      gemini?: number;
+    } | null;
     steps: Array<{
       success: boolean;
       tokens: number;
@@ -624,6 +773,76 @@ export const matchesProcessedDocumentQuery = (document: ProcessedDocument, query
     .some((value) => value.toLowerCase().includes(normalized));
 };
 
+/**
+ * Card activation state types
+ */
+export type CardActivationState = 'active' | 'inactive' | 'hidden';
+
+/**
+ * Get activation state for a specific card from the dashboard_cards
+ */
+export const getCardActivation = (
+  document: ProcessedDocument,
+  cardKey: keyof NonNullable<ProcessedDocument['result']['dashboard_cards']>
+): CardActivationState => {
+  const card = document.result?.dashboard_cards?.[cardKey];
+  if (typeof card === 'object' && card !== null && '_activation' in card) {
+    const activation = (card as { _activation?: { state?: CardActivationState } })._activation;
+    return activation?.state || 'active';
+  }
+  return 'active'; // Default to active if no activation metadata
+};
+
+/**
+ * Get all card activation states for a document
+ */
+export const getCardActivationStates = (document: ProcessedDocument) => {
+  const cards = document.result?.dashboard_cards || {};
+  const activation: Record<string, CardActivationState> = {};
+  const documentType = document.result?.meta?.document_type ||
+                      document.result?.meta?.router?.detected_type ||
+                      'prescription';
+
+  for (const [key, card] of Object.entries(cards)) {
+    if (typeof card === 'object' && card !== null && '_activation' in card) {
+      const cardActivation = (card as { _activation?: { state?: CardActivationState } })._activation;
+      activation[key] = cardActivation?.state || 'active';
+    } else {
+      activation[key] = 'active';
+    }
+  }
+
+  return {
+    documentType,
+    activeCards: Object.entries(activation).filter(([, state]) => state === 'active').map(([key]) => key),
+    inactiveCards: Object.entries(activation).filter(([, state]) => state === 'inactive').map(([key]) => key),
+    hiddenCards: Object.entries(activation).filter(([, state]) => state === 'hidden').map(([key]) => key),
+    states: activation as Record<string, CardActivationState>,
+  };
+};
+
+/**
+ * Check if a card should be rendered (active or inactive, but not hidden)
+ */
+export const shouldRenderCard = (
+  document: ProcessedDocument,
+  cardKey: keyof NonNullable<ProcessedDocument['result']['dashboard_cards']>
+): boolean => {
+  const state = getCardActivation(document, cardKey);
+  return state !== 'hidden';
+};
+
+/**
+ * Check if a card is active (has meaningful data for this document type)
+ */
+export const isCardActive = (
+  document: ProcessedDocument,
+  cardKey: keyof NonNullable<ProcessedDocument['result']['dashboard_cards']>
+): boolean => {
+  const state = getCardActivation(document, cardKey);
+  return state === 'active';
+};
+
 const parseBp = (bp?: string | { systolic: number; diastolic: number }) => {
   // If already an object with systolic/diastolic, return it
   if (typeof bp === 'object' && bp !== null) {
@@ -648,6 +867,11 @@ const parseNumeric = (value?: string | number, fallback = 0) => {
   // Otherwise parse from string
   const match = String(value || '').match(/-?\d+(\.\d+)?/);
   return match ? Number(match[0]) : fallback;
+};
+
+const isPlaceholderPatientName = (value?: string | null) => {
+  const normalized = String(value || "").trim().toLowerCase();
+  return normalized === "sample patient name";
 };
 
 const createRange = (count: number, mapper: (index: number) => string) =>
@@ -749,11 +973,34 @@ const formatDocumentTypeLabel = (value?: string) => {
     .join(" ");
 };
 
+const firstNonEmptyString = (...values: Array<unknown>) => {
+  for (const value of values) {
+    const normalized = String(value || "").trim();
+    if (normalized) return normalized;
+  }
+  return "";
+};
+
 const resolveDepartmentLabel = (result: GemmaDashboardResult, document: ProcessedDocument) =>
-  result.meta?.department_type ||
-  formatDocumentTypeLabel(result.meta?.document_type || result.meta?.router?.detected_type) ||
-  document.department ||
-  "General";
+  firstNonEmptyString(
+    result.meta?.department_type,
+    result.visit?.department,
+    result.hospital?.department,
+    result.extracted_data?.visit?.department,
+    result.extracted_data?.hospital?.department,
+    result.extracted_data?.stage1?.visit?.department,
+    result.extracted_data?.stage1?.hospital?.department,
+    result.extracted_data?.stage1?.clinical?.department,
+    result.doctor?.department,
+    result.doctor?.specialty,
+    result.extracted_data?.doctor?.department,
+    result.extracted_data?.doctor?.specialty,
+    result.extracted_data?.stage1?.doctor?.department,
+    result.extracted_data?.stage1?.doctor?.specialty,
+    formatDocumentTypeLabel(result.meta?.document_type || result.meta?.router?.detected_type),
+    document.department,
+    "General"
+  );
 
 const normalizeAllergyEntries = (
   rawEntries: Array<string | { name?: string; status?: string; severity?: string; reaction?: string } | null | undefined>
@@ -1065,6 +1312,55 @@ const isSafeProvenanceItem = (item: ProvenanceItem, allowedTypes: Array<"quoted"
       !isFallbackLikeValue(item.sourceExcerpt)
   );
 
+/**
+ * Checks if a value is a provenance metadata object (not an actual provenance item)
+ */
+const isMetadataObject = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const keys = Object.keys(value as object);
+  return keys.includes('section') || keys.includes('has_data') || keys.includes('source');
+};
+
+/**
+ * Normalizes provenance input to handle both array format and metadata object format.
+ * - If input is already an array, return it as-is
+ * - If input is a metadata object (has 'section', 'has_data', etc.), return empty array
+ *   (metadata format doesn't contain actual provenance items)
+ * - Otherwise, return empty array
+ */
+const normalizeProvenanceInput = (
+  provenance: unknown
+): Array<Record<string, unknown>> => {
+  if (Array.isArray(provenance)) {
+    return provenance as Array<Record<string, unknown>>;
+  }
+  // Check if it's a metadata object (has 'section' or 'has_data' keys)
+  if (isMetadataObject(provenance)) {
+    // This is metadata, not provenance items - return empty array
+    return [];
+  }
+  return [];
+};
+
+/**
+ * Flattens an array of provenance items, filtering out metadata objects
+ */
+const flattenProvenanceItems = (
+  items: Array<unknown>
+): Array<Record<string, unknown>> => {
+  const result: Array<Record<string, unknown>> = [];
+  for (const item of items) {
+    if (Array.isArray(item)) {
+      result.push(...flattenProvenanceItems(item));
+    } else if (!isMetadataObject(item) && item != null) {
+      result.push(item as Record<string, unknown>);
+    }
+  }
+  return result;
+};
+
 const buildSectionProvenance = (
   rawItems: Array<{
     value?: string;
@@ -1076,6 +1372,16 @@ const buildSectionProvenance = (
   } | null | undefined>,
   allowedTypes: Array<"quoted" | "normalized" | "derived">
 ) => {
+  // Guard against non-array inputs
+  if (!Array.isArray(rawItems)) {
+    console.warn('[buildSectionProvenance] Non-array input received, using empty array:', typeof rawItems, rawItems);
+    return {
+      status: "insufficient_evidence" as const,
+      items: [],
+      hasRaw: false,
+    };
+  }
+
   const normalized = rawItems.map((item) => normalizeProvenanceItem(item)).filter(Boolean) as ProvenanceItem[];
   const safeItems = normalized.filter((item) => isSafeProvenanceItem(item, allowedTypes));
 
@@ -1121,73 +1427,260 @@ const riskWatchAliases: Record<string, string[]> = {
   EWS: ["ews", "early warning score"],
 };
 
+const getFallbackDashboardData = (document: ProcessedDocument): DashboardPatientData => ({
+  meta: {
+    reportId: document.id,
+    generatedAt: document.processedAt || document.uploadedAt,
+    version: "gemma-processed",
+  },
+  patient: {
+    id: document.id,
+    name: "",
+    age: 0,
+    gender: "",
+    dateOfBirth: "",
+    mrn: "",
+    bloodGroup: "",
+    contact: { phone: "", email: "", emergencyContact: "" },
+  },
+  admission: {
+    id: document.id,
+    admissionDate: document.uploadedAt,
+    dischargeDate: null,
+    lengthOfStay: 0,
+    department: "Unknown",
+    ward: "",
+    bed: "",
+    attendingPhysician: { id: "", name: "", specialization: "" },
+    admissionType: "",
+    admissionDiagnosis: "",
+  },
+  vitals: {
+    latest: {
+      bloodPressure: { systolic: 0, diastolic: 0, unit: "mmHg" },
+      heartRate: { value: 0, unit: "bpm" },
+      temperature: { value: 0, unit: "°F" },
+      respiratoryRate: { value: 0, unit: "/min" },
+      spo2: { value: 0, unit: "%" },
+      painScore: { value: 0, scale: 10 },
+    },
+    status: "stable",
+    trend: "stable",
+    history: [],
+    alerts: [],
+    referenceRanges: {},
+  },
+  diagnosis: {
+    principal: { code: "", description: "Not available", confirmedDate: "", presentation: [], confirmation: [], treatingPhysician: "" },
+    secondary: [],
+    comorbidities: [],
+    drg: "",
+  },
+  medications: { active: [], allergies: [], changes: { added: [], adjusted: [], discontinued: [] }, interactionCheck: "" },
+  labs: {
+    totalTests: 0,
+    abnormalCount: 0,
+    criticalCount: 0,
+    pendingCount: 0,
+    lab_results: [],
+    investigations: [],
+    hasResults: false,
+    note: "",
+    critical: [],
+    abnormal: [],
+    cbc: [],
+    metabolic: [],
+    troponinTrend: [],
+    pending: [],
+  },
+  radiology: {
+    completedStudies: 0,
+    pendingStudies: 0,
+    criticalFindings: 0,
+    studies: [],
+    pending: [],
+  },
+  treatment: {
+    procedures: [],
+    activeManagement: [],
+    currentApproach: "",
+    response: "",
+    responseDocumented: false,
+    complications: 0,
+    complicationsDocumented: false,
+    complicationsLabel: "",
+  },
+  riskWatch: { ewsScore: null, items: [] },
+  clinicalNotes: {
+    totalNotes: 0,
+    lastUpdate: "",
+    notes: [],
+    handover: { overview: "", sections: [] },
+  },
+  dischargePlan: {
+    condition: "",
+    conditionChecks: [],
+    dietary: [],
+    activityRestrictions: { doNot: [], okToDo: [], duration: "", afterRestriction: "" },
+    pendingItems: [],
+    redFlags: [],
+  },
+  followUp: [],
+  presentation: {
+    summaryCards: {},
+    notesRail: [],
+  },
+  provenance: { sections: {} },
+});
+
 export const transformProcessedDocument = (document: ProcessedDocument): DashboardPatientData => {
-  const result = document.result || {};
+  try {
+    const result = document.result || {};
+    if (!result) {
+      console.error('[transformProcessedDocument] No result in document');
+      return getFallbackDashboardData(document);
+    }
   const cards = result.dashboard_cards || {};
   const sample = result.sample_patient_data || {};
-  const extracted = result.extracted_data || {};
-  const extractedProvenance = extracted.provenance || {};
-  const extractedDiagnosis = extracted.diagnosis || {};
-  const extractedTreatment = extracted.treatment || {};
-  const vitalsSectionProvenance = buildSectionProvenance(
-    [
-      extractedProvenance.vitals?.systolic,
-      extractedProvenance.vitals?.diastolic,
-      extractedProvenance.vitals?.pulse,
-      extractedProvenance.vitals?.spo2,
-      extractedProvenance.vitals?.temperature,
-      extractedProvenance.vitals?.respiratory_rate,
-    ],
-    ["quoted", "normalized"]
+  // For prescription pipeline, data is at root level; for chart notes, it's in extracted_data
+  const extracted = result.extracted_data && Object.keys(result.extracted_data).length > 0
+    ? result.extracted_data
+    : result;
+  const sampleName = firstNonEmptyString(
+    !isPlaceholderPatientName(sample.name) ? sample.name : "",
+    extracted?.patient?.name,
+    extracted?.stage1?.patient?.name,
   );
-  const diagnosisSectionProvenance = buildSectionProvenance(
-    [extractedProvenance.diagnosis?.principal, ...(extractedProvenance.diagnosis?.secondary || [])],
-    ["quoted", "normalized"]
-  );
-  const medicationsSectionProvenance = buildSectionProvenance(extractedProvenance.medications || [], ["quoted", "normalized"]);
-  const labsSectionProvenance = buildSectionProvenance(
-    [
-      ...(extractedProvenance.labs?.results || []),
-      ...(extractedProvenance.labs?.investigations || []),
-    ],
-    ["quoted", "normalized"]
-  );
-  const radiologySectionProvenance = buildSectionProvenance(
-    [
-      ...(extractedProvenance.radiology?.findings || []),
-      ...(extractedProvenance.radiology?.pending || []),
-    ],
-    ["quoted", "normalized"]
-  );
-  const treatmentSectionProvenance = buildSectionProvenance(
-    [
-      extractedProvenance.treatment?.current_approach,
-      ...(extractedProvenance.treatment?.management_items || []),
-      ...(extractedProvenance.treatment?.procedures || []),
-      extractedProvenance.treatment?.response,
-      ...(extractedProvenance.treatment?.complications || []),
-    ],
-    ["quoted", "normalized", "derived"]
-  );
-  const handoverSectionProvenance = buildSectionProvenance(
-    [
-      extractedProvenance.handover?.overview,
-      ...(extractedProvenance.handover?.notes || []),
-    ],
-    ["quoted", "normalized", "derived"]
-  );
-  const followUpSectionProvenance = buildSectionProvenance(
-    extractedProvenance.follow_up?.items || [],
-    ["quoted", "normalized"]
-  );
-  const dischargeSectionProvenance = buildSectionProvenance(
-    [
-      ...(extractedProvenance.discharge?.dietary || []),
-      ...(extractedProvenance.discharge?.instructions || []),
-      ...(extractedProvenance.discharge?.red_flags || []),
-    ],
-    ["quoted", "normalized"]
-  );
+  const sampleAge = typeof sample.age === "number" && sample.age > 0 ? sample.age : (Number(extracted?.patient?.age || extracted?.stage1?.patient?.age) || 0);
+  const sampleLosDays = typeof sample.los_days === "number" && sample.los_days > 0 ? sample.los_days : 0;
+  const extractedProvenance = result.provenance || extracted.provenance || {};
+  const extractedDiagnosis = result.diagnosis || extracted.diagnosis || {};
+  const extractedTreatment = result.treatment || extracted.treatment || {};
+
+  console.log('[transformProcessedDocument] Debug: cards type', typeof cards, 'Array.isArray?', Array.isArray(cards));
+  console.log('[transformProcessedDocument] Debug: cards keys', Object.keys(cards));
+  console.log('[transformProcessedDocument] Debug: sample', sample);
+  console.log('[transformProcessedDocument] Debug: extracted keys', Object.keys(extracted));
+  console.log('[transformProcessedDocument] Debug: extractedProvenance', extractedProvenance);
+
+  let vitalsSectionProvenance, diagnosisSectionProvenance, medicationsSectionProvenance, labsSectionProvenance, radiologySectionProvenance, treatmentSectionProvenance, handoverSectionProvenance, followUpSectionProvenance, dischargeSectionProvenance;
+
+  try {
+    vitalsSectionProvenance = buildSectionProvenance(
+      flattenProvenanceItems([
+        extractedProvenance.vitals?.systolic,
+        extractedProvenance.vitals?.diastolic,
+        extractedProvenance.vitals?.pulse,
+        extractedProvenance.vitals?.spo2,
+        extractedProvenance.vitals?.temperature,
+        extractedProvenance.vitals?.respiratory_rate,
+      ]),
+      ["quoted", "normalized"]
+    );
+  } catch (e) {
+    console.error('[transformProcessedDocument] Error in vitalsSectionProvenance:', e);
+    vitalsSectionProvenance = { status: "insufficient_evidence", items: [], hasRaw: false };
+  }
+
+  try {
+    diagnosisSectionProvenance = buildSectionProvenance(
+      flattenProvenanceItems([
+        extractedProvenance.diagnosis?.principal,
+        ...(extractedProvenance.diagnosis?.secondary || []),
+      ]),
+      ["quoted", "normalized"]
+    );
+  } catch (e) {
+    console.error('[transformProcessedDocument] Error in diagnosisSectionProvenance:', e);
+    diagnosisSectionProvenance = { status: "insufficient_evidence", items: [], hasRaw: false };
+  }
+
+  try {
+    medicationsSectionProvenance = buildSectionProvenance(normalizeProvenanceInput(extractedProvenance.medications), ["quoted", "normalized"]);
+  } catch (e) {
+    console.error('[transformProcessedDocument] Error in medicationsSectionProvenance:', e);
+    medicationsSectionProvenance = { status: "insufficient_evidence", items: [], hasRaw: false };
+  }
+
+  try {
+    labsSectionProvenance = buildSectionProvenance(
+      flattenProvenanceItems([
+        ...(extractedProvenance.labs?.results || []),
+        ...(extractedProvenance.labs?.investigations || []),
+      ]),
+      ["quoted", "normalized"]
+    );
+  } catch (e) {
+    console.error('[transformProcessedDocument] Error in labsSectionProvenance:', e);
+    labsSectionProvenance = { status: "insufficient_evidence", items: [], hasRaw: false };
+  }
+
+  try {
+    radiologySectionProvenance = buildSectionProvenance(
+      flattenProvenanceItems([
+        ...(extractedProvenance.radiology?.findings || []),
+        ...(extractedProvenance.radiology?.pending || []),
+      ]),
+      ["quoted", "normalized"]
+    );
+  } catch (e) {
+    console.error('[transformProcessedDocument] Error in radiologySectionProvenance:', e);
+    radiologySectionProvenance = { status: "insufficient_evidence", items: [], hasRaw: false };
+  }
+
+  try {
+    treatmentSectionProvenance = buildSectionProvenance(
+      flattenProvenanceItems([
+        extractedProvenance.treatment?.current_approach,
+        ...(extractedProvenance.treatment?.management_items || []),
+        ...(extractedProvenance.treatment?.procedures || []),
+        extractedProvenance.treatment?.response,
+        ...(extractedProvenance.treatment?.complications || []),
+      ]),
+      ["quoted", "normalized", "derived"]
+    );
+  } catch (e) {
+    console.error('[transformProcessedDocument] Error in treatmentSectionProvenance:', e);
+    treatmentSectionProvenance = { status: "insufficient_evidence", items: [], hasRaw: false };
+  }
+
+  try {
+    handoverSectionProvenance = buildSectionProvenance(
+      flattenProvenanceItems([
+        extractedProvenance.handover?.overview,
+        ...(extractedProvenance.handover?.notes || []),
+      ]),
+      ["quoted", "normalized", "derived"]
+    );
+  } catch (e) {
+    console.error('[transformProcessedDocument] Error in handoverSectionProvenance:', e);
+    handoverSectionProvenance = { status: "insufficient_evidence", items: [], hasRaw: false };
+  }
+
+  try {
+    followUpSectionProvenance = buildSectionProvenance(
+      normalizeProvenanceInput(extractedProvenance.follow_up?.items),
+      ["quoted", "normalized"]
+    );
+  } catch (e) {
+    console.error('[transformProcessedDocument] Error in followUpSectionProvenance:', e);
+    followUpSectionProvenance = { status: "insufficient_evidence", items: [], hasRaw: false };
+  }
+
+  try {
+    dischargeSectionProvenance = buildSectionProvenance(
+      flattenProvenanceItems([
+        ...(extractedProvenance.discharge?.dietary || []),
+        ...(extractedProvenance.discharge?.instructions || []),
+        ...(extractedProvenance.discharge?.red_flags || []),
+      ]),
+      ["quoted", "normalized"]
+    );
+  } catch (e) {
+    console.error('[transformProcessedDocument] Error in dischargeSectionProvenance:', e);
+    dischargeSectionProvenance = { status: "insufficient_evidence", items: [], hasRaw: false };
+  }
+
   const diagnosisSectionSupported =
     !diagnosisSectionProvenance.hasRaw || diagnosisSectionProvenance.items.length > 0;
   const medicationsSectionSupported =
@@ -1205,61 +1698,99 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   const followUpSectionSupported =
     !followUpSectionProvenance.hasRaw || followUpSectionProvenance.items.length > 0;
   const safeVitalsProvenanceItems = vitalsSectionProvenance.items;
-  const safeLabResultProvenanceItems = getSafeProvenanceItems(extractedProvenance.labs?.results || [], ["quoted", "normalized"]);
-  const safeLabInvestigationProvenanceItems = getSafeProvenanceItems(extractedProvenance.labs?.investigations || [], ["quoted", "normalized"]);
-  const safeRadiologyFindingProvenanceItems = getSafeProvenanceItems(extractedProvenance.radiology?.findings || [], ["quoted", "normalized"]);
-  const safeRadiologyPendingProvenanceItems = getSafeProvenanceItems(extractedProvenance.radiology?.pending || [], ["quoted", "normalized"]);
-  const safeTreatmentManagementItems = getSafeProvenanceItems(extractedProvenance.treatment?.management_items || [], ["quoted", "normalized", "derived"]);
-  const safeTreatmentProcedureItems = getSafeProvenanceItems(extractedProvenance.treatment?.procedures || [], ["quoted", "normalized", "derived"]);
-  const safeTreatmentComplicationItems = getSafeProvenanceItems(extractedProvenance.treatment?.complications || [], ["quoted", "normalized", "derived"]);
-  const safeHandoverNoteItems = getSafeProvenanceItems(extractedProvenance.handover?.notes || [], ["quoted", "normalized", "derived"]);
-  const safeFollowUpItems = getSafeProvenanceItems(extractedProvenance.follow_up?.items || [], ["quoted", "normalized"]);
+  const safeLabResultProvenanceItems = getSafeProvenanceItems(normalizeProvenanceInput(extractedProvenance.labs?.results), ["quoted", "normalized"]);
+  const safeLabInvestigationProvenanceItems = getSafeProvenanceItems(normalizeProvenanceInput(extractedProvenance.labs?.investigations), ["quoted", "normalized"]);
+  const safeRadiologyFindingProvenanceItems = getSafeProvenanceItems(normalizeProvenanceInput(extractedProvenance.radiology?.findings), ["quoted", "normalized"]);
+  const safeRadiologyPendingProvenanceItems = getSafeProvenanceItems(normalizeProvenanceInput(extractedProvenance.radiology?.pending), ["quoted", "normalized"]);
+  const safeTreatmentManagementItems = getSafeProvenanceItems(normalizeProvenanceInput(extractedProvenance.treatment?.management_items), ["quoted", "normalized", "derived"]);
+  const safeTreatmentProcedureItems = getSafeProvenanceItems(normalizeProvenanceInput(extractedProvenance.treatment?.procedures), ["quoted", "normalized", "derived"]);
+  const safeTreatmentComplicationItems = getSafeProvenanceItems(normalizeProvenanceInput(extractedProvenance.treatment?.complications), ["quoted", "normalized", "derived"]);
+  const safeHandoverNoteItems = getSafeProvenanceItems(normalizeProvenanceInput(extractedProvenance.handover?.notes), ["quoted", "normalized", "derived"]);
+  const safeFollowUpItems = getSafeProvenanceItems(normalizeProvenanceInput(extractedProvenance.follow_up?.items), ["quoted", "normalized"]);
+  const resolvedPatientMrn = firstNonEmptyString(
+    sample.mrn,
+    extracted?.patient?.mrn,
+    extracted?.patient?.hospital_no,
+    extracted?.stage1?.patient?.mrn,
+    extracted?.stage1?.patient?.hospital_no,
+    extracted?.stage1?.phi?.hospital_no
+  );
 
-  const latestVitals = extracted.latest || {};
+  // Use result.vitals.latest for prescriptions, extracted.latest for chart notes
+  const latestVitals = result.vitals?.latest || extracted.latest || {};
+  const visitType = String(
+    result.meta?.visit_type ||
+    extracted.meta?.visit_type ||
+    extracted.visit?.visit_type ||
+    extracted.stage1?.visit?.visit_type ||
+    ""
+  ).trim();
   const hasVitalEvidence = (pattern: RegExp) =>
     safeVitalsProvenanceItems.some((item) => pattern.test(item.value));
+  const extractedRespRateValue =
+    typeof latestVitals.resp_rate?.value === "number"
+      ? latestVitals.resp_rate.value
+      : typeof latestVitals.resp_rate === "number"
+        ? latestVitals.resp_rate
+        : null;
+  const hasSourceBackedVitals = Boolean(
+    result.vitals?.has_vitals ||
+    extracted.vitals?.has_vitals ||
+    cards.vitals_card?.data_points ||
+    safeVitalsProvenanceItems.length > 0 ||
+    (
+      typeof latestVitals.bp?.systolic === "number" &&
+      typeof latestVitals.bp?.diastolic === "number" &&
+      latestVitals.bp.systolic > 0 &&
+      latestVitals.bp.diastolic > 0
+    ) ||
+    (typeof latestVitals.pulse?.value === "number" && latestVitals.pulse.value > 0) ||
+    (typeof latestVitals.temperature?.value === "number" && latestVitals.temperature.value > 0) ||
+    (typeof latestVitals.spo2?.value === "number" && latestVitals.spo2.value > 0) ||
+    (typeof extractedRespRateValue === "number" && extractedRespRateValue > 0)
+  );
   const extractedBp =
     latestVitals.bp?.systolic && latestVitals.bp?.diastolic
       ? { systolic: latestVitals.bp.systolic, diastolic: latestVitals.bp.diastolic }
       : null;
-  const bp = !vitalsSectionProvenance.hasRaw || hasVitalEvidence(/systolic bp|diastolic bp/i)
+  const bp = hasSourceBackedVitals && (!vitalsSectionProvenance.hasRaw || hasVitalEvidence(/systolic bp|diastolic bp/i))
     ? (extractedBp || parseBp(cards.vitals_card?.summary?.latest_bp))
     : { systolic: 0, diastolic: 0 };
-  const pulse = !vitalsSectionProvenance.hasRaw || hasVitalEvidence(/^pulse\b/i)
+  const pulse = hasSourceBackedVitals && (!vitalsSectionProvenance.hasRaw || hasVitalEvidence(/^pulse\b/i))
     ? (typeof latestVitals.pulse?.value === "number" && latestVitals.pulse.value > 0
         ? latestVitals.pulse.value
         : parseNumeric(cards.vitals_card?.summary?.pulse, 0))
     : 0;
-  const temp = !vitalsSectionProvenance.hasRaw || hasVitalEvidence(/^temperature\b/i)
+  const temp = hasSourceBackedVitals && (!vitalsSectionProvenance.hasRaw || hasVitalEvidence(/^temperature\b/i))
     ? (typeof latestVitals.temperature?.value === "number" && latestVitals.temperature.value > 0
         ? latestVitals.temperature.value
         : parseNumeric(cards.vitals_card?.summary?.temp, 0))
     : 0;
-  const spo2 = !vitalsSectionProvenance.hasRaw || hasVitalEvidence(/^spo2\b/i)
+  const spo2 = hasSourceBackedVitals && (!vitalsSectionProvenance.hasRaw || hasVitalEvidence(/^spo2\b/i))
     ? (typeof latestVitals.spo2?.value === "number" && latestVitals.spo2.value > 0
         ? latestVitals.spo2.value
         : parseNumeric(cards.vitals_card?.summary?.spo2, 0))
     : 0;
-  const respRate = !vitalsSectionProvenance.hasRaw || hasVitalEvidence(/^respiratory rate\b/i)
-    ? (typeof latestVitals.resp_rate === "number" && latestVitals.resp_rate > 0
-        ? latestVitals.resp_rate
+  const respRate = hasSourceBackedVitals && (!vitalsSectionProvenance.hasRaw || hasVitalEvidence(/^respiratory rate\b/i))
+    ? (typeof extractedRespRateValue === "number" && extractedRespRateValue > 0
+        ? extractedRespRateValue
         : 0)
     : 0;
   const painScore = typeof latestVitals.pain_score?.value === "number" ? latestVitals.pain_score.value : 0;
   const secondaryDiagnoses = dedupeStrings(
     diagnosisSectionSupported ? (cards.diagnosis_card?.secondary_diagnoses || extractedDiagnosis.secondary || []) : []
   );
-  const allergies = normalizeAllergyEntries(cards.medications_card?.allergies || extracted.allergies || []);
+  const allergies = normalizeAllergyEntries(Array.isArray(cards.medications_card?.allergies) ? cards.medications_card.allergies : Array.isArray(extracted.allergies) ? extracted.allergies : []);
   const medicationList = medicationsSectionSupported
-    ? dedupeMedicationEntries(cards.medications_card?.medication_list || extracted.medications || [])
+    ? dedupeMedicationEntries(Array.isArray(cards.medications_card?.medication_list) ? cards.medications_card.medication_list : Array.isArray(extracted.medications) ? extracted.medications : [])
     : [];
-  const extractedLabResults = extracted.lab_results?.map((result) => ({
+  const extractedLabResults = Array.isArray(extracted.lab_results) ? extracted.lab_results.map((result) => ({
     test: result.test_name || result.test || "Unknown",
     value: result.value || "",
     reference: result.reference || result.ref || "N/A",
     flag: result.flag || result.status || "",
-  })) || [];
-  const cardLabResults = cards.labs_card?.lab_results || [];
+  })) : [];
+  const cardLabResults = Array.isArray(cards.labs_card?.lab_results) ? cards.labs_card.lab_results : [];
   const ungatedLabResults = cardLabResults.length > 0 ? cardLabResults : extractedLabResults;
   const labResults = labsSectionSupported
     ? (
@@ -1271,7 +1802,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       )
     : [];
   const hasActualLabResults = (cards.labs_card?.has_results || false) && labResults.length > 0;
-  const ungatedInvestigationList = normalizeInvestigationEntries(cards.labs_card?.investigations_list || extracted.investigations || []);
+  const ungatedInvestigationList = normalizeInvestigationEntries(Array.isArray(cards.labs_card?.investigations_list) ? cards.labs_card.investigations_list : Array.isArray(extracted.investigations) ? extracted.investigations : []);
   const investigationList = labsSectionSupported
     ? (
         labsSectionProvenance.hasRaw
@@ -1297,7 +1828,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     const parsed = Date.parse(cards.clinical_notes_card?.last_update || document.processedAt || document.uploadedAt || "");
     return Number.isNaN(parsed) ? undefined : new Date(parsed).getUTCFullYear();
   })();
-  const explicitClinicalNotes = (cards.clinical_notes_card?.notes || extracted.clinical_notes || [])
+  const explicitClinicalNotes = (Array.isArray(cards.clinical_notes_card?.notes) ? cards.clinical_notes_card.notes : Array.isArray(extracted.clinical_notes) ? extracted.clinical_notes : [])
     .map((note) => ({
       date: note.date || "",
       author: note.author || "",
@@ -1312,6 +1843,12 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       handed_over_by: note.handed_over_by || "",
       handed_over_to: note.handed_over_to || "",
       source_excerpt: Array.isArray(note.source_excerpt) ? note.source_excerpt.filter((item) => item && !isNoisyClinicalItem(item)) : [],
+      source_type: note.source_type || "",
+      is_synthetic: Boolean(note.is_synthetic),
+      page_number: typeof note.page_number === "number" ? note.page_number : null,
+      confidence: note.confidence || "",
+      confidence_reason: note.confidence_reason || "",
+      is_inferred: Boolean(note.is_inferred),
     }))
     .filter((note) =>
       [
@@ -1446,7 +1983,27 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       .map((item) => cleanClinicalItem(String(item || "")))
       .filter((item) => item && isRadiologyInvestigation(item))
   );
-  const ungatedDocumentedImagingStudies = imagingEvidence.map((finding, index) => ({
+
+  // For prescriptions, use extracted.radiology directly if available
+  const extractedRadiology = Array.isArray(extracted.radiology) ? extracted.radiology : [];
+  const hasStructuredRadiology = extractedRadiology.length > 0;
+  const structuredRadiologyStudies = hasStructuredRadiology
+    ? extractedRadiology
+        .filter(rad => rad.status === "ordered" || rad.status === "completed" || rad.status === "documented")
+        .map(rad => ({
+          name: rad.type || rad.study_name || "Imaging study",
+          date: document.processedAt || document.uploadedAt,
+          performedBy: "Prescription order",
+          findings: rad.status === "completed" ? ["Completed"] : ["Ordered"],
+          impression: rad.type || rad.study_name || "Imaging study",
+          critical: false,
+          source: "prescription_extraction"
+        }))
+    : [];
+
+  const ungatedDocumentedImagingStudies = hasStructuredRadiology
+    ? structuredRadiologyStudies
+    : imagingEvidence.map((finding, index) => ({
     name: imagingInvestigations.find((study) => {
       const normalizedStudy = study.toLowerCase();
       const normalizedFinding = finding.toLowerCase();
@@ -1473,17 +2030,26 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
           : ungatedDocumentedImagingStudies
       )
     : [];
-  const ungatedPendingImagingStudies = dedupeStrings(
-    imagingInvestigations.filter(
-      (study) =>
-        !ungatedDocumentedImagingStudies.some((documented) => {
-          const normalizedStudy = study.toLowerCase();
-          const normalizedName = documented.name.toLowerCase();
-          const normalizedFinding = documented.impression.toLowerCase();
-          return normalizedName.includes(normalizedStudy) || normalizedStudy.includes(normalizedName) || normalizedFinding.includes(normalizedStudy.split(" ")[0]);
-        })
-    )
-  );
+  // For pending radiology, use extracted.radiology if available
+  const structuredPendingRadiology = hasStructuredRadiology
+    ? extractedRadiology
+        .filter(rad => rad.status === "ordered" || rad.status === "not_selected")
+        .map(rad => rad.type || rad.study_name || "Imaging study")
+    : [];
+
+  const ungatedPendingImagingStudies = hasStructuredRadiology
+    ? structuredPendingRadiology
+    : dedupeStrings(
+        imagingInvestigations.filter(
+          (study) =>
+            !ungatedDocumentedImagingStudies.some((documented) => {
+              const normalizedStudy = study.toLowerCase();
+              const normalizedName = documented.name.toLowerCase();
+              const normalizedFinding = documented.impression.toLowerCase();
+              return normalizedName.includes(normalizedStudy) || normalizedStudy.includes(normalizedName) || normalizedFinding.includes(normalizedStudy.split(" ")[0]);
+            })
+        )
+      );
   const pendingImagingStudies = radiologySectionSupported
     ? (
         radiologySectionProvenance.hasRaw
@@ -1498,8 +2064,25 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   const explicitManagementItems = dedupeStrings(
     Array.isArray(extractedTreatment.management_items) ? extractedTreatment.management_items : []
   );
+  // For prescriptions, procedures may be at root level (from handwriting extraction agent)
+  const extractedProcedures = extractedTreatment.procedures || extracted.procedures || [];
+  // Keep full procedure objects for prescriptions (with name, category, is_uncertain, confidence_reason)
+  const procedureObjects = Array.isArray(extractedProcedures)
+    ? extractedProcedures.map((p: any) => {
+        if (typeof p === 'string') {
+          return { name: p, details: "", is_uncertain: false };
+        }
+        return {
+          name: p.name || p.toString(),
+          category: p.category || "",
+          details: p.details || "",
+          is_uncertain: Boolean(p.is_uncertain),
+          confidence_reason: p.confidence_reason || ""
+        };
+      })
+    : [];
   const explicitProcedures = dedupeStrings(
-    Array.isArray(extractedTreatment.procedures) ? extractedTreatment.procedures : []
+    procedureObjects.map((p: any) => p.name).filter(Boolean)
   );
   const safeTreatmentCurrentApproach =
     normalizeProvenanceItem(extractedProvenance.treatment?.current_approach) &&
@@ -1530,7 +2113,12 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   const buildRiskWatchCitations = (label: string, score: number | null, level: string) => {
     const aliases = riskWatchAliases[label] || [label.toLowerCase()];
     const citations = explicitClinicalNotes.flatMap((note) => {
-      const noteCandidates = [note.summary, note.assessment, note.recommendations, ...note.source_excerpt]
+      const noteCandidates = [
+        note.summary,
+        note.assessment,
+        note.recommendations,
+        ...(Array.isArray(note.source_excerpt) ? note.source_excerpt : [])
+      ]
         .map((value) => String(value || "").trim())
         .filter(Boolean);
       const matchingExcerpt = noteCandidates.find((candidate) => {
@@ -1665,24 +2253,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
           : "",
       ]).map(toSentence),
     },
-    {
-      title: "Source Notes",
-      tone: "normal" as const,
-      items: handoverNotes.map((note) =>
-        toSentence(
-          `${note.type}${note.author ? ` by ${note.author}` : ""}${note.date ? ` on ${note.date}` : ""}: ${
-            note.summary ||
-            note.assessment ||
-            note.recommendations ||
-            note.situation ||
-            note.background ||
-            note.source_excerpt[0] ||
-            "Structured source note available"
-          }`
-        )
-      ),
-    },
-  ].filter((section) => section.items.length > 0);
+  ].filter((section) => section.items && section.items.length > 0);
   const handoverOverview =
     handoverSectionProvenance.hasRaw
       ? (
@@ -1752,12 +2323,15 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
         }
       : null,
   ].filter(Boolean) as Array<{ title: string; details: string; source: string }>;
+  const treatmentPlanCount = Math.max(activeManagement.length, procedureObjects.length);
   const currentApproach = safeTreatmentCurrentApproach
     ? safeTreatmentCurrentApproach
     : !treatmentSectionProvenance.hasRaw && extractedTreatment.current_approach
     ? extractedTreatment.current_approach
     : !treatmentSectionProvenance.hasRaw && /conservative management/i.test(handoverNote?.summary || "")
     ? "Conservative management"
+      : activeManagement[0]?.details
+        ? activeManagement[0].details
       : !treatmentSectionProvenance.hasRaw && cards.treatment_card?.current_approach
         ? cards.treatment_card.current_approach
         : "Not documented";
@@ -1914,13 +2488,14 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     vitals: {
       section: "vitals",
       title: "Vitals",
-      headlineMetric: `${bp.systolic}/${bp.diastolic} mmHg`,
-      secondaryLine: pulse ? `Pulse ${pulse} bpm` : "",
+      headlineMetric: hasSourceBackedVitals && bp.systolic > 0 && bp.diastolic > 0 ? `${bp.systolic}/${bp.diastolic} mmHg` : "",
+      secondaryLine: hasSourceBackedVitals && pulse ? `Pulse ${pulse} bpm` : "",
       supportingPoints: dedupeStrings([
-        spo2 ? `SpO2 ${spo2}%` : "",
-        temp || respRate ? `Temp ${temp || "-"}°F · RR ${respRate || "-"} /min` : "",
+        hasSourceBackedVitals && spo2 ? `SpO2 ${spo2}%` : "",
+        hasSourceBackedVitals && (temp || respRate) ? `Temp ${temp || "-"}°F · RR ${respRate || "-"} /min` : "",
+        !hasSourceBackedVitals ? "No source-backed vitals documented." : "",
       ]).slice(0, 2),
-      status: mapCardStatus(cards.vitals_card?.status || "normal"),
+      status: hasSourceBackedVitals ? mapCardStatus(cards.vitals_card?.status || "normal") : "neutral",
       provenanceStatus: vitalsSectionProvenance.status,
     },
     diagnosis: {
@@ -1967,9 +2542,13 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     treatment: {
       section: "treatment",
       title: "Treatment",
-      headlineMetric: `${activeManagement.length}`,
+      headlineMetric: `${treatmentPlanCount}`,
       secondaryLine: "plan items",
-      supportingPoints: dedupeStrings([currentApproach, complicationsLabel]).slice(0, 2),
+      supportingPoints: dedupeStrings([
+        currentApproach,
+        procedureObjects.length > 0 ? procedureObjects.slice(0, 2).map((proc: any) => proc.name).join(" · ") : "",
+        complicationsLabel,
+      ]).slice(0, 2),
       status: complicationsDocumented ? "warning" : "normal",
       provenanceStatus: treatmentSectionProvenance.status,
     },
@@ -2020,17 +2599,47 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       provenanceStatus: riskWatchSectionProvenance.status,
     },
   };
+  const choosePresentationHeadlineMetric = (key: string, rawMetric: unknown, fallbackMetric: string) => {
+    const metric = String(rawMetric || "").trim();
+    if (!metric) return fallbackMetric;
+
+    if (key === "vitals" && !hasSourceBackedVitals) {
+      return fallbackMetric;
+    }
+
+    if (
+      ["treatment", "labs", "radiology"].includes(key) &&
+      metric === "0" &&
+      fallbackMetric &&
+      fallbackMetric !== "0"
+    ) {
+      return fallbackMetric;
+    }
+
+    return metric;
+  };
+  const choosePresentationSupportingPoints = (key: string, rawPoints: unknown, fallbackPoints: string[]) => {
+    const points = Array.isArray(rawPoints) ? rawPoints.filter(Boolean).slice(0, 2) : [];
+
+    if (key === "vitals" && !hasSourceBackedVitals) {
+      return fallbackPoints;
+    }
+
+    if (["treatment", "labs", "radiology"].includes(key) && points.length === 0 && fallbackPoints.length > 0) {
+      return fallbackPoints;
+    }
+
+    return points.length > 0 ? points : fallbackPoints;
+  };
   const normalizedPresentationSummaryCards = Object.fromEntries(
     Object.entries(presentationSummaryCardsRaw).map(([key, card]) => [
       key,
       {
         section: card?.section || key,
         title: card?.title || fallbackPresentationSummaryCards[key]?.title || key,
-        headlineMetric: card?.headline_metric || fallbackPresentationSummaryCards[key]?.headlineMetric || "",
+        headlineMetric: choosePresentationHeadlineMetric(key, card?.headline_metric, fallbackPresentationSummaryCards[key]?.headlineMetric || ""),
         secondaryLine: card?.secondary_line || fallbackPresentationSummaryCards[key]?.secondaryLine || "",
-        supportingPoints: Array.isArray(card?.supporting_points)
-          ? card.supporting_points.filter(Boolean).slice(0, 2)
-          : fallbackPresentationSummaryCards[key]?.supportingPoints || [],
+        supportingPoints: choosePresentationSupportingPoints(key, card?.supporting_points, fallbackPresentationSummaryCards[key]?.supportingPoints || []),
         status: mapCardStatus(card?.status || fallbackPresentationSummaryCards[key]?.status),
         provenanceStatus: mapPresentationStatus(card?.provenance_status) || fallbackPresentationSummaryCards[key]?.provenanceStatus || "insufficient_evidence",
       } satisfies PresentationCard,
@@ -2040,7 +2649,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     Object.keys(normalizedPresentationSummaryCards).length > 0
       ? { ...fallbackPresentationSummaryCards, ...normalizedPresentationSummaryCards, risk_watch: fallbackPresentationSummaryCards.risk_watch }
       : fallbackPresentationSummaryCards;
-  const fallbackNotesRail: PresentationRailItem[] = handoverNotes
+  const fallbackNotesRail: PresentationRailItem[] = (Array.isArray(handoverNotes) ? handoverNotes : [])
     .slice(0, 6)
     .map((note) => ({
       title: note.type || "Clinical Note",
@@ -2049,7 +2658,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       body: note.summary || note.assessment || note.recommendations || note.situation || note.background || "",
       priority: note.risk_flags?.length ? "warning" : "normal",
       category: /handover/i.test(note.type) ? "handover" : /nurse|endorsement/i.test(note.type) ? "nurse" : "doctor",
-      provenance: (note.source_excerpt || [])
+      provenance: (Array.isArray(note.source_excerpt) ? note.source_excerpt : [])
         .map((item) => ({
           value: item,
           sourceSection: note.type || "Clinical Note",
@@ -2063,7 +2672,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     .filter((item) => !isLowValuePresentationNote(item))
     .slice(0, 4);
   const presentationNotesRail =
-    presentationNotesRailRaw.length > 0
+    Array.isArray(presentationNotesRailRaw) && presentationNotesRailRaw.length > 0
       ? presentationNotesRailRaw
           .map((item) => ({
             title: String(item.title || "Clinical Note"),
@@ -2075,7 +2684,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
             body: String(item.body || ""),
             priority: item.priority || "normal",
             category: item.category || "doctor",
-            provenance: (item.provenance || [])
+            provenance: (Array.isArray(item.provenance) ? item.provenance : [])
               .map((entry) => normalizeProvenanceItem(entry))
               .filter(Boolean) as ProvenanceItem[],
           }))
@@ -2090,11 +2699,11 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     },
     patient: {
       id: document.id,
-      name: sample.name || "",
-      age: sample.age || 0,
-      gender: extracted.patient?.gender || "",
+      name: sampleName,
+      age: sampleAge,
+      gender: firstNonEmptyString(extracted.patient?.gender, extracted.stage1?.patient?.gender),
       dateOfBirth: "",
-      mrn: sample.mrn || "",
+      mrn: resolvedPatientMrn,
       bloodGroup: "",
       contact: {
         phone: "",
@@ -2104,11 +2713,9 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     },
     admission: {
       id: document.id,
-      admissionDate: sample.admission_date || document.uploadedAt,
-      // If discharge_date is not present in the PDF, use null instead of processedAt
-      // This allows the UI to show "Not discharged" instead of the processing timestamp
+      admissionDate: /^IPD$/i.test(visitType) ? (sample.admission_date || result.meta?.rx_date || "") : (sample.admission_date || ""),
       dischargeDate: sample.discharge_date || null,
-      lengthOfStay: sample.los_days || 0,
+      lengthOfStay: sampleLosDays,
       department: resolveDepartmentLabel(result, document),
       ward: "",
       bed: "",
@@ -2232,12 +2839,22 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       ],
     },
     treatment: {
-      procedures: gatedProcedures.map((name) => ({
-        name,
-        date: handoverNote?.date || consultantNote?.date || "",
-        physician: likelyDiagnosisPhysician || "",
-        details: "",
-      })),
+      // For prescriptions, use full procedure objects; for chart notes, use gatedProcedures strings
+      procedures: procedureObjects.length > 0
+        ? procedureObjects.map((proc: any) => ({
+            name: proc.name,
+            date: handoverNote?.date || consultantNote?.date || "",
+            physician: likelyDiagnosisPhysician || "",
+            details: proc.details || `${proc.category ? proc.category + ': ' : ''}${proc.is_uncertain ? '(Uncertain) ' : ''}${proc.confidence_reason || ''}`.trim(),
+            is_uncertain: proc.is_uncertain || false,
+            category: proc.category || "",
+          }))
+        : gatedProcedures.map((name) => ({
+            name,
+            date: handoverNote?.date || consultantNote?.date || "",
+            physician: likelyDiagnosisPhysician || "",
+            details: "",
+          })),
       activeManagement,
       currentApproach,
       response,
@@ -2285,6 +2902,16 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       summaryCards: presentationSummaryCards,
       notesRail: presentationNotesRail,
     },
+    // Add masked image URL for privacy verification
+    // Check both new format (result.masked_image_url) and legacy format (result.meta.stage2_masking.masked_image_path)
+    maskedImageUrl: resolveMaskedImageUrl(
+      result.masked_image_url,
+      result.masked_image_path || result.meta?.stage2_masking?.masked_image_path
+    ),
+    maskedImagePath: result.masked_image_path || result.meta?.stage2_masking?.masked_image_path || null,
+    maskedImagePages: resolveMaskedImagePages(result.masked_image_pages || result.meta?.stage2_masking?.review_pages),
+    pharmacyAlert: result.pharmacy_alert || null,
+    departmentAlerts: result.department_alerts || null,
     provenance: {
       sections: {
         vitals: vitalsSectionProvenance,
@@ -2299,7 +2926,15 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
         discharge: dischargeSectionProvenance,
       },
     },
+    cardActivation: getCardActivationStates(document),
   };
+  } catch (error) {
+    console.error('[transformProcessedDocument] Error:', error);
+    console.error('[transformProcessedDocument] Document:', document);
+    console.error('[transformProcessedDocument] Error stack:', error instanceof Error ? error.stack : 'No stack');
+    // Return minimal safe data structure
+    return getFallbackDashboardData(document) as DashboardPatientData;
+  }
 };
 
 // Note: Fallback data removed to prevent bundling mock data in production

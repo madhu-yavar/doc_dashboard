@@ -581,7 +581,66 @@ class ClinicalDataExtractorSkill {
     };
   }
 
-  extractStructuredClinicalNotes(pdfText) {
+  extractSourceDate(pdfText) {
+    const match = String(pdfText || "").match(/\bDate\s*:\s*([0-9]{2}\/[0-9]{2}\/[0-9]{4})/i);
+    return match?.[1] || "";
+  }
+
+  extractOutpatientDoctor(pdfText) {
+    const match = String(pdfText || "").match(/Doctor Name\s*:\s*([^\n]+?)(?:\s+Specialty\s*:|$)/i);
+    return this.normalizeWhitespace(match?.[1] || "");
+  }
+
+  parseOutpatientChiefComplaint(pdfText) {
+    const complaints = this.normalizeWhitespace((pdfText.match(/Chief Complaints\s*:\s*([^\n]+)/i) || [])[1]);
+    if (!complaints) return null;
+
+    return {
+      type: "Chief Complaints",
+      author: this.extractOutpatientDoctor(pdfText),
+      date: this.extractSourceDate(pdfText),
+      summary: complaints,
+      situation: "",
+      background: "",
+      assessment: "",
+      recommendations: "",
+      pending_items: [],
+      risk_flags: [],
+      handed_over_by: "",
+      handed_over_to: "",
+      source_excerpt: [complaints],
+    };
+  }
+
+  parseOutpatientClinicalExamination(pdfText) {
+    const exam = this.normalizeWhitespace((pdfText.match(/Clinical examination\s*:\s*([^\n]+)/i) || [])[1]);
+    if (!exam) return null;
+
+    return {
+      type: "Clinical examination",
+      author: this.extractOutpatientDoctor(pdfText),
+      date: this.extractSourceDate(pdfText),
+      summary: exam,
+      situation: "",
+      background: "",
+      assessment: "",
+      recommendations: "",
+      pending_items: [],
+      risk_flags: [],
+      handed_over_by: "",
+      handed_over_to: "",
+      source_excerpt: [exam],
+    };
+  }
+
+  extractStructuredClinicalNotes(pdfText, documentType = "") {
+    if (documentType === "outpatient_record") {
+      return [
+        this.parseOutpatientChiefComplaint(pdfText),
+        this.parseOutpatientClinicalExamination(pdfText),
+      ].filter(Boolean);
+    }
+
     return [
       this.parseResidentsNotes(pdfText),
       this.parseDoctorHandover(pdfText),
@@ -605,17 +664,26 @@ class ClinicalDataExtractorSkill {
         ...heuristic,
         ...existing,
         summary: existing.summary || heuristic.summary || "",
-        author: Object.prototype.hasOwnProperty.call(heuristic, "author") ? heuristic.author || "" : existing.author || "",
-        date: Object.prototype.hasOwnProperty.call(heuristic, "date") ? heuristic.date || "" : existing.date || "",
-        situation: heuristic.situation || "",
-        background: heuristic.background || "",
-        assessment: heuristic.assessment || "",
-        recommendations: heuristic.recommendations || "",
-        pending_items: heuristic.pending_items || [],
-        risk_flags: heuristic.risk_flags || [],
-        handed_over_by: heuristic.handed_over_by || "",
-        handed_over_to: heuristic.handed_over_to || "",
-        source_excerpt: heuristic.source_excerpt || [],
+        author: existing.author || heuristic.author || "",
+        date: existing.date || heuristic.date || "",
+        situation: existing.situation || heuristic.situation || "",
+        background: existing.background || heuristic.background || "",
+        assessment: existing.assessment || heuristic.assessment || "",
+        recommendations: existing.recommendations || heuristic.recommendations || "",
+        pending_items: this.dedupeList([
+          ...(Array.isArray(existing.pending_items) ? existing.pending_items : []),
+          ...(Array.isArray(heuristic.pending_items) ? heuristic.pending_items : []),
+        ]),
+        risk_flags: this.dedupeList([
+          ...(Array.isArray(existing.risk_flags) ? existing.risk_flags : []),
+          ...(Array.isArray(heuristic.risk_flags) ? heuristic.risk_flags : []),
+        ]),
+        handed_over_by: existing.handed_over_by || heuristic.handed_over_by || "",
+        handed_over_to: existing.handed_over_to || heuristic.handed_over_to || "",
+        source_excerpt: this.dedupeList([
+          ...(Array.isArray(existing.source_excerpt) ? existing.source_excerpt : []),
+          ...(Array.isArray(heuristic.source_excerpt) ? heuristic.source_excerpt : []),
+        ]),
       });
     }
 
@@ -651,10 +719,11 @@ class ClinicalDataExtractorSkill {
   }
 
   async execute(context) {
-    const { pdfText, gemmaClient, promptBuilder, provenanceBuilder } = context;
+    const { pdfText, clinicalPdfText, gemmaClient, promptBuilder, provenanceBuilder, documentType } = context;
 
-    const prompt = promptBuilder.build("clinical_data_extractor", { pdfText });
-    const result = await gemmaClient.execute(prompt, { temperature: 0.1, maxTokens: 4200 });
+    const prompt = promptBuilder.build("clinical_data_extractor", { pdfText: clinicalPdfText || pdfText });
+    const maxOutputTokens = Number.parseInt(process.env.EXTRACTION_MAX_OUTPUT_TOKENS || "2000", 10);
+    const result = await gemmaClient.execute(prompt, { temperature: 0.1, maxTokens: Math.min(3600, maxOutputTokens) });
 
     if (!result.success) {
       return { success: false, step: "clinical_data_extractor", error: result.error };
@@ -667,7 +736,7 @@ class ClinicalDataExtractorSkill {
         const testName = result?.test_name || result?.test || "";
         return !this.isVitalLikeLabResult(testName);
       });
-      const heuristicNotes = this.extractStructuredClinicalNotes(pdfText);
+      const heuristicNotes = this.extractStructuredClinicalNotes(pdfText, documentType);
       data.clinical_notes = this.mergeClinicalNotes(
         Array.isArray(data.clinical_notes) ? data.clinical_notes : [],
         heuristicNotes

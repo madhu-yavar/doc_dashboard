@@ -1,0 +1,400 @@
+{
+  "generatedAt": "2026-05-03T11:59:58.795Z",
+  "model": "gemini-2.5-pro",
+  "documents": [
+    {
+      "file": "Prescription_02.pdf",
+      "summary": {
+        "pageCount": 2,
+        "masking": {
+          "maskedCount": 11,
+          "maskedTypes": [
+            "hospital_name",
+            "patient_name",
+            "patient_age",
+            "patient_id",
+            "date",
+            "doctor_name",
+            "registration_number",
+            "other_phi",
+            "patient_id",
+            "hospital_name",
+            "barcode"
+          ]
+        },
+        "diagnosis": {
+          "principal": "",
+          "secondary": [],
+          "symptoms": []
+        },
+        "vitals": {
+          "blood_pressure": {
+            "systolic": null,
+            "diastolic": null,
+            "unit": "mmHg"
+          },
+          "pulse": {
+            "value": null,
+            "unit": "bpm"
+          },
+          "temperature": {
+            "value": null,
+            "unit": "°F"
+          },
+          "weight": {
+            "value": null,
+            "unit": "kg"
+          },
+          "spo2": {
+            "value": null,
+            "unit": "%"
+          },
+          "respiratory_rate": {
+            "value": null,
+            "unit": "/min"
+          }
+        },
+        "notes": [
+          {
+            "text": "All other treatment to be followed as advised earlier today",
+            "category": "advice",
+            "page": 1,
+            "confidence": "high"
+          }
+        ],
+        "final": {
+          "labs": [],
+          "radiology": [],
+          "nuclearMedicine": [],
+          "procedures": []
+        },
+        "promoted": {
+          "labs": [],
+          "radiology": [],
+          "nuclearMedicine": [],
+          "procedures": []
+        },
+        "counts": {
+          "notes": 1,
+          "labs": 0,
+          "radiology": 0,
+          "nuclearMedicine": 0,
+          "procedures": 0,
+          "promotedLabs": 0,
+          "promotedRadiology": 0,
+          "promotedNuclearMedicine": 0,
+          "promotedProcedures": 0
+        },
+        "sources": {
+          "labSources": [],
+          "radiologySources": [],
+          "procedureSources": []
+        },
+        "usage": {
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "totalTokens": 0
+        }
+      }
+    },
+    {
+      "file": "Prescription_03.pdf",
+      "summary": {
+        "pageCount": 2,
+        "masking": {
+          "maskedCount": 13,
+          "maskedTypes": [
+            "hospital_name",
+            "patient_name",
+            "patient_age",
+            "episode_number",
+            "patient_id",
+            "date",
+            "patient_contact",
+            "email",
+            "doctor_name",
+            "registration_number",
+            "other_phi",
+            "hospital_name",
+            "barcode"
+          ]
+        },
+        "diagnosis": {
+          "principal": "CKD - 3 yrs",
+          "secondary": [
+            "DM x 15 yrs",
+            "HTN x 15 yrs",
+            "Mitral Prolapse",
+            "ANGIOPLASTY + STENT"
+          ],
+          "symptoms": [
+            "Nocturia x 5 yrs",
+            "Urgency",
+            "UI"
+          ]
+        },
+        "vitals": {
+          "blood_pressure": {
+            "systolic": null,
+            "diastolic": null,
+            "unit": "mmHg"
+          },
+          "pulse": {
+            "value": null,
+            "unit": "bpm"
+          },
+          "temperature": {
+            "value": null,
+            "unit": "°F"
+          },
+          "weight": {
+            "value": null,
+            "unit": "kg"
+          },
+          "spo2": {
+            "value": null,
+            "unit": "%"
+          },
+          "respiratory_rate": {
+            "value": null,
+            "unit": "/min"
+          }
+        },
+        "notes": [
+          {
+            "text": "Nocturia, Urgency + UTI, S UTI",
+            "category": "clinical_note",
+            "page": 1,
+            "confidence": "high"
+          },
+          {
+            "text": "CKD - 3 yr",
+            "category": "clinical_note",
+            "page": 1,
+            "confidence": "high"
+          },
+          {
+            "text": "Meatal Stenosis",
+            "category": "finding",
+            "page": 1,
+            "confidence": "high"
+          },
+          {
+            "text": "+ PVR: (18)",
+            "category": "finding",
+            "page": 2,
+            "confidence": "high"
+          }
+        ],
+        "final": {
+          "labs": [
+            {
+              "name": "Urine Culture",
+              "source": "text+visual",
+              "uncertain": false,
+              "reason": ""
+            },
+            {
+              "name": "Urine Routine and Microscopy",
+              "source": "text+visual",
+              "uncertain": false,
+              "reason": "The item is clearly checked in the 'LAB INVESTIGATIONS ADVISED' section on the form but was missing from the initial structured extraction."
+            }
+          ],
+          "radiology": [
+            {
+              "name": "Ultrasound Abdomen & Pelvis",
+              "source": "text+visual",
+              "uncertain": false,
+              "reason": ""
+            }
+          ],
+          "nuclearMedicine": [],
+          "procedures": [
+            {
+              "name": "Uroflowmetry",
+              "source": "text_order",
+              "uncertain": false,
+              "reason": ""
+            },
+            {
+              "name": "PVRU (IP)",
+              "source": "text_order",
+              "uncertain": false,
+              "reason": ""
+            }
+          ]
+        },
+        "promoted": {
+          "labs": [
+            {
+              "name": "Urine Routine and Microscopy",
+              "source": "note_reconciliation",
+              "uncertain": false,
+              "reason": "The item is clearly checked in the 'LAB INVESTIGATIONS ADVISED' section on the form but was missing from the initial structured extraction."
+            }
+          ],
+          "radiology": [],
+          "nuclearMedicine": [],
+          "procedures": []
+        },
+        "counts": {
+          "notes": 4,
+          "labs": 2,
+          "radiology": 1,
+          "nuclearMedicine": 0,
+          "procedures": 2,
+          "promotedLabs": 1,
+          "promotedRadiology": 0,
+          "promotedNuclearMedicine": 0,
+          "promotedProcedures": 0
+        },
+        "sources": {
+          "labSources": [
+            "text+visual"
+          ],
+          "radiologySources": [
+            "text+visual"
+          ],
+          "procedureSources": [
+            "text_order"
+          ]
+        },
+        "usage": {
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "totalTokens": 0
+        }
+      }
+    },
+    {
+      "file": "Prescription_04.pdf",
+      "summary": {
+        "pageCount": 1,
+        "masking": {
+          "maskedCount": 12,
+          "maskedTypes": [
+            "hospital_name",
+            "patient_name",
+            "patient_age",
+            "episode_number",
+            "patient_id",
+            "date",
+            "patient_contact",
+            "email",
+            "doctor_name",
+            "registration_number",
+            "other_phi",
+            "hospital_name"
+          ]
+        },
+        "diagnosis": {
+          "principal": "",
+          "secondary": [],
+          "symptoms": [
+            "Numbness in rt little & ring fingers",
+            "sensory impairment in rt little finger"
+          ]
+        },
+        "vitals": {
+          "blood_pressure": {
+            "systolic": "100",
+            "diastolic": "70",
+            "unit": "mmHg"
+          },
+          "pulse": {
+            "value": null,
+            "unit": "bpm"
+          },
+          "temperature": {
+            "value": null,
+            "unit": "°F"
+          },
+          "weight": {
+            "value": null,
+            "unit": "kg"
+          },
+          "spo2": {
+            "value": null,
+            "unit": "%"
+          },
+          "respiratory_rate": {
+            "value": null,
+            "unit": "/min"
+          }
+        },
+        "notes": [
+          {
+            "text": "Numbness in Rt little & ring fingers since yesterday afternoon.",
+            "category": "clinical_note",
+            "page": 1,
+            "confidence": "high"
+          },
+          {
+            "text": "no weakness, pain anywhere etc. - no HTN, DM.",
+            "category": "clinical_note",
+            "page": 1,
+            "confidence": "high"
+          },
+          {
+            "text": "O/E - no wasting, weakness. - sensory impairment in Rt little finger. DTR N.",
+            "category": "finding",
+            "page": 1,
+            "confidence": "high"
+          }
+        ],
+        "final": {
+          "labs": [],
+          "radiology": [
+            {
+              "name": "NCS both ULs",
+              "source": "visual_selection",
+              "uncertain": false,
+              "reason": ""
+            }
+          ],
+          "nuclearMedicine": [],
+          "procedures": [
+            {
+              "name": "NCS both ULs - ulnar below & above elbow too",
+              "source": "text_order",
+              "uncertain": false,
+              "reason": ""
+            }
+          ]
+        },
+        "promoted": {
+          "labs": [],
+          "radiology": [],
+          "nuclearMedicine": [],
+          "procedures": []
+        },
+        "counts": {
+          "notes": 3,
+          "labs": 0,
+          "radiology": 1,
+          "nuclearMedicine": 0,
+          "procedures": 1,
+          "promotedLabs": 0,
+          "promotedRadiology": 0,
+          "promotedNuclearMedicine": 0,
+          "promotedProcedures": 0
+        },
+        "sources": {
+          "labSources": [],
+          "radiologySources": [
+            "visual_selection"
+          ],
+          "procedureSources": [
+            "text_order"
+          ]
+        },
+        "usage": {
+          "promptTokens": 0,
+          "completionTokens": 0,
+          "totalTokens": 0
+        }
+      }
+    }
+  ]
+}

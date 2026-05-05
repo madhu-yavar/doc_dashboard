@@ -1,16 +1,24 @@
 /**
  * Document Type Router
  * Automatically detects document type and routes to the appropriate extractor agent
+ *
+ * ENHANCED: Now supports agentic classification option
  */
 
 const DischargeExtractorAgent = require("./discharge_extractor_agent.cjs");
 const OutpatientExtractorAgent = require("./outpatient_extractor_agent.cjs");
 const LabReportExtractorAgent = require("./lab_report_extractor_agent.cjs");
-const ChartNoteExtractorAgent = require("./chart_note_extractor_agent.cjs");
+const ChartNoteExtractorAgent = require("./chart_note_agent.cjs");
 const PrescriptionReactExtractorAgent = require("./prescription_react_extractor_agent.cjs");
 
+// NEW: Two-Stage Prescription Agent (Gemma + Gemini)
+const PrescriptionTwoStageAgent = require("./prescription_two_stage_agent.cjs");
+
+// NEW: Agentic classifier and extraction
+const DocumentClassifierAgent = require("./extraction/document_classifier_agent.cjs");
+const ReActExtractionAgent = require("./extraction/react_extraction_agent.cjs");
+
 const PDFReaderTool = require("../tools/pdf/pdf_reader.tool.cjs");
-const HandwritingDetectorSkill = require("../skills/detection/handwriting_detector.skill.cjs");
 const path = require("path");
 
 class DocumentTypeRouter {
@@ -18,20 +26,43 @@ class DocumentTypeRouter {
     this.config = {
       maxRetries: 1,
       timeoutPerStep: 30000,
+      // DEFAULT to agentic classification - it's more accurate!
+      useAgenticClassification: config.useAgenticClassification ?? true,
+      useAgenticExtraction: config.useAgenticExtraction ?? process.env.USE_AGENTIC_EXTRACTION === "true",
       ...config
     };
 
-    // Initialize all available agents
+    // Initialize all available agents (existing)
     this.agents = {
-      discharge_summary: new DischargeExtractorAgent(config.gemma || {}),
-      outpatient_record: new OutpatientExtractorAgent(config.gemma || {}),
-      lab_report: new LabReportExtractorAgent(config.gemma || {}),
-      chart_note: new ChartNoteExtractorAgent(config.gemma || {}),
-      prescription: new PrescriptionReactExtractorAgent(config.qwen || {})
+      discharge_summary: new DischargeExtractorAgent(config),
+      inpatient_record: new DischargeExtractorAgent({
+        ...config,
+        enableDocumentAnalyzer: false,
+        enablePendingItemsExtraction: false,
+      }),
+      outpatient_record: new OutpatientExtractorAgent(config),
+      lab_report: new LabReportExtractorAgent(config),
+      chart_note: new ChartNoteExtractorAgent(config),
+      prescription: new PrescriptionReactExtractorAgent(config)
     };
 
+    // Initialize two-stage prescription agent (new)
+    this.prescriptionTwoStageAgent = new PrescriptionTwoStageAgent({
+      gemma: config.gemma || {},
+      geminiModel: config.geminiModel || process.env.GEMINI_MODEL || "gemini-2.5-flash",
+      handwritingThreshold: config.handwritingThreshold || 15
+    });
+
+    // Initialize agentic classifier - pass config correctly
+    this.agenticClassifier = new DocumentClassifierAgent({
+      debug: config.debug || false,
+      // Map from router's config to classifier's expected parameter names
+      gemmaUrl: config.gemma?.baseUrl || process.env.GEMMA_URL,
+      gemmaModel: config.gemma?.model || process.env.GEMMA_MODEL,
+      timeout: config.gemma?.timeout
+    });
+
     this.pdfReader = new PDFReaderTool(config);
-    this.handwritingDetector = new HandwritingDetectorSkill(config.qwen || {});
   }
 
   /**
@@ -51,13 +82,42 @@ class DocumentTypeRouter {
 
   /**
    * Detect document type from filename or content
-   * FIX 1: Now accepts options object with pdfName parameter
-   * FIX 3: Increased text window from 3000 to 12000 chars
+   *
+   * ENHANCED: Supports agentic classification (more accurate, slower)
+   *
+   * @param {string} pdfPath - Path to PDF file
+   * @param {object} options - Options
+   * @param {string} options.pdfName - Document name
+   * @param {boolean} options.useAgentic - Override to use agentic classification
+   * @param {string} options.pdfText - Pre-extracted text (skip OCR)
+   * @returns {Promise<string>} Document type
    */
   async detectDocumentType(pdfPath, options = {}) {
-    const { pdfName } = options;
-    let pdfText = options.pdfText; // Use let so we can reassign
-    // FIX 1: Use provided pdfName first, fall back to path extraction
+    const { pdfName, useAgentic, pdfText: providedText } = options;
+    let pdfText = providedText;
+
+    // NEW: Use agentic classifier if enabled
+    const shouldUseAgentic = useAgentic ?? this.config.useAgenticClassification;
+
+    if (shouldUseAgentic) {
+      console.log("\n🤖 Using Agentic Classifier...");
+      const result = await this.agenticClassifier.classify(pdfPath, pdfName);
+
+      if (result.documentType && result.confidence > 0.7) {
+        console.log(`   ✓ Classified as: ${result.documentType} (${(result.confidence * 100).toFixed(0)}% confidence)`);
+        console.log(`   Reasoning: ${result.reasoning?.substring(0, 100)}...`);
+        return result.documentType;
+      }
+
+      console.log(`   ⚠ Low confidence (${(result.confidence * 100).toFixed(0)}%), falling back to rule-based...`);
+    }
+
+    // FALLBACK: Rule-based classification
+    // This serves as a backup when:
+    // 1. Agentic classification is disabled
+    // 2. Agentic classification has low confidence
+    // 3. Gemma LLM is unavailable
+    // Note: This intentionally duplicates some logic from the agentic classifier for resilience
     const fileName = (pdfName || pdfPath.split("/").pop()).toLowerCase();
 
     // Filename-based HINTS (not absolute - content can override)
@@ -133,17 +193,10 @@ class DocumentTypeRouter {
     const hasDischargeKeywords = /discharge summary|discharge planning|discharge medication/i.test(pdfText);
     const hasExplicitChartNote = /\bchart note\b/i.test(pdfText); // Exact "chart note" phrase
 
-    // Quick handwriting detection for prescription routing (skip if filename strongly suggests prescription)
-    let hasHandwriting = false;
-    if (filenameHints.prescription || prescriptionScore >= 2) {
-      try {
-        const handwritingCheck = await this.handwritingDetector.quickDetect(pdfPath);
-        hasHandwriting = handwritingCheck.hasHandwriting;
-      } catch (e) {
-        // If handwriting detection fails, continue without it
-        console.log("Handwriting detection failed, continuing with text analysis");
-      }
-    }
+    // Quick handwriting detection for prescription routing
+    // NOTE: Using filename-based detection since Qwen handwriting detector removed
+    // Future: Use Gemini or Gemma-based handwriting detection
+    let hasHandwriting = filenameHints.prescription || filenameHints.doxper;
 
     // Filename hint for "prescription" or "doxper" is very strong
     if (filenameHints.prescription) {
@@ -196,15 +249,20 @@ class DocumentTypeRouter {
 
   /**
    * Route document to appropriate agent based on type detection
-   * FIX 5: Added routing metadata for debugging
+   *
+   * ENHANCED: Supports agentic extraction option
+   *
+   * @param {string} pdfPath - Path to PDF file
+   * @param {object} options - Options
+   * @param {boolean} options.useAgenticExtraction - Use ReAct extraction agent
+   * @param {string} options.forceAgent - Force specific agent
+   * @returns {Promise<object>} Extraction result
    */
   async process(pdfPath, options = {}) {
     const startTime = Date.now();
     const pdfName = options.pdfName || path.basename(pdfPath);
-    const forceAgent = options.forceAgent; // Allow manual override
-
-    // Track scores for debugging
-    let debugScores = {};
+    const forceAgent = options.forceAgent;
+    const useAgenticExtraction = options.useAgenticExtraction ?? this.config.useAgenticExtraction;
 
     try {
       // Detect document type
@@ -213,18 +271,51 @@ class DocumentTypeRouter {
         detectedType = forceAgent;
         console.log(`\n🔀 Forced agent type: ${detectedType}`);
       } else {
-        // FIX 1: Pass pdfName to detectDocumentType
-        detectedType = await this.detectDocumentType(pdfPath, { pdfName });
+        detectedType = await this.detectDocumentType(pdfPath, { pdfName, ...options });
         console.log(`\n🔀 Detected document type: ${detectedType}`);
       }
 
-      // Get the appropriate agent
-      const agent = this.agents[detectedType];
+      // NEW: Use agentic extraction if enabled
+      if (useAgenticExtraction) {
+        console.log(`🤖 Using ReAct Extraction Agent for ${detectedType}...`);
+
+        const reactAgent = new ReActExtractionAgent({
+          documentType: detectedType,
+          debug: options.debug || false,
+          ...options.config
+        });
+
+        const result = await reactAgent.extract(pdfPath, pdfName, options);
+
+        // Add routing metadata
+        if (result) {
+          result.meta = result.meta || {};
+          result.meta.router = {
+            detected_type: detectedType,
+            router_version: "2.0.0-agentic",
+            confidence: "high",
+            filename_used: pdfName,
+            extraction_method: "react_agent"
+          };
+        }
+
+        return result;
+      }
+
+      // Use existing agents (backwards compatible)
+      // SPECIAL CASE: Use two-stage agent for prescriptions
+      let agent;
+      if (detectedType === "prescription" && !useAgenticExtraction) {
+        console.log(`📋 Routing to Two-Stage Prescription Agent...`);
+        agent = this.prescriptionTwoStageAgent;
+      } else {
+        console.log(`📋 Routing to existing agent: ${this.agents[detectedType]?.name || detectedType}`);
+        agent = this.agents[detectedType];
+      }
+
       if (!agent) {
         throw new Error(`No agent found for document type: ${detectedType}`);
       }
-
-      console.log(`📋 Routing to: ${agent.name}`);
 
       // Process with the selected agent
       const result = await agent.process(pdfPath, {
@@ -233,7 +324,7 @@ class DocumentTypeRouter {
         detectedType
       });
 
-      // FIX 5: Enhanced routing metadata for debugging
+      // Add routing metadata
       if (result.success && result.data) {
         result.data.meta = result.data.meta || {};
         result.data.meta.router = {

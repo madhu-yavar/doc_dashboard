@@ -3,8 +3,8 @@
 ## Multi-Agent Clinical Intelligence System
 
 **Project:** Doctor Dashboard
-**Version:** 2.0.0
-**Last Updated:** 2026-04-15
+**Version:** 3.0.0
+**Last Updated:** 2026-04-27
 
 ---
 
@@ -15,46 +15,242 @@
 
 The Doctor Dashboard uses a **multi-agent architecture** where each agent specializes in a specific clinical workflow. Agents are built using the **ReAct (Reasoning + Acting) pattern**, which combines explicit reasoning with action execution.
 
+**NEW in v3.0:** The system now features a **truly agentic ReAct-based architecture** with:
+- **Dynamic skill selection** - Agents decide which skills to run based on document content
+- **Scalable skill registry** - Add new document types via configuration, not code
+- **Agentic document classification** - Think-Act-Observe loop for document type detection
+
+---
+
+## ReAct-Based Architecture (v3.0)
+
+### Core Components
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         REACT-BASED AGENT SYSTEM v3.0                       │
+│                    (Dynamic Skill Selection + Classification)              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                                    ┌─────────────────┐
+                                    │   PDF Document  │
+                                    └────────┬────────┘
+                                             │
+                                             ▼
+                    ┌──────────────────────────────────────────┐
+                    │      DocumentClassifierAgent (ReAct)     │
+                    │  ┌────────────────────────────────────┐  │
+                    │  │ THINK: What type of document?      │  │
+                    │  │ ACT:  Use vision/text/handwriting  │  │
+                    │  │ OBSERVE: Classification result     │  │
+                    │  └────────────────────────────────────┘  │
+                    └─────────────────┬────────────────────────┘
+                                      │ documentType + confidence
+                                      ▼
+                    ┌──────────────────────────────────────────┐
+                    │      ReActExtractionAgent (ReAct)        │
+                    │  ┌────────────────────────────────────┐  │
+                    │  │ THINK: What extraction is needed?  │  │
+                    │  │ ACT:  Dynamically select skills    │  │
+                    │  │ OBSERVE: Results, validate, merge  │  │
+                    │  └────────────────────────────────────┘  │
+                    │                                          │
+                    │         ┌────────────────┐               │
+                    │         │ Skill Registry │               │
+                    │         │  • Required    │               │
+                    │         │  • Optional    │               │
+                    │         │  • Validation  │               │
+                    │         └────────────────┘               │
+                    └─────────────────┬────────────────────────┘
+                                      │
+                                      ▼
+                            ┌─────────────────┐
+                            │  Structured     │
+                            │  Clinical Data  │
+                            └─────────────────┘
+```
+
+### Skill Registry
+
+The **Skill Registry** ([agents/core/skill_registry.cjs](../agents/core/skill_registry.cjs)) is the central configuration hub that maps document types to their required skills.
+
+**Supported Document Types:**
+
+| Document Type | Required Skills | Optional Skills | Description |
+|---------------|-----------------|-----------------|-------------|
+| `discharge_summary` | demographics, clinical_data | risk_scores, vitals, functional_status, pending_items | Inpatient discharge |
+| `outpatient_record` | demographics, clinical_data | vitals | OPD visit records |
+| `prescription` | patient, medications | diagnosis, doctor | Rx pads + OPD forms with handwriting |
+| `lab_report` | demographics | lab_results | Laboratory results |
+| `chart_note` | demographics, clinical_data | vitals | Progress/SOAP notes |
+| `inpatient_record` | demographics, clinical_data | vitals, risk_scores | IPD case papers |
+
+**Adding a New Document Type:**
+
+```javascript
+// In agents/core/skill_registry.cjs
+registerDocumentType("new_doc_type", {
+  required: [
+    { skill: DemographicsExtractorSkill, name: "demographics" },
+  ],
+  optional: [
+    { skill: SomeOptionalSkill, name: "optional_field", condition: "has_content" },
+  ],
+  validation: [
+    { skill: CrossValidatorSkill, name: "cross_validation" },
+  ],
+  config: {
+    // Document-specific configuration
+  }
+});
+```
+
+### ReAct Loop Example
+
+```
+Iteration 1: Thought="Running required skill: patient"
+Iteration 2: Thought="Running required skill: medications"
+Iteration 3: Thought="Skipping optional skill diagnosis (condition not met: has_diagnosis)"
+Iteration 4: Thought="Skipping optional skill doctor (condition not met: has_doctor_info)"
+Iteration 5: Thought="Running validation: prescription_validation"
+Iteration 6: Thought="Extraction complete. Ran 3 skills, skipped 2."
+```
+
 ---
 
 ## Agent Hierarchy
 
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                         AI AGENT SYSTEM v2.0                                  ║
-║                     Multi-Agent Clinical Intelligence                         ║
+║                         AI AGENT SYSTEM v3.0                                  ║
+║              ReAct-Based + Dynamic Skill Selection                           ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-║                           PRIMARY AGENTS                                    ║
-║                    (Direct User-Facing Workflows)                           ║
+║                           CORE AGENTS (v3.0)                                ║
+║                    (ReAct-Based with Skill Registry)                        ║
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────┐  ┌─────────────────────────────┐
 │   ┌─────────────────────┐   │  │   ┌─────────────────────┐   │
-│   │ DischargeExtractor  │   │  │   │ DoctorAssistant     │   │
+│   │ DocumentClassifier  │   │  │   │ ReActExtraction     │   │
 │   │      Agent          │   │  │   │      Agent          │   │
 │   │                     │   │  │   │                     │   │
-│   │  PDF → Structured   │   │  │   │  Interactive Q&A    │   │
-│   │  Clinical Data      │   │  │   │  with RAG + Safety  │   │
+│   │  Vision+Text+Hand-  │   │  │   │  Dynamic Skill      │   │
+│   │  writing Detection  │   │  │   │  Selection          │   │
 │   └─────────────────────┘   │  │   └─────────────────────┘   │
 └─────────────────────────────┘  └─────────────────────────────┘
+             │                                   │
+             └─────────────────┬─────────────────┘
+                           │ │
+                           ▼ ▼
+                  ┌──────────────────┐
+                  │  Skill Registry  │
+                  │  6+ Document Types│
+                  └──────────────────┘
 
-┌─────────────────────────────┐
-│   ┌─────────────────────┐   │
-│   │   ChartNoteAgent    │   │
-│   │                     │   │
-│   │  SOAP Note Gen      │   │
-│   │  (ReAct Reasoning)  │   │
-│   └─────────────────────┘   │
-└─────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+║                           SPECIALIZED AGENTS                                ║
+║                    (Domain-Specific Workflows)                              ║
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────┐  ┌─────────────────────────────┐
+│   ┌─────────────────────┐   │  │   ┌─────────────────────┐   │
+│   │ DoctorAssistant     │   │  │   │   ChartNoteAgent    │   │
+│   │      Agent          │   │  │   │                     │   │
+│   │                     │   │  │   │  SOAP Note Gen      │   │
+│   │  Interactive Q&A    │   │  │   │  (ReAct Reasoning)  │   │
+│   │  with RAG + Safety  │   │  │   │                     │   │
+│   └─────────────────────┘   │  │   └─────────────────────┘   │
+└─────────────────────────────┘  └─────────────────────────────┘
 ```
 
 ---
 
 ## Agent Specifications
 
-### 1. DischargeExtractorAgent
+### 0. DocumentClassifierAgent (NEW in v3.0)
+
+**Purpose:** Classify documents using ReAct-based reasoning
+
+**File:** `agents/classification/document_classifier_agent.cjs`
+
+#### Architecture
+
+```
+PDF Input
+    ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ THINK: Analyze document structure and content                    │
+└─────────────────────────────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ ACT: Use classification tools                                    │
+│   1. convert_first_page - Visual analysis                       │
+│   2. extract_text - Text extraction                             │
+│   3. detect_handwriting - Handwriting detection                 │
+│   4. classify_with_llm_enhanced - LLM classification            │
+└─────────────────────────────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ OBSERVE: Classification result with confidence                  │
+│   - documentType (e.g., "prescription")                         │
+│   - confidence (e.g., 0.95)                                     │
+│   - reasoning (explanation of classification)                   │
+└─────────────────────────────────────────────────────────────────┘
+    ↓
+Classification Output
+```
+
+**Achieves 95%+ confidence** on test documents by combining vision, text, and handwriting analysis.
+
+---
+
+### 1. ReActExtractionAgent (NEW in v3.0)
+
+**Purpose:** Extract clinical data using dynamic skill selection based on document content
+
+**File:** `agents/extraction/react_extraction_agent.cjs`
+
+#### Architecture
+
+```
+Classified Document
+    ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ THINK: Analyze document to determine which skills are needed    │
+│   - Check for required skills (must run)                        │
+│   - Check optional skills conditions                            │
+│   - Plan execution order                                        │
+└─────────────────────────────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ ACT: Dynamically select and execute skills from registry        │
+│   Required: demographics, clinical_data                         │
+│   Optional: risk_scores, vitals, medications (if present)       │
+│   Validation: cross_validation                                  │
+└─────────────────────────────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ OBSERVE: Skill results, validate, merge into final output       │
+└─────────────────────────────────────────────────────────────────┘
+    ↓
+Structured Clinical Data
+```
+
+#### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| **Dynamic Skill Selection** | Only runs skills relevant to document content |
+| **Conditional Execution** | Optional skills run only if conditions are met |
+| **Scalable Registry** | Add new document types via configuration |
+| **Full Observability** | Complete thought/action/observation trace |
+| **Error Resilience** | Failed skills don't stop processing |
+
+---
+
+### 2. DoctorAssistantAgent
 
 **Purpose:** Transform unstructured PDF discharge summaries into structured clinical data
 

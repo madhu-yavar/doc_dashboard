@@ -17,6 +17,9 @@ const LabsDetail = ({ onBack, data }: LabsDetailProps) => {
   const hasLabResults = labs.hasResults || false;
   const labResults = labs.lab_results || [];
   const investigations = labs.investigations || [];
+  // Nuclear medicine studies (from prescriptions)
+  const nuclearMedicineList = (labs as any).nuclear_medicine_list || [];
+  const hasNuclearMedicine = nuclearMedicineList.length > 0;
 
   // Group investigations by category
   const groupedInvestigations = investigations.length > 0
@@ -68,7 +71,7 @@ const LabsDetail = ({ onBack, data }: LabsDetailProps) => {
 
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg bg-section-labs/10 flex items-center justify-center text-lg">🔬</div>
-        <h2 className="text-xl font-bold text-foreground">Laboratory Results</h2>
+        <h2 className="text-xl font-bold text-foreground">Labs - Advised / Results</h2>
         <SectionProvenanceBadge status={labsProvenance.status} />
         <div className="flex gap-2">
           <StatusBadge status="normal" label={`${hasLabResults ? labResults.length : labs.totalTests} Tests`} />
@@ -97,7 +100,7 @@ const LabsDetail = ({ onBack, data }: LabsDetailProps) => {
           <div className="bg-card rounded-xl border p-5">
             <div className="flex items-center gap-2 mb-4">
               <FileText className="w-5 h-5 text-blue-600" />
-              <h3 className="font-semibold text-sm text-foreground">Laboratory Results</h3>
+              <h3 className="font-semibold text-sm text-foreground">Results</h3>
             </div>
 
             {Object.entries(groupedLabResults).map(([category, results]) => (
@@ -175,6 +178,33 @@ const LabsDetail = ({ onBack, data }: LabsDetailProps) => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Nuclear Medicine Studies */}
+      {hasNuclearMedicine && (
+        <div className="bg-card rounded-xl border p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-5 h-5 text-purple-600">☢️</div>
+            <h3 className="font-semibold text-sm text-foreground">Nuclear Medicine Studies</h3>
+            <span className="ml-auto text-xs text-muted-foreground">{nuclearMedicineList.length} study{nuclearMedicineList.length > 1 ? 's' : ''}</span>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            The following nuclear medicine studies were ordered.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {nuclearMedicineList.map((study: any, i: number) => (
+              <div key={i} className={`flex items-center gap-2 text-sm p-3 rounded border ${study.is_uncertain ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800' : 'bg-muted/30'}`}>
+                <FileText className="w-4 h-4 text-purple-600 flex-shrink-0" />
+                <span className="text-foreground font-medium">{study.test}</span>
+                {study.is_uncertain && (
+                  <span className="ml-auto text-xs text-amber-600 dark:text-amber-400" title={study.confidence_reason}>
+                    Uncertain
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

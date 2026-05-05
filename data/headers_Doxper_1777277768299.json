@@ -1,0 +1,182 @@
+{
+  "file": "Doxper.pdf",
+  "timestamp": "2026-04-27T08:16:08.291Z",
+  "model": "google/gemma-4-31B-it",
+  "summary": {
+    "total_pages": 2,
+    "total_tokens": 2603,
+    "total_time_ms": 54548,
+    "avg_time_per_page": 27274,
+    "pages_with_tables": 2
+  },
+  "common_elements": {
+    "hospital_names": [
+      "manipalhospitals"
+    ],
+    "document_titles": [
+      "OUT PATIENT RECORD INTERNAL MEDICINE",
+      "LAB INVESTIGATIONS ADVISED"
+    ],
+    "departments": [
+      "Infectious Disease MHB"
+    ],
+    "doctors": [
+      "Dr. NEHA MISHRA (MBBS, MD (GEN MED), POST DOCTORAL FELLOWSHIP IN INFECTIOUS DISEASES (CMC VELLORE))"
+    ]
+  },
+  "common_table_headers": {
+    "PROCEDURE": [
+      "ECG",
+      "EEG",
+      "Holter",
+      "NCV",
+      "TMT",
+      "Echo",
+      "EMHG",
+      "CAG",
+      "Physiotherapy"
+    ],
+    "Admission / Surgery / Day Care Procedure": [
+      "Admission / Surgery / Day Care Procedure",
+      "Procedure"
+    ],
+    "PRESCRIPTION (WRITE IN CAPITAL LETTERS)": [
+      "Sr. No.",
+      "Name of Medicine",
+      "Dose",
+      "Morning",
+      "Noon",
+      "Night",
+      "No. of Days",
+      "Remarks"
+    ]
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "success": true,
+      "error": null,
+      "duration_ms": 31300,
+      "tokens": 1366,
+      "headers": {
+        "page_number": 1,
+        "document_headers": {
+          "hospital_name": "manipalhospitals",
+          "document_title": "OUT PATIENT RECORD INTERNAL MEDICINE",
+          "patient_info": {
+            "name": "Mr Jerald PILLAI",
+            "id": "MH0056183878",
+            "age": "21 Yrs",
+            "gender": "Male"
+          },
+          "dates": {
+            "report_date": "2022-01-08 09:09",
+            "visit_date": null,
+            "admission_date": null
+          },
+          "page_number": "Page 1 of 2",
+          "department": "Infectious Disease MHB",
+          "doctor": "Dr. NEHA MISHRA (MBBS, MD (GEN MED), POST DOCTORAL FELLOWSHIP IN INFECTIOUS DISEASES (CMC VELLORE))",
+          "other_header_text": [
+            "Episode No.: 000008190425",
+            "Patient Mob. No. : 8754912568",
+            "E-mail ID : jeraldsatya2000@gmail.com",
+            "KMC Reg. No. : TMN 2017 0001362 KTK",
+            "Height:",
+            "BP:",
+            "Allergies: NO",
+            "Diet:",
+            "Weight:",
+            "Any Known Health conditions: NO",
+            "Doctor's Notes:"
+          ]
+        },
+        "table_headers": [
+          {
+            "table_topic": "PROCEDURE",
+            "columns": [
+              "ECG",
+              "EEG",
+              "Holter",
+              "NCV",
+              "TMT",
+              "Echo",
+              "EMHG",
+              "CAG",
+              "Physiotherapy"
+            ],
+            "row_count": "1",
+            "location": "bottom of page"
+          }
+        ],
+        "notes": [
+          "Patient information and visit details are presented in a key-value pair format rather than a formal table.",
+          "The procedure section at the bottom functions as a checklist table."
+        ]
+      }
+    },
+    {
+      "page_number": 2,
+      "success": true,
+      "error": null,
+      "duration_ms": 23248,
+      "tokens": 1237,
+      "headers": {
+        "page_number": 2,
+        "document_headers": {
+          "hospital_name": null,
+          "document_title": "LAB INVESTIGATIONS ADVISED",
+          "patient_info": {
+            "name": null,
+            "id": null,
+            "age": null,
+            "gender": null
+          },
+          "dates": {
+            "report_date": null,
+            "visit_date": null,
+            "admission_date": null
+          },
+          "page_number": "Page 2 of 2",
+          "department": null,
+          "doctor": null,
+          "other_header_text": [
+            "RADIOLOGY TESTS ADVISED",
+            "Other Radiology Investigations",
+            "Nuclear Medicine"
+          ]
+        },
+        "table_headers": [
+          {
+            "table_topic": "Admission / Surgery / Day Care Procedure",
+            "columns": [
+              "Admission / Surgery / Day Care Procedure",
+              "Procedure"
+            ],
+            "row_count": "1",
+            "location": "middle of page"
+          },
+          {
+            "table_topic": "PRESCRIPTION (WRITE IN CAPITAL LETTERS)",
+            "columns": [
+              "Sr. No.",
+              "Name of Medicine",
+              "Dose",
+              "Morning",
+              "Noon",
+              "Night",
+              "No. of Days",
+              "Remarks"
+            ],
+            "row_count": "5",
+            "location": "bottom of page"
+          }
+        ],
+        "notes": [
+          "Hospital name 'Manipal Hospital, HAL Airport Road' is located in the footer, not the header.",
+          "The page contains multiple sections with their own headings acting as table/section headers."
+        ]
+      }
+    }
+  ]
+}

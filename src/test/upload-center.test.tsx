@@ -5,6 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import UploadCenter from "@/pages/UploadCenter";
 import type { ProcessedDocument } from "@/lib/processedDocuments";
 
+vi.mock("@/components/dashboard/ProcessingInsights", () => ({
+  default: () => <div data-testid="processing-insights">Processing Insights</div>,
+}));
+
 describe("UploadCenter", () => {
   let documents: ProcessedDocument[];
   let processingStarted: boolean;
@@ -50,6 +54,45 @@ describe("UploadCenter", () => {
           return new Response(JSON.stringify({ documents }), { status: 200 });
         }
 
+        if (url.endsWith("/analytics/overview") && method === "GET") {
+          const processedDocuments = documents.filter((document) => document.status === "processed");
+          return new Response(JSON.stringify({
+            documentsByType: [
+              { documentType: "prescription", count: 0 },
+              { documentType: "discharge_summary", count: processedDocuments.length },
+              { documentType: "outpatient_record", count: 0 },
+              { documentType: "lab_report", count: 0 },
+              { documentType: "chart_note", count: 0 },
+              { documentType: "unknown", count: 0 },
+            ],
+            tokensByProvider: {
+              gemma: processedDocuments.length * 100,
+              gemini: 0,
+              total: processedDocuments.length * 100,
+            },
+            medicationsByDocumentType: [
+              { documentType: "prescription", count: 0 },
+              { documentType: "discharge_summary", count: 0 },
+              { documentType: "outpatient_record", count: 0 },
+              { documentType: "lab_report", count: 0 },
+              { documentType: "chart_note", count: 0 },
+              { documentType: "unknown", count: 0 },
+            ],
+            testsByDocumentType: [
+              { documentType: "prescription", lab: 0, radiology: 0, nuclearMedicine: 0, procedures: 0 },
+              { documentType: "discharge_summary", lab: 0, radiology: 0, nuclearMedicine: 0, procedures: 0 },
+              { documentType: "outpatient_record", lab: 0, radiology: 0, nuclearMedicine: 0, procedures: 0 },
+              { documentType: "lab_report", lab: 0, radiology: 0, nuclearMedicine: 0, procedures: 0 },
+              { documentType: "chart_note", lab: 0, radiology: 0, nuclearMedicine: 0, procedures: 0 },
+              { documentType: "unknown", lab: 0, radiology: 0, nuclearMedicine: 0, procedures: 0 },
+            ],
+            summary: {
+              includedDocuments: processedDocuments.length,
+              refreshedAt: "2026-05-04T08:00:00Z",
+            },
+          }), { status: 200 });
+        }
+
         if (url.endsWith("/documents/upload") && method === "POST") {
           documents = [
             {
@@ -88,9 +131,12 @@ describe("UploadCenter", () => {
     );
 
     expect(await screen.findByText(/queue status/i)).toBeInTheDocument();
+    const insights = screen.getByTestId("processing-insights");
+    const dropZone = screen.getByRole("button", { name: /drop pdf files here or click to upload/i });
+    expect(insights.compareDocumentPosition(dropZone) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(await screen.findByText(/no documents found/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /process queue/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /drop pdf files here or click to upload/i })).toBeInTheDocument();
+    expect(dropZone).toBeInTheDocument();
   });
 
   it("adds uploaded pdfs to the queue and processes them", async () => {

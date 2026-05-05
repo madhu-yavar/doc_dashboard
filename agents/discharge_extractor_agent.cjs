@@ -18,6 +18,10 @@ const ClinicalDataExtractorSkill = require("../skills/extraction/clinical_data_e
 const PendingItemsExtractorSkill = require("../skills/extraction/pending_items_extractor.skill.cjs");
 const CrossValidatorSkill = require("../skills/validation/cross_validator.skill.cjs");
 
+// Alert Agents
+const PharmacyAlertAgent = require("./pharmacy/pharmacy_alert_agent.cjs");
+const DepartmentAlertAgent = require("./departments/department_alert_agent.cjs");
+
 class DischargeExtractorAgent {
   constructor(config = {}) {
     this.name = "Discharge Summary Extractor";
@@ -40,6 +44,19 @@ class DischargeExtractorAgent {
     this.pendingItemsExtractorSkill = new PendingItemsExtractorSkill();
     this.crossValidatorSkill = new CrossValidatorSkill();
 
+    // Initialize alert agents
+    this.pharmacyAlertAgent = new PharmacyAlertAgent();
+    this.departmentAlertAgent = new DepartmentAlertAgent();
+
+    const extractionTextBudget = this.parsePositiveInt(
+      config.extractionTextBudget || process.env.EXTRACTION_TEXT_BUDGET,
+      40000
+    );
+    const clinicalExtractionTextBudget = this.parsePositiveInt(
+      config.clinicalExtractionTextBudget || process.env.CLINICAL_EXTRACTION_TEXT_BUDGET,
+      Math.min(extractionTextBudget, 24000)
+    );
+
     this.config = {
       maxRetries: 2,
       timeoutPerStep: 180000,
@@ -47,13 +64,11 @@ class DischargeExtractorAgent {
       requireAllSteps: false,
       logSteps: true,
       saveIntermediates: true,
-      extractionTextBudget: this.parsePositiveInt(
-        config.extractionTextBudget || process.env.EXTRACTION_TEXT_BUDGET,
-        40000
-      ),
+      extractionTextBudget,
+      clinicalExtractionTextBudget,
       extractionPerDocumentConcurrency: this.parsePositiveInt(
         config.extractionPerDocumentConcurrency || process.env.EXTRACTION_PER_DOCUMENT_CONCURRENCY,
-        3
+        1
       ),
       enablePendingItemsExtraction: config.enablePendingItemsExtraction ?? process.env.ENABLE_PENDING_ITEMS_EXTRACTION !== "false",
       enableDocumentAnalyzer: config.enableDocumentAnalyzer ?? process.env.ENABLE_DOCUMENT_ANALYZER === "true",
@@ -64,6 +79,155 @@ class DischargeExtractorAgent {
   parsePositiveInt(value, fallback) {
     const parsed = Number.parseInt(String(value ?? ""), 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  }
+
+  normalizeText(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  isRadiologyOrder(value) {
+    return /\b(?:xray|x-ray|ct|mri|usg|ultrasound|echo|echocardiogram|doppler|mammography|fluoroscopy|scan)\b/i.test(
+      this.normalizeText(value)
+    );
+  }
+
+  isNuclearMedicineOrder(value) {
+    return /\b(?:pet|dtpa|dmsa|mibi|thallium|v\/q|vq|bone scan|thyroid scan|renal scan|hida|nuclear)\b/i.test(
+      this.normalizeText(value)
+    );
+  }
+
+  isProcedureOrder(value) {
+    return /\b(?:uroflowmetry|pvr|cystoscopy|catheteri[sz]ation|ncs|emg|pft|ecg|echo|stress test|holter|biopsy|endoscopy|colonoscopy|bronchoscopy|angiography|arthroscopy)\b/i.test(
+      this.normalizeText(value)
+    );
+  }
+
+  normalizeOrderKey(value) {
+    return this.normalizeText(value)
+      .toLowerCase()
+      .replace(/\bc\/s\b/g, "culture sensitivity")
+      .replace(/\busg\b/g, "ultrasound")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  buildStructuredOrder(input, fallbackType = "lab") {
+    if (!input) return null;
+
+    const label = this.normalizeText(
+      typeof input === "string"
+        ? input
+        : input.test_name || input.study_name || input.type || input.name || ""
+    );
+    if (!label) return null;
+
+    const normalizedType = this.isNuclearMedicineOrder(label)
+      ? "nuclear_medicine"
+      : this.isProcedureOrder(label)
+        ? "procedure"
+        : this.isRadiologyOrder(label)
+          ? "radiology"
+          : fallbackType;
+
+    if (normalizedType === "procedure") {
+      return {
+        orderType: "procedure",
+        item: {
+          name: label,
+          category: typeof input === "object" && input?.category ? input.category : "general",
+          status: typeof input === "object" && input?.status ? String(input.status).toLowerCase() : "ordered",
+          source: typeof input === "object" && input?.source ? input.source : "clinical_extractor",
+          is_uncertain: Boolean(typeof input === "object" && input?.is_uncertain),
+          confidence_reason: typeof input === "object" ? (input.confidence_reason || "") : "",
+        },
+      };
+    }
+
+    return {
+      orderType: normalizedType,
+      item: {
+        type: label,
+        status: typeof input === "object" && input?.status ? String(input.status).toLowerCase() : "ordered",
+        priority: typeof input === "object" && input?.priority ? input.priority : "routine",
+        source: typeof input === "object" && input?.source ? input.source : "clinical_extractor",
+        is_uncertain: Boolean(typeof input === "object" && input?.is_uncertain),
+        confidence_reason: typeof input === "object" ? (input.confidence_reason || "") : "",
+      },
+    };
+  }
+
+  dedupeStructuredOrders(items = [], labelKey) {
+    const deduped = new Map();
+
+    for (const item of Array.isArray(items) ? items : []) {
+      const label = this.normalizeText(item?.[labelKey]);
+      if (!label) continue;
+
+      const key = this.normalizeOrderKey(label);
+      const status = String(item?.status || "").toLowerCase();
+      const score = [
+        status === "ordered" ? 4 : 0,
+        status === "mentioned" ? 3 : 0,
+        item?.source === "text+visual" ? 3 : 0,
+        item?.source === "text_order" ? 2 : 0,
+        item?.source === "note_reconciliation" ? 2 : 0,
+        item?.source === "clinical_extractor" ? 1 : 0,
+      ].reduce((sum, value) => sum + value, 0);
+
+      const existing = deduped.get(key);
+      if (!existing || score > existing.score || (score === existing.score && label.length > existing.label.length)) {
+        deduped.set(key, { item: { ...item, [labelKey]: label }, score, label });
+      }
+    }
+
+    return Array.from(deduped.values()).map((entry) => entry.item);
+  }
+
+  normalizeClinicalOrders(investigations = [], radiology = [], nuclearMedicine = [], procedures = []) {
+    const buckets = {
+      investigations: [],
+      radiology: [],
+      nuclear_medicine: [],
+      procedures: [],
+    };
+
+    for (const item of investigations) {
+      const normalized = this.buildStructuredOrder(item, "lab");
+      if (!normalized) continue;
+
+      if (normalized.orderType === "radiology") buckets.radiology.push(normalized.item);
+      else if (normalized.orderType === "nuclear_medicine") buckets.nuclear_medicine.push(normalized.item);
+      else if (normalized.orderType === "procedure") buckets.procedures.push(normalized.item);
+      else buckets.investigations.push(normalized.item);
+    }
+
+    for (const item of radiology) {
+      const normalized = this.buildStructuredOrder(item, "radiology");
+      if (!normalized) continue;
+      if (normalized.orderType === "nuclear_medicine") buckets.nuclear_medicine.push(normalized.item);
+      else if (normalized.orderType === "procedure") buckets.procedures.push(normalized.item);
+      else buckets.radiology.push(normalized.item);
+    }
+
+    for (const item of nuclearMedicine) {
+      const normalized = this.buildStructuredOrder(item, "nuclear_medicine");
+      if (!normalized) continue;
+      buckets.nuclear_medicine.push(normalized.item);
+    }
+
+    for (const item of procedures) {
+      const normalized = this.buildStructuredOrder(item, "procedure");
+      if (!normalized) continue;
+      buckets.procedures.push(normalized.item);
+    }
+
+    return {
+      investigations: this.dedupeStructuredOrders(buckets.investigations, "type"),
+      radiology: this.dedupeStructuredOrders(buckets.radiology, "type"),
+      nuclear_medicine: this.dedupeStructuredOrders(buckets.nuclear_medicine, "type"),
+      procedures: this.dedupeStructuredOrders(buckets.procedures, "name"),
+    };
   }
 
   isModelConnectivityError(message = "") {
@@ -255,6 +419,103 @@ class DischargeExtractorAgent {
     return `${text.slice(0, headChars)}${marker}${text.slice(-tailChars)}`;
   }
 
+  mergeRanges(ranges = []) {
+    const sorted = ranges
+      .filter((range) => Number.isFinite(range?.start) && Number.isFinite(range?.end) && range.end > range.start)
+      .sort((left, right) => left.start - right.start);
+
+    const merged = [];
+    for (const range of sorted) {
+      const previous = merged[merged.length - 1];
+      if (!previous || range.start > previous.end + 120) {
+        merged.push({ ...range });
+      } else {
+        previous.end = Math.max(previous.end, range.end);
+      }
+    }
+
+    return merged;
+  }
+
+  buildClinicalExtractionText(text, maxChars) {
+    if (!text) return "";
+    if (!Number.isFinite(maxChars) || maxChars <= 0 || text.length <= maxChars) {
+      return text;
+    }
+
+    const windowBefore = 200;
+    const windowAfter = 1600;
+    const headChars = Math.min(3000, Math.max(1200, Math.floor(maxChars * 0.2)));
+    const tailChars = Math.min(1800, Math.max(0, Math.floor(maxChars * 0.12)));
+    const patterns = [
+      /(?:provisional |final )?diagnosis\s*:/gi,
+      /chief complaints?\s*:/gi,
+      /history of present illness\s*:/gi,
+      /allerg(?:y|ies)\s*:/gi,
+      /current medications?\s*:?/gi,
+      /medications?-:\s*/gi,
+      /medication orders?/gi,
+      /residents notes?/gi,
+      /doctor'?s handover/gi,
+      /nurses? endorsement checklist/gi,
+      /progress notes?/gi,
+      /laboratory results?/gi,
+      /investigations?\s*:?/gi,
+      /procedure (?:note|details|performed)/gi,
+      /nursing interventions?\s*:/gi,
+      /care plan\s*:/gi,
+      /clinical examination\s*:/gi,
+      /discharge comments?\s*:/gi,
+      /plan and comments\s*:/gi,
+      /given education\s*:/gi,
+      /patient\/family health education/gi,
+    ];
+
+    const ranges = [{ start: 0, end: headChars }];
+    if (tailChars > 0) {
+      ranges.push({ start: Math.max(0, text.length - tailChars), end: text.length });
+    }
+
+    for (const pattern of patterns) {
+      let matchCount = 0;
+      for (const match of text.matchAll(pattern)) {
+        if (match.index == null) continue;
+        const start = Math.max(0, match.index - windowBefore);
+        const end = Math.min(text.length, match.index + match[0].length + windowAfter);
+        ranges.push({ start, end });
+        matchCount += 1;
+        if (matchCount >= 4) break;
+      }
+    }
+
+    const parts = [];
+    let used = 0;
+    const marker = "\n\n[... section break ...]\n\n";
+    for (const range of this.mergeRanges(ranges)) {
+      const section = text.slice(range.start, range.end).trim();
+      if (!section) continue;
+
+      const candidateLength = section.length + (parts.length > 0 ? marker.length : 0);
+      if (used + candidateLength > maxChars) {
+        const remaining = maxChars - used - (parts.length > 0 ? marker.length : 0);
+        if (remaining > 400) {
+          parts.push(section.slice(0, remaining).trim());
+        }
+        break;
+      }
+
+      parts.push(section);
+      used += candidateLength;
+    }
+
+    const focused = parts.join(marker).trim();
+    if (focused.length >= Math.floor(maxChars * 0.35)) {
+      return focused;
+    }
+
+    return this.buildExtractionText(text, maxChars);
+  }
+
   serializeStepSummary(step) {
     return {
       step: step.step,
@@ -321,10 +582,20 @@ class DischargeExtractorAgent {
 
       const originalPdfText = pdfResult.text || "";
       const pdfText = this.buildExtractionText(originalPdfText, this.config.extractionTextBudget);
+      const clinicalPdfText = this.buildClinicalExtractionText(
+        originalPdfText,
+        this.config.clinicalExtractionTextBudget
+      );
       const wasCondensed = originalPdfText.length > pdfText.length;
+      const clinicalWasCondensed = originalPdfText.length > clinicalPdfText.length;
       console.log(
         `   📖 PDF read: ${pdfText.length}/${originalPdfText.length} chars, ${pdfResult.pages} pages${wasCondensed ? " (budgeted)" : ""}`
       );
+      if (clinicalWasCondensed) {
+        console.log(
+          `   🩺 Clinical focus: ${clinicalPdfText.length}/${originalPdfText.length} chars for diagnosis/meds/notes`
+        );
+      }
 
       // Emit PDF read event
       if (onProgress) {
@@ -345,9 +616,11 @@ class DischargeExtractorAgent {
 
       const sharedContext = {
         pdfText,
+        clinicalPdfText,
         gemmaClient: this.gemmaClient,
         promptBuilder: this.promptBuilder,
         provenanceBuilder: this.provenanceBuilder,
+        documentType: options.detectedType || "discharge_summary",
       };
 
       const metadataPromise = executionPlan.metadata.length
@@ -429,6 +702,63 @@ class DischargeExtractorAgent {
         });
       }
 
+      // Generate pharmacy and department alerts for UI badges
+      const medicationsCount = Array.isArray(finalResult.data.medications) ? finalResult.data.medications.length : 0;
+      const investigationsCount = Array.isArray(finalResult.data.investigations) ? finalResult.data.investigations.length : 0;
+      const radiologyCount = Array.isArray(finalResult.data.radiology) ? finalResult.data.radiology.length : 0;
+      const nuclearMedicineCount = Array.isArray(finalResult.data.nuclear_medicine) ? finalResult.data.nuclear_medicine.length : 0;
+      const proceduresCount = Array.isArray(finalResult.data.procedures) ? finalResult.data.procedures.length : 0;
+
+      // Build a simple dashboard format for alert agents
+      const dashboardFormat = {
+        medications: finalResult.data.medications || [],
+        investigations: finalResult.data.investigations || [],
+        radiology: finalResult.data.radiology || [],
+        nuclear_medicine: finalResult.data.nuclear_medicine || [],
+        procedures: finalResult.data.procedures || [],
+        patient: finalResult.data.patient || {}
+      };
+
+      // Generate pharmacy alert metadata (mark as not sent since we just track state)
+      let pharmacyAlertResult = null;
+      if (medicationsCount > 0) {
+        try {
+          pharmacyAlertResult = await this.pharmacyAlertAgent.sendAlert(dashboardFormat, {
+            documentId: pdfName,
+            manualTrigger: false
+          });
+        } catch (alertError) {
+          pharmacyAlertResult = { error: alertError.message, success: false, skipped: true };
+        }
+      }
+
+      // Generate department alert metadata
+      let departmentAlertResult = null;
+      if (investigationsCount > 0 || radiologyCount > 0 || nuclearMedicineCount > 0 || proceduresCount > 0) {
+        try {
+          departmentAlertResult = await this.departmentAlertAgent.sendAlerts(dashboardFormat, {
+            documentId: pdfName
+          });
+        } catch (alertError) {
+          departmentAlertResult = { error: alertError.message, success: false };
+        }
+      }
+
+      // Add alert metadata to result
+      finalResult.data.pharmacy_alert = pharmacyAlertResult ? {
+        sent: pharmacyAlertResult.sent || false,
+        email_sent: pharmacyAlertResult.emailSent || false,
+        whatsapp_sent: pharmacyAlertResult.whatsappSent || false,
+        skipped: pharmacyAlertResult.skipped || false,
+        skip_reason: pharmacyAlertResult.reason || null,
+        error: pharmacyAlertResult.error || null
+      } : null;
+
+      finalResult.data.department_alerts = departmentAlertResult ? {
+        sent: departmentAlertResult.sent || false,
+        departments: departmentAlertResult.departments || {}
+      } : null;
+
       return {
         success: true,
         agent: this.name,
@@ -471,6 +801,9 @@ class DischargeExtractorAgent {
       allergies: [],
       medications: [],
       investigations: [],
+      radiology: [],
+      nuclear_medicine: [],
+      procedures: [],
       nursing_needs: [],
       clinical_notes: [],
       treatment: {
@@ -567,6 +900,15 @@ class DischargeExtractorAgent {
         if (Array.isArray(stepData.investigations)) {
           data.investigations = [...data.investigations, ...stepData.investigations];
         }
+        if (Array.isArray(stepData.radiology)) {
+          data.radiology = [...data.radiology, ...stepData.radiology];
+        }
+        if (Array.isArray(stepData.nuclear_medicine)) {
+          data.nuclear_medicine = [...data.nuclear_medicine, ...stepData.nuclear_medicine];
+        }
+        if (Array.isArray(stepData.procedures)) {
+          data.procedures = [...data.procedures, ...stepData.procedures];
+        }
         if (Array.isArray(stepData.nursing_needs)) {
           data.nursing_needs = [...data.nursing_needs, ...stepData.nursing_needs];
         }
@@ -611,7 +953,8 @@ class DischargeExtractorAgent {
                'bp', 'pulse', 'spo2', 'temperature', 'resp_rate', 'pain_score', 'grbs', 'abnormal_flags',
                'fall_risk', 'dvt_risk', 'pressure_ulcer_risk', 'aspiration_risk', 'ews_score', 'gcs',
                'functional_status', 'overall_assistance_needs', 'mobility_notes',
-               'diagnosis', 'allergies', 'medications', 'investigations', 'nursing_needs', 'clinical_notes', 'treatment', 'provenance',
+               'diagnosis', 'allergies', 'medications', 'investigations', 'radiology', 'nuclear_medicine', 'procedures',
+               'nursing_needs', 'clinical_notes', 'treatment', 'provenance',
                'pending_items',
                'document_type', 'sections_identified', 'confidence', 'extraction_strategy',
                'confidence_notes', 'sources', 'validation_notes'].includes(key)) {
@@ -658,6 +1001,17 @@ class DischargeExtractorAgent {
     } else {
       validation.data_quality_notes = `Found ${validation.inconsistencies_found.length} inconsistencies. Review recommended.`;
     }
+
+    const normalizedOrders = this.normalizeClinicalOrders(
+      data.investigations,
+      data.radiology,
+      data.nuclear_medicine,
+      [...(Array.isArray(data.procedures) ? data.procedures : []), ...(Array.isArray(data.treatment?.procedures) ? data.treatment.procedures : [])]
+    );
+    data.investigations = normalizedOrders.investigations;
+    data.radiology = normalizedOrders.radiology;
+    data.nuclear_medicine = normalizedOrders.nuclear_medicine;
+    data.procedures = normalizedOrders.procedures;
 
     return { data, validation };
   }

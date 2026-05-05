@@ -58,29 +58,27 @@ class HandwritingDiagnosisExtractorSkill {
   buildPrompt() {
     return `You are an expert at reading handwritten medical prescriptions and clinical notes.
 
-Your task is to extract NON-MEDICATION clinical content from the prescription pages.
-Focus on the diagnosis narrative itself. Do NOT use this prompt to capture lab orders or radiology orders.
+Your task is to extract diagnosis-oriented clinical content from the prescription pages.
+Focus on diagnosis and symptoms only. Do NOT use this prompt to capture handwritten general notes, lab orders, radiology orders, or procedures.
 
 EXTRACT THE FOLLOWING:
 - principal_diagnosis: the main clinical condition if explicitly written
 - secondary_diagnoses: additional conditions if explicitly written
 - symptoms: complaints or symptoms if explicitly written
-- clinical_notes: brief handwritten clinical observations, advice, or narrative not already captured elsewhere
 
 RULES:
 - Read all pages.
 - Do NOT extract medicines here.
 - Do NOT duplicate the same content across multiple fields.
 - If a line is clearly a lab test, imaging request, ECG, scan order, or procedure order, do NOT place it in any field here.
-- Use clinical_notes only for the remaining clinical narrative.
-- Do NOT put vital signs, allergies, medication lines, dates, hospital names, doctor names, or registration numbers into clinical_notes.
+- Do NOT extract general advice, follow-up instructions, or free-form handwritten notes here unless they are explicitly part of the diagnosis/symptom statement.
+- Do NOT put vital signs, allergies, medication lines, dates, hospital names, doctor names, or registration numbers into any field here.
 - Keep wording close to the document when possible.
 - If diagnosis is not explicitly written, use null for principal_diagnosis and keep has_diagnosis false.
 - Keep the JSON compact and deterministic.
 - Keep arrays concise:
   - secondary_diagnoses: max 5
   - symptoms: max 6
-  - clinical_notes: max 8
 
 STRICT JSON RULES:
 - Return exactly one JSON object.
@@ -93,7 +91,6 @@ Return ONLY valid JSON in this format:
   "principal_diagnosis": "main diagnosis or null",
   "secondary_diagnoses": ["secondary diagnosis 1", "secondary diagnosis 2"],
   "symptoms": ["symptom 1", "symptom 2"],
-  "clinical_notes": ["other handwritten notes not in labs/radiology"],
   "has_diagnosis": false,
   "confidence": "high|medium|low"
 }
@@ -147,7 +144,7 @@ Remember: Return ONLY the JSON object, no additional text or explanation.`;
         maxTokens: 2048,
         thinkingBudget: this.config.thinkingBudget ?? 4096,
         responseMimeType: "application/json",
-        systemInstruction: "You are a medical document extraction expert specializing in handwritten diagnosis and clinical notes."
+        systemInstruction: "You are a medical document extraction expert specializing in handwritten diagnosis and symptoms."
       });
 
       if (!result.success) {
@@ -162,8 +159,6 @@ Remember: Return ONLY the JSON object, no additional text or explanation.`;
 
       // Debug logging to see what Gemini returned
       console.log(`[Stage3-Diagnosis] Gemini returned keys:`, Object.keys(data || {}));
-      console.log(`[Stage3-Diagnosis] clinical_notes:`, data.clinical_notes || 'missing');
-
       if (onProgress) {
         onProgress({
           type: "success",
@@ -180,8 +175,7 @@ Remember: Return ONLY the JSON object, no additional text or explanation.`;
           diagnosis: {
             principal: data.principal_diagnosis || null,
             secondary: Array.isArray(data.secondary_diagnoses) ? data.secondary_diagnoses : [],
-            symptoms: Array.isArray(data.symptoms) ? data.symptoms : [],
-            clinical_notes: Array.isArray(data.clinical_notes) ? data.clinical_notes : []
+            symptoms: Array.isArray(data.symptoms) ? data.symptoms : []
           },
           has_diagnosis: data.has_diagnosis || false,
           confidence: data.confidence || "medium"

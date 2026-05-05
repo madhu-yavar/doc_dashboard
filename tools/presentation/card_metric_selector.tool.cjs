@@ -72,13 +72,25 @@ class CardMetricSelectorTool {
   }
 
   buildLabsCard(data = {}, context = {}) {
+    const investigations = this.toArray(data.labs?.investigations);
+    const nuclearStudies = this.toArray(data.labs?.nuclearStudies);
+    const orderedNames = investigations
+      .map((item) => this.normalizeWhitespace(item?.type || item?.test || item?.test_name || item))
+      .concat(nuclearStudies.map((item) => this.normalizeWhitespace(item?.type || item?.study_name || item?.test || item)))
+      .filter(Boolean)
+      .slice(0, 2);
+
     return this.createCard("labs", {
-      title: "Lab Results",
+      title: "Labs",
       headline_metric: `${data.labs?.totalTests || 0}`,
       secondary_line: data.labs?.hasResults ? "tests completed" : "tests ordered",
       supporting_points: [
-        data.labs?.abnormalCount ? `${data.labs.abnormalCount} abnormal` : "",
-        data.labs?.criticalCount ? `${data.labs.criticalCount} critical` : "",
+        data.labs?.hasResults
+          ? (data.labs?.abnormalCount ? `${data.labs.abnormalCount} abnormal` : "")
+          : orderedNames[0] || "",
+        data.labs?.hasResults
+          ? (data.labs?.criticalCount ? `${data.labs.criticalCount} critical` : "")
+          : orderedNames[1] || "",
       ],
       status: data.labs?.criticalCount ? "critical" : data.labs?.abnormalCount ? "warning" : "normal",
       provenance_status: context.provenance_status,
@@ -86,12 +98,20 @@ class CardMetricSelectorTool {
   }
 
   buildRadiologyCard(data = {}, context = {}) {
+    const studies = this.toArray(data.radiology?.studies);
+    const studyNames = studies
+      .map((item) => this.normalizeWhitespace(item?.type || item?.name || item?.study_name || item))
+      .filter(Boolean)
+      .slice(0, 2);
+    const studyCount = Number(data.radiology?.completedStudies || 0);
+
     return this.createCard("radiology", {
       title: "Radiology",
-      headline_metric: `${data.radiology?.completedStudies || 0}`,
-      secondary_line: data.radiology?.completedStudies === 1 ? "finding" : "findings",
+      headline_metric: `${studyCount}`,
+      secondary_line: studyCount === 1 ? "study ordered" : "studies ordered",
       supporting_points: [
-        data.radiology?.pendingStudies ? `${data.radiology.pendingStudies} pending/documented` : "No pending imaging documented",
+        studyNames[0] || "",
+        studyNames[1] || (data.radiology?.pendingStudies ? `${data.radiology.pendingStudies} pending/documented` : "No pending imaging documented"),
       ],
       status: data.radiology?.criticalFindings ? "critical" : "normal",
       provenance_status: context.provenance_status,
@@ -99,13 +119,21 @@ class CardMetricSelectorTool {
   }
 
   buildTreatmentCard(data = {}, context = {}) {
+    const activeManagement = this.toArray(data.treatment?.activeManagement);
+    const procedures = this.toArray(data.treatment?.procedures);
+    const procedureNames = procedures
+      .map((item) => this.normalizeWhitespace(item?.name || item?.details || item))
+      .filter(Boolean)
+      .slice(0, 2);
+    const complicationsLabel = this.normalizeWhitespace(data.treatment?.complicationsLabel || "");
+
     return this.createCard("treatment", {
       title: "Treatment",
-      headline_metric: `${this.toArray(data.treatment?.activeManagement).length}`,
+      headline_metric: `${Math.max(activeManagement.length, procedures.length)}`,
       secondary_line: "plan items",
       supporting_points: [
-        data.treatment?.currentApproach || "",
-        data.treatment?.complicationsLabel || "",
+        data.treatment?.currentApproach || procedureNames[0] || "",
+        procedureNames[1] || (!/^not documented$/i.test(complicationsLabel) ? complicationsLabel : ""),
       ],
       status: data.treatment?.complications ? "warning" : "normal",
       provenance_status: context.provenance_status,

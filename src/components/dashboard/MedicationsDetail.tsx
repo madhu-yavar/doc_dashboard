@@ -1,5 +1,6 @@
 import type { DashboardPatientData } from "@/data/patientData";
 import StatusBadge from "./StatusBadge";
+import PharmacyAlertBadge from "./PharmacyAlertBadge";
 import { ArrowLeft, Pill, AlertTriangle } from "lucide-react";
 import ProvenancePanel from "./ProvenancePanel";
 import SectionProvenanceBadge from "./SectionProvenanceBadge";
@@ -102,20 +103,31 @@ const MedicationsDetail = ({ onBack, data }: MedicationsDetailProps) => {
     return counts;
   }, {});
 
+  // Count uncertain medications
+  const uncertainMeds = medicationList.filter(med => med.is_uncertain || med.verification_confidence === "low");
+  const hasUncertainMeds = uncertainMeds.length > 0;
+
   return (
     <div className="space-y-6">
       <button onClick={onBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="w-4 h-4" /> Back to Dashboard
       </button>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="w-10 h-10 rounded-lg bg-section-medications/10 flex items-center justify-center text-lg">💊</div>
         <h2 className="text-xl font-bold text-foreground">Medication Reconciliation</h2>
         <SectionProvenanceBadge status={medicationsProvenance.status} />
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <StatusBadge status="normal" label={`${medicationList.length} Medications`} />
+          {hasUncertainMeds && (
+            <StatusBadge status="warning" label={`${uncertainMeds.length} Need Review`} />
+          )}
           {allergiesList.length > 0 && (
             <StatusBadge status="warning" label={`${allergiesList.length} Allergies`} />
+          )}
+          {/* Pharmacy Alert Badge */}
+          {data.pharmacyAlert && (
+            <PharmacyAlertBadge pharmacyAlert={data.pharmacyAlert} />
           )}
         </div>
       </div>
@@ -146,7 +158,7 @@ const MedicationsDetail = ({ onBack, data }: MedicationsDetailProps) => {
       {medicationList.length > 0 && (
         <div className="bg-card rounded-xl border overflow-hidden">
           <div className="p-5 border-b">
-            <h3 className="font-semibold text-sm text-foreground">Discharge Medication List</h3>
+            <h3 className="font-semibold text-sm text-foreground">Medication List</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -162,8 +174,15 @@ const MedicationsDetail = ({ onBack, data }: MedicationsDetailProps) => {
               </thead>
               <tbody>
                 {medicationList.map((med, i) => (
-                  <tr key={i} className="border-t">
-                    <td className="p-3 font-medium text-foreground">{med.name}</td>
+                  <tr key={i} className={`border-t ${med.is_uncertain || med.verification_confidence === "low" ? "bg-status-warning/5" : ""}`}>
+                    <td className="p-3 font-medium text-foreground">
+                      {med.name}
+                      {(med.is_uncertain || med.verification_confidence === "low") && (
+                        <span className="ml-2 text-xs text-status-warning" title={med.verification_uncertain_reason || "Low confidence extraction"}>
+                          ⚠️ Needs review
+                        </span>
+                      )}
+                    </td>
                     <td className="p-3 text-foreground">{med.dose}</td>
                     <td className="p-3 text-foreground">{expandFrequency(med.frequency)}</td>
                     <td className="p-3 text-foreground">{getRoute(med)}</td>
@@ -177,29 +196,6 @@ const MedicationsDetail = ({ onBack, data }: MedicationsDetailProps) => {
         </div>
       )}
 
-      {/* Medications by Category */}
-      {Object.keys(groupedMeds).length > 0 && (
-        <div className="bg-card rounded-xl border p-5">
-          <h3 className="font-semibold text-sm mb-4 text-foreground">Medications by Category</h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            {Object.entries(groupedMeds).map(([category, meds]) => (
-              <div key={category} className="p-3 rounded-lg border bg-muted/30">
-                <h4 className="text-sm font-medium text-foreground mb-2 flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded bg-muted text-xs">{category}</span>
-                  <span className="text-xs text-muted-foreground">({meds.length})</span>
-                </h4>
-                <ul className="space-y-1">
-                  {meds.map((med, i) => (
-                    <li key={i} className="text-xs text-foreground">
-                      • {med.name} {med.dose} - {expandFrequency(med.frequency)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Allergy Alerts */}
       {allergiesList.length > 0 && (

@@ -1,0 +1,177 @@
+{
+  "file": "Prescription_03.pdf",
+  "timestamp": "2026-04-27T09:29:58.457Z",
+  "pages_processed": 2,
+  "total_tokens": 6855,
+  "merged_data": {
+    "patient_complaints": [
+      {
+        "complaint": "Nocturia",
+        "duration": null,
+        "severity": null
+      },
+      {
+        "complaint": "Urinary urgency",
+        "duration": null,
+        "severity": null
+      },
+      {
+        "complaint": "Urinary Tract Infection",
+        "duration": null,
+        "severity": null
+      },
+      {
+        "complaint": "Stress Urinary Incontinence",
+        "duration": null,
+        "severity": null
+      }
+    ],
+    "history_of_present_illness": null,
+    "observations_findings": [
+      "R/M Urine: Protein 2+",
+      "R/M Urine: Glucose +",
+      "R/M Urine: Pus cells 2-5",
+      "HbA1C: 7",
+      "Serum Creatinine: 1.78",
+      "Uric Acid: 9.6",
+      "Hemoglobin: 14.5",
+      "Angioplasty in 2014"
+    ],
+    "physical_examination": {
+      "general": null,
+      "specific": [
+        "Meatal Stenosis/Penile Meatus (O/E)"
+      ]
+    },
+    "diagnosis": {
+      "principal": null,
+      "secondary": [
+        "Chronic Kidney Disease (3 years)",
+        "Diabetes Mellitus (note: '2 154')",
+        "Hypertension (note: '154')"
+      ],
+      "provisional": null
+    },
+    "vitals": {
+      "bp": null,
+      "pulse": null,
+      "temp": null,
+      "weight": null,
+      "spo2": null
+    },
+    "allergies": [],
+    "medications": [
+      {
+        "name": "T MIRBEG",
+        "dose": "25mg",
+        "frequency": "Once at night",
+        "duration": "40 days",
+        "route": "",
+        "instructions": ""
+      }
+    ],
+    "lab_tests_selected": [
+      "Urine Routine and Microscopy",
+      "Urine Culture"
+    ],
+    "radiology_tests_selected": [
+      "Ultrasound Abdomen & Pelvis"
+    ],
+    "procedures_selected": [
+      "Uroflowmetry"
+    ],
+    "instructions_notes": "+PVR (18)",
+    "follow_up": null
+  },
+  "page_results": [
+    {
+      "page": 1,
+      "data": {
+        "patient_complaints": [
+          {
+            "complaint": "Nocturia",
+            "duration": null,
+            "severity": null
+          },
+          {
+            "complaint": "Urinary urgency",
+            "duration": null,
+            "severity": null
+          },
+          {
+            "complaint": "Urinary Tract Infection",
+            "duration": null,
+            "severity": null
+          },
+          {
+            "complaint": "Stress Urinary Incontinence",
+            "duration": null,
+            "severity": null
+          }
+        ],
+        "history_of_present_illness": null,
+        "observations_findings": [
+          "R/M Urine: Protein 2+",
+          "R/M Urine: Glucose +",
+          "R/M Urine: Pus cells 2-5",
+          "HbA1C: 7",
+          "Serum Creatinine: 1.78",
+          "Uric Acid: 9.6",
+          "Hemoglobin: 14.5",
+          "Angioplasty in 2014"
+        ],
+        "physical_examination": {
+          "general": null,
+          "specific": [
+            "Meatal Stenosis/Penile Meatus (O/E)"
+          ]
+        },
+        "diagnosis": {
+          "principal": null,
+          "secondary": [
+            "Chronic Kidney Disease (3 years)",
+            "Diabetes Mellitus (note: '2 154')",
+            "Hypertension (note: '154')"
+          ],
+          "provisional": null
+        },
+        "vitals": {
+          "bp": null,
+          "pulse": null,
+          "temp": null,
+          "weight": null,
+          "spo2": null
+        },
+        "allergies": [],
+        "other_notes_page1": null
+      }
+    },
+    {
+      "page": 2,
+      "data": {
+        "medications": [
+          {
+            "name": "T MIRBEG",
+            "dose": "25mg",
+            "frequency": "Once at night",
+            "duration": "40 days",
+            "route": "",
+            "instructions": ""
+          }
+        ],
+        "lab_tests_selected": [
+          "Urine Routine and Microscopy",
+          "Urine Culture"
+        ],
+        "radiology_tests_selected": [
+          "Ultrasound Abdomen & Pelvis"
+        ],
+        "procedures_selected": [
+          "Uroflowmetry"
+        ],
+        "instructions_notes": "+PVR (18)",
+        "follow_up": ""
+      }
+    }
+  ]
+}

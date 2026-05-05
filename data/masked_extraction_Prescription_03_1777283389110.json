@@ -1,0 +1,187 @@
+{
+  "file": "Prescription_03.pdf",
+  "timestamp": "2026-04-27T09:48:32.772Z",
+  "pages": [
+    {
+      "page_number": 1,
+      "phi": {
+        "patient_name": null,
+        "patient_id": null,
+        "patient_age": null,
+        "patient_gender": null,
+        "doctor_name": "DR SURYAKANT CHOUBEY",
+        "visit_date": "2026-04-14",
+        "episode_number": null
+      },
+      "masking": {
+        "masked_count": 0,
+        "phi_regions": [
+          {
+            "type": "hospital_name",
+            "description": "Manipal Hospitals logo and name",
+            "bounding_box": {
+              "x": 6,
+              "y": 1,
+              "width": 43,
+              "height": 5
+            },
+            "confidence": "high"
+          },
+          {
+            "type": "date",
+            "description": "Visit date and time",
+            "bounding_box": {
+              "x": 56,
+              "y": 12,
+              "width": 20,
+              "height": 3
+            },
+            "confidence": "high"
+          },
+          {
+            "type": "doctor_name",
+            "description": "Consultant Doctor Name",
+            "bounding_box": {
+              "x": 18,
+              "y": 16,
+              "width": 80,
+              "height": 3
+            },
+            "confidence": "high"
+          },
+          {
+            "type": "hospital_name",
+            "description": "Hospital address and contact footer",
+            "bounding_box": {
+              "x": 6,
+              "y": 93,
+              "width": 82,
+              "height": 6
+            },
+            "confidence": "high"
+          }
+        ]
+      },
+      "clinical_data": {
+        "patient_complaints": [
+          {
+            "complaint": "Nocturia",
+            "duration": ""
+          },
+          {
+            "complaint": "Urgency",
+            "duration": ""
+          },
+          {
+            "complaint": "Urinary Tract Infection (UTI)",
+            "duration": ""
+          },
+          {
+            "complaint": "Stress Urinary Incontinence (SUI)",
+            "duration": ""
+          }
+        ],
+        "observations_findings": [
+          "Diabetes Mellitus (comorbidity)",
+          "Hypertension (comorbidity)",
+          "Blood sugar reading: 154L",
+          "Urine Protein: 2+",
+          "Urine Glucose: +",
+          "Urine Pus cells: 2-5",
+          "HbA1C: 7%",
+          "Serum Creatinine: 1.78",
+          "Uric Acid: 9.6",
+          "Hemoglobin: 14.5",
+          "History of Angioplasty (2014)",
+          "On Examination: Meatal Redness"
+        ],
+        "diagnosis": {
+          "principal": "Chronic Kidney Disease",
+          "secondary": [
+            "Diabetes Mellitus",
+            "Hypertension",
+            "Urinary Tract Infection",
+            "Stress Urinary Incontinence"
+          ]
+        },
+        "vitals": {
+          "bp": "150/90",
+          "pulse": "",
+          "temp": ""
+        }
+      },
+      "masked_image_path": "/Users/yavar/Documents/CoE/Manipal/data/masked_page1_1777283343952.png"
+    },
+    {
+      "page_number": 2,
+      "phi": {
+        "patient_name": null,
+        "patient_id": null,
+        "patient_age": null,
+        "patient_gender": null,
+        "doctor_name": null,
+        "visit_date": null,
+        "episode_number": null
+      },
+      "masking": {
+        "masked_count": 0,
+        "phi_regions": [
+          {
+            "type": "doctor_name",
+            "description": "Doctor's signature area",
+            "bounding_box": {
+              "x": 615,
+              "y": 885,
+              "width": 270,
+              "height": 40
+            },
+            "confidence": "medium"
+          },
+          {
+            "type": "hospital_name",
+            "description": "Manipal Hospital, HAL Airport Road",
+            "bounding_box": {
+              "x": 15,
+              "y": 945,
+              "width": 280,
+              "height": 20
+            },
+            "confidence": "high"
+          },
+          {
+            "type": "patient_contact",
+            "description": "Hospital address and contact details",
+            "bounding_box": {
+              "x": 15,
+              "y": 965,
+              "width": 830,
+              "height": 30
+            },
+            "confidence": "high"
+          }
+        ]
+      },
+      "clinical_data": {
+        "medications": [
+          {
+            "name": "T MIRABEG",
+            "dose": "25mg",
+            "frequency": "Once at night",
+            "duration": "40 days"
+          }
+        ],
+        "lab_tests_selected": [
+          "Urine Culture"
+        ],
+        "radiology_tests_selected": [
+          "Ultrasound Abdomen & Pelvis"
+        ],
+        "procedures_selected": [
+          "Uroflowmetry",
+          "PVR"
+        ]
+      },
+      "masked_image_path": "/Users/yavar/Documents/CoE/Manipal/data/masked_page2_1777283382721.png"
+    }
+  ]
+}

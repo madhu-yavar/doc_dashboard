@@ -1,30 +1,31 @@
 /**
  * Prescription Diagnosis Extractor Skill
- * Extracts diagnosis/indications from prescription documents using Qwen Vision
+ * Extracts diagnosis/indications from prescription documents using Gemini Vision
+ * Stage 3: Extract handwritten diagnosis and symptoms
  */
 
 class PrescriptionDiagnosisExtractorSkill {
   constructor(config = {}) {
     this.name = "Prescription Diagnosis Extractor";
-    this.version = "1.0.0";
+    this.version = "2.0.0";
     this.config = config;
-    this.qwenVisionClient = null;
+    this.geminiVisionClient = null;
 
-    if (config.qwenVisionClient) {
-      this.qwenVisionClient = config.qwenVisionClient;
+    if (config.geminiVisionClient) {
+      this.geminiVisionClient = config.geminiVisionClient;
     }
   }
 
-  getQwenClient() {
-    if (!this.qwenVisionClient) {
-      const QwenVisionClientTool = require("../../tools/llm/qwen_vision_client.tool.cjs");
-      this.qwenVisionClient = new QwenVisionClientTool({
-        baseUrl: this.config.qwenBaseUrl || process.env.QWEN_URL || "http://206.1.62.28:8001/v1/chat/completions",
-        model: this.config.qwenModel || "cyankiwi/Qwen3-VL-30B-A3B-Instruct-AWQ-4bit",
+  getGeminiClient() {
+    if (!this.geminiVisionClient) {
+      const GeminiVisionClientTool = require("../../tools/llm/gemini_vision_client.tool.cjs");
+      this.geminiVisionClient = new GeminiVisionClientTool({
+        apiKey: this.config.geminiApiKey || process.env.GEMINI_API_KEY,
+        model: this.config.geminiModel || "gemini-2.5-flash",
         timeout: this.config.timeout || 120000
       });
     }
-    return this.qwenVisionClient;
+    return this.geminiVisionClient;
   }
 
   parseModelJson(content) {
@@ -108,7 +109,7 @@ Remember: Return ONLY the JSON object, no additional text or explanation.`;
     }
 
     try {
-      const qwenClient = this.getQwenClient();
+      const geminiClient = this.getGeminiClient();
 
       if (onProgress) {
         onProgress({
@@ -121,7 +122,7 @@ Remember: Return ONLY the JSON object, no additional text or explanation.`;
 
       const prompt = this.buildPrompt({ pdfText });
 
-      const result = await qwenClient.execute(prompt, {
+      const result = await geminiClient.execute(prompt, {
         images: [filePath],
         temperature: 0.1,
         maxTokens: 1500,

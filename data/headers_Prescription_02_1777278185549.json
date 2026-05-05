@@ -1,0 +1,156 @@
+{
+  "file": "Prescription_02.pdf",
+  "timestamp": "2026-04-27T08:23:05.547Z",
+  "model": "google/gemma-4-31B-it",
+  "summary": {
+    "total_pages": 2,
+    "total_tokens": 2545,
+    "total_time_ms": 48775,
+    "avg_time_per_page": 24388,
+    "pages_with_tables": 2
+  },
+  "common_elements": {
+    "hospital_names": [
+      "manipalhospitals",
+      "Manipal Hospital, HAL Airport Road"
+    ],
+    "document_titles": [
+      "ADDITIONAL SHEET DERMATOLOGY"
+    ],
+    "departments": [
+      "DERMATOLOGY MHB"
+    ],
+    "doctors": [
+      "DR. RADHAKRISHNA BHAT (MBBS-98,MD-2002)"
+    ]
+  },
+  "common_table_headers": {
+    "Patient Vitals/Medical Profile": [
+      "Height:",
+      "BP:",
+      "Allergies:",
+      "Diet:",
+      "Weight:"
+    ],
+    "PRESCRIPTION (WRITE IN CAPITAL LETTERS)": [
+      "Sr. No.",
+      "Name of Medicine",
+      "Dose",
+      "Morning",
+      "Noon",
+      "Night",
+      "No. of Days",
+      "Remarks"
+    ]
+  },
+  "pages": [
+    {
+      "page_number": 1,
+      "success": true,
+      "error": null,
+      "duration_ms": 23598,
+      "tokens": 1262,
+      "headers": {
+        "page_number": 1,
+        "document_headers": {
+          "hospital_name": "manipalhospitals",
+          "document_title": "ADDITIONAL SHEET DERMATOLOGY",
+          "patient_info": {
+            "name": "MR RAMESH G JETHWANI",
+            "id": "O00011860488",
+            "age": null,
+            "gender": null
+          },
+          "dates": {
+            "report_date": "2026-04-17 16:15",
+            "visit_date": null,
+            "admission_date": null
+          },
+          "page_number": "Page 1 of 2",
+          "department": "DERMATOLOGY MHB",
+          "doctor": "DR. RADHAKRISHNA BHAT (MBBS-98,MD-2002)",
+          "other_header_text": [
+            "LIFE'S ON",
+            "Hospital No. : MH000001195",
+            "Consultant Name :",
+            "KMC Reg No.",
+            "Dept"
+          ]
+        },
+        "table_headers": [
+          {
+            "table_topic": "Patient Vitals/Medical Profile",
+            "columns": [
+              "Height:",
+              "BP:",
+              "Allergies:",
+              "Diet:",
+              "Weight:"
+            ],
+            "row_count": "0",
+            "location": "top"
+          }
+        ],
+        "notes": [
+          "The document contains a structured header section followed by a form-like table for vitals and a large free-text area for doctor's notes.",
+          "Patient ID is located in the top right corner.",
+          "The date is formatted as YYYY-MM-DD HH:mm."
+        ]
+      }
+    },
+    {
+      "page_number": 2,
+      "success": true,
+      "error": null,
+      "duration_ms": 25177,
+      "tokens": 1283,
+      "headers": {
+        "page_number": 2,
+        "document_headers": {
+          "hospital_name": "Manipal Hospital, HAL Airport Road",
+          "document_title": null,
+          "patient_info": {
+            "name": null,
+            "id": null,
+            "age": null,
+            "gender": null
+          },
+          "dates": {
+            "report_date": null,
+            "visit_date": null,
+            "admission_date": null
+          },
+          "page_number": "Page 2 of 2",
+          "department": null,
+          "doctor": null,
+          "other_header_text": [
+            "#98 HAL Airport Road, Bangalore 560017",
+            "Website: www.manipalhospitals.com | Email Id: info@manipalhospitals.com",
+            "Phone : For booking an appointment / enquiry, call on : 1800 102 5555 / 1800 102 3222 | For Home Care, call on : 1800 102 6070"
+          ]
+        },
+        "table_headers": [
+          {
+            "table_topic": "PRESCRIPTION (WRITE IN CAPITAL LETTERS)",
+            "columns": [
+              "Sr. No.",
+              "Name of Medicine",
+              "Dose",
+              "Morning",
+              "Noon",
+              "Night",
+              "No. of Days",
+              "Remarks"
+            ],
+            "row_count": 15,
+            "location": "middle of page"
+          }
+        ],
+        "notes": [
+          "The document headers (hospital name and contact info) are located in the footer of this page.",
+          "The page contains several empty section headers: 'Doctor's Notes:', 'Lab Investigations', 'Radiology Investigations', 'Additional Procedure', 'Cross Reference:', and 'Follow Up Consultation Date'."
+        ]
+      }
+    }
+  ]
+}

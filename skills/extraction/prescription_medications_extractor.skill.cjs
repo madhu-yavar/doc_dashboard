@@ -1,31 +1,31 @@
 /**
  * Prescription Medications Extractor Skill
- * Extracts ALL medications from prescription documents using Qwen Vision
- * Uses comprehensive prompt structure that works with Qwen 30B
+ * Extracts ALL medications from prescription documents using Gemini Vision
+ * Designed for Stage 3: Handwritten medication extraction
  */
 
 class PrescriptionMedicationsExtractorSkill {
   constructor(config = {}) {
     this.name = "Prescription Medications Extractor";
-    this.version = "2.0.0";
+    this.version = "3.0.0";
     this.config = config;
-    this.qwenVisionClient = null;
+    this.geminiVisionClient = null;
 
-    if (config.qwenVisionClient) {
-      this.qwenVisionClient = config.qwenVisionClient;
+    if (config.geminiVisionClient) {
+      this.geminiVisionClient = config.geminiVisionClient;
     }
   }
 
-  getQwenClient() {
-    if (!this.qwenVisionClient) {
-      const QwenVisionClientTool = require("../../tools/llm/qwen_vision_client.tool.cjs");
-      this.qwenVisionClient = new QwenVisionClientTool({
-        baseUrl: this.config.qwenBaseUrl || process.env.QWEN_URL || "http://206.1.62.28:8001/v1/chat/completions",
-        model: this.config.qwenModel || "cyankiwi/Qwen3-VL-30B-A3B-Instruct-AWQ-4bit",
+  getGeminiClient() {
+    if (!this.geminiVisionClient) {
+      const GeminiVisionClientTool = require("../../tools/llm/gemini_vision_client.tool.cjs");
+      this.geminiVisionClient = new GeminiVisionClientTool({
+        apiKey: this.config.geminiApiKey || process.env.GEMINI_API_KEY,
+        model: this.config.geminiModel || "gemini-2.5-flash",
         timeout: this.config.timeout || 180000
       });
     }
-    return this.qwenVisionClient;
+    return this.geminiVisionClient;
   }
 
   parseModelJson(content) {
@@ -155,40 +155,45 @@ Remember: Return ONLY the JSON object, no additional text or explanation.`;
    * Execute the medications extraction
    * @param {object} context - Execution context
    * @param {string} context.filePath - Path to the PDF/image file
+   * @param {string} context.maskedImage - Base64 masked image (for Stage 3)
    * @param {string} context.pdfText - Optional OCR text from PDF
    * @param {Function} context.onProgress - Progress callback
    * @returns {Promise<object>} Extraction result
    */
   async execute(context) {
-    const { filePath, pdfText = "", onProgress } = context;
+    const { filePath, maskedImage, pdfText = "", onProgress } = context;
 
-    if (!filePath) {
+    if (!filePath && !maskedImage) {
       return {
         success: false,
         step: "prescription_medications_extractor",
-        error: "File path is required"
+        error: "File path or masked image is required"
       };
     }
 
     try {
-      const qwenClient = this.getQwenClient();
+      const geminiClient = this.getGeminiClient();
 
       if (onProgress) {
         onProgress({
           type: "info",
           step: "prescription_medications_extractor",
           status: "processing",
-          message: "Extracting medications and related information..."
+          message: "Extracting medications from handwritten content (Gemini)..."
         });
       }
 
       const prompt = this.buildPrompt({ pdfText });
 
-      const result = await qwenClient.execute(prompt, {
-        images: [filePath],
+      // Use masked image if provided (Stage 3), otherwise use file path
+      const imageData = maskedImage
+        ? [{ base64: maskedImage, mimeType: "image/png" }]
+        : [filePath];
+
+      const result = await geminiClient.execute(prompt, {
+        images: imageData,
         temperature: 0.1,
-        maxTokens: 4000,
-        systemPrompt: "You are a medical document extraction expert specializing in handwritten prescriptions."
+        maxTokens: 4000
       });
 
       if (!result.success) {

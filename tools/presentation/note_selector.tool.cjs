@@ -30,6 +30,7 @@ class NoteSelectorTool {
     const author = this.normalizeWhitespace(note.author || note.handed_over_by);
     const summary = this.normalizeWhitespace(note.summary);
     const assessment = this.normalizeWhitespace(note.assessment);
+    const sourceType = this.normalizeWhitespace(note.source_type);
     let score = 0;
 
     if (/doctor|handover|resident/.test(type)) score += 4;
@@ -42,6 +43,8 @@ class NoteSelectorTool {
     if (author) score += 1;
     if (!/^unknown author$/i.test(author) && author) score += 2;
     if (summary.length > 50 || assessment.length > 50) score += 1;
+    if (/handwritten/i.test(sourceType)) score += 3;
+    if (note.is_synthetic) score -= 4;
     if (this.isLowValue(note)) score -= 6;
 
     return score;
@@ -58,8 +61,18 @@ class NoteSelectorTool {
   }
 
   select(notes = [], limit = 4) {
-    return this.dedupe(Array.isArray(notes) ? notes : [])
-      .filter((note) => !this.isLowValue(note))
+    const deduped = this.dedupe(Array.isArray(notes) ? notes : [])
+      .filter((note) => !this.isLowValue(note));
+
+    const hasHandwritten = deduped.some((note) => this.normalizeWhitespace(note.source_type).toLowerCase() === "handwritten");
+    const filtered = hasHandwritten
+      ? deduped.filter((note) => {
+          const type = this.normalizeWhitespace(note.type).toLowerCase();
+          return !(note.is_synthetic && type === "clinical summary");
+        })
+      : deduped;
+
+    return filtered
       .sort((a, b) => this.score(b) - this.score(a))
       .slice(0, limit);
   }

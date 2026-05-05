@@ -5,6 +5,9 @@ const fs = require("fs/promises");
 const multer = require("multer");
 const path = require("path");
 
+// Load environment variables from .env file
+require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+
 // Import Agent System
 const DocumentTypeRouter = require("../agents/document_type_router.cjs");
 const DashboardMapperSkill = require("../skills/clinical/dashboard_mapper.skill.cjs");
@@ -13,9 +16,20 @@ const ChatExportBuilderSkill = require("../skills/chat/chat_export_builder.skill
 const SourceHealthTool = require("../tools/chat/source_health.tool.cjs");
 
 const app = express();
+
+// Helper function to log with immediate flush (useful for SSE debugging)
+function logWithFlush(...args) {
+  console.log(...args);
+  if (process.stdout.flush) process.stdout.flush();
+}
+
 const PORT = Number(process.env.PORT || 8001);
 const GEMMA_URL = process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions";
-const MODEL = process.env.GEMMA_MODEL || "google/gemma-4-26B-A4B-it";
+const MODEL = process.env.GEMMA_MODEL || "google/gemma-4-31B-it";
+const EXTRACTION_GEMMA_TIMEOUT_MS = Number.parseInt(
+  process.env.EXTRACTION_GEMMA_TIMEOUT_MS || process.env.GEMMA_TIMEOUT_MS || "240000",
+  10
+);
 const USE_GEMINI_FOR_EXTERNAL = process.env.USE_GEMINI_FOR_EXTERNAL !== "false";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
@@ -40,14 +54,20 @@ const upload = multer({
 
 // Import Audit Logger - initialized after storage paths are defined
 const AuditLogger = require("./audit_logger.cjs");
+const { AnalyticsStore, registerAnalyticsRoutes } = require("./analytics_store.cjs");
 const auditLogger = new AuditLogger({
   storageDir,
   runsPath: auditRunsPath,
   eventsPath: auditEventsPath
 });
+const analyticsStore = new AnalyticsStore({
+  storageDir,
+  databasePath: path.join(storageDir, "analytics.sqlite"),
+});
 
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
+registerAnalyticsRoutes(app, analyticsStore, readDocuments);
 
 // Serve static test page
 app.get('/test-agent', (req, res) => {
@@ -56,6 +76,16 @@ app.get('/test-agent', (req, res) => {
 
 function publicDocument(document) {
   const { filePath, ...rest } = document;
+
+  // Fix status if user_action_required is true but status is "processed"
+  const needsAction = rest.result?.meta?.user_action_required ||
+                     rest.result?.metadata?.user_action_required ||
+                     rest.result?.extracted_data?.meta?.user_action_required;
+
+  if (needsAction && rest.status === "processed") {
+    rest.status = "partial";
+  }
+
   return rest;
 }
 
@@ -76,6 +106,7 @@ async function ensureStorage() {
   await ensureCollectionFile(chatExportsPath, { exports: [] });
   await ensureCollectionFile(searchCachePath, { entries: [] });
   await auditLogger.ensureStorage();
+  await analyticsStore.initialize();
 }
 
 async function ensureCollectionFile(filePath, initialValue) {
@@ -153,12 +184,13 @@ async function removeDocument(id) {
 
 function buildAgentInfo(agentResult) {
   return {
-    name: agentResult.agent,
-    version: agentResult.data?.meta?.agent_version,
-    latency: agentResult.latency,
-    tokensUsed: agentResult.tokensUsed,
-    steps: agentResult.steps,
-    validation: agentResult.validation,
+    name: agentResult.agent || agentResult.agentInfo?.name || "Unknown agent",
+    version: agentResult.data?.meta?.agent_version || agentResult.agentInfo?.version || "unknown",
+    latency: agentResult.latency ?? agentResult.agentInfo?.latency ?? 0,
+    tokensUsed: typeof agentResult.tokensUsed === "number" ? agentResult.tokensUsed : (agentResult.agentInfo?.tokensUsed ?? 0),
+    providerTokens: agentResult.providerTokens || agentResult.agentInfo?.providerTokens || null,
+    steps: Array.isArray(agentResult.steps) ? agentResult.steps : [],
+    validation: agentResult.validation || agentResult.agentInfo?.validation || null,
   };
 }
 
@@ -290,12 +322,7 @@ const documentRouter = new DocumentTypeRouter({
   gemma: {
     baseUrl: GEMMA_URL,
     model: MODEL,
-    timeout: 180000
-  },
-  qwen: {
-    qwenUrl: process.env.QWEN_URL || "http://206.1.62.28:8001/v1/chat/completions",
-    qwenModel: process.env.QWEN_MODEL || "cyankiwi/Qwen3-VL-30B-A3B-Instruct-AWQ-4bit",
-    timeout: 180000
+    timeout: EXTRACTION_GEMMA_TIMEOUT_MS
   }
 });
 
@@ -324,20 +351,46 @@ const doctorAssistantAgent = new DoctorAssistantAgent({
 // Helper function to transform agent result to dashboard format
 async function transformAgentResultToDashboard(agentResult) {
   const data = agentResult.data || {};
+  const metadata = agentResult.metadata || data.meta || {};
+  // Check both metadata.stage2_masking (from PrescriptionTwoStageAgent) and data.meta.stage2_masking
+  const stage2Masking = metadata.stage2_masking || data.meta?.stage2_masking;
+  const reviewPages = Array.isArray(stage2Masking?.review_pages)
+    ? stage2Masking.review_pages.map((page) => ({
+        ...page,
+        image_url: page?.image_path
+          ? `/storage/masked_images/${path.basename(page.image_path)}`
+          : null,
+      }))
+    : [];
 
   // Check if agent already returned dashboard-formatted data (e.g., PrescriptionExtractorAgent)
   // This prevents double-mapping which can lose data
   if (data.dashboard_cards && data.sample_patient_data && data.presentation) {
     // Agent already provided dashboard format - use it directly
     return {
-      meta: data.meta || {},
+      meta: {
+        ...metadata,
+        ...data.meta
+      },
       dashboard_cards: data.dashboard_cards,
       sample_patient_data: data.sample_patient_data,
       presentation: data.presentation || {
         summary_cards: {},
         notes_rail: [],
       },
-      extracted_data: data.extracted_data || data
+      extracted_data: data.extracted_data || data,
+      // Preserve stage1 and stage3 data for handwriting extraction
+      stage1: data.stage1,
+      stage3: data.stage3,
+      // Add masked image info for privacy verification
+      masked_image_path: stage2Masking?.masked_image_path || null,
+      masked_image_url: stage2Masking?.masked_image_path
+        ? `/storage/masked_images/${path.basename(stage2Masking.masked_image_path)}`
+        : null,
+      masked_image_pages: reviewPages,
+      // Preserve alert metadata (pharmacy and department alerts)
+      pharmacy_alert: metadata.pharmacy_alert || null,
+      department_alerts: metadata.department_alerts || null,
     };
   }
 
@@ -354,7 +407,10 @@ async function transformAgentResultToDashboard(agentResult) {
         summary_cards: {},
         notes_rail: [],
       },
-      extracted_data: agentResult.data || {}
+      extracted_data: agentResult.data || {},
+      // Preserve alert metadata (pharmacy and department alerts)
+      pharmacy_alert: metadata.pharmacy_alert || null,
+      department_alerts: metadata.department_alerts || null,
     };
   }
 
@@ -366,7 +422,19 @@ async function transformAgentResultToDashboard(agentResult) {
       summary_cards: {},
       notes_rail: [],
     },
-    extracted_data: agentResult.data || {}
+    extracted_data: agentResult.data || {},
+    // Preserve stage1 and stage3 data for handwriting extraction
+    stage1: agentResult.data?.stage1,
+    stage3: agentResult.data?.stage3,
+    // Add masked image info for privacy verification
+    masked_image_path: stage2Masking?.masked_image_path || null,
+    masked_image_url: stage2Masking?.masked_image_path
+      ? `/storage/masked_images/${path.basename(stage2Masking.masked_image_path)}`
+      : null,
+    masked_image_pages: reviewPages,
+    // Preserve alert metadata (pharmacy and department alerts)
+    pharmacy_alert: metadata.pharmacy_alert || null,
+    department_alerts: metadata.department_alerts || null,
   };
 }
 
@@ -466,13 +534,13 @@ function buildFallbackDashboardCards(data) {
 function buildFallbackPatientData(data) {
   const patient = data?.patient || {};
   return {
-    name: patient.name || "Sample Patient Name",
-    age: patient.age || 0,
+    name: patient.name || "",
+    age: patient.age ?? null,
     mrn: patient.mrn || "",
-    admission_date: patient.admission_date || "",
+    admission_date: patient.admission_date || data?.meta?.rx_date || "",
     discharge_date: patient.discharge_date || "",
-    los_days: patient.los_days || 0,
-    summary: `Patient processed via Agent System v2.0.0`
+    los_days: patient.los_days ?? null,
+    summary: `Processed via Agent System v2.0.0.`
   };
 }
 
@@ -564,6 +632,12 @@ app.get("/api/documents/:id", async (req, res) => {
   return res.json({ document: publicDocument(document) });
 });
 
+// Serve masked images.
+// First serve the correct storage location, then fall back to the legacy mistakenly nested path
+// so previously generated masked images still load in the UI.
+app.use('/storage/masked_images', express.static(path.join(storageDir, 'masked_images')));
+app.use('/storage/masked_images', express.static(path.join(__dirname, 'server', 'storage', 'masked_images')));
+
 app.use(express.static(distDir));
 
 app.get(/^\/(?!api).*/, (_req, res) => {
@@ -577,9 +651,16 @@ app.get(/^\/(?!api).*/, (_req, res) => {
 app.post("/api/documents/upload", upload.array("files"), async (req, res) => {
   const files = req.files || [];
 
+  console.log(`\n📤 File upload request received: ${files.length} file(s)`);
+
   if (!Array.isArray(files) || files.length === 0) {
+    console.log("❌ No files uploaded");
     return res.status(400).json({ error: "No files uploaded" });
   }
+
+  files.forEach((file, i) => {
+    console.log(`   ${i + 1}. ${file.originalname} (${(file.size / 1024).toFixed(1)} KB)`);
+  });
 
   const uploaded = [];
   const duplicates = [];
@@ -627,19 +708,35 @@ app.post("/api/documents/upload", upload.array("files"), async (req, res) => {
         error: null,
       };
 
+      console.log(`   ✅ Saved: ${file.originalname} -> ${id}`);
       documents.unshift(document);
       uploaded.push(publicDocument(document));
     }
   });
 
+  console.log(`📊 Upload complete: ${uploaded.length} new, ${duplicates.length} duplicates\n`);
   res.status(201).json({ documents: uploaded, duplicates });
 });
 
 app.post("/api/documents/process", async (req, res) => {
   const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+  // Use provided key or fall back to env
+  const geminiApiKey = req.body?.geminiApiKey || process.env.GEMINI_API_KEY || null;
+
+  console.log(`\n🔄 Process request received for ${ids.length} document(s)`);
+  console.log(`🔑 Gemini API Key: ${geminiApiKey ? '✓ Provided (' + geminiApiKey.slice(0, 10) + '...)' : '✗ Not provided'}`);
 
   if (ids.length === 0) {
+    console.log("❌ No document ids provided");
     return res.status(400).json({ error: "No document ids provided" });
+  }
+
+  // Validate Gemini API key format if provided
+  if (geminiApiKey && (typeof geminiApiKey !== "string" || !geminiApiKey.startsWith("AIza"))) {
+    return res.status(400).json({
+      error: "Invalid Gemini API key format",
+      code: "GEMINI_API_KEY_INVALID"
+    });
   }
 
   const queuedDocuments = await mutateDocuments(async (documents) => {
@@ -662,8 +759,14 @@ app.post("/api/documents/process", async (req, res) => {
     return selected;
   });
 
+  console.log(`📋 Queued ${queuedDocuments.length} document(s) for processing:`);
+  queuedDocuments.forEach((doc, i) => {
+    console.log(`   ${i + 1}. ${doc.name} (${doc.department})`);
+  });
+
   for (const document of queuedDocuments) {
     if (!document) continue;
+    console.log(`\n🚀 Starting: ${document.name}`);
 
     const auditRun = await startAuditRunSafe({
       workflow: "extraction",
@@ -686,10 +789,12 @@ app.post("/api/documents/process", async (req, res) => {
     try {
       await audit.event("document_processing_started", "info", "Document processing started", {
         name: document.name,
+        hasGeminiKey: !!geminiApiKey,
       });
 
       const agentResult = await documentRouter.process(document.filePath, {
         pdfName: document.name,
+        geminiApiKey: geminiApiKey, // Pass through to two-stage agent
         onProgress: (progress) => {
           void audit.event("agent_progress", progress.type === "error" ? "error" : "info", progress.step || progress.type || "progress", extractStepSummary(progress));
         },
@@ -700,8 +805,8 @@ app.post("/api/documents/process", async (req, res) => {
       }
 
       const result = await transformAgentResultToDashboard(agentResult);
-      await updateDocument(document.id, async (currentDocument) => {
-        currentDocument.status = "processed";
+      const updatedDocument = await updateDocument(document.id, async (currentDocument) => {
+        currentDocument.status = agentResult.metadata?.user_action_required ? "partial" : "processed";
         currentDocument.department = result?.meta?.department_type || currentDocument.department;
         currentDocument.result = result;
         currentDocument.agentInfo = buildAgentInfo(agentResult);
@@ -709,6 +814,7 @@ app.post("/api/documents/process", async (req, res) => {
         currentDocument.processedAt = new Date().toISOString();
         currentDocument.auditRunId = auditRun?.runId;
       });
+      await analyticsStore.upsertDocumentMetrics(updatedDocument);
 
       await audit.complete({
         documentId: document.id,
@@ -740,12 +846,16 @@ app.delete("/api/documents/:id", async (req, res) => {
   }
 
   await fs.rm(document.filePath, { force: true });
+  await analyticsStore.deleteDocumentMetrics(document.id);
   res.status(204).end();
 });
 
 // SSE endpoint for real-time processing progress
 app.get("/api/documents/process/progress", async (req, res) => {
   const documentId = req.query.documentId;
+  // Fall back to env key if not provided - allows bulk processing with server-side key
+  const geminiApiKey = req.query.geminiApiKey || req.query.apiKey || process.env.GEMINI_API_KEY || null;
+
   if (!documentId) {
     return res.status(400).json({ error: "documentId required" });
   }
@@ -757,7 +867,7 @@ app.get("/api/documents/process/progress", async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
   // Send initial connection message
-  res.write(`data: ${JSON.stringify({ type: "connected", documentId })}\n\n`);
+  res.write(`data: ${JSON.stringify({ type: "connected", documentId, hasGeminiKey: !!geminiApiKey })}\n\n`);
 
   // Process the document with progress callbacks
   let audit = createAuditRunContext(null);
@@ -796,11 +906,15 @@ app.get("/api/documents/process/progress", async (req, res) => {
 
     await audit.event("document_processing_started", "info", "Document processing started", {
       name: document.name,
+      hasGeminiKey: !!geminiApiKey,
     });
 
     const agentResult = await documentRouter.process(document.filePath, {
       pdfName: document.name,
+      geminiApiKey: geminiApiKey, // Pass through to two-stage agent for Stage 3
       onProgress: (progress) => {
+        // Also log to console for debugging (with immediate flush)
+        logWithFlush(`[SSE Progress] ${progress.step || progress.type}:`, progress.data || "");
         res.write(`data: ${JSON.stringify({ ...progress, documentId })}\n\n`);
         void audit.event("agent_progress", progress.type === "error" ? "error" : "info", progress.step || progress.type || "progress", extractStepSummary(progress));
       }
@@ -1910,8 +2024,787 @@ app.post("/api/documents/:id/chart-note/pdf", async (req, res) => {
   }
 });
 
+// Endpoint to complete handwriting extraction for prescriptions
+// GET /api/documents/:id/handwriting-progress
+// SSE endpoint for real-time handwriting extraction progress
+app.get("/api/documents/:id/handwriting-progress", async (req, res) => {
+  const { id } = req.params;
+  const { apiKey } = req.query;
+
+  if (!apiKey) {
+    return res.status(400).json({ error: "API key required" });
+  }
+
+  // Set headers for SSE
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+
+  // Send initial connection message
+  res.write(`data: ${JSON.stringify({ type: "connected", documentId: id })}\n\n`);
+
+  let audit = createAuditRunContext(null);
+
+  try {
+    const documents = await readDocuments();
+    const document = documents.find((item) => item.id === id);
+
+    if (!document) {
+      res.write(`data: ${JSON.stringify({ type: "error", error: "Document not found" })}\n\n`);
+      res.end();
+      return;
+    }
+
+    // Verify API key format
+    if (typeof apiKey !== "string" || !apiKey.startsWith("AIza")) {
+      res.write(`data: ${JSON.stringify({ type: "error", error: "Invalid Gemini API key format" })}\n\n`);
+      res.end();
+      return;
+    }
+
+    // Check if this is a prescription document
+    const metadata = document.result?.meta;
+    const documentType = metadata?.router?.detected_type || metadata?.document_type;
+
+    if (documentType !== "prescription") {
+      res.write(`data: ${JSON.stringify({ type: "error", error: "Handwriting extraction is only available for prescription documents" })}\n\n`);
+      res.end();
+      return;
+    }
+
+    // Check if Stage 3 is needed
+    const pipelineMetadata = document.result?.meta;
+    if (pipelineMetadata?.stage3_complete) {
+      res.write(`data: ${JSON.stringify({ type: "error", error: "Handwriting extraction already completed" })}\n\n`);
+      res.end();
+      return;
+    }
+
+    if (!pipelineMetadata?.stage3_required) {
+      res.write(`data: ${JSON.stringify({ type: "error", error: "Handwriting extraction not required for this document" })}\n\n`);
+      res.end();
+      return;
+    }
+
+    // Send key verified message
+    res.write(`data: ${JSON.stringify({ type: "key_verified", message: "API key verified successfully" })}\n\n`);
+
+    // Create audit run
+    const auditRun = await startAuditRunSafe({
+      workflow: "handwriting_extraction",
+      documentId: document.id,
+      requestId: buildAuditRequestId("handwriting"),
+      title: `Handwriting Extraction: ${document.name}`,
+      actor: "user",
+      metadata: {
+        original_run_id: document.auditRunId
+      },
+    });
+
+    audit = createAuditRunContext(auditRun, {
+      workflow: "handwriting_extraction",
+      documentId: document.id,
+      requestId: auditRun?.requestId || null,
+    });
+
+    await audit.event("handwriting_extraction_started", "info", "Stage 3 handwriting extraction started");
+
+    // Send stage starting message
+    res.write(`data: ${JSON.stringify({ type: "start", stage: "stage3", message: "Starting handwriting extraction...", totalSteps: 3 })}\n\n`);
+
+    // Import the two-stage agent
+    const PrescriptionTwoStageAgent = require("../agents/prescription_two_stage_agent.cjs");
+
+    const twoStageAgent = new PrescriptionTwoStageAgent({
+      gemma: {
+        baseUrl: GEMMA_URL,
+        model: MODEL,
+        timeout: 180000
+      },
+      geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+      handwritingThreshold: 15
+    });
+
+    // Run Stage 3 extraction with user-provided API key
+    let stepCount = 0;
+    const cachedStage1Data = document.result?.stage1;
+    console.log('[Handwriting DEBUG] skipStage1=true, stage1Data exists:', !!cachedStage1Data);
+    if (!cachedStage1Data) {
+      console.error('[Handwriting ERROR] No stage1 data found in document.result!');
+    }
+    const result = await twoStageAgent.process(document.filePath, {
+      pdfName: document.name,
+      geminiApiKey: apiKey,
+      skipStage1: true,
+      stage1Data: cachedStage1Data,
+      onProgress: (progress) => {
+        stepCount++;
+        console.log(`[Handwriting Progress] Step ${stepCount}:`, progress.step || progress.type || "processing");
+        res.write(`data: ${JSON.stringify({
+          type: "step",
+          stepNumber: stepCount,
+          totalSteps: 3,
+          step: progress.step || progress.type || "processing",
+          message: progress.message || progress.step || "Processing...",
+          data: progress.data || {}
+        })}\n\n`);
+        void audit.event("agent_progress", "info", progress.step || progress.type || "progress", extractStepSummary(progress));
+      }
+    });
+
+    if (!result.success) {
+      throw new Error(result.error || "Handwriting extraction failed");
+    }
+
+    // Transform to dashboard format
+    res.write(`data: ${JSON.stringify({ type: "step", stepNumber: 2, totalSteps: 3, step: "transforming", message: "Transforming extracted data..." })}\n\n`);
+    const dashboardResult = await transformAgentResultToDashboard(result);
+
+    // Update document with new data
+    res.write(`data: ${JSON.stringify({ type: "step", stepNumber: 3, totalSteps: 3, step: "saving", message: "Saving results..." })}\n\n`);
+    const updatedDocument = await updateDocument(id, async (currentDocument) => {
+      currentDocument.result = {
+        ...currentDocument.result,
+        ...result.data,
+        ...(dashboardResult.dashboard_cards && { dashboard_cards: dashboardResult.dashboard_cards }),
+        ...(dashboardResult.sample_patient_data && { sample_patient_data: dashboardResult.sample_patient_data }),
+        ...(dashboardResult.presentation && { presentation: dashboardResult.presentation }),
+        meta: {
+          ...(currentDocument.result?.meta || {}),
+          ...(result.data?.meta || {}),
+          stage3_complete: true,
+          stage3_completed_at: new Date().toISOString(),
+          user_action_required: false
+        }
+      };
+      currentDocument.metadata = {
+        ...currentDocument.metadata,
+        ...result.metadata,
+        stage3_complete: true,
+        stage3_completed_at: new Date().toISOString()
+      };
+      currentDocument.agentInfo = {
+        ...currentDocument.agentInfo,
+        ...result.agentInfo,
+        ...(result.agentInfo?.stages?.length ? {
+          stages: result.agentInfo.stages,
+          pipeline: result.agentInfo.pipeline || "two_stage_prescription"
+        } : {})
+      };
+      currentDocument.status = "processed";
+      currentDocument.error = null;
+    });
+    await analyticsStore.upsertDocumentMetrics(updatedDocument);
+
+    await audit.complete({
+      documentId: id,
+      agentName: result.agentInfo?.name || "Handwriting Extraction",
+      latency: result.agentInfo?.latency || 0,
+      stage3_complete: true
+    });
+
+    const updatedDocuments = await readDocuments();
+    const finalDocument = updatedDocuments.find((d) => d.id === id);
+
+    res.write(`data: ${JSON.stringify({
+      type: "done",
+      documentId: id,
+      document: publicDocument(finalDocument),
+      message: "Handwriting extraction completed successfully"
+    })}\n\n`);
+  } catch (error) {
+    await audit.fail(error, { documentId: id });
+
+    await updateDocument(id, async (currentDocument) => {
+      currentDocument.metadata = {
+        ...currentDocument.metadata,
+        stage3_error: {
+          message: error.message,
+          code: "STAGE3_EXTRACTION_FAILED",
+          user_action_required: true
+        }
+      };
+    });
+
+    res.write(`data: ${JSON.stringify({
+      type: "error",
+      documentId: id,
+      error: error instanceof Error ? error.message : "Unknown error"
+    })}\n\n`);
+  }
+
+  res.end();
+});
+
+// POST /api/documents/:id/complete-handwriting
+// Accepts user's Gemini API key to run Stage 3 extraction
+// Falls back to GEMINI_API_KEY from env if not provided
+app.post("/api/documents/:id/complete-handwriting", async (req, res) => {
+  const { id } = req.params;
+  // Use provided key or fall back to env
+  const geminiApiKey = req.body?.geminiApiKey || process.env.GEMINI_API_KEY;
+
+  if (!geminiApiKey) {
+    return res.status(400).json({
+      error: "Gemini API key is required",
+      code: "GEMINI_API_KEY_MISSING"
+    });
+  }
+
+  // Basic validation of API key format
+  if (typeof geminiApiKey !== "string" || !geminiApiKey.startsWith("AIza")) {
+    return res.status(400).json({
+      error: "Invalid Gemini API key format",
+      code: "GEMINI_API_KEY_INVALID"
+    });
+  }
+
+  const documents = await readDocuments();
+  const document = documents.find((item) => item.id === id);
+
+  if (!document) {
+    return res.status(404).json({ error: "Document not found" });
+  }
+
+  // Check if this is a prescription document
+  const metadata = document.result?.meta;
+  const documentType = metadata?.router?.detected_type || metadata?.document_type;
+
+  if (documentType !== "prescription") {
+    return res.status(400).json({
+      error: "Handwriting extraction is only available for prescription documents",
+      code: "WRONG_DOCUMENT_TYPE",
+      document_type: documentType
+    });
+  }
+
+  // Check if Stage 3 is needed
+  const pipelineMetadata = document.result?.meta;
+
+  // Check if Stage 3 was actually successful (has data, not just marked complete)
+  const stage3Data = document.result?.stage3 || document.result?.extracted_data?.stage3;
+  const hasStage3Data = stage3Data && (
+    (stage3Data.medications && stage3Data.medications.length > 0) ||
+    (stage3Data.vitals && (stage3Data.vitals.blood_pressure?.systolic || stage3Data.vitals.pulse?.value)) ||
+    (stage3Data.diagnosis?.principal) ||
+    (stage3Data.diagnosis?.clinical_notes && stage3Data.diagnosis.clinical_notes.length > 0)
+  );
+
+  if (pipelineMetadata?.stage3_complete && hasStage3Data && !pipelineMetadata?.stage3_skipped_reason) {
+    return res.status(400).json({
+      error: "Handwriting extraction already completed",
+      code: "ALREADY_COMPLETED",
+      data: {
+        medications_count: stage3Data.medications?.length || 0,
+        vitals_count: Object.keys(stage3Data.vitals || {}).length,
+        diagnosis_present: !!stage3Data.diagnosis?.principal
+      }
+    });
+  }
+
+  if (!pipelineMetadata?.stage3_required) {
+    return res.status(400).json({
+      error: "Handwriting extraction not required for this document",
+      code: "STAGE3_NOT_REQUIRED",
+      reason: "No significant handwriting detected"
+    });
+  }
+
+  // Create audit run
+  const auditRun = await startAuditRunSafe({
+    workflow: "handwriting_extraction",
+    documentId: document.id,
+    requestId: buildAuditRequestId("handwriting"),
+    title: `Handwriting Extraction: ${document.name}`,
+    actor: "user",
+    metadata: {
+      original_run_id: document.auditRunId
+    },
+  });
+
+  const audit = createAuditRunContext(auditRun, {
+    workflow: "handwriting_extraction",
+    documentId: document.id,
+    requestId: auditRun?.requestId || null,
+  });
+
+  try {
+    await audit.event("handwriting_extraction_started", "info", "Stage 3 handwriting extraction started");
+
+    // Import the two-stage agent
+    const PrescriptionTwoStageAgent = require("../agents/prescription_two_stage_agent.cjs");
+
+    const twoStageAgent = new PrescriptionTwoStageAgent({
+      gemma: {
+        baseUrl: GEMMA_URL,
+        model: MODEL,
+        timeout: 180000
+      },
+      geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+      handwritingThreshold: 15
+    });
+
+    // Run Stage 3 extraction with user-provided API key
+    // Pass stage1Data from document.result.stage1 to resume without reprocessing
+    // Also pass handwriting percentage from metadata since stage1Data may have fallback values
+    const result = await twoStageAgent.process(document.filePath, {
+      pdfName: document.name,
+      geminiApiKey: geminiApiKey,
+      skipStage1: true, // Skip Stage 1 as it was already done
+      stage1Data: document.result?.stage1, // Provide existing Stage 1 data
+      forceHandwritingPercentage: document.result?.meta?.handwriting_percentage, // Force this value for Stage 3 check
+      onProgress: (progress) => {
+        void audit.event("agent_progress", "info", progress.step || progress.type || "progress", extractStepSummary(progress));
+      }
+    });
+
+    if (!result.success) {
+      throw new Error(result.error || "Handwriting extraction failed");
+    }
+
+    // Transform to dashboard format
+    const dashboardResult = await transformAgentResultToDashboard(result);
+
+    // Update document with new data
+    const updatedDocument = await updateDocument(id, async (currentDocument) => {
+      // Merge result data - preserve existing structure and overlay new data
+      currentDocument.result = {
+        ...currentDocument.result,
+        // Merge stage3 data into result root level (where dashboard transformer reads it)
+        ...result.data,
+        // Explicitly merge the dashboard-transformed data
+        ...(dashboardResult.dashboard_cards && { dashboard_cards: dashboardResult.dashboard_cards }),
+        ...(dashboardResult.sample_patient_data && { sample_patient_data: dashboardResult.sample_patient_data }),
+        ...(dashboardResult.presentation && { presentation: dashboardResult.presentation }),
+        // Update result.meta with pipeline metadata (where completion checks read it)
+        meta: {
+          ...(currentDocument.result?.meta || {}),
+          ...(result.data?.meta || {}),
+          stage3_complete: true,
+          stage3_completed_at: new Date().toISOString(),
+          user_action_required: false
+        }
+      };
+      currentDocument.metadata = {
+        ...currentDocument.metadata,
+        ...result.metadata,
+        stage3_complete: true,
+        stage3_completed_at: new Date().toISOString()
+      };
+      currentDocument.agentInfo = {
+        ...currentDocument.agentInfo,
+        ...result.agentInfo,
+        // Flatten nested agentInfo for telemetry (server expects top-level fields)
+        ...(result.agentInfo?.stages?.length ? {
+          stages: result.agentInfo.stages,
+          pipeline: result.agentInfo.pipeline || "two_stage_prescription"
+        } : {})
+      };
+      currentDocument.status = "processed";
+      currentDocument.error = null;
+    });
+    await analyticsStore.upsertDocumentMetrics(updatedDocument);
+
+    await audit.complete({
+      documentId: id,
+      agentName: result.agentInfo?.name || "Handwriting Extraction",
+      latency: result.agentInfo?.latency || 0,
+      stage3_complete: true
+    });
+
+    // Return updated document
+    const updatedDocuments = await readDocuments();
+    const finalDocument = updatedDocuments.find((d) => d.id === id);
+
+    res.json({
+      document: publicDocument(finalDocument),
+      message: "Handwriting extraction completed successfully",
+      data: {
+        medications_count: result.data?.medications?.length || 0,
+        lab_selections_count: result.data?.lab_investigations?.total_selected || 0
+      }
+    });
+
+  } catch (error) {
+    await audit.fail(error, { documentId: id });
+
+    await updateDocument(id, async (currentDocument) => {
+      currentDocument.metadata = {
+        ...currentDocument.metadata,
+        stage3_error: {
+          message: error.message,
+          code: "STAGE3_EXTRACTION_FAILED",
+          user_action_required: true
+        }
+      };
+    });
+
+    res.status(500).json({
+      error: "Handwriting extraction failed",
+      code: "STAGE3_EXTRACTION_FAILED",
+      message: error.message
+    });
+  }
+});
+
+// ============================================
+// MANUAL ALERT TRIGGER ENDPOINT
+// ============================================
+// Import alert agents
+const PharmacyAlertAgent = require("../agents/pharmacy/pharmacy_alert_agent.cjs");
+const DepartmentAlertAgent = require("../agents/departments/department_alert_agent.cjs");
+const PharmacyAlertFormatter = require("../tools/pharmacy/alert_formatter.tool.cjs");
+const DepartmentAlertFormatter = require("../tools/pharmacy/department_alert_formatter.tool.cjs");
+const PharmacyEmailNotifier = require("../agents/pharmacy/email_notifier.cjs");
+const PharmacyWhatsAppNotifier = require("../agents/pharmacy/whatsapp_notifier.cjs");
+const DepartmentNotifier = require("../agents/departments/department_notifier.cjs");
+
+function buildAlertDashboardData(document) {
+  return {
+    ...document.result,
+    id: document.id,
+    documentId: document.id,
+    medications: document.result?.extracted_data?.medications || document.result?.medications || [],
+    investigations: document.result?.extracted_data?.investigations || document.result?.investigations || [],
+    radiology: document.result?.extracted_data?.radiology || document.result?.radiology || [],
+    nuclear_medicine: document.result?.extracted_data?.nuclear_medicine || document.result?.nuclear_medicine || [],
+    procedures: document.result?.extracted_data?.procedures || document.result?.procedures || [],
+    patient: document.result?.extracted_data?.patient || document.result?.sample_patient_data?.patient || document.result?.patient || {},
+    doctor: document.result?.extracted_data?.doctor || document.result?.sample_patient_data?.doctor || document.result?.doctor || {},
+    diagnosis: document.result?.extracted_data?.diagnosis || document.result?.diagnosis || {},
+    meta: document.result?.meta || {}
+  };
+}
+
+function getAvailableAlertTargets(dashboardData) {
+  const departmentAgent = new DepartmentAlertAgent();
+  const detectedDepartments = departmentAgent.detectDepartmentsWithOrders(dashboardData).map((entry) => entry.department);
+  const targets = [];
+
+  if ((dashboardData.medications || []).length > 0) {
+    targets.push("pharmacy");
+  }
+
+  if (detectedDepartments.includes("lab")) {
+    targets.push("lab");
+  }
+
+  if (detectedDepartments.includes("nuclear_medicine")) {
+    targets.push("nuclear_medicine");
+  }
+
+  if (detectedDepartments.includes("radiology")) {
+    targets.push("radiology");
+  }
+
+  if (detectedDepartments.includes("procedures")) {
+    targets.push("procedures");
+  }
+
+  return targets;
+}
+
+function resolveAlertTargets(requestedTarget, dashboardData) {
+  const availableTargets = getAvailableAlertTargets(dashboardData);
+
+  switch (requestedTarget) {
+    case "all":
+      return availableTargets;
+    case "medications":
+      return availableTargets.filter((target) => target === "pharmacy");
+    case "labs":
+      return availableTargets.filter((target) => target === "lab" || target === "nuclear_medicine");
+    case "radiology":
+      return availableTargets.filter((target) => target === "radiology");
+    case "treatment":
+      return availableTargets.filter((target) => target === "procedures");
+    case "pharmacy":
+    case "lab":
+    case "radiology":
+    case "nuclear_medicine":
+    case "procedures":
+      return availableTargets.includes(requestedTarget) ? [requestedTarget] : [];
+    default:
+      return null;
+  }
+}
+
+function buildAlertPreviewDeliveries(document, dashboardData, targets) {
+  const pharmacyFormatter = new PharmacyAlertFormatter();
+  const pharmacyEmailNotifier = new PharmacyEmailNotifier();
+  const pharmacyWhatsAppNotifier = new PharmacyWhatsAppNotifier();
+  const pharmacyAgent = new PharmacyAlertAgent();
+  const departmentFormatter = new DepartmentAlertFormatter();
+  const departmentNotifier = new DepartmentNotifier();
+  const departmentAgent = new DepartmentAlertAgent();
+  const deliveries = [];
+
+  for (const target of targets) {
+    if (target === "pharmacy") {
+      const content = pharmacyFormatter.formatAlert(dashboardData);
+      deliveries.push({
+        key: "pharmacy",
+        label: "Pharmacy",
+        itemCount: content.medications.length,
+        alreadySent: Boolean(document.result?.pharmacy_alert?.sent),
+        channels: {
+          email: {
+            enabled: pharmacyAgent.config.sendEmail,
+            recipient: pharmacyEmailNotifier.config.toEmail,
+            subject: pharmacyEmailNotifier.buildSubject(content),
+            body: pharmacyEmailNotifier.buildTextBody(content),
+          },
+          whatsapp: {
+            enabled: pharmacyAgent.config.sendWhatsApp || Boolean(pharmacyWhatsAppNotifier.config.phoneNumber),
+            recipient: pharmacyWhatsAppNotifier.config.phoneNumber || null,
+            body: pharmacyWhatsAppNotifier.buildMessage(content),
+          },
+        },
+      });
+      continue;
+    }
+
+    const content = departmentFormatter.formatAlert(target, dashboardData);
+    deliveries.push({
+      key: target,
+      label: content.department,
+      itemCount: content.itemCount || 0,
+      alreadySent: Boolean(document.result?.department_alerts?.departments?.[target]?.sent),
+      channels: {
+        email: {
+          enabled: true,
+          recipient: departmentAgent.departmentEmails[target] || null,
+          subject: departmentNotifier.buildSubject(target, content),
+          body: departmentNotifier.buildEmailBody(target, content),
+        },
+        whatsapp: {
+          enabled: true,
+          recipient: null,
+          body: departmentNotifier.buildWhatsAppMessage(target, content),
+        },
+      },
+    });
+  }
+
+  return deliveries;
+}
+
+function toStoredPharmacyAlert(result, medicationCount) {
+  return {
+    sent: result.sent || false,
+    email_sent: result.emailSent || false,
+    whatsapp_sent: result.whatsappSent || false,
+    skipped: result.skipped || false,
+    skip_reason: result.reason || null,
+    error: result.error || null,
+    medications_count: medicationCount,
+  };
+}
+
+function mergeStoredDepartmentAlerts(existingAlerts, target, result, itemCount) {
+  const nextAlerts = {
+    sent: existingAlerts?.sent || false,
+    skipped: false,
+    skip_reason: null,
+    error: existingAlerts?.error || null,
+    departments: {
+      ...(existingAlerts?.departments || {}),
+    },
+  };
+
+  nextAlerts.departments[target] = {
+    sent: result.sent || false,
+    itemCount,
+  };
+
+  nextAlerts.sent = Object.values(nextAlerts.departments).some((entry) => entry?.sent);
+  nextAlerts.error = result.error || null;
+
+  return nextAlerts;
+}
+
+async function sendManualAlertsForTargets(document, dashboardData, targets) {
+  const pharmacyAgent = new PharmacyAlertAgent();
+  const departmentAgent = new DepartmentAlertAgent();
+  const results = {};
+
+  for (const target of targets) {
+    if (target === "pharmacy") {
+      console.log(`\n📋 Manual Pharmacy Alert Trigger for document: ${document.name}`);
+      results.pharmacy = await pharmacyAgent.sendAlert(dashboardData, {
+        documentId: document.id,
+        manualTrigger: true
+      });
+      continue;
+    }
+
+    console.log(`\n📋 Manual ${target} Alert Trigger for document: ${document.name}`);
+    const departmentResult = await departmentAgent.sendAlerts(dashboardData, {
+      documentId: document.id,
+      departments: [target]
+    });
+    results[target] = departmentResult.departments?.[target] || {
+      sent: false,
+      error: departmentResult.error || "Department alert failed",
+    };
+  }
+
+  return results;
+}
+
+function buildStoredAlertPatch(existingResult, dashboardData, targets, sendResults) {
+  const patch = {};
+
+  if (targets.includes("pharmacy")) {
+    patch.pharmacy_alert = toStoredPharmacyAlert(sendResults.pharmacy || {}, (dashboardData.medications || []).length);
+  }
+
+  const departmentCounts = {
+    lab: (dashboardData.investigations || []).filter((item) => item.status === "ordered").length,
+    radiology: (dashboardData.radiology || []).filter((item) => item.status === "ordered").length,
+    nuclear_medicine: (dashboardData.nuclear_medicine || []).filter((item) => item.status === "ordered").length,
+    procedures: (dashboardData.procedures || []).filter((item) => item.status === "ordered" || item.status === "mentioned").length,
+  };
+
+  const selectedDepartments = targets.filter((target) => target !== "pharmacy");
+  if (selectedDepartments.length > 0) {
+    let mergedDepartmentAlerts = existingResult?.department_alerts || null;
+    for (const target of selectedDepartments) {
+      mergedDepartmentAlerts = mergeStoredDepartmentAlerts(
+        mergedDepartmentAlerts,
+        target,
+        sendResults[target] || {},
+        departmentCounts[target] || 0
+      );
+    }
+    patch.department_alerts = mergedDepartmentAlerts;
+  }
+
+  return patch;
+}
+
+/**
+ * POST /api/documents/:id/alert-preview
+ * Generate approval previews for dashboard alert cards without sending
+ */
+app.post("/api/documents/:id/alert-preview", async (req, res) => {
+  const { id } = req.params;
+  const { target = "all" } = req.body || {};
+
+  try {
+    const documents = await readDocuments();
+    const document = documents.find((item) => item.id === id);
+
+    if (!document) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    if (!document.result || (document.status !== "processed" && document.status !== "partial")) {
+      return res.status(400).json({
+        error: "Document must be processed before previewing alerts",
+        code: "DOCUMENT_NOT_PROCESSED"
+      });
+    }
+
+    const dashboardData = buildAlertDashboardData(document);
+    const targets = resolveAlertTargets(target, dashboardData);
+
+    if (targets == null) {
+      return res.status(400).json({
+        error: `Unknown alert target: ${target}`,
+        code: "INVALID_ALERT_TARGET"
+      });
+    }
+
+    const deliveries = buildAlertPreviewDeliveries(document, dashboardData, targets);
+
+    return res.json({
+      success: true,
+      documentId: id,
+      documentName: document.name,
+      target,
+      deliveries,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error(`Alert preview failed: ${error.message}`);
+    return res.status(500).json({
+      error: "Failed to build alert preview",
+      code: "ALERT_PREVIEW_FAILED",
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/documents/:id/send-alerts
+ * Manually trigger pharmacy and department alerts for a processed document
+ * Works for any document type (Prescription, Discharge, Outpatient)
+ */
+app.post("/api/documents/:id/send-alerts", async (req, res) => {
+  const { id } = req.params;
+  const { alertType = 'all', target = null } = req.body || {};
+
+  try {
+    const documents = await readDocuments();
+    const document = documents.find((item) => item.id === id);
+
+    if (!document) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    if (!document.result || (document.status !== "processed" && document.status !== "partial")) {
+      return res.status(400).json({
+        error: "Document must be processed before sending alerts",
+        code: "DOCUMENT_NOT_PROCESSED"
+      });
+    }
+
+    const dashboardData = buildAlertDashboardData(document);
+    const requestedTarget = target || alertType;
+    const targets = resolveAlertTargets(requestedTarget, dashboardData);
+
+    if (targets == null) {
+      return res.status(400).json({
+        error: `Unknown alert target: ${requestedTarget}`,
+        code: "INVALID_ALERT_TARGET"
+      });
+    }
+
+    const results = await sendManualAlertsForTargets(document, dashboardData, targets);
+    const alertPatch = buildStoredAlertPatch(document.result, dashboardData, targets, results);
+    const updatedDocument = await updateDocument(id, async (currentDocument) => {
+      currentDocument.result = {
+        ...(currentDocument.result || {}),
+        ...alertPatch,
+      };
+    });
+
+    return res.json({
+      success: true,
+      documentId: id,
+      documentName: document.name,
+      target: requestedTarget,
+      results,
+      document: updatedDocument ? publicDocument(updatedDocument) : null,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error(`Manual alert trigger failed: ${error.message}`);
+    return res.status(500).json({
+      error: "Failed to send alerts",
+      code: "ALERT_SEND_FAILED",
+      message: error.message
+    });
+  }
+});
+
 ensureStorage()
-  .then(() => {
+  .then(async () => {
+    const documents = await readDocuments();
+    await analyticsStore.backfillDocuments(documents);
     app.listen(PORT, () => {
       console.log(`Doctor dashboard processing server listening on http://localhost:${PORT}`);
     });

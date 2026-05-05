@@ -1,0 +1,251 @@
+{
+  "file": "Prescription_01.pdf",
+  "timestamp": "2026-04-27T09:02:28.482Z",
+  "stage1": {
+    "success": true,
+    "duration": 45276,
+    "tokens": 1744,
+    "data": {
+      "phi": {
+        "patient_name": "MRS NAZNEEN JAMAL",
+        "patient_id": "MH000001285",
+        "patient_age": "71 Yrs",
+        "patient_gender": "Female",
+        "patient_dob": null,
+        "patient_contact": {
+          "phone": "9448460565",
+          "email": null,
+          "emergency_contact": null
+        },
+        "patient_address": null
+      },
+      "header_info": {
+        "hospital_name": "manipalhospitals",
+        "hospital_branch": "HAL Airport Road, Bangalore 560017",
+        "department": "ENT MHB",
+        "document_type": "OUT PATIENT RECORD",
+        "document_title": "OUT PATIENT RECORD ENT"
+      },
+      "visit_metadata": {
+        "visit_date": "2026-03-24",
+        "report_date": "2026-03-24 13:02",
+        "episode_number": "O00011800756",
+        "registration_number": "14750",
+        "page_number": "Page 1 of 2"
+      },
+      "doctor_info": {
+        "name": "DR. E.V. RAMAN",
+        "specialization": "ENT",
+        "credentials": "D.L.O-79, M.S-1979, FICS-92",
+        "signature_text": null
+      },
+      "document_structure": {
+        "has_prescription_table": false,
+        "has_vitals_section": true,
+        "has_lab_investigations": false,
+        "has_radiology_tests": false,
+        "has_procedures": false,
+        "table_headers": {
+          "prescription": [],
+          "vitals": [
+            "Height",
+            "BP",
+            "Allergies",
+            "Diet",
+            "Weight"
+          ]
+        },
+        "handwriting_regions": [
+          {
+            "section": "doctor_notes",
+            "description": "Handwritten clinical notes regarding fever, headache, nasal discharge, and hearing loss"
+          },
+          {
+            "section": "diagnostic_findings",
+            "description": "Handwritten PTA results indicating Bilateral mild sloping SNHL"
+          }
+        ]
+      },
+      "redaction_zones": [
+        {
+          "type": "patient_name",
+          "description": "Top left header area next to Patient Name",
+          "priority": "high"
+        },
+        {
+          "type": "patient_id",
+          "description": "Hospital No. field",
+          "priority": "high"
+        },
+        {
+          "type": "patient_contact",
+          "description": "Patient Mob No. field",
+          "priority": "high"
+        },
+        {
+          "type": "patient_age_gender",
+          "description": "Age/Sex field in top right header",
+          "priority": "medium"
+        },
+        {
+          "type": "episode_number",
+          "description": "Episode No. field in top right header",
+          "priority": "medium"
+        }
+      ]
+    }
+  },
+  "stage2": {
+    "success": true,
+    "data": {
+      "medications": [],
+      "handwritten_notes": "No c/o nasal stuffiness / discharge. No c/o sore throat / cough. No associated c/o hearing loss / giddiness. DNS to (R) with mild discharge (P). Mouth: okay. B/L TM okay. PTA.",
+      "doctor_signature": null,
+      "diagnosis": {
+        "handwritten_principal": "Bilateral mild sloping SNHL",
+        "handwritten_symptoms": [
+          "fever since 2 days",
+          "headache since 2 days - unilateral (R) sided",
+          "occasional tinnitus (R) sided"
+        ]
+      },
+      "vitals_handwritten": {
+        "bp": null,
+        "pulse": null,
+        "temp": null,
+        "weight": null
+      }
+    },
+    "duration": 11987,
+    "usage": {
+      "promptTokenCount": 642,
+      "candidatesTokenCount": 197,
+      "totalTokenCount": 1937,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 384
+        },
+        {
+          "modality": "IMAGE",
+          "tokenCount": 258
+        }
+      ],
+      "thoughtsTokenCount": 1098
+    },
+    "model": "gemini-2.5-flash",
+    "source": "gemini_vision_api"
+  },
+  "merged": {
+    "patient": {
+      "name": "MRS NAZNEEN JAMAL",
+      "id": "MH000001285",
+      "age": "71 Yrs",
+      "gender": "Female",
+      "dob": null,
+      "contact": {
+        "phone": "9448460565",
+        "email": null,
+        "emergency_contact": null
+      },
+      "address": null
+    },
+    "visit": {
+      "hospital": "manipalhospitals",
+      "branch": "HAL Airport Road, Bangalore 560017",
+      "department": "ENT MHB",
+      "visit_date": "2026-03-24",
+      "report_date": "2026-03-24 13:02",
+      "episode_number": "O00011800756"
+    },
+    "doctor": {
+      "name": "DR. E.V. RAMAN",
+      "specialization": "ENT",
+      "credentials": "D.L.O-79, M.S-1979, FICS-92",
+      "signature": null
+    },
+    "medications": [],
+    "diagnosis": {
+      "from_context": "OUT PATIENT RECORD ENT",
+      "handwritten": "Bilateral mild sloping SNHL",
+      "symptoms": [
+        "fever since 2 days",
+        "headache since 2 days - unilateral (R) sided",
+        "occasional tinnitus (R) sided"
+      ]
+    },
+    "vitals": {
+      "bp": null,
+      "pulse": null,
+      "temp": null,
+      "weight": null
+    },
+    "notes": {
+      "handwritten": "No c/o nasal stuffiness / discharge. No c/o sore throat / cough. No associated c/o hearing loss / giddiness. DNS to (R) with mild discharge (P). Mouth: okay. B/L TM okay. PTA.",
+      "document_structure": {
+        "has_prescription_table": false,
+        "has_vitals_section": true,
+        "has_lab_investigations": false,
+        "has_radiology_tests": false,
+        "has_procedures": false,
+        "table_headers": {
+          "prescription": [],
+          "vitals": [
+            "Height",
+            "BP",
+            "Allergies",
+            "Diet",
+            "Weight"
+          ]
+        },
+        "handwriting_regions": [
+          {
+            "section": "doctor_notes",
+            "description": "Handwritten clinical notes regarding fever, headache, nasal discharge, and hearing loss"
+          },
+          {
+            "section": "diagnostic_findings",
+            "description": "Handwritten PTA results indicating Bilateral mild sloping SNHL"
+          }
+        ]
+      }
+    },
+    "extraction_metadata": {
+      "stage1_duration": 45276,
+      "stage1_tokens": 1744,
+      "stage2_duration": 11987,
+      "stage2_source": "gemini_vision_api",
+      "extraction_method": "two_stage_gemma_gemini"
+    }
+  },
+  "dashboard_format": {
+    "patient": {
+      "name": "MRS NAZNEEN JAMAL",
+      "age": 71,
+      "gender": "Female",
+      "mrn": "MH000001285"
+    },
+    "diagnosis": {
+      "principal": "Bilateral mild sloping SNHL",
+      "secondary": [
+        "fever since 2 days",
+        "headache since 2 days - unilateral (R) sided",
+        "occasional tinnitus (R) sided"
+      ]
+    },
+    "medications": [],
+    "doctor": "DR. E.V. RAMAN",
+    "visit": {
+      "hospital": "manipalhospitals",
+      "department": "ENT MHB",
+      "date": "2026-03-24"
+    },
+    "vitals": {
+      "bp": null,
+      "pulse": null,
+      "temp": null,
+      "weight": null
+    },
+    "notes": "No c/o nasal stuffiness / discharge. No c/o sore throat / cough. No associated c/o hearing loss / giddiness. DNS to (R) with mild discharge (P). Mouth: okay. B/L TM okay. PTA."
+  }
+}

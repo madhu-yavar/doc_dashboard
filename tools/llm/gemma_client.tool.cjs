@@ -8,8 +8,11 @@ class GemmaClientTool {
     this.name = "Gemma LLM Client";
     this.version = "1.0.0";
     this.baseUrl = config.baseUrl || process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions";
-    this.model = config.model || process.env.GEMMA_MODEL || "google/gemma-4-26B-A4B-it";
+    this.model = config.model || process.env.GEMMA_MODEL || "google/gemma-4-31B-it";
     this.timeout = config.timeout || 180000;
+    // Gemma 4-31B has a max context of 16384 tokens
+    // Leave room for input tokens by defaulting to 2048 max output
+    this.defaultMaxTokens = config.maxTokens || 2048;
   }
 
   /**
@@ -33,7 +36,7 @@ class GemmaClientTool {
           model: this.model,
           messages: [{ role: "user", content: prompt }],
           temperature: options.temperature ?? 0.1,
-          max_tokens: options.maxTokens ?? 3000,
+          max_tokens: options.maxTokens ?? this.defaultMaxTokens,
         }),
       });
 
@@ -106,7 +109,7 @@ class GemmaClientTool {
           model: this.model,
           messages: messages,
           temperature: options.temperature ?? 0.1,
-          max_tokens: options.maxTokens ?? 3000,
+          max_tokens: options.maxTokens ?? this.defaultMaxTokens,
         }),
       });
 

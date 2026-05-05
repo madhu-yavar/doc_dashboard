@@ -29,7 +29,7 @@ async function testVitalsExtraction() {
   // Initialize tools
   const gemmaClient = new GemmaClientTool({
     baseUrl: process.env.GEMMA_URL || 'http://206.1.62.28:8000/v1/chat/completions',
-    model: process.env.GEMMA_MODEL || 'google/gemma-4-26B-A4B-it'
+    model: process.env.GEMMA_MODEL || 'google/gemma-4-31B-it'
   });
   const promptBuilder = new PromptBuilderTool();
 
@@ -37,7 +37,7 @@ async function testVitalsExtraction() {
   console.log('\n🤖 Extracting vitals with NEW prompt...');
   const prompt = promptBuilder.build('vitals_extractor', { pdfText: pdfResult.text });
 
-  const result = await gemmaClient.execute(prompt, { temperature: 0.1, maxTokens: 1000 });
+  const result = await gemmaClient.execute(prompt, { temperature: 0.1, maxTokens: 2200 });
 
   if (!result.success) {
     console.error('Failed to get response from LLM:', result.error);

@@ -1,8 +1,8 @@
 # Manipal CoE - Doctor Dashboard Documentation
 
 **Project:** Doctor Dashboard - Clinical Intelligence System
-**Version:** 2.0.0
-**Last Updated:** 2026-04-15
+**Version:** 3.0.0
+**Last Updated:** 2026-04-27
 **Status:** Production
 
 ---
@@ -55,7 +55,10 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 | Capability | Description |
 |------------|-------------|
 | **PDF Understanding** | Extract structured data from unstructured clinical PDFs |
-| **Document Type Detection** | Auto-detects discharge summaries, outpatient records, lab reports, chart notes |
+| **Agentic Document Classification** | ReAct-based classification with 95%+ confidence |
+| **Dynamic Skill Selection** | Agents decide which extraction skills to run based on content |
+| **Scalable Architecture** | Add new document types via configuration, not code |
+| **Document Type Detection** | Auto-detects prescriptions, discharge summaries, outpatient records, lab reports, chart notes |
 | **Parallel Extraction** | Concurrent extraction steps for improved performance |
 | **Data Validation** | Cross-validate extracted data against source with citations |
 | **Chart Note Generation** | Generate clinical SOAP notes with ReAct reasoning |
@@ -82,7 +85,8 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 | Document | Description | Link |
 |----------|-------------|------|
 | AI Architecture | Complete AI/LLM system architecture | [View](./architecture/ai-architecture.md) |
-| Agent System | Multi-agent orchestration details | [View](./architecture/agent-system.md) |
+| Agent System | Multi-agent orchestration details (v3.0 ReAct) | [View](./architecture/agent-system.md) |
+| **ReAct Architecture Diagrams** | **NEW: Visual diagrams for ReAct system** | [View](./architecture/diagrams/react-architecture.md) |
 | Skills Framework | Reusable AI skills documentation | [View](./architecture/skills-framework.md) |
 | Chatbot Architecture | Doctor Assistant chat system | [View](./architecture/chatbot-architecture.md) |
 | Chart Note React Agent | Chart note generation architecture | [View](./architecture/CHART_NOTE_REACT_AGENT.md) |
@@ -129,7 +133,16 @@ manipal-coe/
 │   ├── index.cjs              # Main Express server with audit
 │   └── audit_logger.cjs       # Audit logging system
 ├── agents/                    # AI Agents
-│   ├── document_type_router.cjs           # Auto-detects doc type
+│   ├── core/                        # Core agent framework
+│   │   ├── base_agent.cjs           # Base ReAct agent class
+│   │   ├── agent_state.cjs          # Agent state management
+│   │   ├── skill_registry.cjs       # Central skill registry (NEW v3.0)
+│   │   └── tool_registry.cjs        # Tool registry
+│   ├── classification/              # Classification agents
+│   │   └── document_classifier_agent.cjs  # Agentic classifier (NEW v3.0)
+│   ├── extraction/                 # Extraction agents
+│   │   └── react_extraction_agent.cjs     # ReAct-based extractor (NEW v3.0)
+│   ├── document_type_router.cjs           # Auto-detects doc type (updated v3.0)
 │   ├── discharge_extractor_agent.cjs      # Discharge summary extraction
 │   ├── outpatient_extractor_agent.cjs     # OPD record extraction
 │   ├── lab_report_extractor_agent.cjs      # Lab report extraction
@@ -241,6 +254,9 @@ The system features a pure LLM-based extraction approach for pending items:
 
 ### Completed ✅
 
+- **ReAct-based agent architecture with dynamic skill selection (NEW v3.0)**
+- **Agentic document classification with vision + handwriting detection (NEW v3.0)**
+- **Scalable skill registry for adding new document types (NEW v3.0)**
 - Multi-agent architecture with ReAct reasoning
 - Document type detection and routing
 - Parallel extraction orchestration
@@ -285,4 +301,4 @@ For questions or support, contact the development team.
 ---
 
 *Documentation maintained by the AI Architecture Team*
-*Last updated: April 15, 2026*
+*Last updated: April 27, 2026*

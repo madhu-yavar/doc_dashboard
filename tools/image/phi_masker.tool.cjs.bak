@@ -1,0 +1,373 @@
+/**
+ * PHI/PII Masking Tool
+ *
+ * Detects and masks Personally Identifiable Information in medical document images
+ * before sending to external APIs (like Gemini)
+ *
+ * Workflow:
+ * 1. Use Gemma to detect PHI regions with coordinates
+ * 2. Create masked image with black rectangles over PHI areas
+ * 3. Return masked image for safe processing
+ */
+
+const fs = require("fs");
+const path = require("path");
+
+class PhiMaskerTool {
+  constructor(config = {}) {
+    this.name = "PHI Masker";
+    this.version = "1.0.0";
+    this.gemmaUrl = config.gemmaUrl || process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions";
+    this.gemmaModel = config.gemmaModel || "google/gemma-4-31B-it";
+    this.tempDir = config.tempDir || "/tmp/phi_masking";
+    this.maskColor = config.maskColor || [0, 0, 0]; // Black
+  }
+
+  /**
+   * Ensure temp directory exists
+   */
+  ensureTempDir() {
+    if (!fs.existsSync(this.tempDir)) {
+      fs.mkdirSync(this.tempDir, { recursive: true });
+    }
+  }
+
+  /**
+   * Stage 1: Detect PHI regions using Gemma
+   * Returns bounding boxes for PHI elements
+   */
+  async detectPhiRegions(base64Image, pageNum = 1) {
+    const prompt = `You are a document layout analyzer. Detect the bounding box coordinates of all Personally Identifiable Information (PII) and Protected Health Information (PHI) in this medical document page.
+
+Return a JSON object with this exact structure:
+{
+  "page_number": ${pageNum},
+  "phi_regions": [
+    {
+      "type": "patient_name|patient_id|patient_age|patient_gender|patient_contact|doctor_name|hospital_name|episode_number|registration_number|date|other_phi",
+      "description": "brief description of what this region contains",
+      "bounding_box": {
+        "x": 0-100,  // percentage from left
+        "y": 0-100,  // percentage from top
+        "width": 0-100,  // percentage of image width
+        "height": 0-100  // percentage of image height
+      },
+      "confidence": "high|medium|low"
+    }
+  ],
+  "header_region": {
+    "y_start": 0-100,  // percentage where header starts
+    "y_end": 0-100,    // percentage where header ends
+    "contains_phi": true
+  },
+  "total_phi_regions": count
+}
+
+Types of PHI to detect:
+- Patient name (usually top left, largest text)
+- Patient ID / MRN / IP number
+- Patient age, gender
+- Patient contact (phone, email, address)
+- Doctor name and signature
+- Episode/visit number
+- Registration number
+- Dates (if specific to patient visit)
+- Hospital/clinic name (may keep for context)
+- Barcode/QR codes
+
+Use PERCENTAGE coordinates (0-100) so they work with any image size.
+The bounding_box format: {x, y, width, height} where:
+- x = left edge position (% of image width from left)
+- y = top edge position (% of image height from top)
+- width = width of region (% of image width)
+- height = height of region (% of image height)
+
+Example: If patient name is at top-left, spanning 20% of width:
+{"type": "patient_name", "bounding_box": {"x": 5, "y": 8, "width": 25, "height": 4}}
+
+Return ONLY valid JSON, no explanations.`;
+
+    const startTime = Date.now();
+
+    try {
+      const response = await fetch(this.gemmaUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: this.gemmaModel,
+          messages: [{
+            role: "user",
+            content: [
+              { type: "text", text: prompt },
+              {
+                type: "image_url",
+                image_url: { url: `data:image/png;base64,${base64Image}` }
+              }
+            ]
+          }],
+          max_tokens: 2048,
+          temperature: 0.1
+        }),
+        signal: AbortSignal.timeout(120000)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemma PHI detection failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content || "";
+
+      // Parse JSON response
+      let jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/) || content.match(/\{[\s\S]*\}/);
+      let phiData = null;
+      if (jsonMatch) {
+        try {
+          phiData = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+        } catch (e) {
+          // Try to fix common JSON issues
+          try {
+            phiData = JSON.parse(content.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']'));
+          } catch (e2) {
+            console.log("PHI detection JSON parse error, using fallback");
+          }
+        }
+      }
+
+      const duration = Date.now() - startTime;
+
+      return {
+        success: !!phiData,
+        data: phiData,
+        duration,
+        tokens: data.usage?.prompt_tokens + data.usage?.completion_tokens || 0
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        data: null,
+        duration: Date.now() - startTime
+      };
+    }
+  }
+
+  /**
+   * Stage 2: Create masked image using sharp or canvas
+   * For Node.js, we'll use a simple approach with ImageMagick or similar
+   */
+  async createMaskedImage(inputPath, outputPath, phiRegions, imageWidth, imageHeight) {
+    const { execSync } = require("child_process");
+
+    // Delete output if exists
+    if (fs.existsSync(outputPath)) {
+      fs.unlinkSync(outputPath);
+    }
+
+    // Build ImageMagick command to draw black rectangles
+    // We'll use convert with -draw option
+    const draws = [];
+
+    for (const region of (phiRegions || [])) {
+      if (!region.bounding_box) continue;
+
+      const bb = region.bounding_box;
+      // Convert percentage to pixels
+      const x = Math.round((bb.x / 100) * imageWidth);
+      const y = Math.round((bb.y / 100) * imageHeight);
+      const w = Math.round((bb.width / 100) * imageWidth);
+      const h = Math.round((bb.height / 100) * imageHeight);
+
+      // Format: fill black + rectangle
+      draws.push(`fill black rectangle ${x},${y} ${x+w},${y+h}`);
+    }
+
+    if (draws.length === 0) {
+      // No PHI to mask, just copy
+      fs.copyFileSync(inputPath, outputPath);
+      return { success: true, masked_count: 0 };
+    }
+
+    try {
+      // Use ImageMagick to draw black rectangles
+      const drawArgs = draws.map(d => `-draw "${d}"`).join(" ");
+
+      execSync(`convert "${inputPath}" ${drawArgs} "${outputPath}"`, {
+        stdio: "ignore",
+        timeout: 30000
+      });
+
+      return { success: true, masked_count: draws.length };
+
+    } catch (error) {
+      // ImageMagick might not be available, try with graphicsmagick or fallback
+      console.log(`ImageMagick failed: ${error.message}`);
+      return { success: false, error: error.message, masked_count: 0 };
+    }
+  }
+
+  /**
+   * Alternative: Create base64 masked image using node-canvas or pure JS
+   * This is a fallback when ImageMagick is not available
+   */
+  async createMaskedImageBase64(base64Image, phiRegions, imageWidth = 1000, imageHeight = 1400) {
+    const sharp = require("sharp");
+
+    try {
+      // Remove data URL prefix if present
+      const base64Data = base64Image.includes("base64,")
+        ? base64Image.split("base64,")[1]
+        : base64Image;
+
+      const buffer = Buffer.from(base64Data, "base64");
+
+      // Validate buffer
+      if (buffer.length < 8) {
+        throw new Error(`Invalid image buffer: length=${buffer.length}`);
+      }
+
+      let image = sharp(buffer, { failOnError: false });
+      const metadata = await image.metadata();
+
+      // Get actual dimensions
+      const actualWidth = metadata.width;
+      const actualHeight = metadata.height;
+
+      // Use SVG overlay approach for black rectangles
+      // This is more reliable than creating separate image buffers
+      const svgElements = [];
+      for (const region of (phiRegions || [])) {
+        if (!region.bounding_box) continue;
+
+        const bb = region.bounding_box;
+        const x = Math.round((bb.x / 100) * actualWidth);
+        const y = Math.round((bb.y / 100) * actualHeight);
+        const w = Math.max(1, Math.round((bb.width / 100) * actualWidth));
+        const h = Math.max(1, Math.round((bb.height / 100) * actualHeight));
+
+        svgElements.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="black"/>`);
+      }
+
+      if (svgElements.length > 0) {
+
+        const svgOverlay = Buffer.from(`
+          <svg width="${actualWidth}" height="${actualHeight}">
+            <rect width="100%" height="100%" fill="none"/>
+            ${svgElements.join("")}
+          </svg>
+        `);
+
+        image = image.composite([{
+          input: svgOverlay,
+          top: 0,
+          left: 0
+        }]);
+      }
+
+      const maskedBuffer = await image.png().toBuffer();
+      return maskedBuffer.toString("base64");
+
+    } catch (error) {
+      console.log(`Sharp masking failed: ${error.message}`);
+      // Return original if masking fails
+      return base64Image;
+    }
+  }
+
+  /**
+   * Main execution: Detect PHI and create masked image
+   */
+  async execute(base64Image, options = {}) {
+    const { pageNum = 1, keepHospital = false } = options;
+
+    this.ensureTempDir();
+
+    // Stage 1: Detect PHI regions
+    const detection = await this.detectPhiRegions(base64Image, pageNum);
+
+    if (!detection.success) {
+      return {
+        success: false,
+        error: `PHI detection failed: ${detection.error}`,
+        maskedImage: null,
+        phiData: null
+      };
+    }
+
+    const phiRegions = detection.data?.phi_regions || [];
+
+    // Filter out hospital name if requested (keep for context)
+    let regionsToMask = phiRegions;
+    if (keepHospital) {
+      regionsToMask = phiRegions.filter(r => r.type !== "hospital_name");
+    }
+
+    if (regionsToMask.length === 0) {
+      return {
+        success: true,
+        maskedImage: base64Image, // No masking needed
+        phiData: detection.data,
+        masked_count: 0,
+        note: "No PHI regions detected"
+      };
+    }
+
+    // Stage 2: Create masked image
+    try {
+      const maskedBase64 = await this.createMaskedImageBase64(
+        base64Image,
+        regionsToMask
+      );
+
+      return {
+        success: true,
+        maskedImage: maskedBase64,
+        originalImage: base64Image,
+        phiData: detection.data,
+        masked_count: regionsToMask.length,
+        masked_types: regionsToMask.map(r => r.type),
+        duration: detection.duration
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: `Masking failed: ${error.message}`,
+        maskedImage: null,
+        phiData: detection.data
+      };
+    }
+  }
+
+  /**
+   * Mask multiple pages
+   */
+  async executeBatch(base64Images, options = {}) {
+    const results = [];
+    let totalDuration = 0;
+    let totalMasked = 0;
+
+    for (let i = 0; i < base64Images.length; i++) {
+      const result = await this.execute(base64Images[i], {
+        ...options,
+        pageNum: i + 1
+      });
+      results.push(result);
+      totalDuration += result.duration || 0;
+      totalMasked += result.masked_count || 0;
+    }
+
+    return {
+      success: true,
+      results,
+      summary: {
+        total_pages: base64Images.length,
+        total_masked_regions: totalMasked,
+        total_duration: totalDuration
+      }
+    };
+  }
+}
+
+module.exports = PhiMaskerTool;

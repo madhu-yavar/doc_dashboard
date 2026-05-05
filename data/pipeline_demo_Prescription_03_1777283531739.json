@@ -1,0 +1,251 @@
+{
+  "file": "Prescription_03.pdf",
+  "timestamp": "2026-04-27T09:51:15.558Z",
+  "pipeline": {
+    "stage1_phi_extraction": [
+      {
+        "page": 1,
+        "success": true,
+        "data": {
+          "patient_name": null,
+          "patient_id": null,
+          "patient_age": null,
+          "patient_gender": null,
+          "patient_contact": {
+            "phone": null,
+            "email": null
+          },
+          "doctor_name": "DR SURYAKANT CHOUBEY",
+          "visit_date": "2026-04-14",
+          "episode_number": null,
+          "registration_number": null,
+          "hospital_name": "Manipal Hospital",
+          "department": "UROLOGY MHB"
+        },
+        "duration": 9485
+      },
+      {
+        "page": 2,
+        "success": true,
+        "data": {
+          "patient_name": null,
+          "patient_id": null,
+          "patient_age": null,
+          "patient_gender": null,
+          "patient_contact": {
+            "phone": null,
+            "email": null
+          },
+          "doctor_name": null,
+          "visit_date": null,
+          "episode_number": null,
+          "registration_number": null,
+          "hospital_name": "Manipal Hospital",
+          "department": null
+        },
+        "duration": 7702
+      }
+    ],
+    "stage2_coordinate_detection": [
+      {
+        "page": 1,
+        "success": true,
+        "data": {
+          "page_number": 1,
+          "phi_regions": [],
+          "header_region": {
+            "y_start": 0,
+            "y_end": 15
+          }
+        },
+        "duration": 4203
+      },
+      {
+        "page": 2,
+        "success": true,
+        "data": {
+          "page_number": 2,
+          "phi_regions": [
+            {
+              "type": "patient_name",
+              "bounding_box": {
+                "x": 35,
+                "y": 435,
+                "width": 145,
+                "height": 30
+              }
+            }
+          ],
+          "header_region": {
+            "y_start": 0,
+            "y_end": 120
+          }
+        },
+        "duration": 11263
+      }
+    ],
+    "stage3_masking": "SKIPPED (demo mode - would use sharp/ImageMagick)",
+    "stage4_clinical_extraction": [
+      {
+        "page": 1,
+        "success": true,
+        "data": {
+          "patient_complaints": [
+            {
+              "complaint": "Nocturia",
+              "duration": ""
+            },
+            {
+              "complaint": "Urgency",
+              "duration": ""
+            },
+            {
+              "complaint": "Urinary Tract Infection",
+              "duration": ""
+            },
+            {
+              "complaint": "Stress Urinary Incontinence",
+              "duration": ""
+            }
+          ],
+          "observations_findings": [
+            "Routine Microscopic Urine: Protein 2+",
+            "Routine Microscopic Urine: Glucose +",
+            "Routine Microscopic Urine: Pus cells 2-5",
+            "HbA1c: 7%",
+            "Serum Creatinine: 1.78",
+            "Uric Acid: 9.6",
+            "Hemoglobin: 14.5",
+            "B/E",
+            "Meatal Redness"
+          ],
+          "diagnosis": {
+            "principal": "",
+            "secondary": [
+              "Diabetes Mellitus",
+              "Hypertension",
+              "Coronary Artery Disease (3 years)",
+              "Urinary Tract Infection",
+              "Stress Urinary Incontinence"
+            ],
+            "provisional": ""
+          },
+          "vitals": {
+            "bp": "",
+            "pulse": "",
+            "temp": "",
+            "weight": ""
+          },
+          "allergies": []
+        },
+        "tokens": 3707
+      },
+      {
+        "page": 2,
+        "success": true,
+        "data": {
+          "medications": [
+            {
+              "name": "T MIRABEG",
+              "dose": "25mg",
+              "frequency": "Nightly",
+              "duration": "40 days",
+              "route": ""
+            }
+          ],
+          "lab_tests_selected": [
+            "Urine Culture"
+          ],
+          "radiology_tests_selected": [
+            "Ultrasound Abdomen & Pelvis"
+          ],
+          "procedures_selected": [
+            "Uroflowmetry",
+            "PVR"
+          ]
+        },
+        "tokens": 1063
+      }
+    ],
+    "stage5_merge": {
+      "phi": {
+        "patient_name": null,
+        "patient_id": null,
+        "patient_age": null,
+        "patient_gender": null,
+        "patient_contact": {
+          "phone": null,
+          "email": null
+        },
+        "doctor_name": "DR SURYAKANT CHOUBEY",
+        "visit_date": "2026-04-14",
+        "episode_number": null,
+        "registration_number": null,
+        "hospital_name": "Manipal Hospital",
+        "department": "UROLOGY MHB"
+      },
+      "clinical": {
+        "patient_complaints": [
+          {
+            "complaint": "Nocturia",
+            "duration": ""
+          },
+          {
+            "complaint": "Urgency",
+            "duration": ""
+          },
+          {
+            "complaint": "Urinary Tract Infection",
+            "duration": ""
+          },
+          {
+            "complaint": "Stress Urinary Incontinence",
+            "duration": ""
+          }
+        ],
+        "observations_findings": [
+          "Routine Microscopic Urine: Protein 2+",
+          "Routine Microscopic Urine: Glucose +",
+          "Routine Microscopic Urine: Pus cells 2-5",
+          "HbA1c: 7%",
+          "Serum Creatinine: 1.78",
+          "Uric Acid: 9.6",
+          "Hemoglobin: 14.5",
+          "B/E",
+          "Meatal Redness"
+        ],
+        "diagnosis": {
+          "principal": null,
+          "secondary": [],
+          "provisional": null
+        },
+        "vitals": {
+          "bp": "",
+          "pulse": "",
+          "temp": "",
+          "weight": ""
+        },
+        "allergies": [],
+        "medications": [
+          {
+            "name": "T MIRABEG",
+            "dose": "25mg",
+            "frequency": "Nightly",
+            "duration": "40 days",
+            "route": ""
+          }
+        ],
+        "lab_tests_selected": [
+          "Urine Culture"
+        ],
+        "radiology_tests_selected": [
+          "Ultrasound Abdomen & Pelvis"
+        ],
+        "procedures_selected": [
+          "Uroflowmetry",
+          "PVR"
+        ]
+      }
+    }
+  }
+}

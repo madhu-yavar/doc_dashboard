@@ -1,0 +1,158 @@
+[
+  {
+    "fileName": "Doxper.pdf",
+    "ruleBased": {
+      "success": true,
+      "type": "prescription",
+      "confidence": null,
+      "duration": 1326,
+      "method": "rule_based"
+    },
+    "agentic": {
+      "success": true,
+      "type": "prescription",
+      "confidence": 0.95,
+      "reasoning": "The document is an 'OUT PATIENT RECORD' form, but it contains significant handwritten clinical notes and assessments ('Contact w COVID', 'Body aches', 'Headache') in the Doctor's Notes section. According to the classification rules, an OPD form with handwritten doctor inputs for clinical notes/medications is classified as a prescription.",
+      "steps": 0,
+      "thoughts": 5,
+      "toolsUsed": [
+        "convert_first_page",
+        "extract_text",
+        "detect_handwriting",
+        "classify_with_llm_enhanced"
+      ],
+      "duration": 11011,
+      "method": "agentic_react"
+    }
+  },
+  {
+    "fileName": "Prescription_01.pdf",
+    "ruleBased": {
+      "success": true,
+      "type": "prescription",
+      "confidence": null,
+      "duration": 7,
+      "method": "rule_based"
+    },
+    "agentic": {
+      "success": true,
+      "type": "prescription",
+      "confidence": 1,
+      "reasoning": "The document is an 'OUT PATIENT RECORD' (OPD form), but it contains extensive handwritten clinical notes, symptoms, and a diagnosis ('Bilateral mild sloping SNHL'), which fits the criteria for a prescription/clinical capture document.",
+      "steps": 0,
+      "thoughts": 5,
+      "toolsUsed": [
+        "convert_first_page",
+        "extract_text",
+        "detect_handwriting",
+        "classify_with_llm_enhanced"
+      ],
+      "duration": 14028,
+      "method": "agentic_react"
+    }
+  },
+  {
+    "fileName": "Prescription_02.pdf",
+    "ruleBased": {
+      "success": true,
+      "type": "prescription",
+      "confidence": null,
+      "duration": 4,
+      "method": "rule_based"
+    },
+    "agentic": {
+      "success": true,
+      "type": "prescription",
+      "confidence": 1,
+      "reasoning": "The document is an 'Additional Sheet' from a hospital (Manipal Hospitals) containing a clear 'Rx' symbol followed by handwritten medication instructions ('Tab AF 150 - 2 times/week') and a doctor's signature. Per the instructions, an OPD-style form with handwritten medication inputs is classified as a prescription.",
+      "steps": 0,
+      "thoughts": 5,
+      "toolsUsed": [
+        "convert_first_page",
+        "extract_text",
+        "detect_handwriting",
+        "classify_with_llm_enhanced"
+      ],
+      "duration": 11194,
+      "method": "agentic_react"
+    }
+  },
+  {
+    "fileName": "Prescription_03.pdf",
+    "ruleBased": {
+      "success": true,
+      "type": "prescription",
+      "confidence": null,
+      "duration": 4,
+      "method": "rule_based"
+    },
+    "agentic": {
+      "success": true,
+      "type": "prescription",
+      "confidence": 1,
+      "reasoning": "The document is an 'OUT PATIENT RECORD' (OPD form), but it contains significant handwritten clinical notes, diagnostic values (HbA1c, Serum Creatinine), and patient symptoms. According to the classification rules, an OPD form with handwritten doctor inputs for clinical notes or lab suggestions is classified as a prescription.",
+      "steps": 0,
+      "thoughts": 5,
+      "toolsUsed": [
+        "convert_first_page",
+        "extract_text",
+        "detect_handwriting",
+        "classify_with_llm_enhanced"
+      ],
+      "duration": 12443,
+      "method": "agentic_react"
+    }
+  },
+  {
+    "fileName": "Clinical Summary - 01.pdf",
+    "ruleBased": {
+      "success": true,
+      "type": "prescription",
+      "confidence": null,
+      "duration": 1720,
+      "method": "rule_based"
+    },
+    "agentic": {
+      "success": true,
+      "type": "prescription",
+      "confidence": 1,
+      "reasoning": "Although the form header says 'OUTPATIENT RECORD', the document contains a specific list of medications with dosages and frequencies (T LANZOL, SYP CALPOL, etc.) and a doctor's signature, which fulfills the primary intent of a prescription capture.",
+      "steps": 0,
+      "thoughts": 5,
+      "toolsUsed": [
+        "convert_first_page",
+        "extract_text",
+        "detect_handwriting",
+        "classify_with_llm_enhanced"
+      ],
+      "duration": 9655,
+      "method": "agentic_react"
+    }
+  },
+  {
+    "fileName": "Clinical Summary - 02.pdf",
+    "ruleBased": {
+      "success": true,
+      "type": "prescription",
+      "confidence": null,
+      "duration": 1435,
+      "method": "rule_based"
+    },
+    "agentic": {
+      "success": true,
+      "type": "prescription",
+      "confidence": 1,
+      "reasoning": "Although the header says 'OUTPATIENT RECORD', the document contains a detailed medication list with specific dosages and durations (e.g., TAB NEORELAX MR 1-0-1 X 7 DAYS), which fulfills the primary intent of a prescription capture as per the provided guidelines.",
+      "steps": 0,
+      "thoughts": 5,
+      "toolsUsed": [
+        "convert_first_page",
+        "extract_text",
+        "detect_handwriting",
+        "classify_with_llm_enhanced"
+      ],
+      "duration": 10747,
+      "method": "agentic_react"
+    }
+  }
+]

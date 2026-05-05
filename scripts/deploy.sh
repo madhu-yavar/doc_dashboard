@@ -62,7 +62,7 @@ docker run -d \
   -e NODE_ENV=production \
   -e PORT=8001 \
   -e GEMMA_URL=http://localhost:8000/v1/chat/completions \
-  -e GEMMA_MODEL=google/gemma-4-26B-A4B-it \
+  -e GEMMA_MODEL=google/gemma-4-31B-it \
   -v /opt/doctor-dashboard/server/storage:/app/server/storage \
   $IMAGE_NAME:latest
 

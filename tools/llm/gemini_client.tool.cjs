@@ -8,6 +8,33 @@ class GeminiClientTool {
     this.apiKey = config.apiKey || process.env.GEMINI_API_KEY || "";
   }
 
+  normalizeUsage(usage = {}) {
+    const promptTokens = Number(
+      usage.promptTokens ??
+      usage.promptTokenCount ??
+      0
+    ) || 0;
+
+    const completionTokens = Number(
+      usage.completionTokens ??
+      usage.candidatesTokenCount ??
+      0
+    ) || 0;
+
+    const totalTokens = Number(
+      usage.totalTokens ??
+      usage.totalTokenCount ??
+      (promptTokens + completionTokens)
+    ) || 0;
+
+    return {
+      ...usage,
+      promptTokens,
+      completionTokens,
+      totalTokens,
+    };
+  }
+
   /**
    * Check if a string is likely a base64 encoded image
    */
@@ -199,11 +226,21 @@ class GeminiClientTool {
       }
 
       const payload = await response.json();
+
+      // Check for truncation - log warning if response was cut off
+      const candidate = payload.candidates?.[0];
+      const finishReason = candidate?.finishReason;
+      if (finishReason && finishReason !== "STOP") {
+        console.warn(`[Gemini] Response not complete: finishReason=${finishReason}`);
+      }
+
       return {
         success: true,
         content: this.extractText(payload),
-        usage: payload.usageMetadata || {},
+        usage: this.normalizeUsage(payload.usageMetadata || {}),
         model: this.model,
+        finishReason: finishReason,
+        rawPayload: payload, // For debugging
       };
     } catch (error) {
       clearTimeout(timeoutId);
@@ -287,7 +324,7 @@ class GeminiClientTool {
         success: true,
         content: this.extractText(payload),
         citations: this.buildGroundingCitations(payload),
-        usage: payload.usageMetadata || {},
+        usage: this.normalizeUsage(payload.usageMetadata || {}),
         model: this.model,
       };
     } catch (error) {

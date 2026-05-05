@@ -4,6 +4,11 @@
  */
 const DashboardPresentationAgent = require("../../agents/dashboard_presentation_agent.cjs");
 const SectionStatusResolverTool = require("../../tools/presentation/section_status_resolver.tool.cjs");
+const {
+  applyActivationMetadata,
+  getCardActivation,
+  DOCUMENT_TYPES
+} = require("./dashboard_card_activation_config.cjs");
 
 class DashboardMapperSkill {
   constructor(config = {}) {
@@ -35,17 +40,26 @@ class DashboardMapperSkill {
     // Build dashboard cards from extracted data
     const dashboardCards = this.buildDashboardCards(data, validation);
 
+    // Get document type for activation
+    const documentType = data.meta?.document_type ||
+                         data.meta?.router?.detected_type ||
+                         data.document_type ||
+                         DOCUMENT_TYPES.PRESCRIPTION; // Default to prescription
+
+    // Apply activation metadata based on document type
+    const activatedCards = applyActivationMetadata(dashboardCards, documentType);
+
     // Build sample patient data
     const samplePatientData = this.buildSamplePatientData(data);
 
-    const presentationInput = this.buildPresentationInput(data, dashboardCards, samplePatientData);
+    const presentationInput = this.buildPresentationInput(data, activatedCards, samplePatientData);
     const presentationResult = await this.presentationAgent.execute({ dashboardData: presentationInput });
 
     return {
       success: true,
       step: "dashboard_mapper",
       data: {
-        dashboard_cards: dashboardCards,
+        dashboard_cards: activatedCards,
         sample_patient_data: samplePatientData,
         presentation: presentationResult.success ? presentationResult.data : { summary_cards: {}, notes_rail: [] }
       }
@@ -56,8 +70,11 @@ class DashboardMapperSkill {
     const provenance = data.provenance || {};
     const labResults = Array.isArray(data.lab_results) ? data.lab_results : [];
     const investigations = Array.isArray(data.investigations) ? data.investigations : [];
+    const nuclearStudies = Array.isArray(data.nuclear_medicine) ? data.nuclear_medicine : [];
     const clinicalNotes = Array.isArray(data.clinical_notes) ? data.clinical_notes : [];
     const treatment = data.treatment || {};
+    const procedures = Array.isArray(data.procedures) ? data.procedures : [];
+    const radiologyStudies = Array.isArray(data.radiology) ? data.radiology : [];
 
     const buildStatus = (items, allowedTypes) => this.sectionStatusResolver.build(items, allowedTypes);
 
@@ -65,13 +82,20 @@ class DashboardMapperSkill {
       vitals: {
         latest: {
           bloodPressure: {
-            systolic: data.vitals?.latest?.bp?.systolic || data.vitals?.bp?.systolic || 0,
-            diastolic: data.vitals?.latest?.bp?.diastolic || data.vitals?.bp?.diastolic || 0,
+            systolic: this.getVitalNumericValue(data.vitals?.latest?.bp?.systolic ?? data.vitals?.bp?.systolic),
+            diastolic: this.getVitalNumericValue(data.vitals?.latest?.bp?.diastolic ?? data.vitals?.bp?.diastolic),
           },
-          heartRate: { value: data.vitals?.latest?.pulse?.value || data.vitals?.pulse?.value || 0 },
-          spo2: { value: data.vitals?.latest?.spo2?.value || data.vitals?.spo2?.value || 0 },
-          temperature: { value: data.vitals?.latest?.temperature?.value || data.vitals?.temperature?.value || 0 },
-          respiratoryRate: { value: data.vitals?.latest?.resp_rate || data.vitals?.resp_rate || 0 },
+          heartRate: { value: this.getVitalNumericValue(data.vitals?.latest?.pulse?.value ?? data.vitals?.pulse?.value) },
+          spo2: { value: this.getVitalNumericValue(data.vitals?.latest?.spo2?.value ?? data.vitals?.spo2?.value) },
+          temperature: { value: this.getVitalNumericValue(data.vitals?.latest?.temperature?.value ?? data.vitals?.temperature?.value) },
+          respiratoryRate: {
+            value: this.getVitalNumericValue(
+              data.vitals?.latest?.resp_rate?.value ??
+              data.vitals?.latest?.resp_rate ??
+              data.vitals?.resp_rate?.value ??
+              data.vitals?.resp_rate
+            )
+          },
         },
         status: dashboardCards.vitals_card?.status || "stable",
       },
@@ -94,17 +118,37 @@ class DashboardMapperSkill {
         abnormalCount: dashboardCards.labs_card?.abnormal_count || 0,
         criticalCount: dashboardCards.labs_card?.critical_count || 0,
         pendingCount: labResults.length > 0 ? 0 : investigations.length,
+        investigations: investigations,
+        nuclearStudies: nuclearStudies,
       },
       radiology: {
         completedStudies: dashboardCards.radiology_card?.studies_completed || 0,
         pendingStudies: Array.isArray(provenance.radiology?.pending) ? provenance.radiology.pending.length : 0,
         criticalFindings: dashboardCards.radiology_card?.critical_findings || 0,
+        studies: radiologyStudies,
       },
       treatment: {
-        activeManagement: Array.isArray(treatment.management_items)
-          ? treatment.management_items.map((item) => ({ title: item, details: item, source: "Source record" }))
-          : [],
-        currentApproach: treatment.current_approach || dashboardCards.treatment_card?.current_approach || "",
+        activeManagement: [
+          ...(Array.isArray(treatment.management_items)
+            ? treatment.management_items.map((item) => ({ title: item, details: item, source: "Source record" }))
+            : []),
+          ...procedures
+            .map((procedure) => {
+              const name = typeof procedure === "string" ? procedure : procedure?.name;
+              if (!name) return null;
+              return {
+                title: "Procedure / order",
+                details: name,
+                source: "Prescription extraction",
+              };
+            })
+            .filter(Boolean),
+        ],
+        procedures: procedures,
+        currentApproach:
+          treatment.current_approach ||
+          dashboardCards.treatment_card?.current_approach ||
+          (procedures.length > 0 ? `Ordered procedures: ${procedures.map((procedure) => typeof procedure === "string" ? procedure : procedure?.name).filter(Boolean).slice(0, 3).join(", ")}` : ""),
         complications: Array.isArray(treatment.complications) ? treatment.complications.length : 0,
         complicationsLabel: Array.isArray(treatment.complications) && treatment.complications.length
           ? treatment.complications.join(", ")
@@ -125,6 +169,12 @@ class DashboardMapperSkill {
           handed_over_by: note.handed_over_by || "",
           handed_over_to: note.handed_over_to || "",
           source_excerpt: Array.isArray(note.source_excerpt) ? note.source_excerpt : [],
+          source_type: note.source_type || "unknown",
+          is_synthetic: Boolean(note.is_synthetic),
+          page_number: note.page_number ?? null,
+          confidence: note.confidence || "medium",
+          confidence_reason: note.confidence_reason || "",
+          is_inferred: Boolean(note.is_inferred),
         })),
       },
       followUp: data.follow_up?.appointments || [],
@@ -202,9 +252,9 @@ class DashboardMapperSkill {
       status: this.determineVitalsStatus(vitals, riskScores),
       summary: {
         latest_bp: this.formatBP(vitals.latest?.bp || vitals.bp),
-        pulse: vitals.latest?.pulse?.value || vitals.pulse?.value || 0,
-        temp: vitals.latest?.temperature?.value || vitals.temperature?.value || 0,
-        spo2: vitals.latest?.spo2?.value || vitals.spo2?.value || 0
+        pulse: this.getVitalNumericValue(vitals.latest?.pulse?.value ?? vitals.pulse?.value),
+        temp: this.getVitalNumericValue(vitals.latest?.temperature?.value ?? vitals.temperature?.value),
+        spo2: this.getVitalNumericValue(vitals.latest?.spo2?.value ?? vitals.spo2?.value)
       },
       trend: this.determineTrend(vitals),
       data_points: vitals.readings?.length || this.countVitalsDataPoints(vitals),
@@ -233,6 +283,8 @@ class DashboardMapperSkill {
     };
 
     // Medications Card - Include actual medication list with dose, frequency, and route
+    // Handle prescription-specific metadata
+    const medicationsMetadata = data.medications_metadata || {};
     const medicationsCard = {
       icon: "💊",
       title: "Medications",
@@ -240,6 +292,10 @@ class DashboardMapperSkill {
       allergy_count: allergies.length,
       allergies: allergies,
       categories: this.categorizeMedications(medications),
+      // Prescription-specific metadata
+      unreadable_count: medicationsMetadata.unreadable_count || 0,
+      has_unreadable: medicationsMetadata.has_unreadable || false,
+      extraction_confidence: medicationsMetadata.confidence || "medium",
       // Include full medication list for display with all fields
       medication_list: Array.isArray(medications) ? medications.map(med => {
         const name = med.name || "";
@@ -264,14 +320,23 @@ class DashboardMapperSkill {
         else if (upperName.includes("ATORVASTATIN") || upperName.includes("ROSUVASTATIN")) category = "Statin";
         else if (upperName.includes("RAMIPRIL") || upperName.includes("ENALAPRIL")) category = "ACE Inhibitor";
 
+        // Support both dose (from chart notes) and dosage (from prescriptions)
+        const doseValue = med.dose || med.dosage || "As prescribed";
+        const instructions = med.instructions || "";
+
         return {
           name: name,
-          dose: med.dose || "As prescribed",
+          dose: doseValue,
+          dosage: doseValue, // Include both for compatibility
           frequency: med.frequency || "As prescribed",
           route: route,
           category: category,
           start: "Generated",
-          instructions: med.instructions || "Validate against source document"
+          instructions: instructions || "Validate against source document",
+          // Track uncertainty for UI display
+          is_uncertain: med.is_uncertain || false,
+          verification_confidence: med.verification_confidence || med.confidence || "medium",
+          verification_uncertain_reason: med.verification_uncertain_reason || med.uncertain_reason || ""
         };
       }) : []
     };
@@ -279,15 +344,17 @@ class DashboardMapperSkill {
     // Labs Card - Show lab results if available, otherwise show investigations ordered
     const labResults = data.lab_results || [];
     const investigations = data.investigations || [];
+    const nuclearMedicine = data.nuclear_medicine?.selected_studies || [];
     const hasLabResults = labResults.length > 0;
+    const totalNuclear = nuclearMedicine.length;
 
     const labsCard = {
       icon: "🔬",
       title: "Laboratory Results",
-      total_tests: hasLabResults ? labResults.length : investigations.length,
+      total_tests: hasLabResults ? labResults.length : investigations.length + totalNuclear,
       abnormal_count: this.countAbnormalLabResults(labResults),
       critical_count: this.countCriticalLabResults(labResults),
-      pending_count: hasLabResults ? 0 : investigations.length,
+      pending_count: hasLabResults ? 0 : investigations.length + totalNuclear,
       top_abnormal: this.getTopAbnormalLabResult(labResults),
       // Include actual lab results
       lab_results: labResults.map(result => ({
@@ -298,10 +365,19 @@ class DashboardMapperSkill {
       })),
       // Include investigation list
       investigations_list: investigations,
+      // Include nuclear medicine studies
+      nuclear_medicine_list: nuclearMedicine.map(study => ({
+        test: study.study_name || study.type || "Unknown",
+        status: study.status || "ordered",
+        is_uncertain: Boolean(study.is_uncertain),
+        confidence_reason: study.confidence_reason || ""
+      })),
       has_results: hasLabResults,
       note: hasLabResults
-        ? `${labResults.length} lab results documented`
-        : (investigations.length > 0 ? "Investigations ordered (results not in document)" : "No laboratory data documented")
+        ? `${labResults.length} lab results documented${totalNuclear > 0 ? `, ${totalNuclear} nuclear study${totalNuclear > 1 ? 's' : ''} ordered` : ''}`
+        : (investigations.length > 0 || totalNuclear > 0
+          ? `${investigations.length} lab${investigations.length === 1 ? '' : 's'}${totalNuclear > 0 ? ` + ${totalNuclear} nuclear study${totalNuclear > 1 ? 's' : ''}` : ''} ordered (results not in document)`
+          : "No laboratory data documented")
     };
 
     // Risk Assessment Card (combines all risk scores)
@@ -316,13 +392,17 @@ class DashboardMapperSkill {
       overall_status: this.determineOverallRiskStatus(riskScores)
     };
 
-    // Radiology Card
+    // Radiology Card - use data.radiology for prescription radiology orders
+    const radiologyData = data.radiology || [];
     const radiologyCard = {
       icon: "🫀",
       title: "Radiology & Imaging",
-      studies_completed: this.countRadiologyStudies(data.investigations),
+      studies_completed: Array.isArray(radiologyData) ? radiologyData.filter(r => r.status === "ordered" || r.status === "completed").length : this.countRadiologyStudies(data.investigations),
+      pending_studies: Array.isArray(radiologyData) ? radiologyData.filter(r => r.status === "ordered" || r.status === "not_selected").length : 0,
       critical_findings: 0,
-      key_finding: ""
+      key_finding: "",
+      // Include actual radiology orders
+      radiology_list: radiologyData
     };
 
     // Treatment Card
@@ -332,8 +412,16 @@ class DashboardMapperSkill {
       procedures_performed: Array.isArray(treatment.procedures) ? treatment.procedures.length : (data.procedures?.length || 0),
       surgeries: 0,
       response: treatment.response || "",
-      current_approach: treatment.current_approach || "",
-      management_items: Array.isArray(treatment.management_items) ? treatment.management_items : [],
+      current_approach:
+        treatment.current_approach ||
+        ((Array.isArray(treatment.procedures) ? treatment.procedures : data.procedures || [])
+          .map((item) => typeof item === "string" ? item : item?.name)
+          .filter(Boolean)
+          .slice(0, 3)
+          .join(", ")),
+      management_items: Array.isArray(treatment.management_items) && treatment.management_items.length > 0
+        ? treatment.management_items
+        : (Array.isArray(data.procedures) ? data.procedures.map((item) => typeof item === "string" ? item : item?.name).filter(Boolean) : []),
       complications_count: Array.isArray(treatment.complications) ? treatment.complications.length : 0
     };
 
@@ -356,7 +444,13 @@ class DashboardMapperSkill {
         risk_flags: Array.isArray(note.risk_flags) ? note.risk_flags : [],
         handed_over_by: note.handed_over_by || "",
         handed_over_to: note.handed_over_to || "",
-        source_excerpt: Array.isArray(note.source_excerpt) ? note.source_excerpt : []
+        source_excerpt: Array.isArray(note.source_excerpt) ? note.source_excerpt : [],
+        source_type: note.source_type || "unknown",
+        is_synthetic: Boolean(note.is_synthetic),
+        page_number: note.page_number ?? null,
+        confidence: note.confidence || "medium",
+        confidence_reason: note.confidence_reason || "",
+        is_inferred: Boolean(note.is_inferred)
       }))
     };
 
@@ -396,20 +490,57 @@ class DashboardMapperSkill {
    */
   buildSamplePatientData(data) {
     const patient = data.patient || {};
-    const meta = data.meta || {};
+    const vitals = data.vitals || {};
 
     return {
-      name: patient.name || "Sample Patient Name",
-      age: patient.age || 0,
-      mrn: patient.mrn || "",
+      name: patient.name || "",
+      age: patient.age ?? null,
+      mrn: patient.mrn || patient.hospital_no || "",
       admission_date: patient.admission_date || "",
       discharge_date: patient.discharge_date || "",
       los_days: this.calculateLOS(patient),
-      summary: this.generatePatientSummary(data)
+      summary: this.generatePatientSummary(data),
+      // Add vitals for UI display
+      vitals: {
+        latest: {
+          bloodPressure: {
+            systolic: this.getVitalNumericValue(vitals.latest?.bp?.systolic ?? vitals.bp?.systolic),
+            diastolic: this.getVitalNumericValue(vitals.latest?.bp?.diastolic ?? vitals.bp?.diastolic),
+          },
+          heartRate: { value: this.getVitalNumericValue(vitals.latest?.pulse?.value ?? vitals.pulse?.value) },
+          spo2: { value: this.getVitalNumericValue(vitals.latest?.spo2?.value ?? vitals.spo2?.value) },
+          temperature: { value: this.getVitalNumericValue(vitals.latest?.temperature?.value ?? vitals.temperature?.value) },
+          respiratoryRate: {
+            value: this.getVitalNumericValue(
+              vitals.latest?.resp_rate?.value ??
+              vitals.latest?.resp_rate ??
+              vitals.resp_rate?.value ??
+              vitals.resp_rate
+            )
+          },
+          painScore: { value: this.getVitalNumericValue(vitals.latest?.pain_score?.value ?? vitals.pain_score?.value) },
+          grbs: { value: this.getVitalNumericValue(vitals.latest?.grbs?.value ?? vitals.grbs?.value) },
+        },
+        status: this.determineVitalsStatus(vitals, data.risk_scores || {}),
+        trend: this.determineTrend(vitals),
+        alerts: this.hasVitalsAlerts(vitals) ? ["abnormal"] : [],
+      },
     };
   }
 
   // Helper methods for card data transformation
+
+  getVitalNumericValue(value) {
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
+    if (typeof value === "string") {
+      const match = value.match(/-?\d+(\.\d+)?/);
+      if (match) {
+        const parsed = Number(match[0]);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+      }
+    }
+    return null;
+  }
 
   determineVitalsStatus(vitals, riskScores) {
     if (riskScores.ews_score >= 7) return "critical";
@@ -421,7 +552,9 @@ class DashboardMapperSkill {
   formatBP(bp) {
     if (!bp) return "";
     if (typeof bp === "object") {
-      return `${bp.systolic || 0}/${bp.diastolic || 0}`;
+      const systolic = this.getVitalNumericValue(bp.systolic);
+      const diastolic = this.getVitalNumericValue(bp.diastolic);
+      return systolic && diastolic ? `${systolic}/${diastolic}` : "";
     }
     return bp;
   }
@@ -436,17 +569,18 @@ class DashboardMapperSkill {
 
   countVitalsDataPoints(vitals) {
     let count = 0;
-    if (vitals.bp) count++;
-    if (vitals.pulse) count++;
-    if (vitals.temperature) count++;
-    if (vitals.spo2) count++;
-    if (vitals.resp_rate) count++;
+    if (this.getVitalNumericValue(vitals.latest?.bp?.systolic ?? vitals.bp?.systolic)) count++;
+    if (this.getVitalNumericValue(vitals.latest?.pulse?.value ?? vitals.pulse?.value)) count++;
+    if (this.getVitalNumericValue(vitals.latest?.temperature?.value ?? vitals.temperature?.value)) count++;
+    if (this.getVitalNumericValue(vitals.latest?.spo2?.value ?? vitals.spo2?.value)) count++;
+    if (this.getVitalNumericValue(vitals.latest?.resp_rate?.value ?? vitals.latest?.resp_rate ?? vitals.resp_rate?.value ?? vitals.resp_rate)) count++;
     return count;
   }
 
   hasVitalsAlerts(vitals) {
+    if (!vitals || vitals.has_vitals === false) return false;
     if (vitals.bp?.status === "high") return true;
-    if (vitals.pulse?.status !== "normal") return true;
+    if (vitals.pulse?.status && vitals.pulse.status !== "normal") return true;
     if (vitals.spo2?.status === "low") return true;
     if (vitals.grbs?.interpretation === "diabetic") return true;
     return false;
@@ -588,7 +722,7 @@ class DashboardMapperSkill {
       const dis = new Date(patient.discharge_date);
       return Math.ceil((dis - adm) / (1000 * 60 * 60 * 24));
     }
-    return 0;
+    return null;
   }
 
   generatePatientSummary(data) {
@@ -596,14 +730,26 @@ class DashboardMapperSkill {
     const diagnosis = data.diagnosis || {};
     const riskScores = data.risk_scores || {};
 
-    const age = patient.age || 0;
+    const ageRaw = patient.age ?? null;
+    const ageNumeric = typeof ageRaw === 'string' ? parseInt(ageRaw, 10) || null : ageRaw;
     const gender = patient.gender || "";
-    const principalDiagnosis = diagnosis.principal || "Unknown";
+    const principalDiagnosis = diagnosis.principal || "";
     const riskLevel = this.determineOverallRiskStatus(riskScores);
 
-    return `${age}-year-old ${gender} diagnosed with ${principalDiagnosis}. ` +
-           `Overall risk status: ${riskLevel}. ` +
-           `Processed via Agent System v${data.meta?.agent_version || "2.0.0"}.`;
+    const parts = [];
+    if (ageNumeric || gender) {
+      const demographic = [ageNumeric ? `${ageNumeric}-year-old` : "", gender].filter(Boolean).join(" ");
+      if (demographic) parts.push(demographic);
+    }
+    if (principalDiagnosis) {
+      parts.push(`Diagnosis: ${principalDiagnosis}`);
+    }
+    if (riskLevel && riskLevel !== "stable") {
+      parts.push(`Risk status: ${riskLevel}`);
+    }
+    parts.push(`Processed via Agent System v${data.meta?.agent_version || "2.0.0"}.`);
+
+    return parts.join(". ");
   }
 }
 

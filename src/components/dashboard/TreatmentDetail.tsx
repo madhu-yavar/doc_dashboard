@@ -45,33 +45,31 @@ const TreatmentDetail = ({ onBack, data }: TreatmentDetailProps) => {
         </div>
       )}
 
-      {hasProcedures ? (
-        <div className="grid gap-4">
-          {treatment.procedures.map((proc, i) => (
-            <div key={i} className="bg-card rounded-xl border p-5">
-              <h3 className="font-semibold text-foreground mb-1">{proc.name}</h3>
-              {proc.date || proc.physician ? (
-                <p className="text-xs text-muted-foreground mb-3">{[proc.date, proc.physician].filter(Boolean).join(" · ")}</p>
-              ) : null}
-              {proc.details ? <p className="text-sm text-foreground bg-muted/50 p-3 rounded-lg">{proc.details}</p> : null}
-            </div>
-          ))}
-        </div>
-      ) : (
+      {hasProcedures && (
         <div className="bg-card rounded-xl border p-5">
-          <h3 className="font-semibold text-sm mb-2 text-foreground">Documented Procedures</h3>
-          <p className="text-sm text-muted-foreground">No procedures were documented in this record.</p>
+          <h3 className="font-semibold text-sm mb-4 text-foreground">Procedures</h3>
+          <div className="grid gap-3">
+            {treatment.procedures.map((proc, i) => (
+              <div key={i} className="p-3 rounded-lg border bg-muted/30">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <h4 className="font-medium text-sm text-foreground">{proc.name}</h4>
+                  <span className="text-xs text-muted-foreground">{proc.date || ""}</span>
+                </div>
+                {proc.details && <p className="text-xs text-muted-foreground">{proc.details}</p>}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       <div className="bg-card rounded-xl border p-5">
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center p-4 rounded-lg bg-primary/5">
-            <div className="text-sm font-semibold text-foreground">{treatment.currentApproach}</div>
+            <div className="text-sm font-semibold text-foreground">{treatment.currentApproach || "Not documented"}</div>
             <div className="text-xs text-muted-foreground mt-1">Current Approach</div>
           </div>
           <div className="text-center p-4 rounded-lg bg-status-normal/5">
-            <div className="text-sm font-semibold text-foreground">{treatment.response}</div>
+            <div className="text-sm font-semibold text-foreground">{treatment.response || "Not documented"}</div>
             <div className="text-xs text-muted-foreground mt-1">Treatment Response</div>
           </div>
           <div className="text-center p-4 rounded-lg bg-muted/50">

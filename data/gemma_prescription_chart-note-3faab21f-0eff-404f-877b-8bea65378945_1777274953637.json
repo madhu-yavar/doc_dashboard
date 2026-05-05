@@ -1,0 +1,45 @@
+{
+  "file": "chart-note-3faab21f-0eff-404f-877b-8bea65378945.pdf",
+  "timestamp": "2026-04-27T07:29:13.637Z",
+  "result": {
+    "success": true,
+    "content": "```json\n{\n  \"patient\": {\n    \"name\": \"Reshma R\",\n    \"age\": \"36\",\n    \"gender\": \"Female\",\n    \"id\": \"MRN: 68368168\"\n  },\n  \"doctor\": {\n    \"name\": null,\n    \"signature\": null\n  },\n  \"medications\": [],\n  \"diagnosis\": {\n    \"principal\": \"Planned elective Cesarean section (LSCS)\",\n    \"secondary\": [\n      \"Request for bilateral tubal ligation\"\n    ]\n  },\n  \"vitals\": {\n    \"bp\": \"100/60 mmHg\",\n    \"pulse\": \"86 bpm\",\n    \"temp\": \"97.8 °F\",\n    \"weight\": null\n  },\n  \"metadata\": {\n    \"date\": \"24-03-2026\",\n    \"hospital\": \"manipalhospitals\",\n    \"department\": null\n  }\n}\n```",
+    "extractedData": {
+      "patient": {
+        "name": "Reshma R",
+        "age": "36",
+        "gender": "Female",
+        "id": "MRN: 68368168"
+      },
+      "doctor": {
+        "name": null,
+        "signature": null
+      },
+      "medications": [],
+      "diagnosis": {
+        "principal": "Planned elective Cesarean section (LSCS)",
+        "secondary": [
+          "Request for bilateral tubal ligation"
+        ]
+      },
+      "vitals": {
+        "bp": "100/60 mmHg",
+        "pulse": "86 bpm",
+        "temp": "97.8 °F",
+        "weight": null
+      },
+      "metadata": {
+        "date": "24-03-2026",
+        "hospital": "manipalhospitals",
+        "department": null
+      }
+    },
+    "duration": 13745,
+    "tokens": 888,
+    "model": "google/gemma-4-31B-it"
+  },
+  "score": {
+    "score": 36,
+    "details": "Patient name, Patient age, Patient gender, Principal diagnosis, Secondary diagnoses, BP, Pulse, Temp, Date, Hospital"
+  }
+}

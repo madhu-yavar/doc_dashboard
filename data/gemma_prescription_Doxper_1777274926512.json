@@ -1,0 +1,46 @@
+{
+  "file": "Doxper.pdf",
+  "timestamp": "2026-04-27T07:28:46.512Z",
+  "result": {
+    "success": true,
+    "content": "```json\n{\n  \"patient\": {\n    \"name\": \"Mr Jerald PILLAI\",\n    \"age\": \"21 Yrs\",\n    \"gender\": \"Male\",\n    \"id\": \"MH005618878\"\n  },\n  \"doctor\": {\n    \"name\": \"Dr. NEHA MISHRA (MBBS, MD (GEN MED), POST DOCTORAL FELLOWSHIP IN INFECTIOUS DISEASES (CMC VELLORE))\",\n    \"signature\": null\n  },\n  \"medications\": [],\n  \"diagnosis\": {\n    \"principal\": \"COVID (handwriting)\",\n    \"secondary\": [\n      \"body aches (handwriting)\",\n      \"Headache (handwriting)\"\n    ]\n  },\n  \"vitals\": {\n    \"bp\": null,\n    \"pulse\": null,\n    \"temp\": null,\n    \"weight\": null\n  },\n  \"metadata\": {\n    \"date\": \"2022-01-08 09:09\",\n    \"hospital\": \"manipal hospitals\",\n    \"department\": \"Infectious Disease MHB\"\n  }\n}\n```",
+    "extractedData": {
+      "patient": {
+        "name": "Mr Jerald PILLAI",
+        "age": "21 Yrs",
+        "gender": "Male",
+        "id": "MH005618878"
+      },
+      "doctor": {
+        "name": "Dr. NEHA MISHRA (MBBS, MD (GEN MED), POST DOCTORAL FELLOWSHIP IN INFECTIOUS DISEASES (CMC VELLORE))",
+        "signature": null
+      },
+      "medications": [],
+      "diagnosis": {
+        "principal": "COVID (handwriting)",
+        "secondary": [
+          "body aches (handwriting)",
+          "Headache (handwriting)"
+        ]
+      },
+      "vitals": {
+        "bp": null,
+        "pulse": null,
+        "temp": null,
+        "weight": null
+      },
+      "metadata": {
+        "date": "2022-01-08 09:09",
+        "hospital": "manipal hospitals",
+        "department": "Infectious Disease MHB"
+      }
+    },
+    "duration": 16270,
+    "tokens": 926,
+    "model": "google/gemma-4-31B-it"
+  },
+  "score": {
+    "score": 35,
+    "details": "Patient name, Patient age, Patient gender, Doctor name, Principal diagnosis, Secondary diagnoses, Date, Hospital, Department"
+  }
+}

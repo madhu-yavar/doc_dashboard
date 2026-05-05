@@ -1,0 +1,275 @@
+{
+  "file": "Prescription_01.pdf",
+  "timestamp": "2026-04-27T08:37:33.684Z",
+  "stage1": {
+    "success": true,
+    "duration": 45887,
+    "tokens": 1748,
+    "data": {
+      "phi": {
+        "patient_name": "MRS NAZNEEN JAMAL",
+        "patient_id": "MH000001285",
+        "patient_age": "71 Yrs",
+        "patient_gender": "Female",
+        "patient_dob": null,
+        "patient_contact": {
+          "phone": "9448460565",
+          "email": null,
+          "emergency_contact": null
+        },
+        "patient_address": null
+      },
+      "header_info": {
+        "hospital_name": "manipalhospitals",
+        "hospital_branch": "HAL Airport Road, Bangalore 560017",
+        "department": "ENT MHB",
+        "document_type": "OUT PATIENT RECORD",
+        "document_title": "OUT PATIENT RECORD ENT"
+      },
+      "visit_metadata": {
+        "visit_date": "2026-03-24",
+        "report_date": "2026-03-24 13:02",
+        "episode_number": "O00011800756",
+        "registration_number": "14750",
+        "page_number": "Page 1 of 2"
+      },
+      "doctor_info": {
+        "name": "DR. E.V. RAMAN",
+        "specialization": "ENT",
+        "credentials": "D.L.O-79, M.S-1979, FICS-92",
+        "signature_text": null
+      },
+      "document_structure": {
+        "has_prescription_table": false,
+        "has_vitals_section": true,
+        "has_lab_investigations": false,
+        "has_radiology_tests": false,
+        "has_procedures": false,
+        "table_headers": {
+          "prescription": [],
+          "vitals": [
+            "Height",
+            "BP",
+            "Allergies",
+            "Diet",
+            "Weight"
+          ]
+        },
+        "handwriting_regions": [
+          {
+            "section": "doctor_notes",
+            "description": "Handwritten clinical notes regarding fever, headache, nasal discharge, and PTA results"
+          }
+        ]
+      },
+      "redaction_zones": [
+        {
+          "type": "patient_name",
+          "description": "Top left header area next to Patient Name",
+          "priority": "high"
+        },
+        {
+          "type": "patient_id",
+          "description": "Hospital No. field",
+          "priority": "high"
+        },
+        {
+          "type": "patient_contact",
+          "description": "Patient Mob No. field",
+          "priority": "high"
+        },
+        {
+          "type": "patient_age_gender",
+          "description": "Top right header area next to Age/Sex",
+          "priority": "medium"
+        },
+        {
+          "type": "episode_number",
+          "description": "Top right header area next to Episode No.",
+          "priority": "medium"
+        },
+        {
+          "type": "registration_number",
+          "description": "KMC Reg No. field",
+          "priority": "medium"
+        }
+      ]
+    }
+  },
+  "stage2": {
+    "success": true,
+    "data": {
+      "medications": [
+        {
+          "name": "Azithromycin 500mg",
+          "dose": "500mg",
+          "frequency": "Once daily",
+          "duration": "3 days",
+          "route": "Oral",
+          "is_handwritten": true
+        },
+        {
+          "name": "Paracetamol 650mg",
+          "dose": "650mg",
+          "frequency": "SOS for fever",
+          "duration": "5 days",
+          "route": "Oral",
+          "is_handwritten": true
+        }
+      ],
+      "handwritten_notes": "Take after food. Complete the course.",
+      "doctor_signature": "Dr. xyz",
+      "diagnosis": {
+        "handwritten_principal": "Upper Respiratory Infection",
+        "handwritten_symptoms": [
+          "Fever",
+          "Cough",
+          "Sore throat"
+        ]
+      },
+      "vitals_handwritten": {
+        "bp": "130/85 mmHg",
+        "pulse": "88 bpm",
+        "temp": "99.2°F"
+      }
+    },
+    "source": "simulated_gemini",
+    "note": "This is simulated output. Replace with actual Gemini API call."
+  },
+  "merged": {
+    "patient": {
+      "name": "MRS NAZNEEN JAMAL",
+      "id": "MH000001285",
+      "age": "71 Yrs",
+      "gender": "Female",
+      "dob": null,
+      "contact": {
+        "phone": "9448460565",
+        "email": null,
+        "emergency_contact": null
+      },
+      "address": null
+    },
+    "visit": {
+      "hospital": "manipalhospitals",
+      "branch": "HAL Airport Road, Bangalore 560017",
+      "department": "ENT MHB",
+      "visit_date": "2026-03-24",
+      "report_date": "2026-03-24 13:02",
+      "episode_number": "O00011800756"
+    },
+    "doctor": {
+      "name": "DR. E.V. RAMAN",
+      "specialization": "ENT",
+      "credentials": "D.L.O-79, M.S-1979, FICS-92",
+      "signature": "Dr. xyz"
+    },
+    "medications": [
+      {
+        "name": "Azithromycin 500mg",
+        "dose": "500mg",
+        "frequency": "Once daily",
+        "duration": "3 days",
+        "route": "Oral",
+        "is_handwritten": true
+      },
+      {
+        "name": "Paracetamol 650mg",
+        "dose": "650mg",
+        "frequency": "SOS for fever",
+        "duration": "5 days",
+        "route": "Oral",
+        "is_handwritten": true
+      }
+    ],
+    "diagnosis": {
+      "from_context": "OUT PATIENT RECORD ENT",
+      "handwritten": "Upper Respiratory Infection",
+      "symptoms": [
+        "Fever",
+        "Cough",
+        "Sore throat"
+      ]
+    },
+    "vitals": {
+      "bp": "130/85 mmHg",
+      "pulse": "88 bpm",
+      "temp": "99.2°F"
+    },
+    "notes": {
+      "handwritten": "Take after food. Complete the course.",
+      "document_structure": {
+        "has_prescription_table": false,
+        "has_vitals_section": true,
+        "has_lab_investigations": false,
+        "has_radiology_tests": false,
+        "has_procedures": false,
+        "table_headers": {
+          "prescription": [],
+          "vitals": [
+            "Height",
+            "BP",
+            "Allergies",
+            "Diet",
+            "Weight"
+          ]
+        },
+        "handwriting_regions": [
+          {
+            "section": "doctor_notes",
+            "description": "Handwritten clinical notes regarding fever, headache, nasal discharge, and PTA results"
+          }
+        ]
+      }
+    },
+    "extraction_metadata": {
+      "stage1_duration": 45887,
+      "stage1_tokens": 1748,
+      "stage2_duration": 0,
+      "stage2_source": "simulated_gemini",
+      "extraction_method": "two_stage_gemma_gemini"
+    }
+  },
+  "dashboard_format": {
+    "patient": {
+      "name": "MRS NAZNEEN JAMAL",
+      "age": 71,
+      "gender": "Female",
+      "mrn": "MH000001285"
+    },
+    "diagnosis": {
+      "principal": "Upper Respiratory Infection",
+      "secondary": [
+        "Fever",
+        "Cough",
+        "Sore throat"
+      ]
+    },
+    "medications": [
+      {
+        "name": "Azithromycin 500mg",
+        "dose": "500mg",
+        "frequency": "Once daily",
+        "route": "Oral"
+      },
+      {
+        "name": "Paracetamol 650mg",
+        "dose": "650mg",
+        "frequency": "SOS for fever",
+        "route": "Oral"
+      }
+    ],
+    "doctor": "DR. E.V. RAMAN",
+    "visit": {
+      "hospital": "manipalhospitals",
+      "department": "ENT MHB",
+      "date": "2026-03-24"
+    },
+    "vitals": {
+      "bp": "130/85 mmHg",
+      "pulse": "88 bpm",
+      "temp": "99.2°F"
+    },
+    "notes": "Take after food. Complete the course."
+  }
+}

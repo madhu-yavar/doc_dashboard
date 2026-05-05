@@ -1,0 +1,65 @@
+[
+  {
+    "method": "opendataloader-pdf",
+    "duration": 0,
+    "success": false,
+    "error": "data is not iterable"
+  },
+  {
+    "method": "qwen-vision-8b",
+    "duration": 16.37,
+    "success": true,
+    "raw": {
+      "patient": {
+        "name": "Mr Jerald PILLAI",
+        "age": "21 Yrs",
+        "gender": "Male",
+        "id": "MH005618878",
+        "date": "2022-01-08 09:09"
+      },
+      "doctor": {
+        "name": "Dr. NEHA MISHRA (MBBS, MD (GEN MED), POST DOCTORAL FELLOWSHIP IN INFECTIOUS DISEASES (CMC VELLORE))",
+        "registration_number": "TMN 2017 0001362 KTK",
+        "signature_present": false
+      },
+      "medications": [],
+      "diagnosis": {
+        "primary": null,
+        "symptoms": []
+      },
+      "notes": {
+        "warnings": [],
+        "follow_up": "",
+        "other_notes": ""
+      },
+      "extraction_metadata": {
+        "total_medications": 0,
+        "confidence": "high",
+        "issues": []
+      },
+      "meta": {
+        "extracted_at": "2026-04-17T07:46:53.263Z",
+        "model": "Qwen/Qwen3-VL-8B-Instruct",
+        "tokens_used": 9347,
+        "latency_ms": 16359
+      }
+    },
+    "summary": {
+      "patient_found": true,
+      "patient_name": "Mr Jerald PILLAI",
+      "doctor_found": true,
+      "doctor_name": "Dr. NEHA MISHRA (MBBS, MD (GEN MED), POST DOCTORAL FELLOWSHIP IN INFECTIOUS DISEASES (CMC VELLORE))",
+      "medications_count": 0,
+      "medications": [],
+      "diagnosis": null,
+      "confidence": "high",
+      "total_medications": 0
+    },
+    "usage": {
+      "promptTokens": 9103,
+      "completionTokens": 244,
+      "totalTokens": 9347,
+      "latency": 16359
+    }
+  }
+]

@@ -1,0 +1,1246 @@
+{
+  "timestamp": "2026-04-03T19:57:28.814Z",
+  "total_samples": 5,
+  "overall_winner": "Option B (Thinking/ReAct)",
+  "metrics": {
+    "optionA": {
+      "total_score": 279,
+      "total_latency": 201596,
+      "total_tokens": 17834,
+      "successes": 5,
+      "failures": 0,
+      "avg_score": 56,
+      "avg_latency": 40319,
+      "avg_tokens": 3567
+    },
+    "optionB": {
+      "total_score": 422,
+      "total_latency": 767226,
+      "total_tokens": 86811,
+      "successes": 5,
+      "failures": 0,
+      "avg_score": 84,
+      "avg_latency": 153445,
+      "avg_tokens": 17362
+    }
+  },
+  "detailed_results": [
+    {
+      "sample": "Summary1 - Simple (Ear Pain)",
+      "expected": {
+        "patient": "Hema VAISHANAV",
+        "diagnosis": "B/L EAR PAIN",
+        "complexity": "Simple"
+      },
+      "optionA": {
+        "method": "Option A (Single-Shot)",
+        "latency_ms": 35685,
+        "tokens_used": 3647,
+        "data": {
+          "patient": {
+            "name": "Hema VAISHANAV",
+            "mrn": "MH001294157",
+            "age": 44,
+            "gender": "FEMALE"
+          },
+          "vitals": {
+            "bp": "110/70",
+            "pulse": 89,
+            "temp": "97.1",
+            "spo2": 97,
+            "resp_rate": 22,
+            "pain_score": 1,
+            "grbs": "NIL",
+            "ews_score": 1
+          },
+          "risk_scores": {
+            "fall_risk_score": 1,
+            "fall_risk_level": "LOW RISK",
+            "dvt_score": 2,
+            "dvt_level": "MODERATE RISK",
+            "pressure_ulcer_score": 23,
+            "pressure_level": "NO RISK",
+            "aspiration_score": 0,
+            "aspiration_level": "LOW RISK"
+          },
+          "functional_status": {
+            "bathing": "Independent",
+            "dressing": "Independent",
+            "eating": "Independent",
+            "walking": "Independent",
+            "toilet_use": "Independent"
+          },
+          "gcs": {
+            "eyes": null,
+            "motor": null,
+            "verbal": null,
+            "total": 15
+          },
+          "diagnosis": {
+            "principal": "B/L EAR PAIN",
+            "icd_code": null,
+            "secondary": [
+              "HYPOTHYROIDISM"
+            ]
+          },
+          "allergies": [
+            "UNKNOWN"
+          ],
+          "medications": [
+            "THYRONORM 100MCG 1-0-0",
+            "inj augmentin 1.2gm"
+          ],
+          "investigations_ordered": [],
+          "nursing_needs": [
+            "TO RESTORE THE NORMAL HEALTH STATUS OF THE PATIENT",
+            "PREVENT FALL"
+          ],
+          "diet": "NPO",
+          "summary": "Patient Hema VAISHANAV, 44F, presented with bilateral ear pain and a history of hypothyroidism. Vital signs were stable. Patient is NPO for surgery. Surgical site preparation included chlorhexidine bath and prophylactic antibiotics (inj augmentin). Patient is low risk for falls and aspiration, but moderate risk for DVT."
+        },
+        "raw_response": "{\n  \"patient\": {\n    \"name\": \"Hema VAISHANAV\",\n    \"mrn\": \"MH001294157\",\n    \"age\": 44,\n    \"gender\": \"FEMALE\"\n  },\n  \"vitals\": {\n    \"bp\": \"110/70\",\n    \"pulse\": 89,\n    \"temp\": \"97.1\",\n    \"spo2\": 97,\n    \"resp_rate\": 22,\n    \"pain_score\": 1,\n    \"grbs\": \"NIL\",\n    \"ews_score\": 1\n  },\n  \"risk_scores\": {\n    \"fall_risk_score\": 1,\n    \"fall_risk_level\": \"LOW RISK\",\n    \"dvt_score\": 2,\n    \"dvt_level\": \"MODERATE RISK\",\n    \"pressure_ulcer_score\": 23,\n    \"pressure_level\": \"NO RISK\",\n    \"aspiration_score\": 0,\n    \"aspiration_level\": \"LOW RISK\"\n  },\n  \"functional_status\": {\n    \"bathing\": \"Independent\",\n    \"dressing\": \"Independent\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Independent\",\n    \"toilet_use\": \"Independent\"\n  },\n  \"gcs\": {\n    \"eyes\": null,\n    \"motor\": null,\n    \"verbal\": null,\n    \"total\": 15\n  },\n  \"diagnosis\": {\n    \"principal\": \"B/L EAR PAIN\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"HYPOTHYROIDISM\"\n    ]\n  },\n  \"allergies\": [\n    \"UNKNOWN\"\n  ],\n  \"medications\": [\n    \"THYRONORM 100MCG 1-0-0\",\n    \"inj augmentin 1.2gm\"\n  ],\n  \"investigations_ordered\": [],\n  \"nursing_needs\": [\n    \"TO RESTORE THE NORMAL HEALTH STATUS OF THE PATIENT\",\n    \"PREVENT FALL\"\n  ],\n  \"diet\": \"NPO\",\n  \"summary\": \"Patient Hema VAISHANAV, 44F, presented with bilateral ear pain and a history of hypothyroidism. Vital signs were stable. Patient is NPO for surgery. Surgical site preparation included chlorhexidine bath and prophylactic antibiotics (inj augmentin). Patient is low risk for falls and aspiration, but moderate risk for DVT.\"\n}",
+        "score": 61,
+        "scoreDetails": {
+          "patient_name": "10/10",
+          "mrn": "5/5",
+          "vitals_complete": "2/4 fields",
+          "risk_scores_complete": "0/5 fields",
+          "risk_scores_accurate": "N/A (no ground truth)",
+          "functional_status": "5/5 ADL fields",
+          "diagnosis": "10/10",
+          "allergies": "5/5",
+          "medications": "5/5",
+          "clinical_reasoning": "0/5 (N/A for Option A)"
+        }
+      },
+      "optionB": {
+        "method": "Option B (Thinking/ReAct)",
+        "latency_ms": 150178,
+        "tokens_used": 17719,
+        "steps": [
+          {
+            "step": "Step 1: Document Analysis",
+            "tokens": 2148
+          },
+          {
+            "step": "Step 2: Demographics Extraction",
+            "tokens": 2201
+          },
+          {
+            "step": "Step 3: Risk Scores Extraction (with validation)",
+            "tokens": 3250
+          },
+          {
+            "step": "Step 4: Vitals Extraction (with clinical interpretation)",
+            "tokens": 2420
+          },
+          {
+            "step": "Step 5: Functional Status Extraction",
+            "tokens": 2188
+          },
+          {
+            "step": "Step 6: Clinical Data Extraction",
+            "tokens": 3007
+          },
+          {
+            "step": "Step 7: Final Assembly & Validation",
+            "tokens": 2505
+          }
+        ],
+        "data": {
+          "patient": {
+            "name": "Hema VAISHANAV",
+            "mrn": "MH001294157",
+            "age": 44,
+            "gender": "FEMALE"
+          },
+          "vitals": {
+            "bp": {
+              "systolic": 110,
+              "diastolic": 70
+            },
+            "pulse": 89,
+            "temperature": "97.1 F",
+            "spo2": 97,
+            "resp_rate": 22,
+            "pain_score": 1,
+            "grbs": 0
+          },
+          "risk_scores": {
+            "fall_risk": {
+              "score": 1,
+              "level": "LOW RISK"
+            },
+            "dvt_risk": {
+              "score": 2,
+              "level": "MODERATE RISK"
+            },
+            "pressure_ulcer_risk": {
+              "score": 23,
+              "level": "NO RISK"
+            },
+            "aspiration_risk": {
+              "score": 0,
+              "level": "LOW RISK"
+            },
+            "ews_score": 1,
+            "gcs": {
+              "eyes": null,
+              "motor": null,
+              "verbal": null,
+              "total": 15
+            }
+          },
+          "functional_status": {
+            "bathing": "Independent",
+            "dressing": "Independent",
+            "eating": "Independent",
+            "walking": "Independent",
+            "toilet_use": "Independent",
+            "overall_assistance": "None"
+          },
+          "diagnosis": {
+            "principal": "B/L EAR PAIN",
+            "icd_code": null,
+            "secondary": [
+              "HYPOTHYROIDISM"
+            ]
+          },
+          "allergies": [
+            "UNKNOWN"
+          ],
+          "medications": [
+            {
+              "name": "THYRONORM",
+              "dose": "100MCG",
+              "frequency": "1-0-0"
+            },
+            {
+              "name": "inj augmentin",
+              "dose": "1.2gm",
+              "frequency": "Not specified"
+            }
+          ],
+          "investigations": [],
+          "nursing_needs": [
+            "TO RESTORE THE NORMAL HEALTH STATUS OF THE PATIENT",
+            "PREVENT FALL",
+            "ANXIETY",
+            "ACTIVITY",
+            "MOBILIZATION"
+          ],
+          "validation_summary": {
+            "confidence_level": "high",
+            "inconsistencies_found": [
+              "Age range (41-60) mentioned in risk assessment vs specific age (44) in demographics; specific age prioritized."
+            ],
+            "missing_critical_fields": [
+              "GCS individual component scores (Eyes, Motor, Verbal)",
+              "ICD code for principal diagnosis",
+              "Specific frequency for inj augmentin"
+            ],
+            "data_quality_notes": "All risk scores were cross-verified and found consistent across sections. Vitals and functional status are clearly defined. GCS total is provided but components are absent from the source text."
+          }
+        },
+        "raw_thinking": "Step 1: Document Analysis:\n{\n  \"document_type\": \"Inpatient Nursing Initial Assessment / Medical Record\",\n  \"sections_identified\": [\n    \"Administrative Header\",\n    \"Pain Assessment\",\n    \"Fall Risk Assessment\",\n    \"Patient Acuity Tool\",\n    \"Surgical Site Infection Prevention Bundle\",\n    \"Nursing Initial Assessment\",\n    \"Vital Assessment\",\n    \"Functional Assessment (ADLs)\",\n    \"Nursing Care Plan/Needs\",\n    \"Risk Assessment Scores (DVT, Aspiration, Pressure)\",\n    \"General Physical Examination\",\n    \"Braden Scale (Pressure Ulcer Assessment)\"\n  ],\n  \"confidence\": \"high\",\n  \"extraction_strategy\": \"Use a key-value pair extraction approach. Since the document uses a structured form format, identify section headers first, then parse the subsequent lines for labels (e.g., 'Age :', 'BP :') and their corresponding values. For risk scores, target specific named scales like 'Braden Scale' or 'Fall Score' to ensure accuracy.\"\n}\n\n---\n\nStep 2: Demographics Extraction:\n{\n  \"name\": \"Hema VAISHANAV\",\n  \"mrn\": \"MH001294157\",\n  \"age\": 44,\n  \"gender\": \"FEMALE\",\n  \"confidence_notes\": \"Extracted name, MRN, age, and gender from the 'NURSING INITIAL ASSESSMENT - NEW' section. Age was explicitly listed as 44 in the assessment section, though a risk assessment questionnaire later mentioned a range (41-60). The specific age 44 is the most precise value provided.\",\n  \"sources\": [\n    \"NURSING INITIAL ASSESSMENT - NEW (Patient Name, MRN, Age, Gender)\"\n  ]\n}\n\n---\n\nStep 3: Risk Scores Extraction (with validation):\n{\n  \"fall_risk\": {\n    \"score\": 1,\n    \"level\": \"LOW RISK\",\n    \"verified\": true\n  },\n  \"dvt_risk\": {\n    \"score\": 2,\n    \"level\": \"MODERATE RISK\",\n    \"verified\": true\n  },\n  \"pressure_ulcer_risk\": {\n    \"score\": 23,\n    \"level\": \"NO RISK\",\n    \"verified\": true\n  },\n  \"aspiration_risk\": {\n    \"score\": 0,\n    \"level\": \"LOW RISK\",\n    \"verified\": true\n  },\n  \"ews_score\": 1,\n  \"gcs\": {\n    \"eyes\": null,\n    \"motor\": null,\n    \"verbal\": null,\n    \"total\": 15\n  },\n  \"validation_notes\": \"GCS total of 15 is explicitly stated, but individual E, M, V components are not provided in the text. All other risk scores (Fall, DVT, Pressure Ulcer, Aspiration) were cross-verified across different sections of the document and are consistent.\"\n}\n\n---\n\nStep 4: Vitals Extraction (with clinical interpretation):\n{\n  \"bp\": {\n    \"systolic\": 110,\n    \"diastolic\": 70,\n    \"status\": \"normal\"\n  },\n  \"pulse\": {\n    \"value\": 89,\n    \"status\": \"normal\"\n  },\n  \"temperature\": {\n    \"value\": 97.1,\n    \"unit\": \"F\"\n  },\n  \"resp_rate\": 22,\n  \"spo2\": {\n    \"value\": 97,\n    \"status\": \"normal\"\n  },\n  \"pain_score\": {\n    \"value\": 1,\n    \"scale\": 10\n  },\n  \"grbs\": {\n    \"value\": 0,\n    \"interpretation\": \"normal\"\n  },\n  \"abnormal_flags\": []\n}\n\n---\n\nStep 5: Functional Status Extraction:\n{\n  \"functional_status\": {\n    \"bathing\": \"Independent\",\n    \"dressing\": \"Independent\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Independent\",\n    \"toilet_use\": \"Independent\"\n  },\n  \"overall_assistance_needs\": \"None\",\n  \"mobility_notes\": \"Ambulant; Braden Scale Activity score indicates 'Walks Frequently'; Fall risk noted as Low Risk.\"\n}\n\n---\n\nStep 6: Clinical Data Extraction:\n{\n  \"diagnosis\": {\n    \"principal\": \"B/L EAR PAIN\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"HYPOTHYROIDISM\"\n    ]\n  },\n  \"allergies\": [\n    \"UNKNOWN\"\n  ],\n  \"medications\": [\n    {\n      \"name\": \"THYRONORM\",\n      \"dose\": \"100MCG\",\n      \"frequency\": \"1-0-0\"\n    },\n    {\n      \"name\": \"inj augmentin\",\n      \"dose\": \"1.2gm\",\n      \"frequency\": \"Not specified\"\n    }\n  ],\n  \"investigations\": [],\n  \"nursing_needs\": [\n    \"TO RESTORE THE NORMAL HEALTH STATUS OF THE PATIENT\",\n    \"PREVENT FALL\",\n    \"ANXIETY\",\n    \"ACTIVITY\",\n    \"MOBILIZATION\"\n  ]\n}\n\n---\n\nStep 7: Final Assembly & Validation:\n{\n  \"patient\": {\n    \"name\": \"Hema VAISHANAV\",\n    \"mrn\": \"MH001294157\",\n    \"age\": 44,\n    \"gender\": \"FEMALE\"\n  },\n  \"vitals\": {\n    \"bp\": {\n      \"systolic\": 110,\n      \"diastolic\": 70\n    },\n    \"pulse\": 89,\n    \"temperature\": \"97.1 F\",\n    \"spo2\": 97,\n    \"resp_rate\": 22,\n    \"pain_score\": 1,\n    \"grbs\": 0\n  },\n  \"risk_scores\": {\n    \"fall_risk\": {\n      \"score\": 1,\n      \"level\": \"LOW RISK\"\n    },\n    \"dvt_risk\": {\n      \"score\": 2,\n      \"level\": \"MODERATE RISK\"\n    },\n    \"pressure_ulcer_risk\": {\n      \"score\": 23,\n      \"level\": \"NO RISK\"\n    },\n    \"aspiration_risk\": {\n      \"score\": 0,\n      \"level\": \"LOW RISK\"\n    },\n    \"ews_score\": 1,\n    \"gcs\": {\n      \"eyes\": null,\n      \"motor\": null,\n      \"verbal\": null,\n      \"total\": 15\n    }\n  },\n  \"functional_status\": {\n    \"bathing\": \"Independent\",\n    \"dressing\": \"Independent\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Independent\",\n    \"toilet_use\": \"Independent\",\n    \"overall_assistance\": \"None\"\n  },\n  \"diagnosis\": {\n    \"principal\": \"B/L EAR PAIN\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"HYPOTHYROIDISM\"\n    ]\n  },\n  \"allergies\": [\n    \"UNKNOWN\"\n  ],\n  \"medications\": [\n    {\n      \"name\": \"THYRONORM\",\n      \"dose\": \"100MCG\",\n      \"frequency\": \"1-0-0\"\n    },\n    {\n      \"name\": \"inj augmentin\",\n      \"dose\": \"1.2gm\",\n      \"frequency\": \"Not specified\"\n    }\n  ],\n  \"investigations\": [],\n  \"nursing_needs\": [\n    \"TO RESTORE THE NORMAL HEALTH STATUS OF THE PATIENT\",\n    \"PREVENT FALL\",\n    \"ANXIETY\",\n    \"ACTIVITY\",\n    \"MOBILIZATION\"\n  ],\n  \"validation_summary\": {\n    \"confidence_level\": \"high\",\n    \"inconsistencies_found\": [\n      \"Age range (41-60) mentioned in risk assessment vs specific age (44) in demographics; specific age prioritized.\"\n    ],\n    \"missing_critical_fields\": [\n      \"GCS individual component scores (Eyes, Motor, Verbal)\",\n      \"ICD code for principal diagnosis\",\n      \"Specific frequency for inj augmentin\"\n    ],\n    \"data_quality_notes\": \"All risk scores were cross-verified and found consistent across sections. Vitals and functional status are clearly defined. GCS total is provided but components are absent from the source text.\"\n  }\n}",
+        "score": 89,
+        "scoreDetails": {
+          "patient_name": "10/10",
+          "mrn": "5/5",
+          "vitals_complete": "4/4 fields",
+          "risk_scores_complete": "4/5 fields",
+          "risk_scores_accurate": "N/A (no ground truth)",
+          "functional_status": "5/5 ADL fields",
+          "diagnosis": "10/10",
+          "allergies": "5/5",
+          "medications": "5/5",
+          "clinical_reasoning": "5/5"
+        }
+      },
+      "winner": "B"
+    },
+    {
+      "sample": "Summary2 - Complex (Breathing Difficulty, Multiple Risks)",
+      "expected": {
+        "patient": "DR SHIVARAJ K S",
+        "diagnosis": "Breathing Difficulty",
+        "risk_scores": {
+          "fall": 10,
+          "dvt": 5,
+          "pressure": 13
+        },
+        "complexity": "Complex"
+      },
+      "optionA": {
+        "method": "Option A (Single-Shot)",
+        "latency_ms": 44026,
+        "tokens_used": 3605,
+        "data": {
+          "patient": {
+            "name": "DR SHIVARAJ K S",
+            "mrn": "MH009742499",
+            "age": 74,
+            "gender": "Male"
+          },
+          "vitals": {
+            "bp": "140/90",
+            "pulse": 105,
+            "temp": "98.3",
+            "spo2": 96,
+            "resp_rate": 23,
+            "pain_score": 1,
+            "grbs": 117,
+            "ews_score": 5
+          },
+          "risk_scores": {
+            "fall_risk_score": 10,
+            "fall_risk_level": "Moderate Fall Risk",
+            "dvt_score": 5,
+            "dvt_level": "HIGHEST",
+            "pressure_ulcer_score": 13,
+            "pressure_level": "Moderate Risk",
+            "aspiration_score": 2,
+            "aspiration_level": "LOW"
+          },
+          "functional_status": {
+            "bathing": "Assisted",
+            "dressing": "Assisted",
+            "eating": "Assisted",
+            "walking": "Assisted",
+            "toilet_use": "Assisted"
+          },
+          "gcs": {
+            "eyes": 4,
+            "motor": 6,
+            "verbal": 5,
+            "total": 15
+          },
+          "diagnosis": {
+            "principal": "BREATHING DIFFICULTY",
+            "icd_code": null,
+            "secondary": [
+              "UPPER GI BLEED - S/P OGD SHOWED GE JUNCTION BLEEDING LESION NOTED - HEMOCLIP APPLIED [20/11/25]",
+              "HYPERTENSION",
+              "PREDIABETIC"
+            ]
+          },
+          "allergies": [
+            "UNKNOWN"
+          ],
+          "medications": [
+            "TAB FLUVIR 75 MG P/O 1-0-1"
+          ],
+          "investigations_ordered": [
+            "ECG",
+            "CBC",
+            "RP2",
+            "ABG",
+            "URINE ROUTINE",
+            "CXR"
+          ],
+          "nursing_needs": [
+            "POSITION",
+            "AIRWAY CLEARENCE TECHNIQUES",
+            "OXYGEN THERAPY",
+            "MEDICATION ADMINISTRATION",
+            "PATIENT EDUCATION",
+            "INFECTION PREVENTIOIN",
+            "FOLLOW UP CARE",
+            "NUTRITIONAL SUPPORT",
+            "TO PROVIDE PSYCHOLOGICAL SUPPORT"
+          ],
+          "diet": "SOFT DIET",
+          "summary": "74-year-old male admitted with breathing difficulty and history of upper GI bleed, hypertension, and prediabetes. Patient is at moderate fall risk, moderate pressure ulcer risk, highest DVT risk, and low aspiration risk. Currently requires assistance with all activities of daily living (ADLs). Skin examination noted redness on both hands."
+        },
+        "raw_response": "{\n  \"patient\": {\n    \"name\": \"DR SHIVARAJ K S\",\n    \"mrn\": \"MH009742499\",\n    \"age\": 74,\n    \"gender\": \"Male\"\n  },\n  \"vitals\": {\n    \"bp\": \"140/90\",\n    \"pulse\": 105,\n    \"temp\": \"98.3\",\n    \"spo2\": 96,\n    \"resp_rate\": 23,\n    \"pain_score\": 1,\n    \"grbs\": 117,\n    \"ews_score\": 5\n  },\n  \"risk_scores\": {\n    \"fall_risk_score\": 10,\n    \"fall_risk_level\": \"Moderate Fall Risk\",\n    \"dvt_score\": 5,\n    \"dvt_level\": \"HIGHEST\",\n    \"pressure_ulcer_score\": 13,\n    \"pressure_level\": \"Moderate Risk\",\n    \"aspiration_score\": 2,\n    \"aspiration_level\": \"LOW\"\n  },\n  \"functional_status\": {\n    \"bathing\": \"Assisted\",\n    \"dressing\": \"Assisted\",\n    \"eating\": \"Assisted\",\n    \"walking\": \"Assisted\",\n    \"toilet_use\": \"Assisted\"\n  },\n  \"gcs\": {\n    \"eyes\": 4,\n    \"motor\": 6,\n    \"verbal\": 5,\n    \"total\": 15\n  },\n  \"diagnosis\": {\n    \"principal\": \"BREATHING DIFFICULTY\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"UPPER GI BLEED - S/P OGD SHOWED GE JUNCTION BLEEDING LESION NOTED - HEMOCLIP APPLIED [20/11/25]\",\n      \"HYPERTENSION\",\n      \"PREDIABETIC\"\n    ]\n  },\n  \"allergies\": [\n    \"UNKNOWN\"\n  ],\n  \"medications\": [\n    \"TAB FLUVIR 75 MG P/O 1-0-1\"\n  ],\n  \"investigations_ordered\": [\n    \"ECG\",\n    \"CBC\",\n    \"RP2\",\n    \"ABG\",\n    \"URINE ROUTINE\",\n    \"CXR\"\n  ],\n  \"nursing_needs\": [\n    \"POSITION\",\n    \"AIRWAY CLEARENCE TECHNIQUES\",\n    \"OXYGEN THERAPY\",\n    \"MEDICATION ADMINISTRATION\",\n    \"PATIENT EDUCATION\",\n    \"INFECTION PREVENTIOIN\",\n    \"FOLLOW UP CARE\",\n    \"NUTRITIONAL SUPPORT\",\n    \"TO PROVIDE PSYCHOLOGICAL SUPPORT\"\n  ],\n  \"diet\": \"SOFT DIET\",\n  \"summary\": \"74-year-old male admitted with breathing difficulty and history of upper GI bleed, hypertension, and prediabetes. Patient is at moderate fall risk, moderate pressure ulcer risk, highest DVT risk, and low aspiration risk. Currently requires assistance with all activities of daily living (ADLs). Skin examination noted redness on both hands.\"\n}",
+        "score": 53,
+        "scoreDetails": {
+          "patient_name": "10/10",
+          "mrn": "5/5",
+          "vitals_complete": "2/4 fields",
+          "risk_scores_complete": "0/5 fields",
+          "risk_scores_accurate": "0/3 expected values matched",
+          "functional_status": "5/5 ADL fields",
+          "diagnosis": "10/10",
+          "allergies": "5/5",
+          "medications": "5/5",
+          "clinical_reasoning": "0/5 (N/A for Option A)"
+        }
+      },
+      "optionB": {
+        "method": "Option B (Thinking/ReAct)",
+        "latency_ms": 158815,
+        "tokens_used": 17545,
+        "steps": [
+          {
+            "step": "Step 1: Document Analysis",
+            "tokens": 2096
+          },
+          {
+            "step": "Step 2: Demographics Extraction",
+            "tokens": 2167
+          },
+          {
+            "step": "Step 3: Risk Scores Extraction (with validation)",
+            "tokens": 3072
+          },
+          {
+            "step": "Step 4: Vitals Extraction (with clinical interpretation)",
+            "tokens": 2441
+          },
+          {
+            "step": "Step 5: Functional Status Extraction",
+            "tokens": 2150
+          },
+          {
+            "step": "Step 6: Clinical Data Extraction",
+            "tokens": 2900
+          },
+          {
+            "step": "Step 7: Final Assembly & Validation",
+            "tokens": 2719
+          }
+        ],
+        "data": {
+          "patient": {
+            "name": "DR SHIVARAJ K S",
+            "mrn": "MH009742499",
+            "age": 74,
+            "gender": "Male"
+          },
+          "vitals": {
+            "bp": {
+              "systolic": 140,
+              "diastolic": 90
+            },
+            "pulse": 105,
+            "temperature": "98.3 F",
+            "spo2": 96,
+            "resp_rate": 23,
+            "pain_score": 1,
+            "grbs": 117
+          },
+          "risk_scores": {
+            "fall_risk": {
+              "score": 10,
+              "level": "Moderate Fall Risk"
+            },
+            "dvt_risk": {
+              "score": 5,
+              "level": "HIGHEST"
+            },
+            "pressure_ulcer_risk": {
+              "score": 13,
+              "level": "Moderate Risk"
+            },
+            "aspiration_risk": {
+              "score": 2,
+              "level": "LOW"
+            },
+            "ews_score": 5,
+            "gcs": {
+              "eyes": 4,
+              "motor": 6,
+              "verbal": 5,
+              "total": 15
+            }
+          },
+          "functional_status": {
+            "bathing": "Assisted",
+            "dressing": "Assisted",
+            "eating": "Assisted",
+            "walking": "Assisted",
+            "toilet_use": "Assisted",
+            "overall_assistance": "Full assistance required"
+          },
+          "diagnosis": {
+            "principal": "BREATHING DIFFICULTY",
+            "icd_code": null,
+            "secondary": [
+              "UPPER GI BLEED - S/P OGD SHOWED GE JUNCTION BLEEDING LESION NOTED - HEMOCLIP APPLIED",
+              "HYPERTENSION",
+              "PREDIABETIC"
+            ]
+          },
+          "allergies": [
+            "UNKNOWN"
+          ],
+          "medications": [
+            {
+              "name": "TAB FLUVIR",
+              "dose": "75 MG",
+              "frequency": "1-0-1"
+            }
+          ],
+          "investigations": [
+            "ECG",
+            "CBC",
+            "RP2",
+            "ABG",
+            "URINE ROUTINE",
+            "CXR"
+          ],
+          "nursing_needs": [
+            "POSITION",
+            "AIRWAY CLEARENCE TECHNIQUES",
+            "OXYGEN THERAPY",
+            "MEDICATION ADMINISTRATION",
+            "PATIENT EDUCATION",
+            "INFECTION PREVENTIOIN",
+            "FOLLOW UP CARE",
+            "NUTRITIONAL SUPPORT",
+            "TO PROVIDE PSYCHOLOGICAL SUPPORT"
+          ],
+          "validation_summary": {
+            "confidence_level": "high",
+            "inconsistencies_found": [
+              "Fall Risk score discrepancy: Initial Assessment (10) vs Shift Assessment (9). Using Initial Assessment (10) as primary."
+            ],
+            "missing_critical_fields": [],
+            "data_quality_notes": "Demographics verified across multiple sections. Vitals show clinical abnormalities (tachycardia, tachypnea, hypertension) which are noted. Risk scores are consistent across assessment types. GCS components successfully reconstructed from shorthand notation."
+          }
+        },
+        "raw_thinking": "Step 1: Document Analysis:\n{\n  \"document_type\": \"Nursing Initial Assessment / Inpatient Admission Record\",\n  \"sections_identified\": [\n    \"Administrative Header\",\n    \"Fall Risk Assessment\",\n    \"Pain Assessment\",\n    \"Skin Examination\",\n    \"Patient Demographics & Admission Details\",\n    \"Medical History & Chief Complaints\",\n    \"Vital Signs Assessment\",\n    \"Clinical Scoring (EWS, GCS, Risk Scores)\",\n    \"Activities of Daily Living (ADL) Assessment\",\n    \"Nursing Care Plan & Identified Needs\"\n  ],\n  \"confidence\": \"high\",\n  \"extraction_strategy\": \"Use OCR to convert PDF to text. Implement a key-value pair extraction pattern. Since the document uses a form-based structure, use regex to capture values following specific labels (e.g., 'Pulse/min :', 'Blood Pressure(mmHg) :'). For risk assessments, target the 'Total' or 'Score' keywords within their respective sub-sections. Handle multi-page continuity by grouping data by 'Hospital No' and 'MRN'.\"\n}\n\n---\n\nStep 2: Demographics Extraction:\n{\n  \"name\": \"DR SHIVARAJ K S\",\n  \"mrn\": \"MH009742499\",\n  \"age\": 74,\n  \"gender\": \"Male\",\n  \"confidence_notes\": \"Extracted name, MRN, age, and gender from the 'NURSING INITIAL ASSESSMENT - NEW' section. The age was explicitly stated as '74 Yrs'. The MRN 'MH009742499' was found in both the assessment section and the questionnaire section, confirming accuracy.\",\n  \"sources\": [\n    \"NURSING INITIAL ASSESSMENT - NEW (Name, MRN, Age, Gender)\",\n    \"Questionnaires (MRN, Sex)\"\n  ]\n}\n\n---\n\nStep 3: Risk Scores Extraction (with validation):\n{\n  \"fall_risk\": {\n    \"score\": 10,\n    \"level\": \"Moderate Fall Risk\",\n    \"verified\": true\n  },\n  \"dvt_risk\": {\n    \"score\": 5,\n    \"level\": \"HIGHEST\",\n    \"verified\": true\n  },\n  \"pressure_ulcer_risk\": {\n    \"score\": 13,\n    \"level\": \"Moderate Risk\",\n    \"verified\": true\n  },\n  \"aspiration_risk\": {\n    \"score\": 2,\n    \"level\": \"LOW\",\n    \"verified\": true\n  },\n  \"ews_score\": 5,\n  \"gcs\": {\n    \"eyes\": 4,\n    \"motor\": 6,\n    \"verbal\": 5,\n    \"total\": 15\n  },\n  \"validation_notes\": \"Multiple Fall Risk assessments found: Initial Assessment score is 10 (Moderate), Shift Assessment score is 9 (Moderate). DVT, Pressure Ulcer, and Aspiration scores are consistent across sections. GCS components extracted from 'E4M6V5'.\"\n}\n\n---\n\nStep 4: Vitals Extraction (with clinical interpretation):\n{\n  \"bp\": {\n    \"systolic\": 140,\n    \"diastolic\": 90,\n    \"status\": \"high\"\n  },\n  \"pulse\": {\n    \"value\": 105,\n    \"status\": \"tachycardia\"\n  },\n  \"temperature\": {\n    \"value\": 98.3,\n    \"unit\": \"F\"\n  },\n  \"resp_rate\": 23,\n  \"spo2\": {\n    \"value\": 96,\n    \"status\": \"normal\"\n  },\n  \"pain_score\": {\n    \"value\": 1,\n    \"scale\": 10\n  },\n  \"grbs\": {\n    \"value\": 117,\n    \"interpretation\": \"prediabetic\"\n  },\n  \"abnormal_flags\": [\n    \"High Blood Pressure (140/90)\",\n    \"Tachycardia (Pulse 105)\",\n    \"Tachypnea (Respiration 23)\",\n    \"Prediabetic GRBS (117)\"\n  ]\n}\n\n---\n\nStep 5: Functional Status Extraction:\n{\n  \"functional_status\": {\n    \"bathing\": \"Assisted\",\n    \"dressing\": \"Assisted\",\n    \"eating\": \"Assisted\",\n    \"walking\": \"Assisted\",\n    \"toilet_use\": \"Assisted\"\n  },\n  \"overall_assistance_needs\": \"Full assistance required\",\n  \"mobility_notes\": \"Requires assistance or supervision for mobility, transfer or ambulation; Bed Bound (Braden Scale)\"\n}\n\n---\n\nStep 6: Clinical Data Extraction:\n{\n  \"diagnosis\": {\n    \"principal\": \"BREATHING DIFFICULTY\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"UPPER GI BLEED - S/P OGD SHOWED GE JUNCTION BLEEDING LESION NOTED - HEMOCLIP APPLIED\",\n      \"HYPERTENSION\",\n      \"PREDIABETIC\"\n    ]\n  },\n  \"allergies\": [\n    \"UNKNOWN\"\n  ],\n  \"medications\": [\n    {\n      \"name\": \"TAB FLUVIR\",\n      \"dose\": \"75 MG\",\n      \"frequency\": \"1-0-1\"\n    }\n  ],\n  \"investigations\": [\n    \"ECG\",\n    \"CBC\",\n    \"RP2\",\n    \"ABG\",\n    \"URINE ROUTINE\",\n    \"CXR\"\n  ],\n  \"nursing_needs\": [\n    \"POSITION\",\n    \"AIRWAY CLEARENCE TECHNIQUES\",\n    \"OXYGEN THERAPY\",\n    \"MEDICATION ADMINISTRATION\",\n    \"PATIENT EDUCATION\",\n    \"INFECTION PREVENTIOIN\",\n    \"FOLLOW UP CARE\",\n    \"NUTRITIONAL SUPPORT\",\n    \"TO PROVIDE PSYCHOLOGICAL SUPPORT\"\n  ]\n}\n\n---\n\nStep 7: Final Assembly & Validation:\n{\n  \"patient\": {\n    \"name\": \"DR SHIVARAJ K S\",\n    \"mrn\": \"MH009742499\",\n    \"age\": 74,\n    \"gender\": \"Male\"\n  },\n  \"vitals\": {\n    \"bp\": {\n      \"systolic\": 140,\n      \"diastolic\": 90\n    },\n    \"pulse\": 105,\n    \"temperature\": \"98.3 F\",\n    \"spo2\": 96,\n    \"resp_rate\": 23,\n    \"pain_score\": 1,\n    \"grbs\": 117\n  },\n  \"risk_scores\": {\n    \"fall_risk\": {\n      \"score\": 10,\n      \"level\": \"Moderate Fall Risk\"\n    },\n    \"dvt_risk\": {\n      \"score\": 5,\n      \"level\": \"HIGHEST\"\n    },\n    \"pressure_ulcer_risk\": {\n      \"score\": 13,\n      \"level\": \"Moderate Risk\"\n    },\n    \"aspiration_risk\": {\n      \"score\": 2,\n      \"level\": \"LOW\"\n    },\n    \"ews_score\": 5,\n    \"gcs\": {\n      \"eyes\": 4,\n      \"motor\": 6,\n      \"verbal\": 5,\n      \"total\": 15\n    }\n  },\n  \"functional_status\": {\n    \"bathing\": \"Assisted\",\n    \"dressing\": \"Assisted\",\n    \"eating\": \"Assisted\",\n    \"walking\": \"Assisted\",\n    \"toilet_use\": \"Assisted\",\n    \"overall_assistance\": \"Full assistance required\"\n  },\n  \"diagnosis\": {\n    \"principal\": \"BREATHING DIFFICULTY\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"UPPER GI BLEED - S/P OGD SHOWED GE JUNCTION BLEEDING LESION NOTED - HEMOCLIP APPLIED\",\n      \"HYPERTENSION\",\n      \"PREDIABETIC\"\n    ]\n  },\n  \"allergies\": [\n    \"UNKNOWN\"\n  ],\n  \"medications\": [\n    {\n      \"name\": \"TAB FLUVIR\",\n      \"dose\": \"75 MG\",\n      \"frequency\": \"1-0-1\"\n    }\n  ],\n  \"investigations\": [\n    \"ECG\",\n    \"CBC\",\n    \"RP2\",\n    \"ABG\",\n    \"URINE ROUTINE\",\n    \"CXR\"\n  ],\n  \"nursing_needs\": [\n    \"POSITION\",\n    \"AIRWAY CLEARENCE TECHNIQUES\",\n    \"OXYGEN THERAPY\",\n    \"MEDICATION ADMINISTRATION\",\n    \"PATIENT EDUCATION\",\n    \"INFECTION PREVENTIOIN\",\n    \"FOLLOW UP CARE\",\n    \"NUTRITIONAL SUPPORT\",\n    \"TO PROVIDE PSYCHOLOGICAL SUPPORT\"\n  ],\n  \"validation_summary\": {\n    \"confidence_level\": \"high\",\n    \"inconsistencies_found\": [\n      \"Fall Risk score discrepancy: Initial Assessment (10) vs Shift Assessment (9). Using Initial Assessment (10) as primary.\"\n    ],\n    \"missing_critical_fields\": [],\n    \"data_quality_notes\": \"Demographics verified across multiple sections. Vitals show clinical abnormalities (tachycardia, tachypnea, hypertension) which are noted. Risk scores are consistent across assessment types. GCS components successfully reconstructed from shorthand notation.\"\n  }\n}",
+        "score": 100,
+        "scoreDetails": {
+          "patient_name": "10/10",
+          "mrn": "5/5",
+          "vitals_complete": "4/4 fields",
+          "risk_scores_complete": "5/5 fields",
+          "risk_scores_accurate": "3/3 expected values matched",
+          "functional_status": "5/5 ADL fields",
+          "diagnosis": "10/10",
+          "allergies": "5/5",
+          "medications": "5/5",
+          "clinical_reasoning": "5/5"
+        }
+      },
+      "winner": "B"
+    },
+    {
+      "sample": "Summary3 - Cardiology (Chest Pain)",
+      "expected": {
+        "patient": "Priyadarshini PUNJA",
+        "diagnosis": "Chest Pain",
+        "complexity": "Medium"
+      },
+      "optionA": {
+        "method": "Option A (Single-Shot)",
+        "latency_ms": 41238,
+        "tokens_used": 3553,
+        "data": {
+          "patient": {
+            "name": "Mr.Priyadarshini PUNJA",
+            "mrn": "MH011199849",
+            "age": 64,
+            "gender": "Female"
+          },
+          "vitals": {
+            "bp": "110/70",
+            "pulse": 78,
+            "temp": "98.6",
+            "spo2": 98,
+            "resp_rate": 20,
+            "pain_score": 2,
+            "grbs": null,
+            "ews_score": 2
+          },
+          "risk_scores": {
+            "fall_risk_score": 3,
+            "fall_risk_level": "low risk",
+            "dvt_score": 2,
+            "dvt_level": "Moderate RISK",
+            "pressure_ulcer_score": 21,
+            "pressure_level": "no risk",
+            "aspiration_score": 0,
+            "aspiration_level": "LOW RISK"
+          },
+          "functional_status": {
+            "bathing": "Independent",
+            "dressing": "Independent",
+            "eating": "Independent",
+            "walking": "Independent",
+            "toilet_use": "Independent"
+          },
+          "gcs": {
+            "eyes": null,
+            "motor": null,
+            "verbal": null,
+            "total": 15
+          },
+          "diagnosis": {
+            "principal": "ASYMPTOMATIC (TMT - POSITIVE)",
+            "icd_code": null,
+            "secondary": [
+              "HTN",
+              "NORMAL LV FUNCTION",
+              "POSTED FOR CAG"
+            ]
+          },
+          "allergies": [
+            "unknown"
+          ],
+          "medications": [
+            "tab-telma 40mg -1-0-0",
+            "TAB PIVASTA 2MG 0-0-1",
+            "TAB EZEDOC 10MG 0-0-1",
+            "CAP D. RISE 60K ONCE A WEEK FOR 8 WEEKS THEN ONCE A MONTH"
+          ],
+          "investigations_ordered": [
+            "CBC",
+            "RP2 SEROLOGY",
+            "blood grouping and typing"
+          ],
+          "nursing_needs": [
+            "to restore normal cardiac function",
+            "to prevent from fall"
+          ],
+          "diet": "NPO",
+          "summary": "Patient presented with chest pain complaint; however, current status is asymptomatic. TMT was found to be positive on 16/03/2026. Patient has a history of Hypertension (HTN) for 1 year. Currently posted for CAG. Vital signs are stable. Risk assessments indicate low fall risk, moderate DVT risk, and no pressure ulcer risk."
+        },
+        "raw_response": "{\n  \"patient\": {\n    \"name\": \"Mr.Priyadarshini PUNJA\",\n    \"mrn\": \"MH011199849\",\n    \"age\": 64,\n    \"gender\": \"Female\"\n  },\n  \"vitals\": {\n    \"bp\": \"110/70\",\n    \"pulse\": 78,\n    \"temp\": \"98.6\",\n    \"spo2\": 98,\n    \"resp_rate\": 20,\n    \"pain_score\": 2,\n    \"grbs\": null,\n    \"ews_score\": 2\n  },\n  \"risk_scores\": {\n    \"fall_risk_score\": 3,\n    \"fall_risk_level\": \"low risk\",\n    \"dvt_score\": 2,\n    \"dvt_level\": \"Moderate RISK\",\n    \"pressure_ulcer_score\": 21,\n    \"pressure_level\": \"no risk\",\n    \"aspiration_score\": 0,\n    \"aspiration_level\": \"LOW RISK\"\n  },\n  \"functional_status\": {\n    \"bathing\": \"Independent\",\n    \"dressing\": \"Independent\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Independent\",\n    \"toilet_use\": \"Independent\"\n  },\n  \"gcs\": {\n    \"eyes\": null,\n    \"motor\": null,\n    \"verbal\": null,\n    \"total\": 15\n  },\n  \"diagnosis\": {\n    \"principal\": \"ASYMPTOMATIC (TMT - POSITIVE)\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"HTN\",\n      \"NORMAL LV FUNCTION\",\n      \"POSTED FOR CAG\"\n    ]\n  },\n  \"allergies\": [\n    \"unknown\"\n  ],\n  \"medications\": [\n    \"tab-telma 40mg -1-0-0\",\n    \"TAB PIVASTA 2MG 0-0-1\",\n    \"TAB EZEDOC 10MG 0-0-1\",\n    \"CAP D. RISE 60K ONCE A WEEK FOR 8 WEEKS THEN ONCE A MONTH\"\n  ],\n  \"investigations_ordered\": [\n    \"CBC\",\n    \"RP2 SEROLOGY\",\n    \"blood grouping and typing\"\n  ],\n  \"nursing_needs\": [\n    \"to restore normal cardiac function\",\n    \"to prevent from fall\"\n  ],\n  \"diet\": \"NPO\",\n  \"summary\": \"Patient presented with chest pain complaint; however, current status is asymptomatic. TMT was found to be positive on 16/03/2026. Patient has a history of Hypertension (HTN) for 1 year. Currently posted for CAG. Vital signs are stable. Risk assessments indicate low fall risk, moderate DVT risk, and no pressure ulcer risk.\"\n}",
+        "score": 61,
+        "scoreDetails": {
+          "patient_name": "10/10",
+          "mrn": "5/5",
+          "vitals_complete": "2/4 fields",
+          "risk_scores_complete": "0/5 fields",
+          "risk_scores_accurate": "N/A (no ground truth)",
+          "functional_status": "5/5 ADL fields",
+          "diagnosis": "10/10",
+          "allergies": "5/5",
+          "medications": "5/5",
+          "clinical_reasoning": "0/5 (N/A for Option A)"
+        }
+      },
+      "optionB": {
+        "method": "Option B (Thinking/ReAct)",
+        "latency_ms": 167679,
+        "tokens_used": 17917,
+        "steps": [
+          {
+            "step": "Step 1: Document Analysis",
+            "tokens": 2145
+          },
+          {
+            "step": "Step 2: Demographics Extraction",
+            "tokens": 2285
+          },
+          {
+            "step": "Step 3: Risk Scores Extraction (with validation)",
+            "tokens": 3079
+          },
+          {
+            "step": "Step 4: Vitals Extraction (with clinical interpretation)",
+            "tokens": 2434
+          },
+          {
+            "step": "Step 5: Functional Status Extraction",
+            "tokens": 2211
+          },
+          {
+            "step": "Step 6: Clinical Data Extraction",
+            "tokens": 2946
+          },
+          {
+            "step": "Step 7: Final Assembly & Validation",
+            "tokens": 2817
+          }
+        ],
+        "data": {
+          "patient": {
+            "name": "Priyadarshini PUNJA",
+            "mrn": "MH011199849",
+            "age": 64,
+            "gender": "Female"
+          },
+          "vitals": {
+            "bp": {
+              "systolic": 110,
+              "diastolic": 70
+            },
+            "pulse": 78,
+            "temperature": "98.6 F",
+            "spo2": 98,
+            "resp_rate": 20,
+            "pain_score": 2,
+            "grbs": null
+          },
+          "risk_scores": {
+            "fall_risk": {
+              "score": 3,
+              "level": "low risk"
+            },
+            "dvt_risk": {
+              "score": 2,
+              "level": "Moderate RISK"
+            },
+            "pressure_ulcer_risk": {
+              "score": 21,
+              "level": "no risk"
+            },
+            "aspiration_risk": {
+              "score": 0,
+              "level": "LOW RISK"
+            },
+            "ews_score": 2,
+            "gcs": {
+              "eyes": null,
+              "motor": null,
+              "verbal": null,
+              "total": 15
+            }
+          },
+          "functional_status": {
+            "bathing": "Independent",
+            "dressing": "Independent",
+            "eating": "Independent",
+            "walking": "Independent",
+            "toilet_use": "Independent",
+            "overall_assistance": "None"
+          },
+          "diagnosis": {
+            "principal": "TMT - POSITIVE (Posted for CAG)",
+            "icd_code": null,
+            "secondary": [
+              "Hypertension (HTN)",
+              "Chest pain"
+            ]
+          },
+          "allergies": [
+            "unknown"
+          ],
+          "medications": [
+            {
+              "name": "TAB TELMA",
+              "dose": "40mg",
+              "frequency": "1-0-0"
+            },
+            {
+              "name": "TAB PIVASTA",
+              "dose": "2mg",
+              "frequency": "0-0-1"
+            },
+            {
+              "name": "TAB EZEDOC",
+              "dose": "10mg",
+              "frequency": "0-0-1"
+            },
+            {
+              "name": "CAP D. RISE",
+              "dose": "60K",
+              "frequency": "ONCE A WEEK FOR 8 WEEKS THEN ONCE A MONTH"
+            }
+          ],
+          "investigations": [
+            "CBC",
+            "RP2 SEROLOGY",
+            "blood grouping and typing"
+          ],
+          "nursing_needs": [
+            "to restore normal cardiac function",
+            "to prevent from fall",
+            "Risk for fall",
+            "Risk for DVT",
+            "Acute pain ./ or post-operative pain"
+          ],
+          "validation_summary": {
+            "confidence_level": "high",
+            "inconsistencies_found": [
+              "Prefix 'Mr.' in name field contradicts gender 'Female'; gender verified as Female via multiple assessment sections."
+            ],
+            "missing_critical_fields": [
+              "GCS individual component scores (Eyes, Motor, Verbal)",
+              "GRBS value",
+              "ICD code for principal diagnosis"
+            ],
+            "data_quality_notes": "Demographics reconciled by prioritizing explicit gender fields over name prefix. Risk scores and vitals are consistent across assessment blocks. GCS total is provided but components are not documented."
+          }
+        },
+        "raw_thinking": "Step 1: Document Analysis:\n{\n  \"document_type\": \"Inpatient Nursing Assessment and Cath Lab Procedure Record\",\n  \"sections_identified\": [\n    \"Administrative Header\",\n    \"Vital Signs\",\n    \"Pain Assessment\",\n    \"Fall Risk Assessment\",\n    \"Cath Lab Pre and Post Procedure Checklist\",\n    \"Laboratory Investigations\",\n    \"Nursing Initial Assessment\",\n    \"Risk Assessment Scores (DVT, Aspiration, Pressure, EWS)\",\n    \"Physical Examination\"\n  ],\n  \"confidence\": \"high\",\n  \"extraction_strategy\": \"Use a multi-pass approach: 1. Extract administrative metadata from the header. 2. Use key-value pair parsing for Vital Signs and Lab results. 3. Implement section-specific logic for the 'Nursing Initial Assessment' to capture detailed demographics and social history. 4. Use regex to capture specific risk scores (EWS, GCS, Fall Risk) from their respective assessment blocks.\"\n}\n\n---\n\nStep 2: Demographics Extraction:\n{\n  \"name\": \"Mr.Priyadarshini PUNJA\",\n  \"mrn\": \"MH011199849\",\n  \"age\": 64,\n  \"gender\": \"Female\",\n  \"confidence_notes\": \"The name 'Mr.Priyadarshini PUNJA' contains a prefix 'Mr.' which contradicts the gender 'Female' listed immediately below it. However, the gender is explicitly stated as 'Female' in the Nursing Initial Assessment and the Questionnaires. The age is consistently listed as 64 Yrs. The MRN is clearly identified in the Nursing Assessment section.\",\n  \"sources\": [\n    \"Name: Found in 'NURSING INITIAL ASSESSMENT - NEW' section.\",\n    \"MRN: Found in 'NURSING INITIAL ASSESSMENT - NEW' section.\",\n    \"Age: Found in 'NURSING INITIAL ASSESSMENT - NEW' section.\",\n    \"Gender: Found in 'NURSING INITIAL ASSESSMENT - NEW' section and 'Questionnaires' section.\"\n  ]\n}\n\n---\n\nStep 3: Risk Scores Extraction (with validation):\n{\n  \"fall_risk\": {\n    \"score\": 3,\n    \"level\": \"low risk\",\n    \"verified\": true\n  },\n  \"dvt_risk\": {\n    \"score\": 2,\n    \"level\": \"Moderate RISK\",\n    \"verified\": true\n  },\n  \"pressure_ulcer_risk\": {\n    \"score\": 21,\n    \"level\": \"no risk\",\n    \"verified\": true\n  },\n  \"aspiration_risk\": {\n    \"score\": 0,\n    \"level\": \"LOW RISK\",\n    \"verified\": true\n  },\n  \"ews_score\": 2,\n  \"gcs\": {\n    \"eyes\": null,\n    \"motor\": null,\n    \"verbal\": null,\n    \"total\": 15\n  },\n  \"validation_notes\": \"Fall risk score (3-low) and Pressure score (21-no risk) are consistent across multiple sections. GCS total is explicitly stated as 15/15, but individual E, M, V components are not provided in the text. DVT risk is noted as 2-Moderate. Aspiration risk is 0-Low.\"\n}\n\n---\n\nStep 4: Vitals Extraction (with clinical interpretation):\n{\n  \"bp\": {\n    \"systolic\": 110,\n    \"diastolic\": 70,\n    \"status\": \"normal\"\n  },\n  \"pulse\": {\n    \"value\": 78,\n    \"status\": \"normal\"\n  },\n  \"temperature\": {\n    \"value\": 98.6,\n    \"unit\": \"F\"\n  },\n  \"resp_rate\": 20,\n  \"spo2\": {\n    \"value\": 98,\n    \"status\": \"normal\"\n  },\n  \"pain_score\": {\n    \"value\": 2,\n    \"scale\": 10\n  },\n  \"grbs\": {\n    \"value\": null,\n    \"interpretation\": \"not recorded\"\n  },\n  \"abnormal_flags\": []\n}\n\n---\n\nStep 5: Functional Status Extraction:\n{\n  \"functional_status\": {\n    \"bathing\": \"Independent\",\n    \"dressing\": \"Independent\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Independent\",\n    \"toilet_use\": \"Independent\"\n  },\n  \"overall_assistance_needs\": \"None\",\n  \"mobility_notes\": \"Braden Scale indicates mobility is 'Slightly Limited' (Score 3); Fall Risk Assessment indicates 'low risk' (Score 3).\"\n}\n\n---\n\nStep 6: Clinical Data Extraction:\n{\n  \"diagnosis\": {\n    \"principal\": \"TMT - POSITIVE (Posted for CAG)\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"Hypertension (HTN)\",\n      \"Chest pain\"\n    ]\n  },\n  \"allergies\": [\n    \"unknown\"\n  ],\n  \"medications\": [\n    {\n      \"name\": \"TAB TELMA\",\n      \"dose\": \"40mg\",\n      \"frequency\": \"1-0-0\"\n    },\n    {\n      \"name\": \"TAB PIVASTA\",\n      \"dose\": \"2mg\",\n      \"frequency\": \"0-0-1\"\n    },\n    {\n      \"name\": \"TAB EZEDOC\",\n      \"dose\": \"10mg\",\n      \"frequency\": \"0-0-1\"\n    },\n    {\n      \"name\": \"CAP D. RISE\",\n      \"dose\": \"60K\",\n      \"frequency\": \"ONCE A WEEK FOR 8 WEEKS THEN ONCE A MONTH\"\n    }\n  ],\n  \"investigations\": [\n    \"CBC\",\n    \"RP2 SEROLOGY\",\n    \"blood grouping and typing\"\n  ],\n  \"nursing_needs\": [\n    \"to restore normal cardiac function\",\n    \"to prevent from fall\",\n    \"Risk for fall\",\n    \"Risk for DVT\",\n    \"Acute pain ./ or post-operative pain\"\n  ]\n}\n\n---\n\nStep 7: Final Assembly & Validation:\n{\n  \"patient\": {\n    \"name\": \"Priyadarshini PUNJA\",\n    \"mrn\": \"MH011199849\",\n    \"age\": 64,\n    \"gender\": \"Female\"\n  },\n  \"vitals\": {\n    \"bp\": {\n      \"systolic\": 110,\n      \"diastolic\": 70\n    },\n    \"pulse\": 78,\n    \"temperature\": \"98.6 F\",\n    \"spo2\": 98,\n    \"resp_rate\": 20,\n    \"pain_score\": 2,\n    \"grbs\": null\n  },\n  \"risk_scores\": {\n    \"fall_risk\": {\n      \"score\": 3,\n      \"level\": \"low risk\"\n    },\n    \"dvt_risk\": {\n      \"score\": 2,\n      \"level\": \"Moderate RISK\"\n    },\n    \"pressure_ulcer_risk\": {\n      \"score\": 21,\n      \"level\": \"no risk\"\n    },\n    \"aspiration_risk\": {\n      \"score\": 0,\n      \"level\": \"LOW RISK\"\n    },\n    \"ews_score\": 2,\n    \"gcs\": {\n      \"eyes\": null,\n      \"motor\": null,\n      \"verbal\": null,\n      \"total\": 15\n    }\n  },\n  \"functional_status\": {\n    \"bathing\": \"Independent\",\n    \"dressing\": \"Independent\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Independent\",\n    \"toilet_use\": \"Independent\",\n    \"overall_assistance\": \"None\"\n  },\n  \"diagnosis\": {\n    \"principal\": \"TMT - POSITIVE (Posted for CAG)\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"Hypertension (HTN)\",\n      \"Chest pain\"\n    ]\n  },\n  \"allergies\": [\n    \"unknown\"\n  ],\n  \"medications\": [\n    {\n      \"name\": \"TAB TELMA\",\n      \"dose\": \"40mg\",\n      \"frequency\": \"1-0-0\"\n    },\n    {\n      \"name\": \"TAB PIVASTA\",\n      \"dose\": \"2mg\",\n      \"frequency\": \"0-0-1\"\n    },\n    {\n      \"name\": \"TAB EZEDOC\",\n      \"dose\": \"10mg\",\n      \"frequency\": \"0-0-1\"\n    },\n    {\n      \"name\": \"CAP D. RISE\",\n      \"dose\": \"60K\",\n      \"frequency\": \"ONCE A WEEK FOR 8 WEEKS THEN ONCE A MONTH\"\n    }\n  ],\n  \"investigations\": [\n    \"CBC\",\n    \"RP2 SEROLOGY\",\n    \"blood grouping and typing\"\n  ],\n  \"nursing_needs\": [\n    \"to restore normal cardiac function\",\n    \"to prevent from fall\",\n    \"Risk for fall\",\n    \"Risk for DVT\",\n    \"Acute pain ./ or post-operative pain\"\n  ],\n  \"validation_summary\": {\n    \"confidence_level\": \"high\",\n    \"inconsistencies_found\": [\n      \"Prefix 'Mr.' in name field contradicts gender 'Female'; gender verified as Female via multiple assessment sections.\"\n    ],\n    \"missing_critical_fields\": [\n      \"GCS individual component scores (Eyes, Motor, Verbal)\",\n      \"GRBS value\",\n      \"ICD code for principal diagnosis\"\n    ],\n    \"data_quality_notes\": \"Demographics reconciled by prioritizing explicit gender fields over name prefix. Risk scores and vitals are consistent across assessment blocks. GCS total is provided but components are not documented.\"\n  }\n}",
+        "score": 89,
+        "scoreDetails": {
+          "patient_name": "10/10",
+          "mrn": "5/5",
+          "vitals_complete": "4/4 fields",
+          "risk_scores_complete": "4/5 fields",
+          "risk_scores_accurate": "N/A (no ground truth)",
+          "functional_status": "5/5 ADL fields",
+          "diagnosis": "10/10",
+          "allergies": "5/5",
+          "medications": "5/5",
+          "clinical_reasoning": "5/5"
+        }
+      },
+      "winner": "B"
+    },
+    {
+      "sample": "Summary4 - Pediatrics (Adenotonsillitis)",
+      "expected": {
+        "patient": "Zohra Rumani",
+        "diagnosis": "ADENOTONSILLITIS",
+        "complexity": "Medium"
+      },
+      "optionA": {
+        "method": "Option A (Single-Shot)",
+        "latency_ms": 36305,
+        "tokens_used": 3353,
+        "data": {
+          "patient": {
+            "name": "Zohra Rumani",
+            "mrn": "67046832",
+            "age": 13,
+            "gender": "Female"
+          },
+          "vitals": {
+            "bp": "100/60",
+            "pulse": 74,
+            "temp": "97.6 °F",
+            "spo2": 98,
+            "resp_rate": 20,
+            "pain_score": 2,
+            "grbs": null,
+            "ews_score": null
+          },
+          "risk_scores": {
+            "fall_risk_score": 8,
+            "fall_risk_level": "Low Risk",
+            "dvt_score": null,
+            "dvt_level": null,
+            "pressure_ulcer_score": 25,
+            "pressure_level": "No Risk",
+            "aspiration_score": 0,
+            "aspiration_level": "Low Risk"
+          },
+          "functional_status": {
+            "bathing": null,
+            "dressing": null,
+            "eating": "Adequate - Eats over half of most meals",
+            "walking": "Walks occasionally",
+            "toilet_use": "Self void: Yes"
+          },
+          "gcs": {
+            "eyes": null,
+            "motor": null,
+            "verbal": null,
+            "total": 15
+          },
+          "diagnosis": {
+            "principal": "ADENOTONSILLITIS",
+            "icd_code": null,
+            "secondary": [
+              "C/O COUGH AT NIGHT SINCE 1 MONTH"
+            ]
+          },
+          "allergies": [
+            "NOT KNOWN"
+          ],
+          "medications": [
+            "AS PER CHART"
+          ],
+          "investigations_ordered": [],
+          "nursing_needs": [
+            "ACUTE PAIN RELATED TO ADENOID AND TONSIL INFLAMMATION",
+            "PAIN",
+            "FALL",
+            "NUTRITION"
+          ],
+          "diet": "NPO",
+          "summary": "13-year-old girl, Zohra Rumani, admitted with recurrent episodes of cold and mouth breathing. Diagnosed with Adenotonsillitis. Scheduled for coablation adenotonsillectomy under general anesthesia on 24/03/2026. Patient is stable, oriented, and currently NPO."
+        },
+        "raw_response": "{\n  \"patient\": {\n    \"name\": \"Zohra Rumani\",\n    \"mrn\": \"67046832\",\n    \"age\": 13,\n    \"gender\": \"Female\"\n  },\n  \"vitals\": {\n    \"bp\": \"100/60\",\n    \"pulse\": 74,\n    \"temp\": \"97.6 °F\",\n    \"spo2\": 98,\n    \"resp_rate\": 20,\n    \"pain_score\": 2,\n    \"grbs\": null,\n    \"ews_score\": null\n  },\n  \"risk_scores\": {\n    \"fall_risk_score\": 8,\n    \"fall_risk_level\": \"Low Risk\",\n    \"dvt_score\": null,\n    \"dvt_level\": null,\n    \"pressure_ulcer_score\": 25,\n    \"pressure_level\": \"No Risk\",\n    \"aspiration_score\": 0,\n    \"aspiration_level\": \"Low Risk\"\n  },\n  \"functional_status\": {\n    \"bathing\": null,\n    \"dressing\": null,\n    \"eating\": \"Adequate - Eats over half of most meals\",\n    \"walking\": \"Walks occasionally\",\n    \"toilet_use\": \"Self void: Yes\"\n  },\n  \"gcs\": {\n    \"eyes\": null,\n    \"motor\": null,\n    \"verbal\": null,\n    \"total\": 15\n  },\n  \"diagnosis\": {\n    \"principal\": \"ADENOTONSILLITIS\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"C/O COUGH AT NIGHT SINCE 1 MONTH\"\n    ]\n  },\n  \"allergies\": [\n    \"NOT KNOWN\"\n  ],\n  \"medications\": [\n    \"AS PER CHART\"\n  ],\n  \"investigations_ordered\": [],\n  \"nursing_needs\": [\n    \"ACUTE PAIN RELATED TO ADENOID AND TONSIL INFLAMMATION\",\n    \"PAIN\",\n    \"FALL\",\n    \"NUTRITION\"\n  ],\n  \"diet\": \"NPO\",\n  \"summary\": \"13-year-old girl, Zohra Rumani, admitted with recurrent episodes of cold and mouth breathing. Diagnosed with Adenotonsillitis. Scheduled for coablation adenotonsillectomy under general anesthesia on 24/03/2026. Patient is stable, oriented, and currently NPO.\"\n}",
+        "score": 57,
+        "scoreDetails": {
+          "patient_name": "10/10",
+          "mrn": "5/5",
+          "vitals_complete": "2/4 fields",
+          "risk_scores_complete": "0/5 fields",
+          "risk_scores_accurate": "N/A (no ground truth)",
+          "functional_status": "3/5 ADL fields",
+          "diagnosis": "10/10",
+          "allergies": "5/5",
+          "medications": "5/5",
+          "clinical_reasoning": "0/5 (N/A for Option A)"
+        }
+      },
+      "optionB": {
+        "method": "Option B (Thinking/ReAct)",
+        "latency_ms": 138529,
+        "tokens_used": 16414,
+        "steps": [
+          {
+            "step": "Step 1: Document Analysis",
+            "tokens": 1914
+          },
+          {
+            "step": "Step 2: Demographics Extraction",
+            "tokens": 2102
+          },
+          {
+            "step": "Step 3: Risk Scores Extraction (with validation)",
+            "tokens": 2975
+          },
+          {
+            "step": "Step 4: Vitals Extraction (with clinical interpretation)",
+            "tokens": 2292
+          },
+          {
+            "step": "Step 5: Functional Status Extraction",
+            "tokens": 2083
+          },
+          {
+            "step": "Step 6: Clinical Data Extraction",
+            "tokens": 2634
+          },
+          {
+            "step": "Step 7: Final Assembly & Validation",
+            "tokens": 2414
+          }
+        ],
+        "data": {
+          "patient": {
+            "name": "Zohra Rumani",
+            "mrn": "67046832",
+            "age": 13,
+            "gender": "Female"
+          },
+          "vitals": {
+            "bp": {
+              "systolic": 100,
+              "diastolic": 60
+            },
+            "pulse": 74,
+            "temperature": "97.6 F",
+            "spo2": 98,
+            "resp_rate": 20,
+            "pain_score": 2,
+            "grbs": 0
+          },
+          "risk_scores": {
+            "fall_risk": {
+              "score": 8,
+              "level": "Low Risk"
+            },
+            "dvt_risk": {
+              "score": null,
+              "level": null
+            },
+            "pressure_ulcer_risk": {
+              "score": 25,
+              "level": "No Risk"
+            },
+            "aspiration_risk": {
+              "score": 0,
+              "level": "Low Risk"
+            },
+            "ews_score": null,
+            "gcs": {
+              "eyes": null,
+              "motor": null,
+              "verbal": null,
+              "total": 15
+            }
+          },
+          "functional_status": {
+            "bathing": "Not specified",
+            "dressing": "Not specified",
+            "eating": "Independent",
+            "walking": "Assisted",
+            "toilet_use": "Not specified",
+            "overall_assistance": "Partial assistance required"
+          },
+          "diagnosis": {
+            "principal": "ADENOTONSILLITIS",
+            "icd_code": null,
+            "secondary": [
+              "C/O COUGH AT NIGHT SINCE 1 MONTH"
+            ]
+          },
+          "allergies": [
+            "NOT KNOWN"
+          ],
+          "medications": [],
+          "investigations": [],
+          "nursing_needs": [
+            "ACUTE PAIN RELATED TO ADENOID AND TONSIL INFLAMMATION",
+            "PAIN",
+            "FALL",
+            "NUTRITION"
+          ],
+          "validation_summary": {
+            "confidence_level": "high",
+            "inconsistencies_found": [
+              "Braden Q sub-score calculation (21) differs from the explicitly stated Total Score (25); final total of 25 was used per extraction instructions."
+            ],
+            "missing_critical_fields": [
+              "DVT risk assessment",
+              "EWS score",
+              "GCS individual component breakdown (E, M, V)",
+              "ICD code"
+            ],
+            "data_quality_notes": "Demographics were cross-verified across multiple sections. Vitals are complete with appropriate units. Risk scores are extracted based on explicit totals provided in the source document."
+          }
+        },
+        "raw_thinking": "Step 1: Document Analysis:\n{\n  \"document_type\": \"Inpatient Medical Record / Admission Assessment\",\n  \"sections_identified\": [\n    \"Administrative Header\",\n    \"Vital Signs\",\n    \"Clinical History (Chief Complaint, HPI, Past Medical History)\",\n    \"Physical Examination\",\n    \"Provisional Diagnosis & Care Plan\",\n    \"Pain Assessment\",\n    \"Nursing Risk Assessments (Braden Q, Aspiration, Fall Risk)\"\n  ],\n  \"confidence\": \"high\",\n  \"extraction_strategy\": \"Use a key-value pair extraction approach. For demographics and vitals, target the top-of-page header. For clinical history, use regex to capture text following labels like 'Chief Complaints' or 'History of Presenting illness'. For risk scores, identify the specific scale name (e.g., 'Braden Q') and extract the 'Total Score' and associated sub-category values.\"\n}\n\n---\n\nStep 2: Demographics Extraction:\n{\n  \"name\": \"Zohra Rumani\",\n  \"mrn\": \"67046832\",\n  \"age\": 13,\n  \"gender\": \"Female\",\n  \"confidence_notes\": \"The name 'Zohra Rumani' was extracted from the 'History of Presenting illness' section. The MRN was found in the header. Age (13) and Gender (Female) were confirmed across multiple sections including 'History of Presenting illness', 'Humpty Dumpty Score', and 'Nursing Initial Assessment'.\",\n  \"sources\": [\n    \"History of Presenting illness (Name, Age, Gender)\",\n    \"Inpatient Record Header (Hospital No)\",\n    \"Risk Assessment - Fall Paediatric (Age, Gender)\",\n    \"Nursing Initial Assessment (Age, Gender)\"\n  ]\n}\n\n---\n\nStep 3: Risk Scores Extraction (with validation):\n{\n  \"fall_risk\": {\n    \"score\": 8,\n    \"level\": \"Low Risk\",\n    \"verified\": true\n  },\n  \"dvt_risk\": {\n    \"score\": null,\n    \"level\": null,\n    \"verified\": false\n  },\n  \"pressure_ulcer_risk\": {\n    \"score\": 25,\n    \"level\": \"No Risk\",\n    \"verified\": true\n  },\n  \"aspiration_risk\": {\n    \"score\": 0,\n    \"level\": \"Low Risk\",\n    \"verified\": true\n  },\n  \"ews_score\": null,\n  \"gcs\": {\n    \"eyes\": null,\n    \"motor\": null,\n    \"verbal\": null,\n    \"total\": 15\n  },\n  \"validation_notes\": \"DVT risk assessment not found in document. EWS not explicitly listed. GCS total is provided as 15/15, but individual E, M, V components are not broken down. Pressure Ulcer risk (Braden Q Scale) shows a score of 25 (No Risk), though the sub-score calculation section mentions 21, the final 'Total Score' is explicitly stated as 25.\"\n}\n\n---\n\nStep 4: Vitals Extraction (with clinical interpretation):\n{\n  \"bp\": {\n    \"systolic\": 100,\n    \"diastolic\": 60,\n    \"status\": \"normal\"\n  },\n  \"pulse\": {\n    \"value\": 74,\n    \"status\": \"normal\"\n  },\n  \"temperature\": {\n    \"value\": 97.6,\n    \"unit\": \"F\"\n  },\n  \"resp_rate\": 20,\n  \"spo2\": {\n    \"value\": 98,\n    \"status\": \"normal\"\n  },\n  \"pain_score\": {\n    \"value\": 2,\n    \"scale\": 10\n  },\n  \"grbs\": {\n    \"value\": 0,\n    \"interpretation\": \"normal\"\n  },\n  \"abnormal_flags\": []\n}\n\n---\n\nStep 5: Functional Status Extraction:\n{\n  \"functional_status\": {\n    \"bathing\": \"Not specified\",\n    \"dressing\": \"Not specified\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Assisted\",\n    \"toilet_use\": \"Not specified\"\n  },\n  \"overall_assistance_needs\": \"Partial assistance required\",\n  \"mobility_notes\": \"Walks occasionally during day, but for very short distances, with or without assistance. Spends majority of each shift in bed or chair. Makes major and frequent changes in position without assistance.\"\n}\n\n---\n\nStep 6: Clinical Data Extraction:\n{\n  \"diagnosis\": {\n    \"principal\": \"ADENOTONSILLITIS\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"C/O COUGH AT NIGHT SINCE 1 MONTH\"\n    ]\n  },\n  \"allergies\": [\n    \"NOT KNOWN\"\n  ],\n  \"medications\": [],\n  \"investigations\": [],\n  \"nursing_needs\": [\n    \"ACUTE PAIN RELATED TO ADENOID AND TONSIL INFLAMMATION\",\n    \"PAIN\",\n    \"FALL\",\n    \"NUTRITION\"\n  ]\n}\n\n---\n\nStep 7: Final Assembly & Validation:\n{\n  \"patient\": {\n    \"name\": \"Zohra Rumani\",\n    \"mrn\": \"67046832\",\n    \"age\": 13,\n    \"gender\": \"Female\"\n  },\n  \"vitals\": {\n    \"bp\": {\n      \"systolic\": 100,\n      \"diastolic\": 60\n    },\n    \"pulse\": 74,\n    \"temperature\": \"97.6 F\",\n    \"spo2\": 98,\n    \"resp_rate\": 20,\n    \"pain_score\": 2,\n    \"grbs\": 0\n  },\n  \"risk_scores\": {\n    \"fall_risk\": {\n      \"score\": 8,\n      \"level\": \"Low Risk\"\n    },\n    \"dvt_risk\": {\n      \"score\": null,\n      \"level\": null\n    },\n    \"pressure_ulcer_risk\": {\n      \"score\": 25,\n      \"level\": \"No Risk\"\n    },\n    \"aspiration_risk\": {\n      \"score\": 0,\n      \"level\": \"Low Risk\"\n    },\n    \"ews_score\": null,\n    \"gcs\": {\n      \"eyes\": null,\n      \"motor\": null,\n      \"verbal\": null,\n      \"total\": 15\n    }\n  },\n  \"functional_status\": {\n    \"bathing\": \"Not specified\",\n    \"dressing\": \"Not specified\",\n    \"eating\": \"Independent\",\n    \"walking\": \"Assisted\",\n    \"toilet_use\": \"Not specified\",\n    \"overall_assistance\": \"Partial assistance required\"\n  },\n  \"diagnosis\": {\n    \"principal\": \"ADENOTONSILLITIS\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"C/O COUGH AT NIGHT SINCE 1 MONTH\"\n    ]\n  },\n  \"allergies\": [\n    \"NOT KNOWN\"\n  ],\n  \"medications\": [],\n  \"investigations\": [],\n  \"nursing_needs\": [\n    \"ACUTE PAIN RELATED TO ADENOID AND TONSIL INFLAMMATION\",\n    \"PAIN\",\n    \"FALL\",\n    \"NUTRITION\"\n  ],\n  \"validation_summary\": {\n    \"confidence_level\": \"high\",\n    \"inconsistencies_found\": [\n      \"Braden Q sub-score calculation (21) differs from the explicitly stated Total Score (25); final total of 25 was used per extraction instructions.\"\n    ],\n    \"missing_critical_fields\": [\n      \"DVT risk assessment\",\n      \"EWS score\",\n      \"GCS individual component breakdown (E, M, V)\",\n      \"ICD code\"\n    ],\n    \"data_quality_notes\": \"Demographics were cross-verified across multiple sections. Vitals are complete with appropriate units. Risk scores are extracted based on explicit totals provided in the source document.\"\n  }\n}",
+        "score": 81,
+        "scoreDetails": {
+          "patient_name": "10/10",
+          "mrn": "5/5",
+          "vitals_complete": "4/4 fields",
+          "risk_scores_complete": "2/5 fields",
+          "risk_scores_accurate": "N/A (no ground truth)",
+          "functional_status": "5/5 ADL fields",
+          "diagnosis": "10/10",
+          "allergies": "5/5",
+          "medications": "5/5",
+          "clinical_reasoning": "5/5"
+        }
+      },
+      "winner": "B"
+    },
+    {
+      "sample": "Summary5 - Complex Case",
+      "expected": {
+        "complexity": "Unknown"
+      },
+      "optionA": {
+        "method": "Option A (Single-Shot)",
+        "latency_ms": 44342,
+        "tokens_used": 3676,
+        "data": {
+          "patient": {
+            "name": null,
+            "mrn": "67046989",
+            "age": 0,
+            "gender": "Male"
+          },
+          "vitals": {
+            "bp": "unchanged and stays at baseline",
+            "pulse": 128,
+            "temp": "98 °F",
+            "spo2": 98,
+            "resp_rate": 48,
+            "pain_score": 1,
+            "grbs": 69,
+            "ews_score": 8
+          },
+          "risk_scores": {
+            "fall_risk_score": null,
+            "fall_risk_level": "High (Remarks: RISK FOR FALL)",
+            "dvt_score": null,
+            "dvt_level": null,
+            "pressure_ulcer_score": null,
+            "pressure_level": "No (Remarks: SKIN INTACT)",
+            "aspiration_score": 0,
+            "aspiration_level": "LOW RISK"
+          },
+          "functional_status": {
+            "bathing": null,
+            "dressing": null,
+            "eating": "DBF (Direct Breast Feeding)",
+            "walking": "Bed Bound",
+            "toilet_use": "Self Void: Yes (2 times)"
+          },
+          "gcs": {
+            "eyes": 4,
+            "motor": null,
+            "verbal": null,
+            "total": null
+          },
+          "diagnosis": {
+            "principal": "NEWBORN",
+            "icd_code": null,
+            "secondary": [
+              "Hyperthermia (Nursing Diagnosis)",
+              "Risk for fall (Nursing Diagnosis)"
+            ]
+          },
+          "allergies": [
+            "No"
+          ],
+          "medications": [
+            "Inj. Vit.k",
+            "Inj. Hp B"
+          ],
+          "investigations_ordered": [
+            "Recheck spo2 1 hr after feeding"
+          ],
+          "nursing_needs": [
+            "Assessment",
+            "Monitor vital signs",
+            "On cradle care",
+            "Minimal handling",
+            "Provide appropriate safety measures like sitter",
+            "Lower the height of bed",
+            "Keep the patient near nurses station",
+            "Orient to surroundings",
+            "Provide education on how to use call bell"
+          ],
+          "diet": "Oral (Normal / DBF)",
+          "summary": "Live term male baby delivered via LSCS at 38+5 weeks gestation on 24/03/2026 at 08:33. Birth weight 3.07 kg. Apgar scores 8/10 at 1 min and 9/10 at 5 min. Baby breathed and cried immediately; no resuscitation required. Vitals are stable. Observed in NICU for 1 hour, no respiratory distress noted. Shifted to mother's side. GRBS at 1 hour of life was normal (69 mg/dl). Currently stable, breastfeeding (DBF), and requires monitoring for fall risk and temperature maintenance."
+        },
+        "raw_response": "{\n  \"patient\": {\n    \"name\": null,\n    \"mrn\": \"67046989\",\n    \"age\": 0,\n    \"gender\": \"Male\"\n  },\n  \"vitals\": {\n    \"bp\": \"unchanged and stays at baseline\",\n    \"pulse\": 128,\n    \"temp\": \"98 °F\",\n    \"spo2\": 98,\n    \"resp_rate\": 48,\n    \"pain_score\": 1,\n    \"grbs\": 69,\n    \"ews_score\": 8\n  },\n  \"risk_scores\": {\n    \"fall_risk_score\": null,\n    \"fall_risk_level\": \"High (Remarks: RISK FOR FALL)\",\n    \"dvt_score\": null,\n    \"dvt_level\": null,\n    \"pressure_ulcer_score\": null,\n    \"pressure_level\": \"No (Remarks: SKIN INTACT)\",\n    \"aspiration_score\": 0,\n    \"aspiration_level\": \"LOW RISK\"\n  },\n  \"functional_status\": {\n    \"bathing\": null,\n    \"dressing\": null,\n    \"eating\": \"DBF (Direct Breast Feeding)\",\n    \"walking\": \"Bed Bound\",\n    \"toilet_use\": \"Self Void: Yes (2 times)\"\n  },\n  \"gcs\": {\n    \"eyes\": 4,\n    \"motor\": null,\n    \"verbal\": null,\n    \"total\": null\n  },\n  \"diagnosis\": {\n    \"principal\": \"NEWBORN\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"Hyperthermia (Nursing Diagnosis)\",\n      \"Risk for fall (Nursing Diagnosis)\"\n    ]\n  },\n  \"allergies\": [\n    \"No\"\n  ],\n  \"medications\": [\n    \"Inj. Vit.k\",\n    \"Inj. Hp B\"\n  ],\n  \"investigations_ordered\": [\n    \"Recheck spo2 1 hr after feeding\"\n  ],\n  \"nursing_needs\": [\n    \"Assessment\",\n    \"Monitor vital signs\",\n    \"On cradle care\",\n    \"Minimal handling\",\n    \"Provide appropriate safety measures like sitter\",\n    \"Lower the height of bed\",\n    \"Keep the patient near nurses station\",\n    \"Orient to surroundings\",\n    \"Provide education on how to use call bell\"\n  ],\n  \"diet\": \"Oral (Normal / DBF)\",\n  \"summary\": \"Live term male baby delivered via LSCS at 38+5 weeks gestation on 24/03/2026 at 08:33. Birth weight 3.07 kg. Apgar scores 8/10 at 1 min and 9/10 at 5 min. Baby breathed and cried immediately; no resuscitation required. Vitals are stable. Observed in NICU for 1 hour, no respiratory distress noted. Shifted to mother's side. GRBS at 1 hour of life was normal (69 mg/dl). Currently stable, breastfeeding (DBF), and requires monitoring for fall risk and temperature maintenance.\"\n}",
+        "score": 47,
+        "scoreDetails": {
+          "patient_name": "0/10 (got: null)",
+          "mrn": "5/5",
+          "vitals_complete": "2/4 fields",
+          "risk_scores_complete": "0/5 fields",
+          "risk_scores_accurate": "N/A (no ground truth)",
+          "functional_status": "3/5 ADL fields",
+          "diagnosis": "10/10",
+          "allergies": "5/5",
+          "medications": "5/5",
+          "clinical_reasoning": "0/5 (N/A for Option A)"
+        }
+      },
+      "optionB": {
+        "method": "Option B (Thinking/ReAct)",
+        "latency_ms": 152025,
+        "tokens_used": 17216,
+        "steps": [
+          {
+            "step": "Step 1: Document Analysis",
+            "tokens": 2056
+          },
+          {
+            "step": "Step 2: Demographics Extraction",
+            "tokens": 2104
+          },
+          {
+            "step": "Step 3: Risk Scores Extraction (with validation)",
+            "tokens": 3179
+          },
+          {
+            "step": "Step 4: Vitals Extraction (with clinical interpretation)",
+            "tokens": 2344
+          },
+          {
+            "step": "Step 5: Functional Status Extraction",
+            "tokens": 2065
+          },
+          {
+            "step": "Step 6: Clinical Data Extraction",
+            "tokens": 2901
+          },
+          {
+            "step": "Step 7: Final Assembly & Validation",
+            "tokens": 2567
+          }
+        ],
+        "data": {
+          "patient": {
+            "name": null,
+            "mrn": "67046989",
+            "age": 0,
+            "gender": null
+          },
+          "vitals": {
+            "bp": {
+              "systolic": 0,
+              "diastolic": 0
+            },
+            "pulse": 128,
+            "temperature": "98 F",
+            "spo2": 98,
+            "resp_rate": 48,
+            "pain_score": 1,
+            "grbs": 69
+          },
+          "risk_scores": {
+            "fall_risk": {
+              "score": null,
+              "level": "Risk for fall noted in Care Plan"
+            },
+            "dvt_risk": {
+              "score": null,
+              "level": null
+            },
+            "pressure_ulcer_risk": {
+              "score": 0,
+              "level": "No Risk"
+            },
+            "aspiration_risk": {
+              "score": 0,
+              "level": "LOW RISK"
+            },
+            "ews_score": 8,
+            "gcs": {
+              "eyes": 4,
+              "motor": null,
+              "verbal": null,
+              "total": null
+            }
+          },
+          "functional_status": {
+            "bathing": "Dependent",
+            "dressing": "Dependent",
+            "eating": "Dependent",
+            "walking": "Dependent",
+            "toilet_use": "Dependent",
+            "overall_assistance": "Complete assistance required"
+          },
+          "diagnosis": {
+            "principal": "NEWBORN",
+            "icd_code": null,
+            "secondary": [
+              "Hyperthermia",
+              "Risk for fall"
+            ]
+          },
+          "allergies": [],
+          "medications": [
+            {
+              "name": "Inj. Vit.k",
+              "dose": null,
+              "frequency": "Given"
+            },
+            {
+              "name": "Inj. Hp B",
+              "dose": null,
+              "frequency": "Given"
+            }
+          ],
+          "investigations": [
+            "Blood glucose (GRBS)",
+            "Spo2 recheck 1 hr after feeding"
+          ],
+          "nursing_needs": [
+            "Maintain body temperature",
+            "Prevent from fall",
+            "Breast feeding education",
+            "Monitor vital signs",
+            "Cradle care",
+            "Minimal handling"
+          ],
+          "validation_summary": {
+            "confidence_level": "high",
+            "inconsistencies_found": [],
+            "missing_critical_fields": [
+              "Patient Name",
+              "Patient Gender",
+              "Blood Pressure (Systolic/Diastolic)",
+              "GCS Motor/Verbal components"
+            ],
+            "data_quality_notes": "Data is consistent with a neonatal clinical record. Missing demographics (name/gender) are expected for a newborn record where identity may be protected or not explicitly typed in the assessment section. Vitals show tachycardia and tachypnea which are flagged in the source. Functional status is appropriately set to 'Dependent' given the patient is a neonate."
+          }
+        },
+        "raw_thinking": "Step 1: Document Analysis:\n{\n  \"document_type\": \"Inpatient Nursing Assessment / Neonatal Clinical Record\",\n  \"sections_identified\": [\n    \"Patient Demographics\",\n    \"Vital Signs\",\n    \"Pain Assessment\",\n    \"Patient Acuity Tool\",\n    \"Neonatal Aspiration Risk Assessment\",\n    \"Nursing Initial Assessment - Neonatal\",\n    \"Nurses Endorsement Checklist (Shift Handover)\",\n    \"Patient/Family Health Education\"\n  ],\n  \"confidence\": \"high\",\n  \"extraction_strategy\": \"Use a key-value pair extraction approach. For demographics and vitals, target the top-level header. For clinical assessments, use section-specific anchors (e.g., 'NURSING INITIAL ASSESSMENT') to scope the search. For risk scores, look for 'Score' or 'Risk' keywords within the identified assessment modules. Handle repetitive headers on each page to avoid redundant data extraction.\"\n}\n\n---\n\nStep 2: Demographics Extraction:\n{\n  \"name\": null,\n  \"mrn\": \"67046989\",\n  \"age\": 0,\n  \"gender\": null,\n  \"confidence_notes\": \"The patient name and gender are not explicitly stated in the text, though the record identifies the patient as a 'NEWBORN' and 'NEONATE'. The age is 0 (newborn) based on the date of birth (24/03/2026) matching the assessment date. The MRN was clearly identified.\",\n  \"sources\": [\n    \"Hospital No: 67046989\",\n    \"Impression: NEWBORN\",\n    \"Date of birth: 24/03/2026\"\n  ]\n}\n\n---\n\nStep 3: Risk Scores Extraction (with validation):\n{\n  \"fall_risk\": {\n    \"score\": null,\n    \"level\": \"Risk for fall noted in Care Plan\",\n    \"verified\": true\n  },\n  \"dvt_risk\": {\n    \"score\": null,\n    \"level\": null,\n    \"verified\": true\n  },\n  \"pressure_ulcer_risk\": {\n    \"score\": null,\n    \"level\": \"No Risk\",\n    \"verified\": true\n  },\n  \"aspiration_risk\": {\n    \"score\": 0,\n    \"level\": \"LOW RISK\",\n    \"verified\": true\n  },\n  \"ews_score\": 8,\n  \"gcs\": {\n    \"eyes\": 4,\n    \"motor\": null,\n    \"verbal\": null,\n    \"total\": null\n  },\n  \"validation_notes\": \"Patient Acuity Tool (EWS equivalent) score is 8. Aspiration risk score is 0 (Low Risk). Pressure Ulcer risk is 'No'. Fall risk is explicitly mentioned in Care Plan/Remarks but no numeric score is provided. GCS components: Eye opening is explicitly listed as 4; Motor and Verbal components are not numerically provided, though 'GCS: ACTIVE' and 'AVPU03A' are noted. DVT risk is not mentioned in the text.\"\n}\n\n---\n\nStep 4: Vitals Extraction (with clinical interpretation):\n{\n  \"bp\": {\n    \"systolic\": 0,\n    \"diastolic\": 0,\n    \"status\": \"not recorded\"\n  },\n  \"pulse\": {\n    \"value\": 128,\n    \"status\": \"tachycardia\"\n  },\n  \"temperature\": {\n    \"value\": 98,\n    \"unit\": \"F\"\n  },\n  \"resp_rate\": 48,\n  \"spo2\": {\n    \"value\": 98,\n    \"status\": \"normal\"\n  },\n  \"pain_score\": {\n    \"value\": 1,\n    \"scale\": 10\n  },\n  \"grbs\": {\n    \"value\": 69,\n    \"interpretation\": \"normal\"\n  },\n  \"abnormal_flags\": [\n    \"Pulse Rate: 128 bt/min (Tachycardia)\",\n    \"Respiration: 48 br/min (Tachypnea)\"\n  ]\n}\n\n---\n\nStep 5: Functional Status Extraction:\n{\n  \"functional_status\": {\n    \"bathing\": \"Dependent\",\n    \"dressing\": \"Dependent\",\n    \"eating\": \"Dependent\",\n    \"walking\": \"Dependent\",\n    \"toilet_use\": \"Dependent\"\n  },\n  \"overall_assistance_needs\": \"Complete assistance required\",\n  \"mobility_notes\": \"Patient is a neonate; documented as Bed Bound.\"\n}\n\n---\n\nStep 6: Clinical Data Extraction:\n{\n  \"diagnosis\": {\n    \"principal\": \"NEWBORN\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"Hyperthermia\",\n      \"Risk for fall\"\n    ]\n  },\n  \"allergies\": [],\n  \"medications\": [\n    {\n      \"name\": \"Inj. Vit.k\",\n      \"dose\": \"\",\n      \"frequency\": \"Given\"\n    },\n    {\n      \"name\": \"Inj. Hp B\",\n      \"dose\": \"\",\n      \"frequency\": \"Given\"\n    }\n  ],\n  \"investigations\": [\n    \"Blood glucose (GRBS)\",\n    \"Spo2 recheck 1 hr after feeding\"\n  ],\n  \"nursing_needs\": [\n    \"Maintain body temperature\",\n    \"Prevent from fall\",\n    \"Breast feeding education\",\n    \"Monitor vital signs\",\n    \"Cradle care\",\n    \"Minimal handling\"\n  ]\n}\n\n---\n\nStep 7: Final Assembly & Validation:\n{\n  \"patient\": {\n    \"name\": null,\n    \"mrn\": \"67046989\",\n    \"age\": 0,\n    \"gender\": null\n  },\n  \"vitals\": {\n    \"bp\": {\n      \"systolic\": 0,\n      \"diastolic\": 0\n    },\n    \"pulse\": 128,\n    \"temperature\": \"98 F\",\n    \"spo2\": 98,\n    \"resp_rate\": 48,\n    \"pain_score\": 1,\n    \"grbs\": 69\n  },\n  \"risk_scores\": {\n    \"fall_risk\": {\n      \"score\": null,\n      \"level\": \"Risk for fall noted in Care Plan\"\n    },\n    \"dvt_risk\": {\n      \"score\": null,\n      \"level\": null\n    },\n    \"pressure_ulcer_risk\": {\n      \"score\": 0,\n      \"level\": \"No Risk\"\n    },\n    \"aspiration_risk\": {\n      \"score\": 0,\n      \"level\": \"LOW RISK\"\n    },\n    \"ews_score\": 8,\n    \"gcs\": {\n      \"eyes\": 4,\n      \"motor\": null,\n      \"verbal\": null,\n      \"total\": null\n    }\n  },\n  \"functional_status\": {\n    \"bathing\": \"Dependent\",\n    \"dressing\": \"Dependent\",\n    \"eating\": \"Dependent\",\n    \"walking\": \"Dependent\",\n    \"toilet_use\": \"Dependent\",\n    \"overall_assistance\": \"Complete assistance required\"\n  },\n  \"diagnosis\": {\n    \"principal\": \"NEWBORN\",\n    \"icd_code\": null,\n    \"secondary\": [\n      \"Hyperthermia\",\n      \"Risk for fall\"\n    ]\n  },\n  \"allergies\": [],\n  \"medications\": [\n    {\n      \"name\": \"Inj. Vit.k\",\n      \"dose\": null,\n      \"frequency\": \"Given\"\n    },\n    {\n      \"name\": \"Inj. Hp B\",\n      \"dose\": null,\n      \"frequency\": \"Given\"\n    }\n  ],\n  \"investigations\": [\n    \"Blood glucose (GRBS)\",\n    \"Spo2 recheck 1 hr after feeding\"\n  ],\n  \"nursing_needs\": [\n    \"Maintain body temperature\",\n    \"Prevent from fall\",\n    \"Breast feeding education\",\n    \"Monitor vital signs\",\n    \"Cradle care\",\n    \"Minimal handling\"\n  ],\n  \"validation_summary\": {\n    \"confidence_level\": \"high\",\n    \"inconsistencies_found\": [],\n    \"missing_critical_fields\": [\n      \"Patient Name\",\n      \"Patient Gender\",\n      \"Blood Pressure (Systolic/Diastolic)\",\n      \"GCS Motor/Verbal components\"\n    ],\n    \"data_quality_notes\": \"Data is consistent with a neonatal clinical record. Missing demographics (name/gender) are expected for a newborn record where identity may be protected or not explicitly typed in the assessment section. Vitals show tachycardia and tachypnea which are flagged in the source. Functional status is appropriately set to 'Dependent' given the patient is a neonate.\"\n  }\n}",
+        "score": 63,
+        "scoreDetails": {
+          "patient_name": "0/10 (got: null)",
+          "mrn": "5/5",
+          "vitals_complete": "3/4 fields",
+          "risk_scores_complete": "1/5 fields",
+          "risk_scores_accurate": "N/A (no ground truth)",
+          "functional_status": "5/5 ADL fields",
+          "diagnosis": "10/10",
+          "allergies": "5/5",
+          "medications": "5/5",
+          "clinical_reasoning": "5/5"
+        }
+      },
+      "winner": "B"
+    }
+  ]
+}

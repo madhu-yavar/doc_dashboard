@@ -1,0 +1,83 @@
+{
+  "lab_tests": [
+    "CBC",
+    "Glucose Random",
+    "Sr. Creat",
+    "Dengue Panel",
+    "Thyroid Profile",
+    "D-Dimer",
+    "ESR",
+    "BUN",
+    "Electrolytes",
+    "RP-I Random",
+    "Lipid Profile",
+    "Anti Nuclear Antibody",
+    "HBA1C",
+    "Vit. B12",
+    "S. Widal",
+    "LFT",
+    "Ferritin",
+    "SGOT"
+  ],
+  "radiology_tests": [
+    "X-Ray Chest PA",
+    "X-Ray LS Spine AP & Lat",
+    "USG Abd & Pelvis",
+    "MRI Limited(N)",
+    "MRI One Region",
+    "X-Ray Knee AP & Lat (Bilateral)",
+    "Doppler Both Legs Venous",
+    "MRI Brain",
+    "MRI Contrast",
+    "MRI Spine Plus (N)",
+    "Mammogram Both Breasts With Tomosynthesis",
+    "CT Abd & Pelvis",
+    "CT Thorax (HRCT)",
+    "PET - CT"
+  ],
+  "procedures": [],
+  "medications": [
+    {
+      "name": "UMLEE",
+      "dose": "500",
+      "frequency": "Once daily (Noon)",
+      "duration": "15 days",
+      "instructions": ""
+    },
+    {
+      "name": "ZINCOUT",
+      "dose": "OD",
+      "frequency": "Once daily (Night)",
+      "duration": "15 days",
+      "instructions": ""
+    },
+    {
+      "name": "Cap D-RHE",
+      "dose": "60K",
+      "frequency": "ONCE/WK",
+      "duration": "12 wk",
+      "instructions": ""
+    },
+    {
+      "name": "MONTEK-LE",
+      "dose": "OD",
+      "frequency": "Once daily (Night)",
+      "duration": "5 days",
+      "instructions": ""
+    },
+    {
+      "name": "DOLO",
+      "dose": "650mg",
+      "frequency": "SOS",
+      "duration": "",
+      "instructions": "For fever/bodyache"
+    }
+  ],
+  "vitals": {
+    "bp": "",
+    "pulse": "",
+    "temp": "",
+    "weight": ""
+  },
+  "notes": ""
+}

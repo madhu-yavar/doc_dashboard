@@ -1,0 +1,33 @@
+services:
+  doctor-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: doctor-dashboard:latest
+    container_name: doctor-dashboard
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - NODE_ENV=production
+      - PORT=8001
+      # Point to localhost since Gemma is on the same server
+      - GEMMA_URL=http://host.docker.internal:8000/v1/chat/completions
+      - GEMMA_MODEL=google/gemma-4-26B-A4B-it
+    volumes:
+      # Persist uploaded documents and storage
+      - ./server/storage:/app/server/storage
+    extra_hosts:
+      # Allow container to reach services on the host (like Gemma on localhost:8000)
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8001/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

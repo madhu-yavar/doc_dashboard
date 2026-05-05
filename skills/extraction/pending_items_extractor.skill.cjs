@@ -143,10 +143,11 @@ Remember:
       // Build the prompt
       const prompt = promptBuilder.build("pending_items_extractor", { pdfText });
 
-      // Execute with Gemma
+      // Execute with Gemma - respect max output tokens from config
+      const maxOutputTokens = Number.parseInt(process.env.EXTRACTION_MAX_OUTPUT_TOKENS || "2000", 10);
       const result = await gemmaClient.execute(prompt, {
         temperature: 0.1,  // Low temperature for consistent extraction
-        maxTokens: 3000
+        maxTokens: Math.min(3000, maxOutputTokens)
       });
 
       if (!result.success) {

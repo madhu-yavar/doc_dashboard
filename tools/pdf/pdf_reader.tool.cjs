@@ -10,7 +10,9 @@ class PDFReaderTool {
   constructor(config = {}) {
     this.name = "PDF Reader";
     this.version = "1.0.0";
-    this.defaultMaxLength = config.maxLength || 12000;
+    // Reduce default to leave room for prompt + response within 16384 token limit
+    // 12000 chars ≈ 3000-4000 tokens, which leaves ~12000 tokens for response
+    this.defaultMaxLength = config.maxLength || 10000;
   }
 
   /**

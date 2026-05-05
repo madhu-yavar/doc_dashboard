@@ -1,30 +1,31 @@
 /**
  * Prescription Doctor Extractor Skill
- * Extracts doctor/physician information from prescription documents using Qwen Vision
+ * Extracts doctor/physician information from prescription documents using Gemma Vision
+ * Stage 1: Extract printed doctor information
  */
 
 class PrescriptionDoctorExtractorSkill {
   constructor(config = {}) {
     this.name = "Prescription Doctor Extractor";
-    this.version = "1.0.0";
+    this.version = "2.0.0";
     this.config = config;
-    this.qwenVisionClient = null;
+    this.gemmaVisionClient = null;
 
-    if (config.qwenVisionClient) {
-      this.qwenVisionClient = config.qwenVisionClient;
+    if (config.gemmaVisionClient) {
+      this.gemmaVisionClient = config.gemmaVisionClient;
     }
   }
 
-  getQwenClient() {
-    if (!this.qwenVisionClient) {
-      const QwenVisionClientTool = require("../../tools/llm/qwen_vision_client.tool.cjs");
-      this.qwenVisionClient = new QwenVisionClientTool({
-        baseUrl: this.config.qwenBaseUrl || process.env.QWEN_URL || "http://206.1.62.28:8001/v1/chat/completions",
-        model: this.config.qwenModel || "cyankiwi/Qwen3-VL-30B-A3B-Instruct-AWQ-4bit",
+  getGemmaClient() {
+    if (!this.gemmaVisionClient) {
+      const GemmaVisionClientTool = require("../../tools/llm/gemma_vision_client.tool.cjs");
+      this.gemmaVisionClient = new GemmaVisionClientTool({
+        baseUrl: this.config.gemmaBaseUrl || process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions",
+        model: this.config.gemmaModel || process.env.GEMMA_MODEL || "google/gemma-4-31B-it",
         timeout: this.config.timeout || 120000
       });
     }
-    return this.qwenVisionClient;
+    return this.gemmaVisionClient;
   }
 
   parseModelJson(content) {
@@ -112,7 +113,7 @@ Remember: Return ONLY the JSON object, no additional text or explanation.`;
     }
 
     try {
-      const qwenClient = this.getQwenClient();
+      const gemmaClient = this.getGemmaClient();
 
       if (onProgress) {
         onProgress({
@@ -125,11 +126,10 @@ Remember: Return ONLY the JSON object, no additional text or explanation.`;
 
       const prompt = this.buildPrompt({ pdfText });
 
-      const result = await qwenClient.execute(prompt, {
+      const result = await gemmaClient.execute(prompt, {
         images: [filePath],
         temperature: 0.1,
-        maxTokens: 1000,
-        systemPrompt: "You are a medical document extraction expert specializing in doctor information from prescriptions."
+        maxTokens: 1000
       });
 
       if (!result.success) {

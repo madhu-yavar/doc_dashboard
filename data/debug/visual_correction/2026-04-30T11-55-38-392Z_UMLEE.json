@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-04-30T11:55:38.394Z",
+  "medication_name": "UMLEE",
+  "error_message": "Unable to parse model JSON response",
+  "raw_response": "{\n  \"corrected_brand\": \"VIMLEE\",\n  \"generic_name\": \"null\",\n  \"confidence\": \"medium\",\n  \"reasoning\": \"The handwritten medication name was transcribed as 'UMLEE'. Upon careful re-examination of the handwriting, the first letter, while resembling a 'U', has a distinct initial",
+  "response_length": 273,
+  "response_preview": "{\n  \"corrected_brand\": \"VIMLEE\",\n  \"generic_name\": \"null\",\n  \"confidence\": \"medium\",\n  \"reasoning\": \"The handwritten medication name was transcribed as 'UMLEE'. Upon careful re-examination of the hand"
+}

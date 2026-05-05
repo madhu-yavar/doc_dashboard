@@ -1,0 +1,498 @@
+{
+  "timestamp": "2026-04-04T06:19:14.164Z",
+  "groundTruth": {
+    "pdf_file": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+    "patient": {
+      "mrn": "1000816857",
+      "age": 71,
+      "gender": "Male",
+      "admission_date": "22-Mar-2025",
+      "discharge_date": "28-Mar-2025",
+      "los_days": 6
+    },
+    "diagnosis": {
+      "primary": "Acute Intracerebral Hemorrhage (Left Basal Ganglia)",
+      "secondary": [
+        "Respiratory failure with hypoxia",
+        "Hypertension Stage 2",
+        "Type 2 Diabetes Mellitus",
+        "Dyslipidemia"
+      ]
+    },
+    "vitals": {
+      "bp_systolic": 170,
+      "bp_diastolic": 90,
+      "pulse": 92,
+      "spo2": 88,
+      "temperature": 98.4,
+      "resp_rate": 26
+    },
+    "risk_scores": {
+      "fall_risk": {
+        "level": "HIGH",
+        "score": 65,
+        "scale": "Morse"
+      },
+      "dvt_risk": {
+        "level": "HIGH",
+        "score": 10,
+        "scale": "Caprini"
+      },
+      "pressure_ulcer_risk": {
+        "level": "MODERATE",
+        "score": 14,
+        "scale": "Braden"
+      },
+      "aspiration_risk": {
+        "level": "HIGH"
+      },
+      "ews_score": {
+        "value": 7,
+        "level": "High risk"
+      },
+      "gcs": {
+        "eyes": 4,
+        "motor": 6,
+        "verbal": 5,
+        "total": 15,
+        "shorthand": "E4M6V5"
+      }
+    },
+    "functional_status": {
+      "mobility": "Bedbound, requires maximum assistance",
+      "level": "Complete dependence",
+      "adl_assistance": "Maximum assistance for all ADLs"
+    },
+    "allergies": {
+      "known_allergies": [],
+      "nkda": true
+    },
+    "medications_count": 5
+  },
+  "extracted": {
+    "meta": {
+      "pdf_file": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "processed_at": "2026-04-04T06:19:14.153Z",
+      "agent_version": "2.0.0"
+    },
+    "patient": {
+      "name": "Amit kumar DUTTA",
+      "mrn": "MH018146883",
+      "age": 51,
+      "gender": "male",
+      "admission_date": "25-03-2026"
+    },
+    "vitals": {
+      "bp": {
+        "systolic": 160,
+        "diastolic": 80,
+        "status": "high"
+      },
+      "pulse": {
+        "value": 78,
+        "status": "normal"
+      },
+      "temperature": {
+        "value": 98.4,
+        "unit": "F"
+      },
+      "resp_rate": 19,
+      "spo2": {
+        "value": 100,
+        "status": "normal"
+      },
+      "pain_score": {
+        "value": 0,
+        "scale": 10
+      },
+      "grbs": {
+        "value": 112,
+        "interpretation": "prediabetic"
+      },
+      "abnormal_flags": [
+        "High Blood Pressure (160/80 mmHg)",
+        "Prediabetic GRBS (112 mg/dL)"
+      ]
+    },
+    "risk_scores": {
+      "fall_risk": {
+        "score": 16,
+        "level": "High",
+        "verified": true
+      },
+      "dvt_risk": {
+        "score": null,
+        "level": null,
+        "verified": false
+      },
+      "pressure_ulcer_risk": {
+        "score": 10,
+        "level": "High",
+        "verified": true
+      },
+      "aspiration_risk": {
+        "score": 6,
+        "level": "High",
+        "verified": true
+      },
+      "ews_score": null,
+      "gcs": {
+        "eyes": 4,
+        "motor": 6,
+        "verbal": 5,
+        "total": 15
+      },
+      "validation_notes": "Fall Risk Score 16 is explicitly stated. Pressure Ulcer risk uses Braden Scale with a score of 10 (High risk). Aspiration Risk score is 6. GCS has a discrepancy: initial assessment lists E4V4M6 (Total 14), but subsequent CNS assessment and Nursing Initial Assessment list E4V5M6 (Total 15). I have used the most recent/consistent value of 15. DVT risk assessment was mentioned as a 'YES' in the nursing checklist but no specific score or tool was provided in the text. EWS score is not present in the document."
+    },
+    "functional_status": {
+      "functional_status": {
+        "bathing": "Dependent",
+        "dressing": "Dependent",
+        "eating": "Dependent",
+        "walking": "Dependent",
+        "toilet_use": "Dependent"
+      },
+      "overall_assistance_needs": "Complete assistance required",
+      "mobility_notes": "Patient is bed bound (Braden Scale Activity: 1); (L) side weak with UL 0/5 and LL 2/5; (R) thalamo capsular bleed."
+    },
+    "diagnosis": {
+      "principal": "(R) thalamo capsular bleed",
+      "icd_code": null,
+      "secondary": [
+        "HTN"
+      ]
+    },
+    "allergies": [
+      "NKF&DA",
+      "not known"
+    ],
+    "medications": [
+      {
+        "name": "INJ MANNITOL (20%)",
+        "dose": "100 ML",
+        "frequency": "IV TDS"
+      },
+      {
+        "name": "INJ LASIX",
+        "dose": "20MG",
+        "frequency": "IV TDS"
+      },
+      {
+        "name": "INJ LEVERA",
+        "dose": "500MG",
+        "frequency": "IV BD"
+      },
+      {
+        "name": "INJ PAN",
+        "dose": "40MG",
+        "frequency": "IV OD"
+      },
+      {
+        "name": "INJ ZOFER",
+        "dose": "4MG",
+        "frequency": "IV SOS"
+      },
+      {
+        "name": "TAB STAMLO",
+        "dose": "5MG",
+        "frequency": "OD & SOS (MAXm 10MG/DAY)"
+      },
+      {
+        "name": "INJ OPTINERON",
+        "dose": "1 Amp",
+        "frequency": "IV OD IN DRIP"
+      },
+      {
+        "name": "IV FLUID, NORMAL SALINE",
+        "dose": "500ML",
+        "frequency": "8th HRLY"
+      },
+      {
+        "name": "INJ HUMAN ACTRAPID",
+        "dose": "Not specified",
+        "frequency": "SC SOS"
+      }
+    ],
+    "investigations": [
+      "CBC",
+      "CRP",
+      "SODIUM",
+      "POTASSIUM",
+      "UREA",
+      "CREAT",
+      "PT",
+      "APTT",
+      "INR",
+      "SEROLOGIES",
+      "LFT",
+      "LIPID PROFILE",
+      "TSH",
+      "GROUPING & RH TYPING",
+      "URINE R/E",
+      "URINE C/S",
+      "CHEST XRAY - AP (Port)",
+      "ECHOCARDIOGRAM (Port)",
+      "CT SCAN (P) Of BRAIN CM",
+      "USG W/A PLAN",
+      "ECG",
+      "CHECK CBS QDS"
+    ],
+    "nursing_needs": [
+      "HEAD UP 20 Deg",
+      "IPC",
+      "FOLEYS CATHETER INSERTION SOS",
+      "ALFA MATTRESS",
+      "PHYSIOTHERAPY",
+      "Back care",
+      "Fall risk management",
+      "Pressure ulcer prevention",
+      "Aspiration risk management",
+      "DVT prevention"
+    ],
+    "validation_summary": {
+      "inconsistencies": [],
+      "missing": [
+        "patient.name",
+        "patient.mrn",
+        "vitals.bp"
+      ],
+      "confidence_level": "high",
+      "data_quality_notes": "All data consistent"
+    },
+    "parser_note": "LLM response was not valid JSON, using self-validation only"
+  },
+  "comparison": {
+    "passed": 4,
+    "failed": 17,
+    "partial": 0,
+    "notTested": 1,
+    "details": [
+      {
+        "category": "Patient",
+        "field": "MRN",
+        "status": "FAIL",
+        "expected": "1000816857",
+        "actual": "MH018146883",
+        "description": "Patient MRN"
+      },
+      {
+        "category": "Patient",
+        "field": "Age",
+        "status": "FAIL",
+        "expected": 71,
+        "actual": 51,
+        "description": "Patient Age"
+      },
+      {
+        "category": "Patient",
+        "field": "Gender",
+        "status": "PASS",
+        "expected": "Male",
+        "actual": "male",
+        "description": "Patient Gender (fuzzy match)"
+      },
+      {
+        "category": "Patient",
+        "field": "Admission Date",
+        "status": "FAIL",
+        "expected": "22-Mar-2025",
+        "actual": "25-03-2026",
+        "description": "Admission Date (fuzzy match)"
+      },
+      {
+        "category": "Patient",
+        "field": "Discharge Date",
+        "status": "PASS",
+        "expected": "28-Mar-2025",
+        "description": "Discharge Date (fuzzy match)"
+      },
+      {
+        "category": "Patient",
+        "field": "LOS (days)",
+        "status": "FAIL",
+        "expected": 6,
+        "description": "Length of Stay"
+      },
+      {
+        "category": "Diagnosis",
+        "field": "Primary Diagnosis",
+        "status": "PASS",
+        "expected": "Acute Intracerebral Hemorrhage (Left Basal Ganglia)",
+        "description": "Primary Diagnosis (fuzzy match)"
+      },
+      {
+        "category": "Vitals",
+        "field": "BP Systolic",
+        "status": "FAIL",
+        "expected": 170,
+        "actual": 160,
+        "description": "Blood Pressure Systolic (fuzzy match)"
+      },
+      {
+        "category": "Vitals",
+        "field": "BP Diastolic",
+        "status": "FAIL",
+        "expected": 90,
+        "actual": 80,
+        "description": "Blood Pressure Diastolic (fuzzy match)"
+      },
+      {
+        "category": "Vitals",
+        "field": "Pulse",
+        "status": "FAIL",
+        "expected": 92,
+        "actual": {
+          "value": 78,
+          "status": "normal"
+        },
+        "description": "Pulse Rate (fuzzy match)"
+      },
+      {
+        "category": "Vitals",
+        "field": "SpO2",
+        "status": "FAIL",
+        "expected": 88,
+        "actual": {
+          "value": 100,
+          "status": "normal"
+        },
+        "description": "Oxygen Saturation (fuzzy match)"
+      },
+      {
+        "category": "Vitals",
+        "field": "Temperature",
+        "status": "FAIL",
+        "expected": 98.4,
+        "actual": {
+          "value": 98.4,
+          "unit": "F"
+        },
+        "description": "Temperature (fuzzy match)"
+      },
+      {
+        "category": "Vitals",
+        "field": "Respiratory Rate",
+        "status": "FAIL",
+        "expected": 26,
+        "actual": 19,
+        "description": "Respiratory Rate (fuzzy match)"
+      },
+      {
+        "category": "Risk Scores",
+        "field": "Morse",
+        "status": "FAIL",
+        "expected": {
+          "level": "HIGH",
+          "score": 65,
+          "scale": "Morse"
+        },
+        "actual": {
+          "score": 16,
+          "level": "High",
+          "verified": true
+        },
+        "description": "Risk score validation"
+      },
+      {
+        "category": "Risk Scores",
+        "field": "Caprini",
+        "status": "FAIL",
+        "expected": {
+          "level": "HIGH",
+          "score": 10,
+          "scale": "Caprini"
+        },
+        "actual": {
+          "score": null,
+          "level": null,
+          "verified": false
+        },
+        "description": "Risk score validation"
+      },
+      {
+        "category": "Risk Scores",
+        "field": "Braden",
+        "status": "FAIL",
+        "expected": {
+          "level": "MODERATE",
+          "score": 14,
+          "scale": "Braden"
+        },
+        "actual": {
+          "score": 10,
+          "level": "High",
+          "verified": true
+        },
+        "description": "Risk score validation"
+      },
+      {
+        "category": "Risk Scores",
+        "status": "FAIL",
+        "expected": {
+          "level": "HIGH"
+        },
+        "actual": {
+          "score": 6,
+          "level": "High",
+          "verified": true
+        },
+        "description": "Risk score validation"
+      },
+      {
+        "category": "Risk Scores",
+        "field": "EWS Score",
+        "status": "NOT_TESTED",
+        "expected": "N/A",
+        "actual": "N/A",
+        "description": "EWS Score not extracted"
+      },
+      {
+        "category": "Risk Scores",
+        "field": "GCS",
+        "status": "PASS",
+        "expected": 15,
+        "actual": 15,
+        "description": "Glasgow Coma Scale Total"
+      },
+      {
+        "category": "Functional",
+        "field": "Mobility",
+        "status": "FAIL",
+        "expected": "Bedbound, requires maximum assistance",
+        "actual": {
+          "bathing": "Dependent",
+          "dressing": "Dependent",
+          "eating": "Dependent",
+          "walking": "Dependent",
+          "toilet_use": "Dependent"
+        },
+        "description": "Mobility Status (fuzzy match)"
+      },
+      {
+        "category": "Functional",
+        "field": "Assistance Level",
+        "status": "FAIL",
+        "expected": "Complete dependence",
+        "actual": "Complete assistance required",
+        "description": "Assistance Level (fuzzy match)"
+      },
+      {
+        "category": "Allergies",
+        "field": "NKDA",
+        "status": "FAIL",
+        "expected": "No known allergies (empty array or NKDA)",
+        "actual": [
+          "NKF&DA",
+          "not known"
+        ],
+        "description": "Allergies should be empty or NKDA"
+      }
+    ]
+  },
+  "summary": {
+    "passed": 4,
+    "failed": 17,
+    "total": 21,
+    "passRate": "19.0"
+  }
+}

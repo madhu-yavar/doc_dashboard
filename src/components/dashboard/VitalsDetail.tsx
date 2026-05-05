@@ -172,6 +172,14 @@ const VitalsDetail: React.FC<VitalsDetailProps> = ({ onBack, data }) => {
   const vitalsProvenance = data.provenance.sections.vitals;
   const latest = vitals.latest;
   const referenceRanges = buildReferenceRanges(vitals.referenceRanges);
+  const hasDocumentedVitals = [
+    latest.bloodPressure.systolic,
+    latest.bloodPressure.diastolic,
+    latest.heartRate.value,
+    latest.spo2.value,
+    latest.temperature.value,
+    latest.respiratoryRate.value,
+  ].some((value) => typeof value === "number" && value > 0);
 
   const chartData = vitals.history.map((entry: any, index: number) => {
     const [sys, dia] = String(entry.bp || "").split("/").map(Number);
@@ -306,6 +314,13 @@ const VitalsDetail: React.FC<VitalsDetailProps> = ({ onBack, data }) => {
 
       <ProvenancePanel status={vitalsProvenance.status} items={vitalsProvenance.items} />
 
+      {!hasDocumentedVitals ? (
+        <div className="rounded-2xl border border-slate-200 bg-white px-5 py-6 text-sm text-slate-600 shadow-sm">
+          No source-backed vitals were documented in this prescription.
+        </div>
+      ) : null}
+
+      {hasDocumentedVitals ? (
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         {supportedCards.map((card) => {
           const deltaLabel = getDeltaLabel(
@@ -364,6 +379,7 @@ const VitalsDetail: React.FC<VitalsDetailProps> = ({ onBack, data }) => {
           );
         })}
       </div>
+      ) : null}
 
       {vitals.alerts.length > 0 ? (
         <div className="rounded-[20px] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">

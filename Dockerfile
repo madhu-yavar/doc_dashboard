@@ -23,8 +23,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Install runtime dependencies
+# dumb-init: proper signal handling
+# poppler-utils: pdftoppm for PDF to image conversion (classification, masking)
+RUN apk add --no-cache dumb-init poppler-utils
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \

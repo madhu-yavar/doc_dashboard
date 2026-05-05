@@ -1,0 +1,243 @@
+{
+  "file": "Doxper.pdf",
+  "timestamp": "2026-04-27T09:05:17.993Z",
+  "stage1": {
+    "success": true,
+    "duration": 40765,
+    "tokens": 1701,
+    "data": {
+      "phi": {
+        "patient_name": "Mr Jerald PILLAI",
+        "patient_id": "MH005618878",
+        "patient_age": "21 Yrs",
+        "patient_gender": "Male",
+        "patient_dob": null,
+        "patient_contact": {
+          "phone": "8754912568",
+          "email": "jeraldsatya2000@gmail.com",
+          "emergency_contact": null
+        },
+        "patient_address": null
+      },
+      "header_info": {
+        "hospital_name": "manipalhospitals",
+        "hospital_branch": "HAL Airport Road",
+        "department": "INTERNAL MEDICINE",
+        "document_type": "OUT PATIENT RECORD",
+        "document_title": "OUT PATIENT RECORD"
+      },
+      "visit_metadata": {
+        "visit_date": "2022-01-08 09:09",
+        "report_date": null,
+        "episode_number": "000008190425",
+        "registration_number": "TMN 2017 0001362 KTK",
+        "page_number": "Page 1 of 3"
+      },
+      "doctor_info": {
+        "name": "Dr. NEHA MISHRA",
+        "specialization": "INFECTIOUS DISEASES",
+        "credentials": "MBBS, MD (GEN MED), POST DOCTORAL FELLOWSHIP IN INFECTIOUS DISEASES (CMC VELLORE)",
+        "signature_text": null
+      },
+      "document_structure": {
+        "has_prescription_table": false,
+        "has_vitals_section": true,
+        "has_lab_investigations": false,
+        "has_radiology_tests": false,
+        "has_procedures": true,
+        "table_headers": {
+          "prescription": [],
+          "vitals": [
+            "Height",
+            "BP",
+            "Allergies",
+            "Diet",
+            "Weight"
+          ]
+        },
+        "handwriting_regions": [
+          {
+            "section": "vitals",
+            "description": "Allergies and Known Health conditions"
+          },
+          {
+            "section": "doctor_notes",
+            "description": "Handwritten clinical notes regarding COVID and symptoms"
+          }
+        ]
+      },
+      "redaction_zones": [
+        {
+          "type": "patient_name",
+          "description": "Top left patient name field",
+          "priority": "high"
+        },
+        {
+          "type": "patient_id",
+          "description": "Hospital No. field",
+          "priority": "high"
+        },
+        {
+          "type": "patient_contact",
+          "description": "Patient Mob No. and E-mail ID fields",
+          "priority": "high"
+        },
+        {
+          "type": "patient_age_gender",
+          "description": "Age/Sex field",
+          "priority": "medium"
+        }
+      ]
+    }
+  },
+  "stage2": {
+    "success": true,
+    "data": {
+      "medications": [],
+      "handwritten_notes": null,
+      "doctor_signature": null,
+      "diagnosis": {
+        "handwritten_principal": "Contact COVID",
+        "handwritten_symptoms": [
+          "body ache",
+          "headache"
+        ]
+      },
+      "vitals_handwritten": {
+        "bp": null,
+        "pulse": null,
+        "temp": null,
+        "weight": null
+      }
+    },
+    "duration": 11482,
+    "usage": {
+      "promptTokenCount": 641,
+      "candidatesTokenCount": 115,
+      "totalTokenCount": 1720,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 383
+        },
+        {
+          "modality": "IMAGE",
+          "tokenCount": 258
+        }
+      ],
+      "thoughtsTokenCount": 964
+    },
+    "model": "gemini-2.5-flash",
+    "source": "gemini_vision_api"
+  },
+  "merged": {
+    "patient": {
+      "name": "Mr Jerald PILLAI",
+      "id": "MH005618878",
+      "age": "21 Yrs",
+      "gender": "Male",
+      "dob": null,
+      "contact": {
+        "phone": "8754912568",
+        "email": "jeraldsatya2000@gmail.com",
+        "emergency_contact": null
+      },
+      "address": null
+    },
+    "visit": {
+      "hospital": "manipalhospitals",
+      "branch": "HAL Airport Road",
+      "department": "INTERNAL MEDICINE",
+      "visit_date": "2022-01-08 09:09",
+      "report_date": null,
+      "episode_number": "000008190425"
+    },
+    "doctor": {
+      "name": "Dr. NEHA MISHRA",
+      "specialization": "INFECTIOUS DISEASES",
+      "credentials": "MBBS, MD (GEN MED), POST DOCTORAL FELLOWSHIP IN INFECTIOUS DISEASES (CMC VELLORE)",
+      "signature": null
+    },
+    "medications": [],
+    "diagnosis": {
+      "from_context": "OUT PATIENT RECORD",
+      "handwritten": "Contact COVID",
+      "symptoms": [
+        "body ache",
+        "headache"
+      ]
+    },
+    "vitals": {
+      "bp": null,
+      "pulse": null,
+      "temp": null,
+      "weight": null
+    },
+    "notes": {
+      "handwritten": null,
+      "document_structure": {
+        "has_prescription_table": false,
+        "has_vitals_section": true,
+        "has_lab_investigations": false,
+        "has_radiology_tests": false,
+        "has_procedures": true,
+        "table_headers": {
+          "prescription": [],
+          "vitals": [
+            "Height",
+            "BP",
+            "Allergies",
+            "Diet",
+            "Weight"
+          ]
+        },
+        "handwriting_regions": [
+          {
+            "section": "vitals",
+            "description": "Allergies and Known Health conditions"
+          },
+          {
+            "section": "doctor_notes",
+            "description": "Handwritten clinical notes regarding COVID and symptoms"
+          }
+        ]
+      }
+    },
+    "extraction_metadata": {
+      "stage1_duration": 40765,
+      "stage1_tokens": 1701,
+      "stage2_duration": 11482,
+      "stage2_source": "gemini_vision_api",
+      "extraction_method": "two_stage_gemma_gemini"
+    }
+  },
+  "dashboard_format": {
+    "patient": {
+      "name": "Mr Jerald PILLAI",
+      "age": 21,
+      "gender": "Male",
+      "mrn": "MH005618878"
+    },
+    "diagnosis": {
+      "principal": "Contact COVID",
+      "secondary": [
+        "body ache",
+        "headache"
+      ]
+    },
+    "medications": [],
+    "doctor": "Dr. NEHA MISHRA",
+    "visit": {
+      "hospital": "manipalhospitals",
+      "department": "INTERNAL MEDICINE",
+      "date": "2022-01-08 09:09"
+    },
+    "vitals": {
+      "bp": null,
+      "pulse": null,
+      "temp": null,
+      "weight": null
+    },
+    "notes": null
+  }
+}

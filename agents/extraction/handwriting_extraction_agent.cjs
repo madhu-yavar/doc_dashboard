@@ -19,13 +19,15 @@
 const HandwritingMedicationsExtractorSkill = require("../../skills/extraction/stage3/handwriting_medications_extractor.skill.cjs");
 const HandwritingVitalsExtractorSkill = require("../../skills/extraction/stage3/handwriting_vitals_extractor.skill.cjs");
 const HandwritingDiagnosisExtractorSkill = require("../../skills/extraction/stage3/handwriting_diagnosis_extractor.skill.cjs");
+const HandwritingNotesExtractorSkill = require("../../skills/extraction/stage3/handwriting_notes_extractor.skill.cjs");
 const HandwritingOrdersExtractorSkill = require("../../skills/extraction/stage3/handwriting_orders_extractor.skill.cjs");
+const HandwritingStructuredReconcilerSkill = require("../../skills/extraction/stage3/handwriting_structured_reconciler.skill.cjs");
 const VisualElementDetectorSkill = require("../../skills/extraction/stage3/visual_element_detector.skill.cjs");
 
 class HandwritingExtractionAgent {
   constructor(config = {}) {
     this.name = "Handwriting Extraction Agent (Stage 3)";
-    this.version = "1.0.0";
+    this.version = "1.1.0";
     this.type = "stage3_extraction";
 
     // Gemini configuration
@@ -39,7 +41,9 @@ class HandwritingExtractionAgent {
     this.medicationsExtractorSkill = new HandwritingMedicationsExtractorSkill(this.geminiConfig);
     this.vitalsExtractorSkill = new HandwritingVitalsExtractorSkill(this.geminiConfig);
     this.diagnosisExtractorSkill = new HandwritingDiagnosisExtractorSkill(this.geminiConfig);
+    this.notesExtractorSkill = new HandwritingNotesExtractorSkill(this.geminiConfig);
     this.ordersExtractorSkill = new HandwritingOrdersExtractorSkill(this.geminiConfig);
+    this.structuredReconcilerSkill = new HandwritingStructuredReconcilerSkill(this.geminiConfig);
     this.visualElementDetectorSkill = new VisualElementDetectorSkill(this.geminiConfig);
 
     this.config = {
@@ -59,11 +63,12 @@ class HandwritingExtractionAgent {
    * @param {object} options - Processing options
    * @param {string} options.apiKey - User's Gemini API key (required)
    * @param {object} options.documentStructure - From Stage 1
+   * @param {string} options.pdfText - Full PDF text content for page selection
    * @returns {Promise<object>}
    */
   async process(maskedImage, options = {}) {
     const startTime = Date.now();
-    const { apiKey, documentStructure, onProgress } = options;
+    const { apiKey, documentStructure, pdfText, onProgress } = options;
 
     if (!apiKey) {
       const error = "Gemini API key is required for Stage 3 handwriting extraction";
@@ -96,13 +101,13 @@ class HandwritingExtractionAgent {
         imagesForExtraction = maskedImage;
         console.log(`\n📝 Stage 3: Processing ${maskedImage.length} pages with Gemini`);
         if (onProgress) {
-          onProgress({ type: 'start', stage: 'stage3', totalSteps: 5, pageCount: maskedImage.length });
+          onProgress({ type: 'start', stage: 'stage3', totalSteps: 7, pageCount: maskedImage.length });
         }
       } else {
         imagesForExtraction = [{ pageNum: 1, imageData: maskedImage, isMasked: true }];
         console.log(`\n📝 Stage 3: Processing handwriting extraction with Gemini`);
         if (onProgress) {
-          onProgress({ type: 'start', stage: 'stage3', totalSteps: 5 });
+          onProgress({ type: 'start', stage: 'stage3', totalSteps: 7 });
         }
       }
 
@@ -111,11 +116,14 @@ class HandwritingExtractionAgent {
         images: imagesForExtraction,
         apiKey,
         documentStructure,
+        pdfText,
         onProgress
       });
+      const usage = this.summarizeUsage(results);
 
       // Check if all extractions failed (e.g., 429 quota error)
       const allFailed = !results.medications?.success &&
+                       !results.notes?.success &&
                        !results.vitals?.success &&
                        !results.diagnosis?.success &&
                        !results.orders?.success &&
@@ -124,6 +132,7 @@ class HandwritingExtractionAgent {
       if (allFailed) {
         // Extract first error for reporting
         const firstError = results.medications?.error ||
+                          results.notes?.error ||
                           results.vitals?.error ||
                           results.diagnosis?.error ||
                           results.visualElements?.error ||
@@ -165,6 +174,9 @@ class HandwritingExtractionAgent {
       if (stage3Data.diagnosis?.principal) {
         console.log(`   │ 📋 Diagnosis: ${stage3Data.diagnosis.principal.substring(0, 50)}...`);
       }
+      if (stage3Data.handwritten_notes?.length) {
+        console.log(`   │ 📝 Notes: ${stage3Data.handwritten_notes.length} extracted`);
+      }
       const labCount = stage3Data.lab_investigations?.total_selected || 0;
       console.log(`   │ 🔬 Labs: ${labCount} investigations selected`);
       console.log(`   └─────────────────────────────────────────────────────┘`);
@@ -176,6 +188,7 @@ class HandwritingExtractionAgent {
           status: 'complete',
           summary: {
             medications_count: stage3Data.medications?.length || 0,
+            notes_count: stage3Data.handwritten_notes?.length || 0,
             lab_selections_count: stage3Data.lab_investigations?.total_selected || 0,
             has_diagnosis: !!stage3Data.diagnosis?.principal,
             has_vitals: stage3Data.vitals?.has_vitals || false
@@ -188,6 +201,7 @@ class HandwritingExtractionAgent {
         success: true,
         stage: "stage3_handwriting_extraction",
         data: stage3Data,
+        usage,
         metadata: {
           stage: "stage3",
           model: this.geminiConfig.geminiModel,
@@ -224,28 +238,27 @@ class HandwritingExtractionAgent {
   async executeStage3Extractions(context) {
     const { images, apiKey, documentStructure, onProgress } = context;
 
-    // Combine all images into a single Gemini request
-    // For multi-page PDFs, we'll send all pages to Gemini
-    const allImageDataUrls = images.map(img => {
+    // Normalize images to objects with pageNum and imageData
+    const normalizedImages = images.map(img => {
       if (typeof img === 'string') {
-        return img;
+        return { pageNum: 1, imageData: img };
       }
-      return img.imageData;
+      return img;
     });
 
     console.log(`      📋 Stage 3 Extraction Configuration:`);
-    console.log(`         ├─ Images: ${allImageDataUrls.length} page(s)`);
-    console.log(`         ├─ Total size: ${allImageDataUrls.reduce((sum, url) => sum + url.length, 0)} chars`);
+    console.log(`         ├─ Total pages: ${normalizedImages.length}`);
     console.log(`         ├─ API Key provided: ✓ (${apiKey.substring(0, 10)}...)`);
     console.log(`         └─ Model: ${this.geminiConfig.geminiModel}`);
 
+    const allImages = normalizedImages.map(img => img.imageData);
+
     let stepNumber = 1;
 
-    // Step 1: Medications (most important)
-    console.log(`      🔄 Step 3.1: Extracting medications...`);
+    // Step 1: Medications - PER-PAGE extraction to avoid context contamination
+    console.log(`      🔄 Step 3.1: Extracting medications (per-page, then merge)...`);
     const medStart = Date.now();
-    const medications = await this.medicationsExtractorSkill.execute({
-      images: allImageDataUrls,
+    const medications = await this.extractMedicationsPerPage(normalizedImages, {
       documentStructure,
       apiKey,
       onProgress: (s) => onProgress?.({ ...s, stepNumber: stepNumber++ })
@@ -258,19 +271,34 @@ class HandwritingExtractionAgent {
       console.log(`         ❌ Failed: ${medications.error} (${medTime}ms)`);
     }
 
-    // Steps 2-5: Run remaining extractions
-    console.log(`      🔄 Step 3.2-3.5: Parallel extraction (Vitals, Diagnosis, Orders, Visual Elements)...`);
-    const parallelStart = Date.now();
-    const [
-      vitals,
-      diagnosis,
-      orders,
+      // Step 2: Notes - PER-PAGE extraction to reduce cross-page hallucination
+      console.log(`      🔄 Step 3.2: Extracting handwritten notes (per-page, then merge)...`);
+      const notesStart = Date.now();
+      const notes = await this.extractNotesPerPage(normalizedImages, {
+        apiKey,
+        onProgress: (s) => onProgress?.({ ...s, stepNumber: stepNumber++ })
+      });
+      const notesTime = Date.now() - notesStart;
+      if (notes.success) {
+        const noteCount = notes.data?.notes?.length || 0;
+        console.log(`         ✅ Complete: ${noteCount} notes extracted (${notesTime}ms)`);
+      } else {
+        console.log(`         ❌ Failed: ${notes.error} (${notesTime}ms)`);
+      }
+
+      // Steps 3-6: Run remaining extractions with all pages
+      console.log(`      🔄 Step 3.3-3.6: Parallel extraction (Vitals, Diagnosis, Orders, Visual Elements)...`);
+      const parallelStart = Date.now();
+      const [
+        vitals,
+        diagnosis,
+        orders,
       visualElements
     ] = await Promise.all([
-      this.vitalsExtractorSkill.execute({ images: allImageDataUrls, apiKey, onProgress: (s) => onProgress?.({ ...s, stepNumber: stepNumber++ }) }),
-      this.diagnosisExtractorSkill.execute({ images: allImageDataUrls, apiKey, onProgress: (s) => onProgress?.({ ...s, stepNumber: stepNumber++ }) }),
-      this.ordersExtractorSkill.execute({ images: allImageDataUrls, apiKey, onProgress: (s) => onProgress?.({ ...s, stepNumber: stepNumber++ }) }),
-      this.visualElementDetectorSkill.execute({ images: allImageDataUrls, apiKey, onProgress: (s) => onProgress?.({ ...s, stepNumber: stepNumber++ }) })
+      this.vitalsExtractorSkill.execute({ images: allImages, apiKey, onProgress: (s) => onProgress?.({ ...s, stepNumber: stepNumber++ }) }),
+      this.diagnosisExtractorSkill.execute({ images: allImages, apiKey, onProgress: (s) => onProgress?.({ ...s, stepNumber: stepNumber++ }) }),
+      this.ordersExtractorSkill.execute({ images: allImages, apiKey, onProgress: (s) => onProgress?.({ ...s, stepNumber: stepNumber++ }) }),
+      this.visualElementDetectorSkill.execute({ images: allImages, apiKey, onProgress: (s) => onProgress?.({ ...s, stepNumber: stepNumber++ }) })
     ]);
     const parallelTime = Date.now() - parallelStart;
     console.log(`         ✅ Parallel extraction complete (${parallelTime}ms)`);
@@ -279,13 +307,371 @@ class HandwritingExtractionAgent {
     console.log(`            ├─ Orders: ${orders.success ? '✓' : '✗'}`);
     console.log(`            └─ Visual Elements: ${visualElements.success ? '✓' : '✗'}`);
 
+    let structuredReconciliation = {
+      success: true,
+      step: "handwriting_structured_reconciler",
+      data: {
+        lab_investigations: [],
+        radiology: { selected_studies: [] },
+        nuclear_medicine: { selected_studies: [] },
+        procedures: [],
+        has_additions: false,
+        confidence: "medium"
+      }
+    };
+
+    if (this.config.enableStructuredReconciliation !== false) {
+      console.log(`      🔄 Step 3.7: Gemini structured reconciliation from notes/findings...`);
+      const reconciliationStart = Date.now();
+
+      structuredReconciliation = await this.structuredReconcilerSkill.execute({
+        images: allImages,
+        apiKey,
+        notes: notes.data?.notes || [],
+        diagnosis: diagnosis.data?.diagnosis || {},
+        orders: orders.data || {},
+        visualElements: visualElements.data || {},
+        onProgress: (s) => onProgress?.({ ...s, stepNumber: stepNumber++ })
+      });
+
+      const reconciliationTime = Date.now() - reconciliationStart;
+      if (structuredReconciliation.success) {
+        const reconciliationData = structuredReconciliation.data || {};
+        console.log(`         ✅ Reconciliation complete (${reconciliationTime}ms)`);
+        console.log(`            ├─ Promoted labs: ${reconciliationData.lab_investigations?.length || 0}`);
+        console.log(`            ├─ Promoted imaging: ${reconciliationData.radiology?.selected_studies?.length || 0}`);
+        console.log(`            ├─ Promoted nuclear: ${reconciliationData.nuclear_medicine?.selected_studies?.length || 0}`);
+        console.log(`            └─ Promoted procedures: ${reconciliationData.procedures?.length || 0}`);
+      } else {
+        console.log(`         ❌ Reconciliation failed: ${structuredReconciliation.error} (${reconciliationTime}ms)`);
+      }
+    }
+
     return {
       medications,
+      notes,
       vitals,
       diagnosis,
       orders,
-      visualElements
+      visualElements,
+      structuredReconciliation
     };
+  }
+
+  /**
+   * Extract handwritten notes per-page, then merge and deduplicate.
+   */
+  async extractNotesPerPage(pages, options) {
+    const { apiKey, onProgress } = options;
+    const pageResults = [];
+
+    console.log(`         📄 Processing ${pages.length} page(s) independently for notes...`);
+
+    for (const page of pages) {
+      console.log(`         └─ Page ${page.pageNum}: extracting notes...`);
+      const pageStart = Date.now();
+
+      const result = await this.notesExtractorSkill.execute({
+        images: [page.imageData],
+        apiKey,
+        pageNum: page.pageNum
+      });
+
+      const pageTime = Date.now() - pageStart;
+      const noteCount = result.data?.notes?.length || 0;
+      console.log(`            └─ Page ${page.pageNum}: ${noteCount} notes (${pageTime}ms) ${result.success ? '✓' : '✗'}`);
+
+      if (result.success && result.data?.notes?.length > 0) {
+        pageResults.push({
+          pageNum: page.pageNum,
+          notes: result.data.notes
+        });
+      }
+    }
+
+    const mergedNotes = this.sanitizeMergedNotes(this.mergeNotesFromPages(pageResults));
+    console.log(`         📋 Merged ${mergedNotes.length} unique notes from ${pageResults.length} page(s)`);
+
+    if (onProgress) {
+      onProgress({
+        type: "success",
+        step: "handwriting_notes_extractor",
+        status: "complete",
+        message: mergedNotes.length > 0
+          ? `${mergedNotes.length} handwritten note${mergedNotes.length > 1 ? "s" : ""} merged`
+          : "No handwritten notes found"
+      });
+    }
+
+    return {
+      success: true,
+      step: "handwriting_notes_extractor",
+      data: {
+        notes: mergedNotes,
+        has_notes: mergedNotes.length > 0,
+        confidence: mergedNotes.some((note) => note.confidence === "low")
+          ? "medium"
+          : (mergedNotes.length > 0 ? "high" : "medium")
+      }
+    };
+  }
+
+  summarizeUsage(results) {
+    return Object.values(results).reduce((acc, result) => {
+      const usage = result?.usage || {};
+      acc.promptTokens += usage.promptTokens || 0;
+      acc.completionTokens += usage.completionTokens || 0;
+      acc.totalTokens += usage.totalTokens || 0;
+      return acc;
+    }, { promptTokens: 0, completionTokens: 0, totalTokens: 0 });
+  }
+
+  /**
+   * Extract medications per-page, then merge and deduplicate
+   * This prevents context contamination from mixing header/clinical info with medication lists
+   */
+  async extractMedicationsPerPage(pages, options) {
+    const { documentStructure, apiKey, onProgress } = options;
+    const pageResults = [];
+
+    console.log(`         📄 Processing ${pages.length} page(s) independently...`);
+
+    for (const page of pages) {
+      console.log(`         └─ Page ${page.pageNum}: extracting...`);
+      const pageStart = Date.now();
+
+      const result = await this.medicationsExtractorSkill.execute({
+        images: [page.imageData],
+        documentStructure,
+        apiKey,
+        pageNum: page.pageNum
+      });
+
+      const pageTime = Date.now() - pageStart;
+      const medCount = result.data?.medications?.length || 0;
+      console.log(`            └─ Page ${page.pageNum}: ${medCount} medications (${pageTime}ms) ${result.success ? '✓' : '✗'}`);
+
+      if (result.success && result.data?.medications?.length > 0) {
+        pageResults.push({
+          pageNum: page.pageNum,
+          medications: result.data.medications
+        });
+      }
+    }
+
+    // Merge and deduplicate
+    const mergedMedications = this.mergeMedicationsFromPages(pageResults);
+    console.log(`         📋 Merged ${mergedMedications.length} unique medications from ${pageResults.length} page(s)`);
+
+    return {
+      success: true,
+      step: "handwriting_medications_extractor",
+      data: {
+        medications: mergedMedications,
+        total_count: mergedMedications.length,
+        has_unreadable: false,
+        unreadable_count: 0
+      }
+    };
+  }
+
+  /**
+   * Merge medications from multiple pages, deduplicating by normalized name
+   */
+  mergeMedicationsFromPages(pageResults) {
+    const merged = new Map();
+
+    for (const pageResult of pageResults) {
+      for (const med of pageResult.medications) {
+        // Normalize name for deduplication
+        const normalizedName = (med.name || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+        if (!normalizedName) continue;
+
+        const existing = merged.get(normalizedName);
+
+        if (!existing) {
+          // First time seeing this medication
+          merged.set(normalizedName, { ...med, _sourcePages: [pageResult.pageNum] });
+        } else {
+          // Duplicate - keep the better version
+          merged.set(normalizedName, this.selectBetterMedication(existing, med, pageResult.pageNum));
+        }
+      }
+    }
+
+    // Clean up internal fields and return
+    return Array.from(merged.values()).map(med => {
+      const { _sourcePages, ...cleanMed } = med;
+      return cleanMed;
+    });
+  }
+
+  /**
+   * Select the better medication when duplicates are found
+   */
+  selectBetterMedication(existing, newMed, newPageNum) {
+    // Prefer higher confidence
+    const confidenceScore = { high: 3, medium: 2, low: 1 };
+    const existingScore = confidenceScore[existing.confidence] || 0;
+    const newScore = confidenceScore[newMed.confidence] || 0;
+
+    if (newScore > existingScore) {
+      return { ...newMed, _sourcePages: [...(existing._sourcePages || []), newPageNum] };
+    }
+
+    // Prefer fuller dosage/frequency/duration
+    const existingCompleteness = this.completenessScore(existing);
+    const newCompleteness = this.completenessScore(newMed);
+
+    if (newCompleteness > existingCompleteness) {
+      return { ...newMed, _sourcePages: [...(existing._sourcePages || []), newPageNum] };
+    }
+
+    // Keep existing
+    return { ...existing, _sourcePages: [...(existing._sourcePages || []), newPageNum] };
+  }
+
+  /**
+   * Calculate completeness score for medication
+   */
+  completenessScore(med) {
+    let score = 0;
+    if (med.dosage) score++;
+    if (med.frequency) score++;
+    if (med.duration) score++;
+    if (med.generic_name) score++;
+    return score;
+  }
+
+  normalizeNoteText(value) {
+    return String(value || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  }
+
+  cleanNoteText(value) {
+    return String(value || "")
+      .replace(/\s+/g, " ")
+      .replace(/\s+([,:;.!?])/g, "$1")
+      .trim();
+  }
+
+  isFragmentaryNoteText(value) {
+    const text = this.cleanNoteText(value).toLowerCase();
+    if (!text) return true;
+    if (text.length < 6) return true;
+    return /^(pl\.?\s*add|adv(?:ice)?|review|f\/u|follow up)\s*:?\s*$/i.test(text);
+  }
+
+  isLowValueNote(note = {}) {
+    const text = this.cleanNoteText(note.text || note.source_excerpt || "");
+    if (!text) return true;
+    if (this.isFragmentaryNoteText(text)) return true;
+    if (/^(same|continue same|as advised|as before)$/i.test(text)) return true;
+    return false;
+  }
+
+  mergeFragmentWithNextNote(notes) {
+    const merged = [];
+
+    for (let index = 0; index < notes.length; index += 1) {
+      const current = notes[index];
+      const currentText = this.cleanNoteText(current?.text || "");
+      const next = notes[index + 1];
+
+      if (
+        next &&
+        this.isFragmentaryNoteText(currentText) &&
+        !this.isLowValueNote(next)
+      ) {
+        const nextText = this.cleanNoteText(next.text || "");
+        const combinedText = this.cleanNoteText(
+          currentText.endsWith(":")
+            ? `${currentText} ${nextText}`
+            : `${currentText}: ${nextText}`
+        );
+
+        merged.push({
+          ...next,
+          text: combinedText,
+          source_excerpt: this.cleanNoteText(next.source_excerpt || combinedText),
+          confidence_reason: next.confidence_reason || current.confidence_reason || "",
+          confidence: this.noteConfidenceScore(next) >= this.noteConfidenceScore(current)
+            ? next.confidence
+            : current.confidence
+        });
+        index += 1;
+        continue;
+      }
+
+      merged.push(current);
+    }
+
+    return merged;
+  }
+
+  sanitizeMergedNotes(notes) {
+    const merged = this.mergeFragmentWithNextNote(Array.isArray(notes) ? notes : []);
+
+    return merged
+      .map((note) => {
+        const text = this.cleanNoteText(note.text || "");
+        const sourceExcerpt = this.cleanNoteText(note.source_excerpt || text);
+        return {
+          ...note,
+          text,
+          source_excerpt: sourceExcerpt,
+          confidence_reason: this.cleanNoteText(note.confidence_reason || "")
+        };
+      })
+      .filter((note) => !this.isLowValueNote(note))
+      .slice(0, 6);
+  }
+
+  noteConfidenceScore(note) {
+    const confidenceScore = { high: 3, medium: 2, low: 1 };
+    return confidenceScore[note?.confidence] || 0;
+  }
+
+  mergeNotesFromPages(pageResults) {
+    const merged = new Map();
+
+    for (const pageResult of pageResults) {
+      for (const note of pageResult.notes) {
+        const normalizedText = this.normalizeNoteText(note.text);
+        if (!normalizedText) continue;
+
+        const existing = merged.get(normalizedText);
+        const candidate = {
+          ...note,
+          source_excerpt: note.source_excerpt || note.text,
+          page_number: note.page_number || pageResult.pageNum,
+          source_type: "handwritten",
+          is_synthetic: false
+        };
+
+        if (!existing) {
+          merged.set(normalizedText, candidate);
+          continue;
+        }
+
+        const existingScore = this.noteConfidenceScore(existing);
+        const candidateScore = this.noteConfidenceScore(candidate);
+        const existingLength = String(existing.source_excerpt || existing.text || "").length;
+        const candidateLength = String(candidate.source_excerpt || candidate.text || "").length;
+
+        if (candidateScore > existingScore || (candidateScore === existingScore && candidateLength > existingLength)) {
+          merged.set(normalizedText, {
+            ...candidate,
+            page_number: existing.page_number || candidate.page_number
+          });
+        }
+      }
+    }
+
+    return Array.from(merged.values());
   }
 
   /**
@@ -293,14 +679,32 @@ class HandwritingExtractionAgent {
    */
   compileStage3Data(results) {
     const diagnosisData = results.diagnosis?.data?.diagnosis || {};
+    const notesData = results.notes?.data || {};
     const ordersData = results.orders?.data || {};
+    const reconciliationData = results.structuredReconciliation?.data || {};
     const mergedLabInvestigations = this.mergeLabInvestigations(
-      ordersData.lab_investigations,
+      [
+        ...(Array.isArray(ordersData.lab_investigations) ? ordersData.lab_investigations : []),
+        ...(Array.isArray(reconciliationData.lab_investigations) ? reconciliationData.lab_investigations : [])
+      ],
       results.visualElements?.data?.lab_investigations
     );
     const mergedRadiologySelections = this.mergeRadiologySelections(
-      ordersData.radiology,
+      {
+        selected_studies: [
+          ...(Array.isArray(ordersData.radiology?.selected_studies) ? ordersData.radiology.selected_studies : []),
+          ...(Array.isArray(reconciliationData.radiology?.selected_studies) ? reconciliationData.radiology.selected_studies : [])
+        ]
+      },
       results.visualElements?.data?.radiology
+    );
+    const mergedNuclearMedicineSelections = this.mergeNuclearMedicineSelections(
+      ordersData.nuclear_medicine,
+      reconciliationData.nuclear_medicine
+    );
+    const mergedProcedures = this.mergeProcedures(
+      ordersData.procedures,
+      reconciliationData.procedures
     );
 
     const data = {
@@ -326,6 +730,13 @@ class HandwritingExtractionAgent {
         confidence: results.diagnosis?.data?.confidence || "medium"
       },
 
+      handwritten_notes: Array.isArray(notesData.notes) ? notesData.notes : [],
+      notes_metadata: {
+        has_notes: notesData.has_notes || false,
+        confidence: notesData.confidence || "medium",
+        total_notes: Array.isArray(notesData.notes) ? notesData.notes.length : 0
+      },
+
       // Legacy lab_results is kept for older dashboard consumers that expect the key.
       lab_results: [],
 
@@ -334,6 +745,12 @@ class HandwritingExtractionAgent {
 
       radiology: mergedRadiologySelections,
       radiology_selections: mergedRadiologySelections,
+
+      // Nuclear medicine studies
+      nuclear_medicine: mergedNuclearMedicineSelections,
+
+      // Procedures
+      procedures: mergedProcedures,
 
       // Visual element metadata
       visual_metadata: {
@@ -375,6 +792,10 @@ class HandwritingExtractionAgent {
       scores.push(results.diagnosis.data?.confidence === "high" ? 1 : 0.7);
     }
 
+    if (results.notes?.data?.has_notes) {
+      scores.push(results.notes.data?.confidence === "high" ? 1 : 0.75);
+    }
+
     // Orders quality
     if (results.orders?.data?.has_orders) {
       scores.push(results.orders.data?.confidence === "high" ? 1 : 0.7);
@@ -406,18 +827,20 @@ class HandwritingExtractionAgent {
     for (const item of Array.isArray(textOrders) ? textOrders : []) {
       const name = String(item?.test_name || "").trim();
       if (!name) continue;
-      const key = name.toLowerCase();
-      mergedByName.set(key, {
+      const key = this.normalizeStructuredKey(name);
+      const existing = mergedByName.get(key);
+      const candidate = {
         test_name: name,
         category: item?.category || "unknown",
         is_checked: true,
         is_circled: false,
         is_underlined: false,
         priority: "routine",
-        source: "text_order",
+        source: item?.source || "text_order",
         is_uncertain: Boolean(item?.is_uncertain),
         confidence_reason: String(item?.confidence_reason || "")
-      });
+      };
+      mergedByName.set(key, existing ? this.mergeStructuredEntries(existing, candidate, "test_name") : candidate);
     }
 
     const visualSelectedTests = Array.isArray(visualInvestigations?.selected_tests)
@@ -427,19 +850,20 @@ class HandwritingExtractionAgent {
     for (const item of visualSelectedTests) {
       const name = String(item?.test_name || "").trim();
       if (!name) continue;
-      const key = name.toLowerCase();
+      const key = this.normalizeStructuredKey(name);
       const existing = mergedByName.get(key);
-      mergedByName.set(key, {
+      const candidate = {
         test_name: name,
         category: existing?.category || "unknown",
         is_checked: item?.is_checked ?? existing?.is_checked ?? true,
         is_circled: item?.is_circled ?? existing?.is_circled ?? false,
         is_underlined: item?.is_underlined ?? existing?.is_underlined ?? false,
         priority: item?.priority || existing?.priority || "routine",
-        source: existing ? "text+visual" : "visual_selection",
-        is_uncertain: existing?.is_uncertain ?? false,
-        confidence_reason: existing?.confidence_reason || ""
-      });
+        source: this.combineStructuredSource(existing?.source, "visual_selection"),
+        is_uncertain: existing?.is_uncertain ?? Boolean(item?.is_uncertain),
+        confidence_reason: existing?.confidence_reason || String(item?.confidence_reason || "")
+      };
+      mergedByName.set(key, existing ? this.mergeStructuredEntries(existing, candidate, "test_name") : candidate);
     }
 
     const selected_tests = Array.from(mergedByName.values());
@@ -456,35 +880,144 @@ class HandwritingExtractionAgent {
     for (const item of Array.isArray(textRadiology?.selected_studies) ? textRadiology.selected_studies : []) {
       const name = String(item?.study_name || "").trim();
       if (!name) continue;
-      const key = name.toLowerCase();
-      mergedByName.set(key, {
+      const key = this.normalizeStructuredKey(name);
+      const existing = mergedByName.get(key);
+      const candidate = {
         study_name: name,
         category: item?.category || "imaging",
         is_checked: true,
-        source: "text_order",
+        source: item?.source || "text_order",
         is_uncertain: Boolean(item?.is_uncertain),
         confidence_reason: String(item?.confidence_reason || "")
-      });
+      };
+      mergedByName.set(key, existing ? this.mergeStructuredEntries(existing, candidate, "study_name") : candidate);
     }
 
     for (const item of Array.isArray(visualRadiology?.selected_studies) ? visualRadiology.selected_studies : []) {
       const name = String(item?.study_name || "").trim();
       if (!name) continue;
-      const key = name.toLowerCase();
+      const key = this.normalizeStructuredKey(name);
       const existing = mergedByName.get(key);
-      mergedByName.set(key, {
+      const candidate = {
         study_name: name,
         category: existing?.category || item?.category || "imaging",
         is_checked: item?.is_checked ?? existing?.is_checked ?? true,
-        source: existing ? "text+visual" : "visual_selection",
-        is_uncertain: existing?.is_uncertain ?? false,
-        confidence_reason: existing?.confidence_reason || ""
-      });
+        source: this.combineStructuredSource(existing?.source, "visual_selection"),
+        is_uncertain: existing?.is_uncertain ?? Boolean(item?.is_uncertain),
+        confidence_reason: existing?.confidence_reason || String(item?.confidence_reason || "")
+      };
+      mergedByName.set(key, existing ? this.mergeStructuredEntries(existing, candidate, "study_name") : candidate);
     }
 
     return {
       selected_studies: Array.from(mergedByName.values())
     };
+  }
+
+  mergeNuclearMedicineSelections(textNuclearMedicine, reconciledNuclearMedicine) {
+    const mergedByName = new Map();
+    const allItems = [
+      ...(Array.isArray(textNuclearMedicine?.selected_studies) ? textNuclearMedicine.selected_studies : []),
+      ...(Array.isArray(reconciledNuclearMedicine?.selected_studies) ? reconciledNuclearMedicine.selected_studies : [])
+    ];
+
+    for (const item of allItems) {
+      const name = String(item?.study_name || "").trim();
+      if (!name) continue;
+      const key = this.normalizeStructuredKey(name);
+      const existing = mergedByName.get(key);
+      const candidate = {
+        study_name: name,
+        category: item?.category || "nuclear",
+        is_checked: true,
+        source: item?.source || "text_order",
+        is_uncertain: Boolean(item?.is_uncertain),
+        confidence_reason: String(item?.confidence_reason || "")
+      };
+      mergedByName.set(key, existing ? this.mergeStructuredEntries(existing, candidate, "study_name") : candidate);
+    }
+
+    return {
+      selected_studies: Array.from(mergedByName.values())
+    };
+  }
+
+  mergeProcedures(textProcedures, reconciledProcedures) {
+    const mergedByName = new Map();
+    const allItems = [
+      ...(Array.isArray(textProcedures) ? textProcedures : []),
+      ...(Array.isArray(reconciledProcedures) ? reconciledProcedures : [])
+    ];
+
+    for (const item of allItems) {
+      const name = String(item?.name || "").trim();
+      if (!name) continue;
+      const key = this.normalizeStructuredKey(name);
+      const existing = mergedByName.get(key);
+      const candidate = {
+        name,
+        category: item?.category || "procedure",
+        is_uncertain: Boolean(item?.is_uncertain),
+        confidence_reason: String(item?.confidence_reason || ""),
+        source: item?.source || "text_order"
+      };
+      mergedByName.set(key, existing ? this.mergeStructuredEntries(existing, candidate, "name") : candidate);
+    }
+
+    return Array.from(mergedByName.values());
+  }
+
+  normalizeStructuredKey(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/\bc\/s\b/g, "culture sensitivity")
+      .replace(/\busg\b/g, "ultrasound")
+      .replace(/\bx[\s-]?ray\b/g, "xray")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  combineStructuredSource(existingSource, incomingSource) {
+    const sources = new Set([existingSource, incomingSource].filter(Boolean));
+    const sourceList = Array.from(sources);
+    const hasVisual = sourceList.some((source) => /visual/.test(String(source || "")));
+    const hasTextLike = sourceList.some((source) => !/^visual_selection$/i.test(String(source || "")));
+
+    if (hasVisual && hasTextLike) return "text+visual";
+    if (hasVisual) return "visual_selection";
+    return existingSource || incomingSource || "text_order";
+  }
+
+  mergeStructuredEntries(existing, candidate, labelKey) {
+    const currentLabel = String(existing?.[labelKey] || "");
+    const candidateLabel = String(candidate?.[labelKey] || "");
+    const currentScore = this.structuredEntryScore(existing, currentLabel);
+    const candidateScore = this.structuredEntryScore(candidate, candidateLabel);
+    const preferred = candidateScore > currentScore ? candidate : existing;
+    const alternate = preferred === candidate ? existing : candidate;
+
+    return {
+      ...preferred,
+      [labelKey]: candidateLabel.length > currentLabel.length ? candidateLabel : currentLabel,
+      category: preferred.category || alternate.category || "unknown",
+      source: this.combineStructuredSource(existing?.source, candidate?.source),
+      is_checked: Boolean(existing?.is_checked || candidate?.is_checked),
+      is_circled: Boolean(existing?.is_circled || candidate?.is_circled),
+      is_underlined: Boolean(existing?.is_underlined || candidate?.is_underlined),
+      is_uncertain: Boolean(existing?.is_uncertain && candidate?.is_uncertain),
+      confidence_reason: String(preferred.confidence_reason || alternate.confidence_reason || "")
+    };
+  }
+
+  structuredEntryScore(item, label) {
+    return [
+      label.length,
+      item?.source === "text+visual" ? 6 : 0,
+      item?.source === "text_order" ? 5 : 0,
+      item?.source === "note_reconciliation" ? 4 : 0,
+      item?.source === "visual_selection" ? 3 : 0,
+      item?.is_uncertain ? 0 : 2
+    ].reduce((sum, value) => sum + value, 0);
   }
 
   /**

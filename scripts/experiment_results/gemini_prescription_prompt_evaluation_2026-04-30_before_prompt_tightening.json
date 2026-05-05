@@ -1,0 +1,1443 @@
+{
+  "generatedAt": "2026-04-30T03:11:30.836Z",
+  "files": [
+    "Prescription_01.pdf",
+    "Prescription_02.pdf",
+    "Prescription_03.pdf",
+    "Prescription_04.pdf",
+    "Prescription_05.pdf",
+    "Prescription_06.pdf"
+  ],
+  "prompts": [
+    {
+      "key": "medications",
+      "label": "Medications"
+    },
+    {
+      "key": "vitals",
+      "label": "Vitals"
+    },
+    {
+      "key": "diagnosis",
+      "label": "Diagnosis"
+    },
+    {
+      "key": "visual",
+      "label": "Visual Elements"
+    }
+  ],
+  "staticFindings": [
+    "- `Diagnosis` prompt/schema mismatch: the prompt requires `radiology` as an array of studies, but the downstream diagnosis skill later expects an object shape in its own post-processing. That is a contract mismatch even if Gemini follows the prompt.",
+    "- `Vitals` prompt has an internal ambiguity: it says to return null values when vitals are absent, but the example still shows `has_vitals: true`. That makes consistency harder to enforce.",
+    "- `Visual Element Detector` mixes lab-selection detection with radiology/imaging detection in the same prompt. That broadens scope and may dilute precision for checkbox-style lab extraction.",
+    "- `Medications` prompt is the cleanest structurally. It has the most explicit field-level guidance and the least downstream schema ambiguity."
+  ],
+  "evaluations": [
+    {
+      "pdfName": "Prescription_01.pdf",
+      "pdfPath": "/Users/yavar/Documents/CoE/Manipal/data/Prescription_01.pdf",
+      "prepared": true,
+      "pageCount": 2,
+      "masking": {
+        "success": true,
+        "maskedCount": 11,
+        "maskedTypes": [
+          "hospital_name",
+          "patient_name",
+          "patient_age",
+          "episode_number",
+          "patient_id",
+          "date",
+          "patient_contact",
+          "doctor_name",
+          "registration_number",
+          "hospital_name",
+          "hospital_name"
+        ]
+      },
+      "preparationError": null,
+      "results": [
+        {
+          "promptKey": "medications",
+          "promptLabel": "Medications",
+          "success": true,
+          "durationMs": 7059,
+          "usage": {
+            "promptTokenCount": 1036,
+            "candidatesTokenCount": 144,
+            "totalTokenCount": 1925,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 520
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 516
+              }
+            ],
+            "thoughtsTokenCount": 745
+          },
+          "rawContentPreview": "{\n  \"medications\": [\n    {\n      \"name\": \"Dolo\",\n      \"generic_name\": null,\n      \"dosage\": \"650mg\",\n      \"form\": \"tablet\",\n      \"frequency\": \"SOS\",\n      \"duration\": null,\n      \"route\": \"oral\",\n      \"instructions\": \"1 tablet as needed for fever\",\n      \"confidence\": \"high\",\n      \"is_handwritten\": true\n    }\n  ],\n  \"total_count\": 1,\n  \"has_unreadable\": false,\n  \"unreadable_count\": 0\n}",
+          "parsed": {
+            "medications": [
+              {
+                "name": "Dolo",
+                "generic_name": null,
+                "dosage": "650mg",
+                "form": "tablet",
+                "frequency": "SOS",
+                "duration": null,
+                "route": "oral",
+                "instructions": "1 tablet as needed for fever",
+                "confidence": "high",
+                "is_handwritten": true
+              }
+            ],
+            "total_count": 1,
+            "has_unreadable": false,
+            "unreadable_count": 0
+          },
+          "summary": {
+            "schemaOk": true,
+            "missingFieldCount": 0,
+            "medicationCount": 1,
+            "totalCount": 1,
+            "hasUnreadable": false,
+            "unreadableCount": 0,
+            "sample": [
+              "Dolo"
+            ],
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "vitals",
+          "promptLabel": "Vitals",
+          "success": true,
+          "durationMs": 3951,
+          "usage": {
+            "promptTokenCount": 969,
+            "candidatesTokenCount": 186,
+            "totalTokenCount": 1372,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 453
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 516
+              }
+            ],
+            "thoughtsTokenCount": 217
+          },
+          "rawContentPreview": "{\n  \"blood_pressure\": {\n    \"systolic\": null,\n    \"diastolic\": null,\n    \"unit\": \"mmHg\"\n  },\n  \"pulse\": {\n    \"value\": null,\n    \"unit\": \"bpm\"\n  },\n  \"temperature\": {\n    \"value\": null,\n    \"unit\": \"°F\"\n  },\n  \"weight\": {\n    \"value\": null,\n    \"unit\": \"kg\"\n  },\n  \"spo2\": {\n    \"value\": null,\n    \"unit\": \"%\"\n  },\n  \"respiratory_rate\": {\n    \"value\": null,\n    \"unit\": \"/min\"\n  },\n  \"has_vitals\": fa",
+          "parsed": {
+            "blood_pressure": {
+              "systolic": null,
+              "diastolic": null,
+              "unit": "mmHg"
+            },
+            "pulse": {
+              "value": null,
+              "unit": "bpm"
+            },
+            "temperature": {
+              "value": null,
+              "unit": "°F"
+            },
+            "weight": {
+              "value": null,
+              "unit": "kg"
+            },
+            "spo2": {
+              "value": null,
+              "unit": "%"
+            },
+            "respiratory_rate": {
+              "value": null,
+              "unit": "/min"
+            },
+            "has_vitals": false,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "populatedCount": 0,
+            "hasVitals": false,
+            "confidence": "high",
+            "sample": {
+              "bp": "",
+              "pulse": null,
+              "temperature": null
+            },
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "diagnosis",
+          "promptLabel": "Diagnosis",
+          "success": true,
+          "durationMs": 9726,
+          "usage": {
+            "promptTokenCount": 1070,
+            "candidatesTokenCount": 282,
+            "totalTokenCount": 2849,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 554
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 516
+              }
+            ],
+            "thoughtsTokenCount": 1497
+          },
+          "rawContentPreview": "{\n  \"principal_diagnosis\": \"Bilateral mild sloping SNHL\",\n  \"secondary_diagnoses\": [\n    \"DNS to (R) side\"\n  ],\n  \"symptoms\": [\n    \"fever since 2 days\",\n    \"headache since 2 days - unilateral (R) sided\",\n    \"occasional tinnitus (R) sided\"\n  ],\n  \"clinical_notes\": [\n    \"No c/o nasal stuffiness / discharge\",\n    \"No c/o sore throat / cough\",\n    \"No associated c/o hearing loss / giddiness\",\n    ",
+          "parsed": {
+            "principal_diagnosis": "Bilateral mild sloping SNHL",
+            "secondary_diagnoses": [
+              "DNS to (R) side"
+            ],
+            "symptoms": [
+              "fever since 2 days",
+              "headache since 2 days - unilateral (R) sided",
+              "occasional tinnitus (R) sided"
+            ],
+            "clinical_notes": [
+              "No c/o nasal stuffiness / discharge",
+              "No c/o sore throat / cough",
+              "No associated c/o hearing loss / giddiness",
+              "P/A",
+              "wax in (R) ear",
+              "okay (left ear)",
+              "B/L TM okay",
+              "Dolo 650mg 1 SOS for fever.",
+              "Visit Dr. Ravi Raghavan is for does not subside.",
+              "for (next visit)"
+            ],
+            "lab_investigations": [
+              {
+                "test_name": "PURE TONE AUDIOGRAM",
+                "category": "audiology"
+              }
+            ],
+            "radiology": [],
+            "has_diagnosis": true,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "principalDiagnosis": "Bilateral mild sloping SNHL",
+            "secondaryCount": 1,
+            "symptomCount": 3,
+            "clinicalNoteCount": 10,
+            "labCount": 1,
+            "radiologyCount": 0,
+            "confidence": "high",
+            "sample": {
+              "labs": [
+                "PURE TONE AUDIOGRAM"
+              ],
+              "radiology": []
+            },
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "visual",
+          "promptLabel": "Visual Elements",
+          "success": true,
+          "durationMs": 6228,
+          "usage": {
+            "promptTokenCount": 944,
+            "candidatesTokenCount": 84,
+            "totalTokenCount": 1788,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 428
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 516
+              }
+            ],
+            "thoughtsTokenCount": 760
+          },
+          "rawContentPreview": "{\n  \"lab_investigations\": {\n    \"selected_tests\": [],\n    \"total_available\": 23,\n    \"total_selected\": 0\n  },\n  \"radiology\": {\n    \"selected_studies\": []\n  },\n  \"has_selections\": false,\n  \"confidence\": \"high\"\n}",
+          "parsed": {
+            "lab_investigations": {
+              "selected_tests": [],
+              "total_available": 23,
+              "total_selected": 0
+            },
+            "radiology": {
+              "selected_studies": []
+            },
+            "has_selections": false,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "totalAvailable": 23,
+            "totalSelected": 0,
+            "radiologySelected": 0,
+            "hasSelections": false,
+            "confidence": "high",
+            "sample": {
+              "labs": [],
+              "radiology": []
+            },
+            "contradictions": []
+          }
+        }
+      ]
+    },
+    {
+      "pdfName": "Prescription_02.pdf",
+      "pdfPath": "/Users/yavar/Documents/CoE/Manipal/data/Prescription_02.pdf",
+      "prepared": true,
+      "pageCount": 2,
+      "masking": {
+        "success": true,
+        "maskedCount": 11,
+        "maskedTypes": [
+          "hospital_name",
+          "patient_name",
+          "patient_age",
+          "patient_id",
+          "patient_id",
+          "date",
+          "doctor_name",
+          "registration_number",
+          "hospital_name",
+          "hospital_name",
+          "barcode"
+        ]
+      },
+      "preparationError": null,
+      "results": [
+        {
+          "promptKey": "medications",
+          "promptLabel": "Medications",
+          "success": true,
+          "durationMs": 6014,
+          "usage": {
+            "promptTokenCount": 1036,
+            "candidatesTokenCount": 147,
+            "totalTokenCount": 1706,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 520
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 516
+              }
+            ],
+            "thoughtsTokenCount": 523
+          },
+          "rawContentPreview": "{\n  \"medications\": [\n    {\n      \"name\": \"AF\",\n      \"generic_name\": null,\n      \"dosage\": \"150mg\",\n      \"form\": \"tablet\",\n      \"frequency\": \"2 times/week\",\n      \"duration\": \"4 weeks\",\n      \"route\": \"oral\",\n      \"instructions\": \"Take on Saturday and Wednesday\",\n      \"confidence\": \"high\",\n      \"is_handwritten\": true\n    }\n  ],\n  \"total_count\": 1,\n  \"has_unreadable\": false,\n  \"unreadable_coun",
+          "parsed": {
+            "medications": [
+              {
+                "name": "AF",
+                "generic_name": null,
+                "dosage": "150mg",
+                "form": "tablet",
+                "frequency": "2 times/week",
+                "duration": "4 weeks",
+                "route": "oral",
+                "instructions": "Take on Saturday and Wednesday",
+                "confidence": "high",
+                "is_handwritten": true
+              }
+            ],
+            "total_count": 1,
+            "has_unreadable": false,
+            "unreadable_count": 0
+          },
+          "summary": {
+            "schemaOk": true,
+            "missingFieldCount": 0,
+            "medicationCount": 1,
+            "totalCount": 1,
+            "hasUnreadable": false,
+            "unreadableCount": 0,
+            "sample": [
+              "AF"
+            ],
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "vitals",
+          "promptLabel": "Vitals",
+          "success": true,
+          "durationMs": 5091,
+          "usage": {
+            "promptTokenCount": 969,
+            "candidatesTokenCount": 186,
+            "totalTokenCount": 1568,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 453
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 516
+              }
+            ],
+            "thoughtsTokenCount": 413
+          },
+          "rawContentPreview": "{\n  \"blood_pressure\": {\n    \"systolic\": null,\n    \"diastolic\": null,\n    \"unit\": \"mmHg\"\n  },\n  \"pulse\": {\n    \"value\": null,\n    \"unit\": \"bpm\"\n  },\n  \"temperature\": {\n    \"value\": null,\n    \"unit\": \"°F\"\n  },\n  \"weight\": {\n    \"value\": null,\n    \"unit\": \"kg\"\n  },\n  \"spo2\": {\n    \"value\": null,\n    \"unit\": \"%\"\n  },\n  \"respiratory_rate\": {\n    \"value\": null,\n    \"unit\": \"/min\"\n  },\n  \"has_vitals\": tr",
+          "parsed": {
+            "blood_pressure": {
+              "systolic": null,
+              "diastolic": null,
+              "unit": "mmHg"
+            },
+            "pulse": {
+              "value": null,
+              "unit": "bpm"
+            },
+            "temperature": {
+              "value": null,
+              "unit": "°F"
+            },
+            "weight": {
+              "value": null,
+              "unit": "kg"
+            },
+            "spo2": {
+              "value": null,
+              "unit": "%"
+            },
+            "respiratory_rate": {
+              "value": null,
+              "unit": "/min"
+            },
+            "has_vitals": true,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "populatedCount": 0,
+            "hasVitals": true,
+            "confidence": "high",
+            "sample": {
+              "bp": "",
+              "pulse": null,
+              "temperature": null
+            },
+            "contradictions": [
+              "has_vitals=true but all values are null"
+            ]
+          }
+        },
+        {
+          "promptKey": "diagnosis",
+          "promptLabel": "Diagnosis",
+          "success": true,
+          "durationMs": 6923,
+          "usage": {
+            "promptTokenCount": 1070,
+            "candidatesTokenCount": 131,
+            "totalTokenCount": 2219,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 554
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 516
+              }
+            ],
+            "thoughtsTokenCount": 1018
+          },
+          "rawContentPreview": "{\n  \"principal_diagnosis\": null,\n  \"secondary_diagnoses\": [],\n  \"symptoms\": [],\n  \"clinical_notes\": [\n    \"Rx\",\n    \"Tab AF 150 - 2 times/week (Sat + Wed)\",\n    \"Pl. add.\",\n    \"x 4 weeks\",\n    \"All other treatment to be followed as advised earlier today\"\n  ],\n  \"lab_investigations\": [],\n  \"radiology\": [],\n  \"has_diagnosis\": false,\n  \"confidence\": \"high\"\n}",
+          "parsed": {
+            "principal_diagnosis": null,
+            "secondary_diagnoses": [],
+            "symptoms": [],
+            "clinical_notes": [
+              "Rx",
+              "Tab AF 150 - 2 times/week (Sat + Wed)",
+              "Pl. add.",
+              "x 4 weeks",
+              "All other treatment to be followed as advised earlier today"
+            ],
+            "lab_investigations": [],
+            "radiology": [],
+            "has_diagnosis": false,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "principalDiagnosis": null,
+            "secondaryCount": 0,
+            "symptomCount": 0,
+            "clinicalNoteCount": 5,
+            "labCount": 0,
+            "radiologyCount": 0,
+            "confidence": "high",
+            "sample": {
+              "labs": [],
+              "radiology": []
+            },
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "visual",
+          "promptLabel": "Visual Elements",
+          "success": true,
+          "durationMs": 4265,
+          "usage": {
+            "promptTokenCount": 944,
+            "candidatesTokenCount": 83,
+            "totalTokenCount": 1427,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 428
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 516
+              }
+            ],
+            "thoughtsTokenCount": 400
+          },
+          "rawContentPreview": "{\n  \"lab_investigations\": {\n    \"selected_tests\": [],\n    \"total_available\": 0,\n    \"total_selected\": 0\n  },\n  \"radiology\": {\n    \"selected_studies\": []\n  },\n  \"has_selections\": false,\n  \"confidence\": \"high\"\n}",
+          "parsed": {
+            "lab_investigations": {
+              "selected_tests": [],
+              "total_available": 0,
+              "total_selected": 0
+            },
+            "radiology": {
+              "selected_studies": []
+            },
+            "has_selections": false,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "totalAvailable": 0,
+            "totalSelected": 0,
+            "radiologySelected": 0,
+            "hasSelections": false,
+            "confidence": "high",
+            "sample": {
+              "labs": [],
+              "radiology": []
+            },
+            "contradictions": []
+          }
+        }
+      ]
+    },
+    {
+      "pdfName": "Prescription_03.pdf",
+      "pdfPath": "/Users/yavar/Documents/CoE/Manipal/data/Prescription_03.pdf",
+      "prepared": true,
+      "pageCount": 2,
+      "masking": {
+        "success": true,
+        "maskedCount": 13,
+        "maskedTypes": [
+          "hospital_name",
+          "patient_name",
+          "patient_age",
+          "episode_number",
+          "patient_id",
+          "date",
+          "patient_contact",
+          "email",
+          "doctor_name",
+          "registration_number",
+          "other_phi",
+          "hospital_name",
+          "barcode"
+        ]
+      },
+      "preparationError": null,
+      "results": [
+        {
+          "promptKey": "medications",
+          "promptLabel": "Medications",
+          "success": true,
+          "durationMs": 5144,
+          "usage": {
+            "promptTokenCount": 1036,
+            "candidatesTokenCount": 145,
+            "totalTokenCount": 1570,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 520
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 516
+              }
+            ],
+            "thoughtsTokenCount": 389
+          },
+          "rawContentPreview": "{\n  \"medications\": [\n    {\n      \"name\": \"MIRBEG\",\n      \"generic_name\": null,\n      \"dosage\": \"25mg\",\n      \"form\": \"tablet\",\n      \"frequency\": \"once daily\",\n      \"duration\": \"90 days\",\n      \"route\": \"oral\",\n      \"instructions\": \"Take at night\",\n      \"confidence\": \"high\",\n      \"is_handwritten\": true\n    }\n  ],\n  \"total_count\": 1,\n  \"has_unreadable\": false,\n  \"unreadable_count\": 0\n}",
+          "parsed": {
+            "medications": [
+              {
+                "name": "MIRBEG",
+                "generic_name": null,
+                "dosage": "25mg",
+                "form": "tablet",
+                "frequency": "once daily",
+                "duration": "90 days",
+                "route": "oral",
+                "instructions": "Take at night",
+                "confidence": "high",
+                "is_handwritten": true
+              }
+            ],
+            "total_count": 1,
+            "has_unreadable": false,
+            "unreadable_count": 0
+          },
+          "summary": {
+            "schemaOk": true,
+            "missingFieldCount": 0,
+            "medicationCount": 1,
+            "totalCount": 1,
+            "hasUnreadable": false,
+            "unreadableCount": 0,
+            "sample": [
+              "MIRBEG"
+            ],
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "vitals",
+          "promptLabel": "Vitals",
+          "success": true,
+          "durationMs": 3949,
+          "usage": {
+            "promptTokenCount": 969,
+            "candidatesTokenCount": 186,
+            "totalTokenCount": 1353,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 453
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 516
+              }
+            ],
+            "thoughtsTokenCount": 198
+          },
+          "rawContentPreview": "{\n  \"blood_pressure\": {\n    \"systolic\": null,\n    \"diastolic\": null,\n    \"unit\": \"mmHg\"\n  },\n  \"pulse\": {\n    \"value\": null,\n    \"unit\": \"bpm\"\n  },\n  \"temperature\": {\n    \"value\": null,\n    \"unit\": \"°F\"\n  },\n  \"weight\": {\n    \"value\": null,\n    \"unit\": \"kg\"\n  },\n  \"spo2\": {\n    \"value\": null,\n    \"unit\": \"%\"\n  },\n  \"respiratory_rate\": {\n    \"value\": null,\n    \"unit\": \"/min\"\n  },\n  \"has_vitals\": fa",
+          "parsed": {
+            "blood_pressure": {
+              "systolic": null,
+              "diastolic": null,
+              "unit": "mmHg"
+            },
+            "pulse": {
+              "value": null,
+              "unit": "bpm"
+            },
+            "temperature": {
+              "value": null,
+              "unit": "°F"
+            },
+            "weight": {
+              "value": null,
+              "unit": "kg"
+            },
+            "spo2": {
+              "value": null,
+              "unit": "%"
+            },
+            "respiratory_rate": {
+              "value": null,
+              "unit": "/min"
+            },
+            "has_vitals": false,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "populatedCount": 0,
+            "hasVitals": false,
+            "confidence": "high",
+            "sample": {
+              "bp": "",
+              "pulse": null,
+              "temperature": null
+            },
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "diagnosis",
+          "promptLabel": "Diagnosis",
+          "success": false,
+          "durationMs": 12326,
+          "error": "Unable to parse model JSON response",
+          "usage": null,
+          "summary": null
+        },
+        {
+          "promptKey": "visual",
+          "promptLabel": "Visual Elements",
+          "success": true,
+          "durationMs": 15684,
+          "usage": {
+            "promptTokenCount": 944,
+            "candidatesTokenCount": 290,
+            "totalTokenCount": 3872,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 428
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 516
+              }
+            ],
+            "thoughtsTokenCount": 2638
+          },
+          "rawContentPreview": "{\n  \"lab_investigations\": {\n    \"selected_tests\": [\n      {\n        \"test_name\": \"Glycated Hemoglobin (HbA1c)\",\n        \"is_checked\": true,\n        \"is_circled\": false,\n        \"is_underlined\": false,\n        \"priority\": \"routine\"\n      },\n      {\n        \"test_name\": \"Urine Routine and Microscopy\",\n        \"is_checked\": false,\n        \"is_circled\": true,\n        \"is_underlined\": false,\n        \"p",
+          "parsed": {
+            "lab_investigations": {
+              "selected_tests": [
+                {
+                  "test_name": "Glycated Hemoglobin (HbA1c)",
+                  "is_checked": true,
+                  "is_circled": false,
+                  "is_underlined": false,
+                  "priority": "routine"
+                },
+                {
+                  "test_name": "Urine Routine and Microscopy",
+                  "is_checked": false,
+                  "is_circled": true,
+                  "is_underlined": false,
+                  "priority": "routine"
+                },
+                {
+                  "test_name": "Urine Culture",
+                  "is_checked": false,
+                  "is_circled": true,
+                  "is_underlined": false,
+                  "priority": "routine"
+                }
+              ],
+              "total_available": 20,
+              "total_selected": 3
+            },
+            "radiology": {
+              "selected_studies": [
+                {
+                  "study_name": "Ultrasound Abdomen & Pelvis",
+                  "is_checked": false
+                }
+              ]
+            },
+            "has_selections": true,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "totalAvailable": 20,
+            "totalSelected": 3,
+            "radiologySelected": 1,
+            "hasSelections": true,
+            "confidence": "high",
+            "sample": {
+              "labs": [
+                "Glycated Hemoglobin (HbA1c)",
+                "Urine Routine and Microscopy",
+                "Urine Culture"
+              ],
+              "radiology": [
+                "Ultrasound Abdomen & Pelvis"
+              ]
+            },
+            "contradictions": []
+          }
+        }
+      ]
+    },
+    {
+      "pdfName": "Prescription_04.pdf",
+      "pdfPath": "/Users/yavar/Documents/CoE/Manipal/data/Prescription_04.pdf",
+      "prepared": true,
+      "pageCount": 1,
+      "masking": {
+        "success": true,
+        "maskedCount": 12,
+        "maskedTypes": [
+          "hospital_name",
+          "patient_name",
+          "patient_age",
+          "episode_number",
+          "patient_id",
+          "date",
+          "patient_contact",
+          "email",
+          "doctor_name",
+          "registration_number",
+          "other_phi",
+          "hospital_name"
+        ]
+      },
+      "preparationError": null,
+      "results": [
+        {
+          "promptKey": "medications",
+          "promptLabel": "Medications",
+          "success": true,
+          "durationMs": 4564,
+          "usage": {
+            "promptTokenCount": 778,
+            "candidatesTokenCount": 45,
+            "totalTokenCount": 949,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 520
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 258
+              }
+            ],
+            "thoughtsTokenCount": 126
+          },
+          "rawContentPreview": "{\n  \"medications\": [],\n  \"total_count\": 0,\n  \"has_unreadable\": false,\n  \"unreadable_count\": 0\n}",
+          "parsed": {
+            "medications": [],
+            "total_count": 0,
+            "has_unreadable": false,
+            "unreadable_count": 0
+          },
+          "summary": {
+            "schemaOk": true,
+            "missingFieldCount": 0,
+            "medicationCount": 0,
+            "totalCount": 0,
+            "hasUnreadable": false,
+            "unreadableCount": 0,
+            "sample": [],
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "vitals",
+          "promptLabel": "Vitals",
+          "success": true,
+          "durationMs": 5246,
+          "usage": {
+            "promptTokenCount": 711,
+            "candidatesTokenCount": 191,
+            "totalTokenCount": 1249,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 453
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 258
+              }
+            ],
+            "thoughtsTokenCount": 347
+          },
+          "rawContentPreview": "{\n  \"blood_pressure\": {\n    \"systolic\": 100,\n    \"diastolic\": 70,\n    \"unit\": \"mmHg\"\n  },\n  \"pulse\": {\n    \"value\": null,\n    \"unit\": \"bpm\"\n  },\n  \"temperature\": {\n    \"value\": null,\n    \"unit\": \"°F\"\n  },\n  \"weight\": {\n    \"value\": null,\n    \"unit\": \"kg\"\n  },\n  \"spo2\": {\n    \"value\": null,\n    \"unit\": \"%\"\n  },\n  \"respiratory_rate\": {\n    \"value\": null,\n    \"unit\": \"/min\"\n  },\n  \"has_vitals\": true,",
+          "parsed": {
+            "blood_pressure": {
+              "systolic": 100,
+              "diastolic": 70,
+              "unit": "mmHg"
+            },
+            "pulse": {
+              "value": null,
+              "unit": "bpm"
+            },
+            "temperature": {
+              "value": null,
+              "unit": "°F"
+            },
+            "weight": {
+              "value": null,
+              "unit": "kg"
+            },
+            "spo2": {
+              "value": null,
+              "unit": "%"
+            },
+            "respiratory_rate": {
+              "value": null,
+              "unit": "/min"
+            },
+            "has_vitals": true,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "populatedCount": 1,
+            "hasVitals": true,
+            "confidence": "high",
+            "sample": {
+              "bp": "100/70",
+              "pulse": null,
+              "temperature": null
+            },
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "diagnosis",
+          "promptLabel": "Diagnosis",
+          "success": false,
+          "durationMs": 12011,
+          "error": "Unable to parse model JSON response",
+          "usage": null,
+          "summary": null
+        },
+        {
+          "promptKey": "visual",
+          "promptLabel": "Visual Elements",
+          "success": true,
+          "durationMs": 16898,
+          "usage": {
+            "promptTokenCount": 686,
+            "candidatesTokenCount": 206,
+            "totalTokenCount": 3525,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 428
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 258
+              }
+            ],
+            "thoughtsTokenCount": 2633
+          },
+          "rawContentPreview": "{\n  \"lab_investigations\": {\n    \"selected_tests\": [\n      {\n        \"test_name\": \"NCS both ULs. - ulnar below & above elbow too.\",\n        \"is_checked\": false,\n        \"is_circled\": false,\n        \"is_underlined\": true,\n        \"priority\": \"routine\"\n      },\n      {\n        \"test_name\": \"DPR\",\n        \"is_checked\": false,\n        \"is_circled\": true,\n        \"is_underlined\": false,\n        \"priorit",
+          "parsed": {
+            "lab_investigations": {
+              "selected_tests": [
+                {
+                  "test_name": "NCS both ULs. - ulnar below & above elbow too.",
+                  "is_checked": false,
+                  "is_circled": false,
+                  "is_underlined": true,
+                  "priority": "routine"
+                },
+                {
+                  "test_name": "DPR",
+                  "is_checked": false,
+                  "is_circled": true,
+                  "is_underlined": false,
+                  "priority": "routine"
+                }
+              ],
+              "total_available": 30,
+              "total_selected": 2
+            },
+            "radiology": {
+              "selected_studies": []
+            },
+            "has_selections": true,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "totalAvailable": 30,
+            "totalSelected": 2,
+            "radiologySelected": 0,
+            "hasSelections": true,
+            "confidence": "high",
+            "sample": {
+              "labs": [
+                "NCS both ULs. - ulnar below & above elbow too.",
+                "DPR"
+              ],
+              "radiology": []
+            },
+            "contradictions": []
+          }
+        }
+      ]
+    },
+    {
+      "pdfName": "Prescription_05.pdf",
+      "pdfPath": "/Users/yavar/Documents/CoE/Manipal/data/Prescription_05.pdf",
+      "prepared": true,
+      "pageCount": 1,
+      "masking": {
+        "success": true,
+        "maskedCount": 11,
+        "maskedTypes": [
+          "hospital_name",
+          "patient_name",
+          "patient_age",
+          "episode_number",
+          "patient_id",
+          "date",
+          "patient_contact",
+          "doctor_name",
+          "registration_number",
+          "other_phi",
+          "hospital_name"
+        ]
+      },
+      "preparationError": null,
+      "results": [
+        {
+          "promptKey": "medications",
+          "promptLabel": "Medications",
+          "success": true,
+          "durationMs": 13962,
+          "usage": {
+            "promptTokenCount": 778,
+            "candidatesTokenCount": 136,
+            "totalTokenCount": 3000,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 520
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 258
+              }
+            ],
+            "thoughtsTokenCount": 2086
+          },
+          "rawContentPreview": "{\n  \"medications\": [\n    {\n      \"name\": \"XAmil\",\n      \"generic_name\": null,\n      \"dosage\": \"As prescribed\",\n      \"form\": \"injection\",\n      \"frequency\": null,\n      \"duration\": null,\n      \"route\": \"IV\",\n      \"instructions\": null,\n      \"confidence\": \"high\",\n      \"is_handwritten\": true\n    }\n  ],\n  \"total_count\": 1,\n  \"has_unreadable\": false,\n  \"unreadable_count\": 0\n}",
+          "parsed": {
+            "medications": [
+              {
+                "name": "XAmil",
+                "generic_name": null,
+                "dosage": "As prescribed",
+                "form": "injection",
+                "frequency": null,
+                "duration": null,
+                "route": "IV",
+                "instructions": null,
+                "confidence": "high",
+                "is_handwritten": true
+              }
+            ],
+            "total_count": 1,
+            "has_unreadable": false,
+            "unreadable_count": 0
+          },
+          "summary": {
+            "schemaOk": true,
+            "missingFieldCount": 0,
+            "medicationCount": 1,
+            "totalCount": 1,
+            "hasUnreadable": false,
+            "unreadableCount": 0,
+            "sample": [
+              "XAmil"
+            ],
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "vitals",
+          "promptLabel": "Vitals",
+          "success": true,
+          "durationMs": 6170,
+          "usage": {
+            "promptTokenCount": 711,
+            "candidatesTokenCount": 201,
+            "totalTokenCount": 1544,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 453
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 258
+              }
+            ],
+            "thoughtsTokenCount": 632
+          },
+          "rawContentPreview": "{\n  \"blood_pressure\": {\n    \"systolic\": 130,\n    \"diastolic\": 80,\n    \"unit\": \"mmHg\"\n  },\n  \"pulse\": {\n    \"value\": 90,\n    \"unit\": \"bpm\"\n  },\n  \"temperature\": {\n    \"value\": 97.9,\n    \"unit\": \"°F\"\n  },\n  \"weight\": {\n    \"value\": 77,\n    \"unit\": \"kg\"\n  },\n  \"spo2\": {\n    \"value\": 99,\n    \"unit\": \"%\"\n  },\n  \"respiratory_rate\": {\n    \"value\": null,\n    \"unit\": \"/min\"\n  },\n  \"has_vitals\": true,\n  \"co",
+          "parsed": {
+            "blood_pressure": {
+              "systolic": 130,
+              "diastolic": 80,
+              "unit": "mmHg"
+            },
+            "pulse": {
+              "value": 90,
+              "unit": "bpm"
+            },
+            "temperature": {
+              "value": 97.9,
+              "unit": "°F"
+            },
+            "weight": {
+              "value": 77,
+              "unit": "kg"
+            },
+            "spo2": {
+              "value": 99,
+              "unit": "%"
+            },
+            "respiratory_rate": {
+              "value": null,
+              "unit": "/min"
+            },
+            "has_vitals": true,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "populatedCount": 5,
+            "hasVitals": true,
+            "confidence": "high",
+            "sample": {
+              "bp": "130/80",
+              "pulse": 90,
+              "temperature": 97.9
+            },
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "diagnosis",
+          "promptLabel": "Diagnosis",
+          "success": false,
+          "durationMs": 12212,
+          "error": "Unable to parse model JSON response",
+          "usage": null,
+          "summary": null
+        },
+        {
+          "promptKey": "visual",
+          "promptLabel": "Visual Elements",
+          "success": true,
+          "durationMs": 4023,
+          "usage": {
+            "promptTokenCount": 686,
+            "candidatesTokenCount": 83,
+            "totalTokenCount": 1096,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 428
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 258
+              }
+            ],
+            "thoughtsTokenCount": 327
+          },
+          "rawContentPreview": "{\n  \"lab_investigations\": {\n    \"selected_tests\": [],\n    \"total_available\": 0,\n    \"total_selected\": 0\n  },\n  \"radiology\": {\n    \"selected_studies\": []\n  },\n  \"has_selections\": false,\n  \"confidence\": \"high\"\n}",
+          "parsed": {
+            "lab_investigations": {
+              "selected_tests": [],
+              "total_available": 0,
+              "total_selected": 0
+            },
+            "radiology": {
+              "selected_studies": []
+            },
+            "has_selections": false,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "totalAvailable": 0,
+            "totalSelected": 0,
+            "radiologySelected": 0,
+            "hasSelections": false,
+            "confidence": "high",
+            "sample": {
+              "labs": [],
+              "radiology": []
+            },
+            "contradictions": []
+          }
+        }
+      ]
+    },
+    {
+      "pdfName": "Prescription_06.pdf",
+      "pdfPath": "/Users/yavar/Documents/CoE/Manipal/data/Prescription_06.pdf",
+      "prepared": true,
+      "pageCount": 1,
+      "masking": {
+        "success": true,
+        "maskedCount": 12,
+        "maskedTypes": [
+          "hospital_name",
+          "patient_name",
+          "patient_id",
+          "patient_contact",
+          "doctor_name",
+          "patient_age",
+          "date",
+          "episode_number",
+          "registration_number",
+          "other_phi",
+          "hospital_name",
+          "hospital_name"
+        ]
+      },
+      "preparationError": null,
+      "results": [
+        {
+          "promptKey": "medications",
+          "promptLabel": "Medications",
+          "success": true,
+          "durationMs": 4166,
+          "usage": {
+            "promptTokenCount": 778,
+            "candidatesTokenCount": 45,
+            "totalTokenCount": 1035,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 520
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 258
+              }
+            ],
+            "thoughtsTokenCount": 212
+          },
+          "rawContentPreview": "{\n  \"medications\": [],\n  \"total_count\": 0,\n  \"has_unreadable\": false,\n  \"unreadable_count\": 0\n}",
+          "parsed": {
+            "medications": [],
+            "total_count": 0,
+            "has_unreadable": false,
+            "unreadable_count": 0
+          },
+          "summary": {
+            "schemaOk": true,
+            "missingFieldCount": 0,
+            "medicationCount": 0,
+            "totalCount": 0,
+            "hasUnreadable": false,
+            "unreadableCount": 0,
+            "sample": [],
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "vitals",
+          "promptLabel": "Vitals",
+          "success": true,
+          "durationMs": 5821,
+          "usage": {
+            "promptTokenCount": 711,
+            "candidatesTokenCount": 197,
+            "totalTokenCount": 1177,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 453
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 258
+              }
+            ],
+            "thoughtsTokenCount": 269
+          },
+          "rawContentPreview": "{\n  \"blood_pressure\": {\n    \"systolic\": 120,\n    \"diastolic\": 80,\n    \"unit\": \"mmHg\"\n  },\n  \"pulse\": {\n    \"value\": 70,\n    \"unit\": \"bpm\"\n  },\n  \"temperature\": {\n    \"value\": null,\n    \"unit\": \"°F\"\n  },\n  \"weight\": {\n    \"value\": 80,\n    \"unit\": \"kg\"\n  },\n  \"spo2\": {\n    \"value\": 99,\n    \"unit\": \"%\"\n  },\n  \"respiratory_rate\": {\n    \"value\": null,\n    \"unit\": \"/min\"\n  },\n  \"has_vitals\": true,\n  \"co",
+          "parsed": {
+            "blood_pressure": {
+              "systolic": 120,
+              "diastolic": 80,
+              "unit": "mmHg"
+            },
+            "pulse": {
+              "value": 70,
+              "unit": "bpm"
+            },
+            "temperature": {
+              "value": null,
+              "unit": "°F"
+            },
+            "weight": {
+              "value": 80,
+              "unit": "kg"
+            },
+            "spo2": {
+              "value": 99,
+              "unit": "%"
+            },
+            "respiratory_rate": {
+              "value": null,
+              "unit": "/min"
+            },
+            "has_vitals": true,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "populatedCount": 4,
+            "hasVitals": true,
+            "confidence": "high",
+            "sample": {
+              "bp": "120/80",
+              "pulse": 70,
+              "temperature": null
+            },
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "diagnosis",
+          "promptLabel": "Diagnosis",
+          "success": true,
+          "durationMs": 6470,
+          "usage": {
+            "promptTokenCount": 812,
+            "candidatesTokenCount": 191,
+            "totalTokenCount": 1789,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 554
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 258
+              }
+            ],
+            "thoughtsTokenCount": 786
+          },
+          "rawContentPreview": "{\n  \"principal_diagnosis\": null,\n  \"secondary_diagnoses\": [],\n  \"symptoms\": [],\n  \"clinical_notes\": [\n    \"Weight: 80 kg\",\n    \"Height: 168 cm\",\n    \"BP: 120/80 mmHg\",\n    \"Pulse: 70/min\",\n    \"Respirations: NIL\",\n    \"SpO2: 99%\",\n    \"P. Score: 2110\",\n    \"Prostate normal\"\n  ],\n  \"lab_investigations\": [\n    {\n      \"test_name\": \"PSA\",\n      \"category\": \"biochemistry\"\n    }\n  ],\n  \"radiology\": [],",
+          "parsed": {
+            "principal_diagnosis": null,
+            "secondary_diagnoses": [],
+            "symptoms": [],
+            "clinical_notes": [
+              "Weight: 80 kg",
+              "Height: 168 cm",
+              "BP: 120/80 mmHg",
+              "Pulse: 70/min",
+              "Respirations: NIL",
+              "SpO2: 99%",
+              "P. Score: 2110",
+              "Prostate normal"
+            ],
+            "lab_investigations": [
+              {
+                "test_name": "PSA",
+                "category": "biochemistry"
+              }
+            ],
+            "radiology": [],
+            "has_diagnosis": false,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "principalDiagnosis": null,
+            "secondaryCount": 0,
+            "symptomCount": 0,
+            "clinicalNoteCount": 8,
+            "labCount": 1,
+            "radiologyCount": 0,
+            "confidence": "high",
+            "sample": {
+              "labs": [
+                "PSA"
+              ],
+              "radiology": []
+            },
+            "contradictions": []
+          }
+        },
+        {
+          "promptKey": "visual",
+          "promptLabel": "Visual Elements",
+          "success": true,
+          "durationMs": 5455,
+          "usage": {
+            "promptTokenCount": 686,
+            "candidatesTokenCount": 138,
+            "totalTokenCount": 1358,
+            "promptTokensDetails": [
+              {
+                "modality": "TEXT",
+                "tokenCount": 428
+              },
+              {
+                "modality": "IMAGE",
+                "tokenCount": 258
+              }
+            ],
+            "thoughtsTokenCount": 534
+          },
+          "rawContentPreview": "{\n  \"lab_investigations\": {\n    \"selected_tests\": [\n      {\n        \"test_name\": \"PSA\",\n        \"is_checked\": false,\n        \"is_circled\": true,\n        \"is_underlined\": false,\n        \"priority\": \"routine\"\n      }\n    ],\n    \"total_available\": 0,\n    \"total_selected\": 1\n  },\n  \"radiology\": {\n    \"selected_studies\": []\n  },\n  \"has_selections\": true,\n  \"confidence\": \"high\"\n}",
+          "parsed": {
+            "lab_investigations": {
+              "selected_tests": [
+                {
+                  "test_name": "PSA",
+                  "is_checked": false,
+                  "is_circled": true,
+                  "is_underlined": false,
+                  "priority": "routine"
+                }
+              ],
+              "total_available": 0,
+              "total_selected": 1
+            },
+            "radiology": {
+              "selected_studies": []
+            },
+            "has_selections": true,
+            "confidence": "high"
+          },
+          "summary": {
+            "schemaOk": true,
+            "totalAvailable": 0,
+            "totalSelected": 1,
+            "radiologySelected": 0,
+            "hasSelections": true,
+            "confidence": "high",
+            "sample": {
+              "labs": [
+                "PSA"
+              ],
+              "radiology": []
+            },
+            "contradictions": []
+          }
+        }
+      ]
+    }
+  ]
+}
