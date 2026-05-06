@@ -15,8 +15,8 @@ replicaCount: 1
 strategy:
   type: RollingUpdate
   rollingUpdate:
-    maxSurge: 1        # Maximum number of pods that can be created above desired replicas
-    maxUnavailable: 0  # Maximum number of pods that can be unavailable during update
+    maxSurge: 0        # Only create new pods after old ones are terminated (prevents SQLite lock conflicts)
+    maxUnavailable: 1  # Allow 1 pod to be unavailable during update
 
 imagePullSecrets: []
 nameOverride: ""
@@ -84,10 +84,10 @@ autoscaling:
 
 # Persistent storage configuration
 storage:
-  className: "azurefile-csi"  # Use Azure Files for ReadWriteMany support
+  className: "default"  # Use default storage class for ReadWriteOnce support (SQLite compatible)
   size: 5Gi
-  accessMode: ReadWriteMany  # Allow multiple pods to access storage simultaneously
-  existingClaim: "r-and-d-doctor-dashboard-storage-rwx"  # Use new ReadWriteMany PVC
+  accessMode: ReadWriteOnce  # SQLite requires single-pod access for database consistency
+  existingClaim: "r-and-d-doctor-dashboard-storage-rwo"  # Use ReadWriteOnce PVC
   annotations: {}
 
 # Container configuration
