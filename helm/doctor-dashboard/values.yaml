@@ -124,7 +124,7 @@ config:
   gemmaUrl: http://206.1.62.28:8000/v1/chat/completions
   gemmaModel: google/gemma-4-26B-A4B-it
   useGeminiForExternal: "true"
-  geminiModel: gemini-2.5-flash
+  geminiModel: gemini-2.5-pro
   # Additional environment variables
   gemmaEnableFallback: "false"
   gemmaFallbackUrl: http://206.1.62.28:8000/v1/chat/completions
@@ -145,6 +145,10 @@ config:
   pharmacyEmailTeam: madhu.r@yavar.ai
   pharmacyEmailReplyTo: Platforms@yavar.ai
   sendPharmacyWhatsapp: "false"
+  whatsappAccessToken: ""
+  whatsappBusinessAccountId: ""
+  pharmacyWhatsappPhoneNumber: ""
+  pharmacyAlertLogPath: ./server/storage/pharmacy_alerts.jsonl
   pharmacyAlertLogOnly: "false"
   # Department alerts configuration
   departmentAlertsEnabled: "true"
@@ -154,14 +158,24 @@ config:
   radiologyEmail: madhu.r@yavar.ai
   nuclearMedicineEmail: madhu.r@yavar.ai
   proceduresEmail: madhu.r@yavar.ai
+  departmentAlertLogPath: ./server/storage/department_alerts.jsonl
   departmentAlertLogOnly: "false"
   # Dashboard URLs
   dashboardBaseUrl: https://doctor-dashboard.zagent.dev.yavar.ai
+  # SMTP configuration for email alerts
+  smtpHost: smtp.office365.com
+  smtpPort: "587"
+  smtpSecure: "false"
+  smtpRequireTls: "true"
+  smtpFromEmail: Platforms@yavar.ai
+  smtpReplyTo: Platforms@yavar.ai
 
 # Secret configuration (sensitive values)
 # These will be stored as Kubernetes secrets
 secrets:
-  geminiApiKey: ""  # Set via --set-secrets or pre-create secret
+  geminiApiKey: "AIzaSyB7id4gzU0DUBq0xba-y-1U_9oOjLHHTRI"
+  smtpUser: "Platforms@yavar.ai"
+  smtpPass: "vzfzglzwqyyqthgj"
 
 # Node selector
 nodeSelector: {}

@@ -169,6 +169,22 @@ spec:
         - name: SEND_PHARMACY_WHATSAPP
           value: {{ .Values.config.sendPharmacyWhatsapp | quote }}
         {{- end }}
+        {{- if .Values.config.whatsappAccessToken }}
+        - name: WHATSAPP_ACCESS_TOKEN
+          value: {{ .Values.config.whatsappAccessToken | quote }}
+        {{- end }}
+        {{- if .Values.config.whatsappBusinessAccountId }}
+        - name: WHATSAPP_BUSINESS_ACCOUNT_ID
+          value: {{ .Values.config.whatsappBusinessAccountId | quote }}
+        {{- end }}
+        {{- if .Values.config.pharmacyWhatsappPhoneNumber }}
+        - name: PHARMACY_WHATSAPP_PHONE_NUMBER
+          value: {{ .Values.config.pharmacyWhatsappPhoneNumber | quote }}
+        {{- end }}
+        {{- if .Values.config.pharmacyAlertLogPath }}
+        - name: PHARMACY_ALERT_LOG_PATH
+          value: {{ .Values.config.pharmacyAlertLogPath | quote }}
+        {{- end }}
         {{- if .Values.config.pharmacyAlertLogOnly }}
         - name: PHARMACY_ALERT_LOG_ONLY
           value: {{ .Values.config.pharmacyAlertLogOnly | quote }}
@@ -205,9 +221,51 @@ spec:
         - name: DEPARTMENT_ALERT_LOG_ONLY
           value: {{ .Values.config.departmentAlertLogOnly | quote }}
         {{- end }}
+        {{- if .Values.config.departmentAlertLogPath }}
+        - name: DEPARTMENT_ALERT_LOG_PATH
+          value: {{ .Values.config.departmentAlertLogPath | quote }}
+        {{- end }}
         {{- if .Values.config.dashboardBaseUrl }}
         - name: DASHBOARD_BASE_URL
           value: {{ .Values.config.dashboardBaseUrl | quote }}
+        {{- end }}
+        {{- if .Values.config.smtpHost }}
+        - name: SMTP_HOST
+          value: {{ .Values.config.smtpHost | quote }}
+        {{- end }}
+        {{- if .Values.config.smtpPort }}
+        - name: SMTP_PORT
+          value: {{ .Values.config.smtpPort | quote }}
+        {{- end }}
+        {{- if .Values.config.smtpSecure }}
+        - name: SMTP_SECURE
+          value: {{ .Values.config.smtpSecure | quote }}
+        {{- end }}
+        {{- if .Values.config.smtpRequireTls }}
+        - name: SMTP_REQUIRE_TLS
+          value: {{ .Values.config.smtpRequireTls | quote }}
+        {{- end }}
+        {{- if .Values.secrets.smtpUser }}
+        - name: SMTP_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "doctor-dashboard.fullname" . }}-secret
+              key: smtp-user
+        {{- end }}
+        {{- if .Values.secrets.smtpPass }}
+        - name: SMTP_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "doctor-dashboard.fullname" . }}-secret
+              key: smtp-pass
+        {{- end }}
+        {{- if .Values.config.smtpFromEmail }}
+        - name: SMTP_FROM_EMAIL
+          value: {{ .Values.config.smtpFromEmail | quote }}
+        {{- end }}
+        {{- if .Values.config.smtpReplyTo }}
+        - name: SMTP_REPLY_TO
+          value: {{ .Values.config.smtpReplyTo | quote }}
         {{- end }}
         {{- if .Values.secrets.geminiApiKey }}
         - name: GEMINI_API_KEY
