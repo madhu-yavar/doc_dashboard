@@ -1,7 +1,7 @@
 # Multi-stage build for Doctor Dashboard
 
 # Stage 1: Build the React frontend
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Production image with Node.js backend
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
