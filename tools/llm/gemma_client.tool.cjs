@@ -1,15 +1,24 @@
 /**
  * Gemma LLM Client Tool
  * Communicates with Gemma API for text generation
+ * Supports fallback to secondary model if primary fails
  */
 
 class GemmaClientTool {
   constructor(config = {}) {
     this.name = "Gemma LLM Client";
-    this.version = "1.0.0";
+    this.version = "2.0.0";
+
+    // Primary model configuration
     this.baseUrl = config.baseUrl || process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions";
     this.model = config.model || process.env.GEMMA_MODEL || "google/gemma-4-31B-it";
     this.timeout = config.timeout || 180000;
+
+    // Fallback model configuration (for 26B or alternative endpoint)
+    this.fallbackBaseUrl = config.fallbackBaseUrl || process.env.GEMMA_FALLBACK_URL || this.baseUrl;
+    this.fallbackModel = config.fallbackModel || process.env.GEMMA_FALLBACK_MODEL || "google/gemma-2-27b-it";
+    this.enableFallback = config.enableFallback ?? process.env.GEMMA_ENABLE_FALLBACK !== "false";
+
     // Gemma 4-31B has a max context of 16384 tokens
     // Leave room for input tokens by defaulting to 2048 max output
     this.defaultMaxTokens = config.maxTokens || 2048;
@@ -17,23 +26,47 @@ class GemmaClientTool {
 
   /**
    * Send a prompt to Gemma and get the response
+   * Falls back to secondary model if primary fails
    * @param {string} prompt - The prompt to send
    * @param {object} options - Additional options (temperature, maxTokens, etc.)
-   * @returns {Promise<{success: boolean, content: string, usage: object, error?: string}>}
+   * @returns {Promise<{success: boolean, content: string, usage: object, error?: string, model?: string}>}
    */
   async execute(prompt, options = {}) {
+    // Try primary model first
+    const primaryResult = await this.executeWithModel(this.baseUrl, this.model, prompt, options);
+
+    if (primaryResult.success || !this.enableFallback) {
+      return primaryResult;
+    }
+
+    // Primary failed, try fallback
+    console.log(`⚠️  Primary model ${this.model} failed, trying fallback ${this.fallbackModel}...`);
+    const fallbackResult = await this.executeWithModel(this.fallbackBaseUrl, this.fallbackModel, prompt, options);
+
+    if (fallbackResult.success) {
+      fallbackResult.usedFallback = true;
+      fallbackResult.primaryError = primaryResult.error;
+    }
+
+    return fallbackResult;
+  }
+
+  /**
+   * Execute with a specific model/endpoint
+   */
+  async executeWithModel(baseUrl, model, prompt, options = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     try {
       const startTime = Date.now();
 
-      const response = await fetch(this.baseUrl, {
+      const response = await fetch(baseUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
-          model: this.model,
+          model: model,
           messages: [{ role: "user", content: prompt }],
           temperature: options.temperature ?? 0.1,
           max_tokens: options.maxTokens ?? this.defaultMaxTokens,
@@ -47,7 +80,8 @@ class GemmaClientTool {
         return {
           success: false,
           error: `Gemma request failed (${response.status}): ${text}`,
-          content: ""
+          content: "",
+          model
         };
       }
 
@@ -72,7 +106,7 @@ class GemmaClientTool {
           totalTokens: payload.usage?.total_tokens || 0,
           latency: endTime - startTime
         },
-        model: this.model
+        model
       };
     } catch (error) {
       clearTimeout(timeoutId);
@@ -81,14 +115,16 @@ class GemmaClientTool {
         return {
           success: false,
           error: `Request timeout after ${this.timeout}ms`,
-          content: ""
+          content: "",
+          model
         };
       }
 
       return {
         success: false,
         error: error.message,
-        content: ""
+        content: "",
+        model
       };
     }
   }
