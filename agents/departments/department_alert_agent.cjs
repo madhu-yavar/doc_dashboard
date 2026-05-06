@@ -97,13 +97,17 @@ class DepartmentAlertAgent {
 
           results[department] = {
             sent: true,
-            emailSent: !!result.email?.success,
-            whatsappSent: !!result.whatsapp?.success,
+            emailSent: Boolean(result.email && (result.email.delivered ?? result.email.success) && !result.email.mock),
+            whatsappSent: Boolean(result.whatsapp && (result.whatsapp.delivered ?? result.whatsapp.success) && !result.whatsapp.mock),
             itemCount: count,
             recipient: recipientEmail
           };
 
-          console.log(`      ✅ ${department} alert sent`);
+          if (result.email?.mock) {
+            console.log(`      ⚠️ ${department} email preview generated only`);
+          } else {
+            console.log(`      ✅ ${department} alert sent`);
+          }
 
         } catch (error) {
           console.error(`      ❌ ${department} alert failed: ${error.message}`);

@@ -1,14 +1,30 @@
 /**
  * Multi-Channel Department Notifier
- * Sends department alerts via Email (mock) and WhatsApp (mock)
+ * Sends department alerts via Email (SMTP) and WhatsApp (mock)
  * Supports all departments: Lab, Radiology, Nuclear Medicine, Procedures
  */
+
+const SmtpMailer = require("../shared/smtp_mailer.cjs");
 
 class DepartmentNotifier {
   constructor(config = {}) {
     this.config = {
+      fromEmail:
+        process.env.DEPARTMENT_EMAIL_FROM ||
+        process.env.SMTP_FROM_EMAIL ||
+        'notifications@doctor-dashboard.com',
+      replyTo:
+        process.env.DEPARTMENT_EMAIL_REPLY_TO ||
+        process.env.SMTP_REPLY_TO ||
+        '',
+      logOnly: process.env.DEPARTMENT_ALERT_LOG_ONLY === "true",
       ...config
     };
+
+    this.mailer = new SmtpMailer({
+      fromEmail: this.config.fromEmail,
+      replyTo: this.config.replyTo
+    });
   }
 
   /**
@@ -29,24 +45,64 @@ class DepartmentNotifier {
     };
   }
 
+  isConfigured() {
+    return this.mailer.isConfigured();
+  }
+
   /**
-   * Send email alert (MOCK MODE)
+   * Send email alert
    */
   async sendEmail(department, alertContent, recipientEmail) {
     const subject = this.buildSubject(department, alertContent);
     const body = this.buildEmailBody(department, alertContent);
+    const html = `<pre style="font-family: 'Segoe UI', Arial, sans-serif; white-space: pre-wrap;">${this.escapeHtml(body)}</pre>`;
 
     console.log(`      └─ To: ${recipientEmail}`);
     console.log(`      └─ Subject: ${subject}`);
-    console.log(`      └─ 📧 MOCK MODE (email not actually sent)`);
+
+    if (this.config.logOnly || !recipientEmail || !this.isConfigured()) {
+      const reason = this.config.logOnly
+        ? "DEPARTMENT_ALERT_LOG_ONLY=true"
+        : !recipientEmail
+          ? `missing recipient for ${department}`
+          : `missing config: ${this.mailer.getMissingConfig().join(", ")}`;
+
+      console.log(`      └─ 📧 Preview only (${reason})`);
+      console.log(`      ┌─ Email Preview ──────────────────────────────────────┐`);
+      console.log(`      │ ${body.substring(0, 300)}...`);
+      console.log(`      └──────────────────────────────────────────────────────┘`);
+
+      return {
+        success: true,
+        delivered: false,
+        mock: true,
+        messageId: `mock-${department}-${Date.now()}`,
+        to: recipientEmail,
+        subject
+      };
+    }
+
+    const result = await this.mailer.sendMail({
+      to: recipientEmail,
+      from: this.config.fromEmail,
+      replyTo: this.config.replyTo || this.config.fromEmail,
+      subject,
+      text: body,
+      html
+    });
+
+    console.log(`      └─ ✅ SMTP accepted: ${(result.accepted || []).join(', ') || 'queued'}`);
     console.log(`      ┌─ Email Preview ──────────────────────────────────────┐`);
     console.log(`      │ ${body.substring(0, 300)}...`);
     console.log(`      └──────────────────────────────────────────────────────┘`);
 
     return {
       success: true,
-      mock: true,
-      messageId: `mock-${department}-${Date.now()}`,
+      delivered: true,
+      mock: false,
+      messageId: result.messageId,
+      accepted: result.accepted || [],
+      rejected: result.rejected || [],
       to: recipientEmail,
       subject
     };
@@ -200,6 +256,17 @@ class DepartmentNotifier {
       procedures: 'Procedure'
     };
     return labels[department.toLowerCase()] || 'Item';
+  }
+
+  escapeHtml(text) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return String(text || '').replace(/[&<>"']/g, m => map[m]);
   }
 }
 

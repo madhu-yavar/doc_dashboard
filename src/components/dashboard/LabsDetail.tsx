@@ -17,6 +17,7 @@ const LabsDetail = ({ onBack, data }: LabsDetailProps) => {
   const hasLabResults = labs.hasResults || false;
   const labResults = labs.lab_results || [];
   const investigations = labs.investigations || [];
+  const hasOrderedInvestigations = investigations.length > 0;
   // Nuclear medicine studies (from prescriptions)
   const nuclearMedicineList = (labs as any).nuclear_medicine_list || [];
   const hasNuclearMedicine = nuclearMedicineList.length > 0;
@@ -74,7 +75,10 @@ const LabsDetail = ({ onBack, data }: LabsDetailProps) => {
         <h2 className="text-xl font-bold text-foreground">Labs - Advised / Results</h2>
         <SectionProvenanceBadge status={labsProvenance.status} />
         <div className="flex gap-2">
-          <StatusBadge status="normal" label={`${hasLabResults ? labResults.length : labs.totalTests} Tests`} />
+          <StatusBadge
+            status={hasLabResults ? "normal" : hasOrderedInvestigations ? "warning" : "normal"}
+            label={hasLabResults ? `${labResults.length} Results` : hasOrderedInvestigations ? `${investigations.length} Ordered` : "0 Results"}
+          />
           {labs.abnormalCount > 0 && (
             <StatusBadge status="warning" label={`${labs.abnormalCount} Abnormal`} />
           )}
@@ -155,11 +159,11 @@ const LabsDetail = ({ onBack, data }: LabsDetailProps) => {
         <div className="bg-card rounded-xl border p-5">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-amber-600" />
-            <h3 className="font-semibold text-sm text-foreground">Investigations Ordered (Pending)</h3>
+            <h3 className="font-semibold text-sm text-foreground">Investigations Ordered</h3>
             <span className="ml-auto text-xs text-muted-foreground">{investigations.length} tests</span>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            The following laboratory and radiological investigations were ordered. Results are not included in this document.
+            Laboratory investigations were documented as ordered, but their result values are not included in this document.
           </p>
 
           {Object.entries(groupedInvestigations).map(([category, items]) => (

@@ -87,7 +87,11 @@ class PharmacyAlertAgent {
         console.log(`   📧 Sending Email alert...`);
         try {
           results.email = await this.emailNotifier.send(alertContent);
-          console.log(`   ✅ Email sent: ${results.email.messageId || 'queued'}`);
+          if (results.email.mock) {
+            console.log(`   ⚠️ Email preview generated only`);
+          } else {
+            console.log(`   ✅ Email sent: ${results.email.messageId || 'queued'}`);
+          }
         } catch (error) {
           console.error(`   ❌ Email failed: ${error.message}`);
           results.errors.push({ type: 'email', message: error.message });
@@ -129,8 +133,8 @@ class PharmacyAlertAgent {
       return {
         success: results.errors.length === 0,
         sent: true,
-        emailSent: !!results.email?.success,
-        whatsappSent: !!results.whatsapp?.success,
+        emailSent: Boolean(results.email && (results.email.delivered ?? results.email.success) && !results.email.mock),
+        whatsappSent: Boolean(results.whatsapp && (results.whatsapp.delivered ?? results.whatsapp.success) && !results.whatsapp.mock),
         results,
         processingTime
       };
@@ -211,7 +215,7 @@ class PharmacyAlertAgent {
       channels: {
         email: {
           enabled: this.config.sendEmail,
-          configured: !!process.env.SENDGRID_API_KEY
+          configured: this.emailNotifier.isConfigured()
         },
         whatsapp: {
           enabled: this.config.sendWhatsApp,

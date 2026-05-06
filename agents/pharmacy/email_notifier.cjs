@@ -1,45 +1,31 @@
+const SmtpMailer = require("../shared/smtp_mailer.cjs");
+
 /**
  * Email Notifier for Pharmacy Alerts
- * Uses SendGrid to send email notifications to pharmacy team
+ * Uses SMTP to send email notifications to pharmacy team.
  */
 
 class EmailNotifier {
   constructor(config = {}) {
     this.config = {
-      fromEmail: process.env.PHARMACY_EMAIL_FROM || 'notifications@doctor-dashboard.com',
+      fromEmail:
+        process.env.PHARMACY_EMAIL_FROM ||
+        process.env.SMTP_FROM_EMAIL ||
+        'notifications@doctor-dashboard.com',
       toEmail: process.env.PHARMACY_EMAIL_TEAM || 'pharmacy@hospital.com',
       replyTo: process.env.PHARMACY_EMAIL_REPLY_TO,
+      logOnly: process.env.PHARMACY_ALERT_LOG_ONLY === "true",
       ...config
     };
 
-    // Lazy load SendGrid (only if API key is configured)
-    this.sendGrid = null;
-    this.initialized = false;
+    this.mailer = new SmtpMailer({
+      fromEmail: this.config.fromEmail,
+      replyTo: this.config.replyTo
+    });
   }
 
-  /**
-   * Initialize SendGrid client
-   */
-  initialize() {
-    if (this.initialized) return true;
-
-    const apiKey = process.env.SENDGRID_API_KEY;
-    if (!apiKey) {
-      console.warn(`      ⚠️ SENDGRID_API_KEY not configured - emails will be mocked`);
-      return false;
-    }
-
-    try {
-      // Dynamic import to avoid errors if package not installed
-      // @ts-ignore
-      this.sendGrid = require('@sendgrid/mail');
-      this.sendGrid.setApiKey(apiKey);
-      this.initialized = true;
-      return true;
-    } catch (error) {
-      console.warn(`      ⚠️ @sendgrid/mail not installed - run: npm install @sendgrid/mail`);
-      return false;
-    }
+  isConfigured() {
+    return Boolean(this.config.toEmail) && this.mailer.isConfigured();
   }
 
   /**
@@ -48,7 +34,6 @@ class EmailNotifier {
    * @returns {Promise<object>}
    */
   async send(alertContent) {
-    // MOCK MODE: Always mock unless explicitly disabled with valid config
     const toEmails = this.config.toEmail.split(',').map(e => e.trim());
 
     const emailData = {
@@ -64,17 +49,41 @@ class EmailNotifier {
     console.log(`      └─ To: ${toEmails.join(', ')}`);
     console.log(`      └─ Subject: ${emailData.subject}`);
 
-    // MOCK MODE: Email is logged to console but not actually sent
-    console.log(`      └─ 📧 MOCK MODE (email not actually sent - see preview below)`);
+    if (this.config.logOnly || !this.isConfigured()) {
+      const reason = this.config.logOnly
+        ? "PHARMACY_ALERT_LOG_ONLY=true"
+        : `missing config: ${this.mailer.getMissingConfig().join(", ") || "PHARMACY_EMAIL_TEAM"}`;
+
+      console.log(`      └─ 📧 Preview only (${reason})`);
+      console.log(`      ┌─ Email Preview ──────────────────────────────────────┐`);
+      console.log(`      │ ${emailData.text.substring(0, 300)}...`);
+      console.log(`      └──────────────────────────────────────────────────────┘`);
+
+      return {
+        success: true,
+        delivered: false,
+        mock: true,
+        messageId: `mock-${Date.now()}`,
+        preview: emailData,
+        to: toEmails,
+        subject: emailData.subject
+      };
+    }
+
+    const result = await this.mailer.sendMail(emailData);
+
+    console.log(`      └─ ✅ SMTP accepted: ${(result.accepted || []).join(', ') || 'queued'}`);
     console.log(`      ┌─ Email Preview ──────────────────────────────────────┐`);
     console.log(`      │ ${emailData.text.substring(0, 300)}...`);
     console.log(`      └──────────────────────────────────────────────────────┘`);
 
     return {
       success: true,
-      mock: true,
-      messageId: `mock-${Date.now()}`,
-      preview: emailData,
+      delivered: true,
+      mock: false,
+      messageId: result.messageId,
+      accepted: result.accepted || [],
+      rejected: result.rejected || [],
       to: toEmails,
       subject: emailData.subject
     };
