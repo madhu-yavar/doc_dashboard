@@ -80,9 +80,7 @@ const ClinicalNotesDetail = ({ onBack, data }: ClinicalNotesDetailProps) => {
               </div>
             </div>
           ) : (
-            clinicalNotes.notes.map((note, i) => {
-              const isSynthetic = Boolean((note as { is_synthetic?: boolean }).is_synthetic);
-              return (
+            clinicalNotes.notes.map((note, i) => (
               <div key={i} className="relative pl-14">
                 <div className="absolute left-4 top-3 w-4 h-4 rounded-full bg-card border-2 border-primary z-10" />
                 <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_4px_14px_rgba(15,23,42,0.035)]">
@@ -93,17 +91,6 @@ const ClinicalNotesDetail = ({ onBack, data }: ClinicalNotesDetailProps) => {
                         <span className="text-xs font-mono text-muted-foreground">{note.date}</span>
                         <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{note.type}</span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-[0.04em] ${
-                          isSynthetic
-                            ? "bg-slate-100 text-slate-500"
-                            : "bg-emerald-100 text-emerald-700"
-                        }`}
-                      >
-                        {isSynthetic ? "Synthetic" : "Handwritten"}
-                      </span>
                     </div>
                   </div>
 
@@ -198,7 +185,7 @@ const ClinicalNotesDetail = ({ onBack, data }: ClinicalNotesDetailProps) => {
                   ) : null}
                 </div>
               </div>
-            )})
+            ))
           )}
         </div>
       </div>
