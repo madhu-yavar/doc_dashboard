@@ -85,7 +85,7 @@ autoscaling:
 # Persistent storage configuration
 storage:
   className: "default"  # Use default storage class for ReadWriteOnce support (SQLite compatible)
-  size: 5Gi
+  size: 20Gi
   accessMode: ReadWriteOnce  # SQLite requires single-pod access for database consistency
   existingClaim: "r-and-d-doctor-dashboard-storage-rwo"  # Use ReadWriteOnce PVC
   annotations: {}
@@ -125,6 +125,38 @@ config:
   gemmaModel: google/gemma-4-26B-A4B-it
   useGeminiForExternal: "true"
   geminiModel: gemini-2.5-flash
+  # Additional environment variables
+  gemmaEnableFallback: "false"
+  gemmaFallbackUrl: http://206.1.62.28:8000/v1/chat/completions
+  gemmaFallbackModel: google/gemma-4-26B-A4B-it
+  extractionGemmaTimeoutMs: "600000"
+  gemmaTimeoutMs: "600000"
+  extractionTextBudget: "72000"
+  clinicalExtractionTextBudget: "50000"
+  extractionMaxOutputTokens: "4000"
+  useAgenticClassification: "true"
+  enableTwoStageExtraction: "true"
+  enablePhiMasking: "true"
+  handwritingThreshold: "15"
+  # Pharmacy alerts configuration
+  pharmacyAlertsEnabled: "true"
+  sendPharmacyEmail: "true"
+  pharmacyEmailFrom: Platforms@yavar.ai
+  pharmacyEmailTeam: madhu.r@yavar.ai
+  pharmacyEmailReplyTo: Platforms@yavar.ai
+  sendPharmacyWhatsapp: "false"
+  pharmacyAlertLogOnly: "false"
+  # Department alerts configuration
+  departmentAlertsEnabled: "true"
+  departmentEmailFrom: Platforms@yavar.ai
+  departmentEmailReplyTo: Platforms@yavar.ai
+  labEmail: madhu.r@yavar.ai
+  radiologyEmail: madhu.r@yavar.ai
+  nuclearMedicineEmail: madhu.r@yavar.ai
+  proceduresEmail: madhu.r@yavar.ai
+  departmentAlertLogOnly: "false"
+  # Dashboard URLs
+  dashboardBaseUrl: https://doctor-dashboard.zagent.dev.yavar.ai
 
 # Secret configuration (sensitive values)
 # These will be stored as Kubernetes secrets
