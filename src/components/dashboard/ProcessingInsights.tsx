@@ -99,20 +99,20 @@ export default function ProcessingInsights({ analytics, isLoading }: ProcessingI
 
             <InsightCard
               title="Tokens by Provider"
-              description="Lifetime token usage split between Gemma and Gemini"
+              description="Lifetime token usage split between internal and external language models"
               icon={<Activity className="h-4 w-4" />}
             >
               <div className="grid gap-3">
                 <div className="grid gap-2 sm:grid-cols-3">
                   <TokenStat label="Total" value={analytics.tokensByProvider.total} accent="text-slate-900" />
-                  <TokenStat label="Gemma" value={analytics.tokensByProvider.gemma} accent="text-teal-700" />
-                  <TokenStat label="Gemini" value={analytics.tokensByProvider.gemini} accent="text-amber-700" />
+                  <TokenStat label="Internal LLM" value={analytics.tokensByProvider.gemma} accent="text-teal-700" />
+                  <TokenStat label="External LLM" value={analytics.tokensByProvider.gemini} accent="text-amber-700" />
                 </div>
                 <ChartContainer
                   className="h-[72px] w-full"
                   config={{
-                    gemma: { label: "Gemma", color: "#0f766e" },
-                    gemini: { label: "Gemini", color: "#d97706" },
+                    gemma: { label: "Internal LLM", color: "#0f766e" },
+                    gemini: { label: "External LLM", color: "#d97706" },
                   }}
                 >
                   <BarChart data={tokenSplit} layout="vertical" margin={{ top: 2, right: 4, left: 4, bottom: 0 }}>

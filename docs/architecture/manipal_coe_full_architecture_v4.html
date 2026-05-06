@@ -97,6 +97,16 @@
       padding-bottom: 12px;
       border-bottom: 2px solid var(--color-primary);
     }
+    .runtime-note {
+      margin: 0 0 24px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #ecfeff;
+      border: 1px solid #a5f3fc;
+      color: #155e75;
+      font-size: 13px;
+      line-height: 1.6;
+    }
     /* Anchor link offset for fixed header */
     .section {
       scroll-margin-top: 120px;
@@ -644,6 +654,11 @@
         <div class="flow-title">
           <h2>Orchestrator → Agents → Skills → Tools → LLM</h2>
         </div>
+        <div class="runtime-note">
+          Current runtime: the Express server calls <strong>DocumentTypeRouter</strong>, which classifies the PDF and routes it to a specialized extractor agent.
+          <strong>ReActExtractionAgent</strong> exists in the repository but is optional rather than the default processing path.
+          Processing Insights are served separately from <code>analytics.sqlite</code> through <code>/api/analytics/overview</code>.
+        </div>
 
         <div class="level">
           <span class="level-title">Level 5</span>
@@ -813,7 +828,7 @@
               <div class="box-title">🧠 Gemma Client</div>
             </div>
             <div class="box tool active">
-              <div class="box-title">🧠 Gemini Client</div>
+              <div class="box-title">🧠 External LLM Client</div>
             </div>
             <div class="box tool active">
               <div class="box-title">📝 Prompt Builder</div>
@@ -876,7 +891,7 @@
           <div class="level-content">
             <div class="box llm active">
               <div class="box-title">🧠 LLM Foundation</div>
-              <div class="box-desc">Gemma 4-26B • On-prem • 24K context</div>
+              <div class="box-desc">Gemma-compatible endpoint • current default model: 4-31B</div>
             </div>
           </div>
         </div>
@@ -1315,7 +1330,7 @@
             <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">LLM (4)</div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧠 Gemma Client</div>
-              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧠 Gemini Client</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧠 External LLM Client</div>
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📝 Prompt Builder</div>
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🔗 Citation Tracker</div>
             </div>

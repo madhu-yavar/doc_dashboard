@@ -709,12 +709,12 @@ const UploadCenter = () => {
           <Card>
             <div className="p-4 border-b flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex flex-col gap-3">
-                {/* Gemini API Key Input */}
+                {/* External LLM API Key Input */}
                 <div className="flex items-center gap-2">
                   <Key className="h-4 w-4 text-muted-foreground" />
                   <Input
                     type="password"
-                    placeholder="Gemini API Key (for Stage 3 handwriting extraction)"
+                    placeholder="External LLM API Key (for Stage 3 handwriting extraction)"
                     value={geminiApiKey}
                     onChange={(e) => setGeminiApiKey(e.target.value)}
                     className="h-8 w-64 text-sm"

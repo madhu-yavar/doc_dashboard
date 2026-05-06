@@ -41,6 +41,16 @@
       margin-bottom: 30px;
       font-size: 13px;
     }
+    .runtime-note {
+      margin: 0 0 18px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: #ecfeff;
+      border: 1px solid #a5f3fc;
+      color: #155e75;
+      font-size: 12px;
+      line-height: 1.5;
+    }
 
     /* Architecture Container */
     .architecture {
@@ -322,7 +332,12 @@
   <div class="container">
     <div class="diagram">
       <h1>🔄 Agent Architecture Flow</h1>
-      <p class="subtitle">Orchestrator → Agents → Skills → Tools → LLM</p>
+      <p class="subtitle">Current runtime overview for the Express-backed document pipeline</p>
+      <div class="runtime-note">
+        Default production flow: <strong>DocumentTypeRouter</strong> classifies and dispatches to specialized extractor agents.
+        <strong>ReActExtractionAgent</strong> exists in the repository but is optional, not the default extraction path.
+        Processing Insights are served separately from <code>analytics.sqlite</code> through <code>/api/analytics/overview</code>.
+      </div>
 
       <div class="architecture">
         <!-- LEVEL 5: ORCHESTRATOR -->
@@ -467,7 +482,7 @@
               <div class="box-title">🧠 Gemma Client</div>
             </div>
             <div class="box tool active">
-              <div class="box-title">🧠 Gemini Client</div>
+              <div class="box-title">🧠 External LLM Client</div>
             </div>
             <div class="box tool active">
               <div class="box-title">📝 Prompt Builder</div>
@@ -537,7 +552,7 @@
           <div class="level-content">
             <div class="box llm active">
               <div class="box-title">🧠 LLM Foundation</div>
-              <div class="box-desc">Gemma 4-26B • On-prem • 24K context</div>
+              <div class="box-desc">Gemma-compatible endpoint • current default model: 4-31B</div>
             </div>
           </div>
         </div>

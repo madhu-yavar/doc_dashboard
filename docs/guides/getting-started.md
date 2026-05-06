@@ -23,8 +23,8 @@
 
 | Service | Purpose | How to Get |
 |---------|---------|------------|
-| Gemma LLM API | AI inference (primary) | Contact infrastructure team |
-| Gemini API | External knowledge (optional) | Google Cloud Console |
+| Gemma-compatible LLM API | Internal extraction and validation | Contact infrastructure team |
+| Gemini API | External lookups and prescription Stage 3 handwriting extraction | Google Cloud Console |
 
 ---
 
@@ -41,21 +41,22 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-# Gemma LLM Configuration (Primary - for extraction)
+# Internal LLM configuration
 GEMMA_URL=http://206.1.62.28:8000/v1/chat/completions
-GEMMA_MODEL=google/gemma-4-26B-A4B-it
+GEMMA_MODEL=google/gemma-4-31B-it
+EXTRACTION_GEMMA_TIMEOUT_MS=240000
 
-# Gemini API Configuration (Optional - for external knowledge)
+# External LLM configuration
 GEMINI_API_KEY=your-gemini-api-key
 USE_GEMINI_FOR_EXTERNAL=true
+GEMINI_MODEL=gemini-2.5-flash
 
 # Server Configuration
 PORT=8001
 NODE_ENV=development
 
-# Extraction Configuration
-EXTRACTION_PER_DOCUMENT_CONCURRENCY=3
-ENABLE_PENDING_ITEMS_EXTRACTION=true
+# Optional router / extractor tuning
+USE_AGENTIC_EXTRACTION=false
 ```
 
 ### 3. Start the Development Server
@@ -115,6 +116,7 @@ manipal-coe/
 ├── server/storage/              # Data storage
 │   ├── uploads/                 # PDF files
 │   ├── documents.json           # Processed documents
+│   ├── analytics.sqlite         # Processing insights metrics
 │   ├── audit_runs.json          # Audit run metadata
 │   ├── audit_events.jsonl       # Audit event log
 │   └── chat_sessions.json       # Chat history
@@ -190,6 +192,12 @@ http://localhost:5173/dashboard?documentId=<document-id>
 | `GET /api/audit/runs/:runId` | Get specific run |
 | `GET /api/audit/runs/:runId/events` | Get run events |
 
+### Analytics
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/analytics/overview` | GET | Load Processing Insights aggregates |
+
 ### Chat
 
 | Endpoint | Method | Description |
@@ -206,27 +214,49 @@ http://localhost:5173/dashboard?documentId=<document-id>
 | `/api/documents/:id/chart-note` | POST | Generate chart note |
 | `/api/documents/:id/chart-note/pdf` | POST | Export chart note PDF |
 
+### Handwriting Completion
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/documents/:id/handwriting-progress` | GET | SSE Stage 3 handwriting progress for prescriptions |
+| `/api/documents/:id/complete-handwriting` | POST | Complete prescription handwriting extraction |
+
+### Alerts
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/documents/:id/alert-preview` | POST | Preview manual alert payloads |
+| `/api/documents/:id/send-alerts` | POST | Send manual pharmacy / department alerts |
+
 ---
 
 ## Configuration
 
-### Gemma LLM Configuration
+### Runtime Configuration
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `GEMMA_URL` | LLM API endpoint | Required |
-| `GEMMA_MODEL` | Model identifier | `google/gemma-4-26B-A4B-it` |
+| `GEMMA_MODEL` | Model identifier | `google/gemma-4-31B-it` |
+| `EXTRACTION_GEMMA_TIMEOUT_MS` | Extraction timeout for router-backed processing | `240000` |
 | `USE_GEMINI_FOR_EXTERNAL` | Enable Gemini-backed external knowledge lookups | `true` |
 | `GEMINI_MODEL` | Gemini model for external knowledge mode | `gemini-2.5-flash` |
 | `GEMINI_API_KEY` | Gemini API key for external lookups | Optional |
 
-### Extraction Configuration
+### Optional Extraction Settings
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `EXTRACTION_PER_DOCUMENT_CONCURRENCY` | Parallel extraction steps | `3` |
-| `ENABLE_PENDING_ITEMS_EXTRACTION` | Enable pending items extraction | `true` |
-| `ENABLE_DOCUMENT_ANALYZER` | Enable document analysis step | `false` |
+| `USE_AGENTIC_EXTRACTION` | Route eligible docs through `ReActExtractionAgent` | `false` |
+
+## Current Processing Flow
+
+1. Upload a PDF to `/api/documents/upload`.
+2. Start processing through `/api/documents/process` or the SSE progress endpoint.
+3. The Express server uses `DocumentTypeRouter` to classify and route the file.
+4. Specialized extractor agents produce structured output and write the result to `documents.json`.
+5. `AnalyticsStore` backfills and serves summary metrics through `/api/analytics/overview`.
+6. Prescription documents can optionally run Stage 3 handwriting extraction with a user-supplied Gemini API key.
 
 ---
 
@@ -240,8 +270,11 @@ http://localhost:5173/dashboard?documentId=<document-id>
 **Issue:** "Audit run not found"
 - **Solution:** Check `server/storage/audit_runs.json` exists and has data
 
-**Issue:** "Parallel extraction not working"
-- **Solution:** Check `EXTRACTION_PER_DOCUMENT_CONCURRENCY` is set to > 1
+**Issue:** "Processing Insights is empty despite processed documents"
+- **Solution:** Check `/api/analytics/overview`; the server backfills `analytics.sqlite` from `documents.json`
+
+**Issue:** "Inpatient/discharge extraction times out"
+- **Solution:** Increase `EXTRACTION_GEMMA_TIMEOUT_MS` and avoid high parallel load on the `31B` model
 
 ---
 

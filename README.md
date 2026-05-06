@@ -1,6 +1,6 @@
 # Doctor Dashboard
 
-Doctor Dashboard is a React + Express application for uploading discharge-summary PDFs, processing them with a Gemma-backed extraction pipeline, and reviewing the structured output in a browser UI.
+Doctor Dashboard is a React + Express application for uploading clinical PDFs, processing them with a Gemma-backed extraction pipeline, and reviewing the structured output in a browser UI.
 
 In production, the Express server serves both:
 
@@ -13,9 +13,9 @@ That means a single public address is enough for normal usage.
 
 - Frontend: React + Vite
 - Backend: Express
-- Document processing: local agent/skill pipeline in `agents/`, `skills/`, and `tools/`
+- Document processing: `DocumentTypeRouter` plus local agent/skill pipeline in `agents/`, `skills/`, and `tools/`
 - LLM backend: Gemma-compatible chat-completions endpoint
-- Storage: local filesystem under `server/storage`
+- Storage: local filesystem under `server/storage` plus analytics metrics in `server/storage/analytics.sqlite`
 
 ## Runtime Ports
 
@@ -36,7 +36,8 @@ The backend reads these variables at runtime:
 NODE_ENV=production
 PORT=8001
 GEMMA_URL=http://127.0.0.1:8000/v1/chat/completions
-GEMMA_MODEL=google/gemma-4-26B-A4B-it
+GEMMA_MODEL=google/gemma-4-31B-it
+EXTRACTION_GEMMA_TIMEOUT_MS=240000
 USE_GEMINI_FOR_EXTERNAL=true
 GEMINI_MODEL=gemini-2.5-flash
 GEMINI_API_KEY=
@@ -45,8 +46,22 @@ GEMINI_API_KEY=
 Notes:
 
 - `GEMMA_URL` must point to a Gemma-compatible OpenAI-style chat-completions endpoint.
+- `GEMMA_MODEL` currently defaults to `google/gemma-4-31B-it` in the live server.
+- `EXTRACTION_GEMMA_TIMEOUT_MS` controls extraction-step timeout for the router-backed processing path.
 - If Gemma runs on the same VM as this app but outside Docker, use `host.docker.internal` from inside the container.
 - `USE_GEMINI_FOR_EXTERNAL` can be set to `false` if you do not want external web-answer fallback behavior.
+
+## Runtime Architecture
+
+The current production path is:
+
+1. UI uploads PDFs to the Express server.
+2. `server/index.cjs` hands processing to `agents/document_type_router.cjs`.
+3. The router classifies the document and dispatches to a specialized extractor agent.
+4. Processed documents are persisted in `server/storage/documents.json`.
+5. Processing Insights are served from `server/storage/analytics.sqlite` through `/api/analytics/overview`.
+
+`agents/extraction/react_extraction_agent.cjs` exists in the repo, but it is not the default extraction path for the main document-processing flow unless agentic extraction is explicitly enabled.
 
 ## Local Development
 
@@ -107,7 +122,8 @@ docker run -d \
   -e NODE_ENV=production \
   -e PORT=8001 \
   -e GEMMA_URL=http://host.docker.internal:8000/v1/chat/completions \
-  -e GEMMA_MODEL=google/gemma-4-26B-A4B-it \
+  -e GEMMA_MODEL=google/gemma-4-31B-it \
+  -e EXTRACTION_GEMMA_TIMEOUT_MS=240000 \
   --add-host=host.docker.internal:host-gateway \
   -v "$(pwd)/server/storage:/app/server/storage" \
   doctor-dashboard:latest
@@ -195,6 +211,7 @@ Important files/directories include:
 
 - `server/storage/uploads/`
 - `server/storage/documents.json`
+- `server/storage/analytics.sqlite`
 - `server/storage/chat_sessions.json`
 - `server/storage/chat_actions.json`
 - `server/storage/chat_exports.json`
@@ -206,16 +223,21 @@ Mount `server/storage` as a persistent volume in Docker.
 
 - `GET /api/health`
 - `GET /api/agent/status`
+- `GET /api/analytics/overview`
 - `GET /api/documents`
 - `POST /api/documents/upload`
 - `POST /api/documents/process`
 - `GET /api/documents/process/progress`
+- `GET /api/documents/:id/handwriting-progress`
+- `POST /api/documents/:id/complete-handwriting`
 - `GET /api/chat/history/:documentId`
 - `POST /api/chat/query`
 - `POST /api/chat/action/confirm`
 - `POST /api/chat/export/:documentId`
 - `GET /api/documents/:id/chart-note`
 - `POST /api/documents/:id/chart-note/pdf`
+- `POST /api/documents/:id/alert-preview`
+- `POST /api/documents/:id/send-alerts`
 
 ## Troubleshooting
 

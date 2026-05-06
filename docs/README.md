@@ -59,7 +59,7 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 | **Dynamic Skill Selection** | Agents decide which extraction skills to run based on content |
 | **Scalable Architecture** | Add new document types via configuration, not code |
 | **Document Type Detection** | Auto-detects prescriptions, discharge summaries, outpatient records, lab reports, chart notes |
-| **Parallel Extraction** | Concurrent extraction steps for improved performance |
+| **Processing Insights** | Analytics overview backed by `analytics.sqlite` |
 | **Data Validation** | Cross-validate extracted data against source with citations |
 | **Chart Note Generation** | Generate clinical SOAP notes with ReAct reasoning |
 | **Doctor Chat Assistant** | Interactive Q&A with internal + external knowledge |
@@ -72,7 +72,7 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 
 - **Frontend:** React + TypeScript + Tailwind CSS + Vite
 - **Backend:** Express.js + Node.js
-- **AI/LLM:** Google Gemma 4-26B-A4B-it (primary), Gemini 2.5 Flash (external)
+- **AI/LLM:** Google Gemma 4-31B-it (primary default), Gemini 2.5 Flash (external)
 - **PDF Processing:** Custom PDF extraction tools
 - **Architecture:** Multi-agent ReAct pattern with parallel execution
 
@@ -136,12 +136,11 @@ manipal-coe/
 │   ├── core/                        # Core agent framework
 │   │   ├── base_agent.cjs           # Base ReAct agent class
 │   │   ├── agent_state.cjs          # Agent state management
-│   │   ├── skill_registry.cjs       # Central skill registry (NEW v3.0)
+│   │   ├── skill_registry.cjs       # Central skill registry
 │   │   └── tool_registry.cjs        # Tool registry
-│   ├── classification/              # Classification agents
-│   │   └── document_classifier_agent.cjs  # Agentic classifier (NEW v3.0)
-│   ├── extraction/                 # Extraction agents
-│   │   └── react_extraction_agent.cjs     # ReAct-based extractor (NEW v3.0)
+│   ├── extraction/
+│   │   ├── document_classifier_agent.cjs  # Agentic classifier
+│   │   └── react_extraction_agent.cjs     # Optional ReAct extraction path
 │   ├── document_type_router.cjs           # Auto-detects doc type (updated v3.0)
 │   ├── discharge_extractor_agent.cjs      # Discharge summary extraction
 │   ├── outpatient_extractor_agent.cjs     # OPD record extraction
@@ -199,6 +198,7 @@ manipal-coe/
 ├── server/storage/           # Data storage
 │   ├── uploads/              # PDF files
 │   ├── documents.json        # Processed documents
+│   ├── analytics.sqlite      # Processing insights store
 │   ├── audit_runs.json       # Audit run metadata
 │   ├── audit_events.jsonl    # Audit event log
 │   └── chat_sessions.json    # Chat history
@@ -211,7 +211,7 @@ manipal-coe/
 
 ### Document Type Routing
 
-The system automatically detects document types and routes to specialized extractors:
+The system automatically detects document types and routes to specialized extractors. In the current production flow, `DocumentTypeRouter` is the default entry point; `ReActExtractionAgent` exists in the repository but is optional rather than the default extraction path.
 
 | Document Type | Indicators | Extractor Used |
 |---------------|------------|----------------|

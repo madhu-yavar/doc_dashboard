@@ -29,7 +29,7 @@ Check API health and server identity.
   "status": "ok",
   "server": "root",
   "version": "2.0.0",
-  "model": "google/gemma-4-26B-A4B-it",
+  "model": "google/gemma-4-31B-it",
   "audit": {
     "enabled": true
   },
@@ -53,7 +53,7 @@ Get AI agent system status.
   },
   "gemma": {
     "url": "http://gemma-api:8000",
-    "model": "google/gemma-4-26B-A4B-it"
+    "model": "google/gemma-4-31B-it"
   },
   "dashboardMapper": {
     "name": "Dashboard Mapper",
@@ -204,11 +204,80 @@ Subscribe to processing progress via Server-Sent Events (SSE).
 }
 ```
 
+### GET /analytics/overview
+
+Load aggregated Processing Insights metrics.
+
+**Response:**
+```json
+{
+  "documentsByType": [
+    { "documentType": "prescription", "count": 4 },
+    { "documentType": "discharge_summary", "count": 2 }
+  ],
+  "tokensByProvider": {
+    "gemma": 120000,
+    "gemini": 4000,
+    "total": 124000
+  },
+  "medicationsByDocumentType": [
+    { "documentType": "prescription", "count": 18 }
+  ],
+  "testsByDocumentType": [
+    {
+      "documentType": "discharge_summary",
+      "lab": 12,
+      "radiology": 4,
+      "nuclearMedicine": 1,
+      "procedures": 2
+    }
+  ],
+  "summary": {
+    "includedDocuments": 10,
+    "refreshedAt": "2026-05-06T10:00:00Z"
+  }
+}
+```
+
 ### DELETE /documents/:id
 
 Delete a document and its file.
 
 **Response:** `204 No Content`
+
+### GET /documents/:id/handwriting-progress
+
+Run prescription Stage 3 handwriting extraction as an SSE stream.
+
+**Query Parameters:**
+- `apiKey`: Gemini API key
+
+**Notes:**
+- only valid for prescription documents
+- returns SSE events such as `connected`, `key_verified`, `start`, `step`, `done`, and `error`
+
+### POST /documents/:id/complete-handwriting
+
+Complete prescription handwriting extraction with a JSON request.
+
+**Request Body:**
+```json
+{
+  "geminiApiKey": "AIza..."
+}
+```
+
+**Response:**
+```json
+{
+  "document": { "id": "uuid", "status": "processed" },
+  "message": "Handwriting extraction completed successfully",
+  "data": {
+    "medications_count": 6,
+    "lab_selections_count": 3
+  }
+}
+```
 
 ---
 
@@ -518,6 +587,42 @@ Export chart note as PDF.
 Content-Type: application/pdf
 Content-Disposition: attachment; filename=discharge-summary-{id}.pdf
 ```
+
+---
+
+## Alerts
+
+### POST /documents/:id/alert-preview
+
+Preview alert payloads without sending.
+
+**Request Body:**
+```json
+{
+  "target": "all"
+}
+```
+
+**Supported values:** `all`, `medications`, `labs`, `radiology`, `treatment`, `pharmacy`, `lab`, `nuclear_medicine`, `procedures`
+
+### POST /documents/:id/send-alerts
+
+Send manual pharmacy or department alerts for a processed document.
+
+**Request Body:**
+```json
+{
+  "alertType": "all",
+  "target": null
+}
+```
+
+---
+
+## Notes
+
+- Processing Insights are backed by `server/storage/analytics.sqlite` and are backfilled from `documents.json` on read.
+- The main production extraction path is `DocumentTypeRouter -> specialized extractor agent`, not `ReActExtractionAgent` by default.
 
 ---
 
