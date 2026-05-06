@@ -97,6 +97,118 @@ spec:
           value: {{ .Values.config.useGeminiForExternal | quote }}
         - name: GEMINI_MODEL
           value: {{ .Values.config.geminiModel | quote }}
+        {{- if .Values.config.gemmaEnableFallback }}
+        - name: GEMMA_ENABLE_FALLBACK
+          value: {{ .Values.config.gemmaEnableFallback | quote }}
+        {{- end }}
+        {{- if .Values.config.gemmaFallbackUrl }}
+        - name: GEMMA_FALLBACK_URL
+          value: {{ .Values.config.gemmaFallbackUrl | quote }}
+        {{- end }}
+        {{- if .Values.config.gemmaFallbackModel }}
+        - name: GEMMA_FALLBACK_MODEL
+          value: {{ .Values.config.gemmaFallbackModel | quote }}
+        {{- end }}
+        {{- if .Values.config.extractionGemmaTimeoutMs }}
+        - name: EXTRACTION_GEMMA_TIMEOUT_MS
+          value: {{ .Values.config.extractionGemmaTimeoutMs | quote }}
+        {{- end }}
+        {{- if .Values.config.gemmaTimeoutMs }}
+        - name: GEMMA_TIMEOUT_MS
+          value: {{ .Values.config.gemmaTimeoutMs | quote }}
+        {{- end }}
+        {{- if .Values.config.extractionTextBudget }}
+        - name: EXTRACTION_TEXT_BUDGET
+          value: {{ .Values.config.extractionTextBudget | quote }}
+        {{- end }}
+        {{- if .Values.config.clinicalExtractionTextBudget }}
+        - name: CLINICAL_EXTRACTION_TEXT_BUDGET
+          value: {{ .Values.config.clinicalExtractionTextBudget | quote }}
+        {{- end }}
+        {{- if .Values.config.extractionMaxOutputTokens }}
+        - name: EXTRACTION_MAX_OUTPUT_TOKENS
+          value: {{ .Values.config.extractionMaxOutputTokens | quote }}
+        {{- end }}
+        {{- if .Values.config.useAgenticClassification }}
+        - name: USE_AGENTIC_CLASSIFICATION
+          value: {{ .Values.config.useAgenticClassification | quote }}
+        {{- end }}
+        {{- if .Values.config.enableTwoStageExtraction }}
+        - name: ENABLE_TWO_STAGE_EXTRACTION
+          value: {{ .Values.config.enableTwoStageExtraction | quote }}
+        {{- end }}
+        {{- if .Values.config.enablePhiMasking }}
+        - name: ENABLE_PHI_MASKING
+          value: {{ .Values.config.enablePhiMasking | quote }}
+        {{- end }}
+        {{- if .Values.config.handwritingThreshold }}
+        - name: HANDWRITING_THRESHOLD
+          value: {{ .Values.config.handwritingThreshold | quote }}
+        {{- end }}
+        {{- if .Values.config.pharmacyAlertsEnabled }}
+        - name: PHARMACY_ALERTS_ENABLED
+          value: {{ .Values.config.pharmacyAlertsEnabled | quote }}
+        {{- end }}
+        {{- if .Values.config.sendPharmacyEmail }}
+        - name: SEND_PHARMACY_EMAIL
+          value: {{ .Values.config.sendPharmacyEmail | quote }}
+        {{- end }}
+        {{- if .Values.config.pharmacyEmailFrom }}
+        - name: PHARMACY_EMAIL_FROM
+          value: {{ .Values.config.pharmacyEmailFrom | quote }}
+        {{- end }}
+        {{- if .Values.config.pharmacyEmailTeam }}
+        - name: PHARMACY_EMAIL_TEAM
+          value: {{ .Values.config.pharmacyEmailTeam | quote }}
+        {{- end }}
+        {{- if .Values.config.pharmacyEmailReplyTo }}
+        - name: PHARMACY_EMAIL_REPLY_TO
+          value: {{ .Values.config.pharmacyEmailReplyTo | quote }}
+        {{- end }}
+        {{- if .Values.config.sendPharmacyWhatsapp }}
+        - name: SEND_PHARMACY_WHATSAPP
+          value: {{ .Values.config.sendPharmacyWhatsapp | quote }}
+        {{- end }}
+        {{- if .Values.config.pharmacyAlertLogOnly }}
+        - name: PHARMACY_ALERT_LOG_ONLY
+          value: {{ .Values.config.pharmacyAlertLogOnly | quote }}
+        {{- end }}
+        {{- if .Values.config.departmentAlertsEnabled }}
+        - name: DEPARTMENT_ALERTS_ENABLED
+          value: {{ .Values.config.departmentAlertsEnabled | quote }}
+        {{- end }}
+        {{- if .Values.config.departmentEmailFrom }}
+        - name: DEPARTMENT_EMAIL_FROM
+          value: {{ .Values.config.departmentEmailFrom | quote }}
+        {{- end }}
+        {{- if .Values.config.departmentEmailReplyTo }}
+        - name: DEPARTMENT_EMAIL_REPLY_TO
+          value: {{ .Values.config.departmentEmailReplyTo | quote }}
+        {{- end }}
+        {{- if .Values.config.labEmail }}
+        - name: LAB_EMAIL
+          value: {{ .Values.config.labEmail | quote }}
+        {{- end }}
+        {{- if .Values.config.radiologyEmail }}
+        - name: RADIOLOGY_EMAIL
+          value: {{ .Values.config.radiologyEmail | quote }}
+        {{- end }}
+        {{- if .Values.config.nuclearMedicineEmail }}
+        - name: NUCLEAR_MEDICINE_EMAIL
+          value: {{ .Values.config.nuclearMedicineEmail | quote }}
+        {{- end }}
+        {{- if .Values.config.proceduresEmail }}
+        - name: PROCEDURES_EMAIL
+          value: {{ .Values.config.proceduresEmail | quote }}
+        {{- end }}
+        {{- if .Values.config.departmentAlertLogOnly }}
+        - name: DEPARTMENT_ALERT_LOG_ONLY
+          value: {{ .Values.config.departmentAlertLogOnly | quote }}
+        {{- end }}
+        {{- if .Values.config.dashboardBaseUrl }}
+        - name: DASHBOARD_BASE_URL
+          value: {{ .Values.config.dashboardBaseUrl | quote }}
+        {{- end }}
         {{- if .Values.secrets.geminiApiKey }}
         - name: GEMINI_API_KEY
           valueFrom:
