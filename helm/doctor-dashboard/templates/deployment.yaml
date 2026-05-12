@@ -229,6 +229,14 @@ spec:
         - name: DASHBOARD_BASE_URL
           value: {{ .Values.config.dashboardBaseUrl | quote }}
         {{- end }}
+        {{- if .Values.config.frontendOrigin }}
+        - name: FRONTEND_ORIGIN
+          value: {{ .Values.config.frontendOrigin | quote }}
+        {{- end }}
+        {{- if .Values.config.authCookieSecure }}
+        - name: AUTH_COOKIE_SECURE
+          value: {{ .Values.config.authCookieSecure | quote }}
+        {{- end }}
         {{- if .Values.config.smtpHost }}
         - name: SMTP_HOST
           value: {{ .Values.config.smtpHost | quote }}
@@ -273,6 +281,34 @@ spec:
             secretKeyRef:
               name: {{ include "doctor-dashboard.fullname" . }}-secret
               key: gemini-api-key
+        {{- end }}
+        {{- if .Values.secrets.authBootstrapAdminUsername }}
+        - name: AUTH_BOOTSTRAP_ADMIN_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "doctor-dashboard.fullname" . }}-secret
+              key: auth-bootstrap-admin-username
+        {{- end }}
+        {{- if .Values.secrets.authBootstrapAdminPasswordHash }}
+        - name: AUTH_BOOTSTRAP_ADMIN_PASSWORD_HASH
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "doctor-dashboard.fullname" . }}-secret
+              key: auth-bootstrap-admin-password-hash
+        {{- end }}
+        {{- if .Values.secrets.authBootstrapDoctorUsername }}
+        - name: AUTH_BOOTSTRAP_DOCTOR_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "doctor-dashboard.fullname" . }}-secret
+              key: auth-bootstrap-doctor-username
+        {{- end }}
+        {{- if .Values.secrets.authBootstrapDoctorPasswordHash }}
+        - name: AUTH_BOOTSTRAP_DOCTOR_PASSWORD_HASH
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "doctor-dashboard.fullname" . }}-secret
+              key: auth-bootstrap-doctor-password-hash
         {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}

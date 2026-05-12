@@ -162,6 +162,10 @@ config:
   departmentAlertLogOnly: "false"
   # Dashboard URLs
   dashboardBaseUrl: https://doctor-dashboard.zagent.dev.yavar.ai
+  # Frontend configuration
+  frontendOrigin: http://localhost:8081
+  # Auth configuration
+  authCookieSecure: "false"
   # SMTP configuration for email alerts
   smtpHost: smtp.office365.com
   smtpPort: "587"
@@ -176,6 +180,11 @@ secrets:
   geminiApiKey: "AIzaSyB7id4gzU0DUBq0xba-y-1U_9oOjLHHTRI"
   smtpUser: "Platforms@yavar.ai"
   smtpPass: "vzfzglzwqyyqthgj"
+  # Auth bootstrap credentials
+  authBootstrapAdminUsername: "admin"
+  authBootstrapAdminPasswordHash: "$2b$10$FxnesBTE8PhN..jBw2uxFuHDRkVY5ON62xP38b8p7pLZ3iIF9qiXu"
+  authBootstrapDoctorUsername: "madhu"
+  authBootstrapDoctorPasswordHash: "$2b$10$Cf.V36V7AVjzen9tb0cR7uGLRChEI5sBJTapMfn/eWo5eoC56Q8MK"
 
 # Node selector
 nodeSelector: {}
