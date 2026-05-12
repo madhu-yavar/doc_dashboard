@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, ExternalLink, Loader2, MessageSquare, MessageSq
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { apiFetch } from "@/lib/apiClient";
 import { API_BASE, type ProcessedDocument } from "@/lib/processedDocuments";
 
 type ChatCitation = {
@@ -149,7 +150,7 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
       return;
     }
 
-    fetch(`${API_BASE}/chat/history/${documentId}`)
+    apiFetch(`${API_BASE}/chat/history/${documentId}`)
       .then(async (response) => {
         if (!response.ok) throw new Error("Unable to load chat history");
         return response.json();
@@ -201,7 +202,7 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
     }
 
     try {
-      const response = await fetch(`${API_BASE}/chat/query`, {
+      const response = await apiFetch(`${API_BASE}/chat/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -247,7 +248,7 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
     if (!chatId) return;
     setError("");
     try {
-      const response = await fetch(`${API_BASE}/chat/action/confirm`, {
+      const response = await apiFetch(`${API_BASE}/chat/action/confirm`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ documentId, chatId, actionId }),
@@ -265,7 +266,7 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
     setExporting(true);
     setError("");
     try {
-      const response = await fetch(`${API_BASE}/chat/export/${documentId}`, {
+      const response = await apiFetch(`${API_BASE}/chat/export/${documentId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chatId }),
@@ -298,7 +299,7 @@ const ChatAssistantPanel = ({ documentId, currentSection, processedDocument }: C
     setError("");
     try {
       const query = chatId ? `?chatId=${encodeURIComponent(chatId)}` : "";
-      const response = await fetch(`${API_BASE}/chat/history/${documentId}${query}`, {
+      const response = await apiFetch(`${API_BASE}/chat/history/${documentId}${query}`, {
         method: "DELETE",
       });
       const payload = await response.json();

@@ -14,6 +14,7 @@ const DashboardMapperSkill = require("../skills/clinical/dashboard_mapper.skill.
 const DoctorAssistantAgent = require("../agents/doctor_assistant_agent.cjs");
 const ChatExportBuilderSkill = require("../skills/chat/chat_export_builder.skill.cjs");
 const SourceHealthTool = require("../tools/chat/source_health.tool.cjs");
+const { AuthService } = require("./auth_service.cjs");
 
 const app = express();
 
@@ -43,6 +44,13 @@ const chatExportsPath = path.join(storageDir, "chat_exports.json");
 const searchCachePath = path.join(storageDir, "search_cache.json");
 const auditRunsPath = path.join(storageDir, "audit_runs.json");
 const auditEventsPath = path.join(storageDir, "audit_events.jsonl");
+const frontendOrigins = new Set(
+  [
+    process.env.FRONTEND_ORIGIN,
+    "http://localhost:8081",
+    "http://127.0.0.1:8081",
+  ].filter(Boolean)
+);
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -64,10 +72,21 @@ const analyticsStore = new AnalyticsStore({
   storageDir,
   databasePath: path.join(storageDir, "analytics.sqlite"),
 });
+const authService = new AuthService({
+  storageDir,
+});
 
-app.use(cors());
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || frontendOrigins.has(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: "1mb" }));
-registerAnalyticsRoutes(app, analyticsStore, readDocuments);
 
 // Serve static test page
 app.get('/test-agent', (req, res) => {
@@ -105,6 +124,7 @@ async function ensureStorage() {
   await ensureCollectionFile(chatActionsPath, { actions: [] });
   await ensureCollectionFile(chatExportsPath, { exports: [] });
   await ensureCollectionFile(searchCachePath, { entries: [] });
+  await authService.ensureStorage();
   await auditLogger.ensureStorage();
   await analyticsStore.initialize();
 }
@@ -194,6 +214,40 @@ function buildAgentInfo(agentResult) {
   };
 }
 
+function mergeAgentInfoForResume(existingAgentInfo, agentResult) {
+  const previous = existingAgentInfo || {};
+  const nextBase = buildAgentInfo(agentResult);
+
+  const previousProviderTokens = previous.providerTokens || {};
+  const nextProviderTokens = nextBase.providerTokens || {};
+
+  const mergedProviderTokens = {
+    gemma:
+      typeof nextProviderTokens.gemma === "number" && nextProviderTokens.gemma > 0
+        ? nextProviderTokens.gemma
+        : (previousProviderTokens.gemma || 0),
+    gemini:
+      typeof nextProviderTokens.gemini === "number" && nextProviderTokens.gemini > 0
+        ? nextProviderTokens.gemini
+        : (previousProviderTokens.gemini || 0),
+  };
+
+  const mergedTokensUsed = mergedProviderTokens.gemma + mergedProviderTokens.gemini;
+
+  return {
+    ...previous,
+    ...nextBase,
+    providerTokens: mergedProviderTokens,
+    tokensUsed: mergedTokensUsed > 0 ? mergedTokensUsed : (nextBase.tokensUsed || previous.tokensUsed || 0),
+    ...(agentResult.agentInfo?.stages?.length
+      ? {
+          stages: agentResult.agentInfo.stages,
+          pipeline: agentResult.agentInfo.pipeline || "two_stage_prescription",
+        }
+      : {}),
+  };
+}
+
 function inferDepartment(filename) {
   const lower = filename.toLowerCase();
 
@@ -272,7 +326,10 @@ function createAuditRunContext(run, base = {}) {
       type,
       status,
       title,
-      details,
+      details: {
+        ...(base.authMetadata || {}),
+        ...details,
+      },
     }));
   };
 
@@ -544,6 +601,245 @@ function buildFallbackPatientData(data) {
   };
 }
 
+function getSseCorsOrigin(req) {
+  const requestOrigin = req.headers.origin;
+  if (requestOrigin && frontendOrigins.has(requestOrigin)) {
+    return requestOrigin;
+  }
+  return process.env.FRONTEND_ORIGIN || "http://localhost:8081";
+}
+
+function setSseCorsHeaders(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", getSseCorsOrigin(req));
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+}
+
+function buildRequestActor(req, fallback = "system") {
+  const username = req?.user?.username;
+  const role = req?.user?.role;
+  if (!username || !role) {
+    return fallback;
+  }
+  return `${role}:${username}`;
+}
+
+function buildRequestAuthMetadata(req, metadata = {}) {
+  if (!req?.user) {
+    return metadata;
+  }
+
+  return {
+    ...metadata,
+    authenticatedUser: {
+      id: req.user.id,
+      username: req.user.username,
+      displayName: req.user.displayName,
+      role: req.user.role,
+    },
+    sessionId: req.authSession?.sessionId || null,
+  };
+}
+
+async function logAuthEvent(type, req, details = {}, overrides = {}) {
+  try {
+    await auditLogger.appendEvent({
+      workflow: "auth",
+      requestId: buildAuditRequestId("auth"),
+      type,
+      status: overrides.status || "info",
+      title: overrides.title || type,
+      details: buildRequestAuthMetadata(req, details),
+    });
+  } catch (error) {
+    console.error("Auth audit logging failure:", error);
+  }
+}
+
+function isPublicApiRequest(req) {
+  const method = String(req.method || "GET").toUpperCase();
+  const routePath = req.path;
+
+  return (
+    (method === "GET" && routePath === "/api/health") ||
+    (method === "GET" && routePath === "/api/auth/session") ||
+    (method === "POST" && routePath === "/api/auth/login") ||
+    (method === "POST" && routePath === "/api/auth/logout")
+  );
+}
+
+function isAdminOnlyApiRequest(req) {
+  const method = String(req.method || "GET").toUpperCase();
+  const routePath = req.path;
+
+  if ((method === "GET" && routePath === "/api/agent/status") || (method === "POST" && routePath === "/api/agent/test-pdf")) {
+    return true;
+  }
+
+  if (
+    (method === "GET" && routePath === "/api/chat/source-health") ||
+    (method === "GET" && routePath === "/api/analytics/overview") ||
+    routePath.startsWith("/api/audit/")
+  ) {
+    return true;
+  }
+
+  if (method === "DELETE" && /^\/api\/documents\/[^/]+$/.test(routePath)) {
+    return true;
+  }
+
+  if (
+    method === "POST" &&
+    (/^\/api\/documents\/[^/]+\/alert-preview$/.test(routePath) ||
+      /^\/api\/documents\/[^/]+\/send-alerts$/.test(routePath))
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+app.post("/api/auth/login", async (req, res) => {
+  const username = typeof req.body?.username === "string" ? req.body.username.trim() : "";
+  const password = typeof req.body?.password === "string" ? req.body.password : "";
+
+  if (!username || !password) {
+    return res.status(400).json({ error: "username and password are required" });
+  }
+
+  const loginResult = await authService.login(username, password);
+  if (!loginResult) {
+    await logAuthEvent(
+      "auth_login_failed",
+      null,
+      {
+        attemptedUsername: username,
+      },
+      {
+        status: "warning",
+        title: "Login failed",
+      }
+    );
+    return res.status(401).json({ error: "Invalid username or password." });
+  }
+
+  authService.setSessionCookie(res, loginResult.session.sessionId);
+  req.user = loginResult.user;
+  req.authSession = loginResult.session;
+
+  await logAuthEvent(
+    "auth_login_succeeded",
+    req,
+    {
+      username: loginResult.user.username,
+      role: loginResult.user.role,
+    },
+    {
+      status: "success",
+      title: "Login succeeded",
+    }
+  );
+
+  return res.json({ user: loginResult.user });
+});
+
+app.get("/api/auth/session", async (req, res) => {
+  const session = await authService.getSessionFromRequest(req, { touch: true });
+  if (!session) {
+    authService.clearSessionCookie(res);
+    return res.json({ authenticated: false, user: null });
+  }
+
+  return res.json({
+    authenticated: true,
+    user: session.user,
+  });
+});
+
+app.post("/api/auth/logout", async (req, res) => {
+  const session = await authService.getSessionFromRequest(req, { touch: false });
+  if (session) {
+    req.user = session.user;
+    req.authSession = session;
+    await authService.logout(session.sessionId);
+    await logAuthEvent(
+      "auth_logout",
+      req,
+      {
+        username: session.user.username,
+        role: session.user.role,
+      },
+      {
+        status: "success",
+        title: "Logout",
+      }
+    );
+  }
+
+  authService.clearSessionCookie(res);
+  return res.json({ success: true });
+});
+
+app.use(async (req, res, next) => {
+  if (!req.path.startsWith("/api")) {
+    return next();
+  }
+
+  if (req.method === "OPTIONS" || isPublicApiRequest(req)) {
+    return next();
+  }
+
+  try {
+    const session = await authService.getSessionFromRequest(req, { touch: true });
+    if (!session) {
+      authService.clearSessionCookie(res);
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    req.authSession = session;
+    req.user = session.user;
+
+    if (isAdminOnlyApiRequest(req) && req.user.role !== "admin") {
+      await logAuthEvent(
+        "auth_forbidden",
+        req,
+        {
+          path: req.path,
+          method: req.method,
+        },
+        {
+          status: "warning",
+          title: "Forbidden request",
+        }
+      );
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    return next();
+  } catch (error) {
+    console.error("Auth middleware failure:", error);
+    return res.status(500).json({ error: "Authentication check failed" });
+  }
+});
+
+registerAnalyticsRoutes(app, analyticsStore, readDocuments);
+
+async function requireAuthenticatedAssetAccess(req, res, next) {
+  try {
+    const session = await authService.getSessionFromRequest(req, { touch: true });
+    if (!session) {
+      authService.clearSessionCookie(res);
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    req.authSession = session;
+    req.user = session.user;
+    return next();
+  } catch (error) {
+    console.error("Asset auth failure:", error);
+    return res.status(500).json({ error: "Authentication check failed" });
+  }
+}
+
 app.get("/api/health", async (_req, res) => {
   res.json({
     status: "ok",
@@ -635,8 +931,8 @@ app.get("/api/documents/:id", async (req, res) => {
 // Serve masked images.
 // First serve the correct storage location, then fall back to the legacy mistakenly nested path
 // so previously generated masked images still load in the UI.
-app.use('/storage/masked_images', express.static(path.join(storageDir, 'masked_images')));
-app.use('/storage/masked_images', express.static(path.join(__dirname, 'server', 'storage', 'masked_images')));
+app.use('/storage/masked_images', requireAuthenticatedAssetAccess, express.static(path.join(storageDir, 'masked_images')));
+app.use('/storage/masked_images', requireAuthenticatedAssetAccess, express.static(path.join(__dirname, 'server', 'storage', 'masked_images')));
 
 app.use(express.static(distDir));
 
@@ -773,17 +1069,18 @@ app.post("/api/documents/process", async (req, res) => {
       documentId: document.id,
       requestId: buildAuditRequestId("extract"),
       title: document.name,
-      actor: "system",
-      metadata: {
+      actor: buildRequestActor(req, "system"),
+      metadata: buildRequestAuthMetadata(req, {
         department: document.department,
         mode: "batch",
-      },
+      }),
     });
 
     const audit = createAuditRunContext(auditRun, {
       workflow: "extraction",
       documentId: document.id,
       requestId: auditRun?.requestId || null,
+      authMetadata: buildRequestAuthMetadata(req),
     });
 
     try {
@@ -864,13 +1161,15 @@ app.get("/api/documents/process/progress", async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  setSseCorsHeaders(req, res);
 
   // Send initial connection message
   res.write(`data: ${JSON.stringify({ type: "connected", documentId, hasGeminiKey: !!geminiApiKey })}\n\n`);
 
   // Process the document with progress callbacks
-  let audit = createAuditRunContext(null);
+  let audit = createAuditRunContext(null, {
+    authMetadata: buildRequestAuthMetadata(req),
+  });
 
   try {
     const documents = await readDocuments();
@@ -892,16 +1191,17 @@ app.get("/api/documents/process/progress", async (req, res) => {
       documentId: document.id,
       requestId: buildAuditRequestId("extract"),
       title: document.name,
-      actor: "system",
-      metadata: {
+      actor: buildRequestActor(req, "system"),
+      metadata: buildRequestAuthMetadata(req, {
         department: document.department,
         mode: "interactive_sse",
-      },
+      }),
     });
     audit = createAuditRunContext(auditRun, {
       workflow: "extraction",
       documentId: document.id,
       requestId: auditRun?.requestId || null,
+      authMetadata: buildRequestAuthMetadata(req),
     });
 
     await audit.event("document_processing_started", "info", "Document processing started", {
@@ -1352,17 +1652,18 @@ app.post("/api/documents/:id/chart-note", async (req, res) => {
       documentId: document.id,
       requestId: buildAuditRequestId("chart_note"),
       title: document.name,
-      actor: "system",
-      metadata: {
+      actor: buildRequestActor(req, "system"),
+      metadata: buildRequestAuthMetadata(req, {
         regenerated: false,
         hasCachedChartNote: !!document.chartNote,
-      },
+      }),
     });
 
     const audit = createAuditRunContext(auditRun, {
       workflow: "chart_note",
       documentId: document.id,
       requestId: auditRun?.requestId || null,
+      authMetadata: buildRequestAuthMetadata(req),
     });
 
     await audit.event("chart_note_generation_started", "info", "Chart note generation started");
@@ -2039,12 +2340,14 @@ app.get("/api/documents/:id/handwriting-progress", async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  setSseCorsHeaders(req, res);
 
   // Send initial connection message
   res.write(`data: ${JSON.stringify({ type: "connected", documentId: id })}\n\n`);
 
-  let audit = createAuditRunContext(null);
+  let audit = createAuditRunContext(null, {
+    authMetadata: buildRequestAuthMetadata(req),
+  });
 
   try {
     const documents = await readDocuments();
@@ -2096,16 +2399,17 @@ app.get("/api/documents/:id/handwriting-progress", async (req, res) => {
       documentId: document.id,
       requestId: buildAuditRequestId("handwriting"),
       title: `Handwriting Extraction: ${document.name}`,
-      actor: "user",
-      metadata: {
+      actor: buildRequestActor(req, "user"),
+      metadata: buildRequestAuthMetadata(req, {
         original_run_id: document.auditRunId
-      },
+      }),
     });
 
     audit = createAuditRunContext(auditRun, {
       workflow: "handwriting_extraction",
       documentId: document.id,
       requestId: auditRun?.requestId || null,
+      authMetadata: buildRequestAuthMetadata(req),
     });
 
     await audit.event("handwriting_extraction_started", "info", "Stage 3 handwriting extraction started");
@@ -2184,14 +2488,7 @@ app.get("/api/documents/:id/handwriting-progress", async (req, res) => {
         stage3_complete: true,
         stage3_completed_at: new Date().toISOString()
       };
-      currentDocument.agentInfo = {
-        ...currentDocument.agentInfo,
-        ...result.agentInfo,
-        ...(result.agentInfo?.stages?.length ? {
-          stages: result.agentInfo.stages,
-          pipeline: result.agentInfo.pipeline || "two_stage_prescription"
-        } : {})
-      };
+      currentDocument.agentInfo = mergeAgentInfoForResume(currentDocument.agentInfo, result);
       currentDocument.status = "processed";
       currentDocument.error = null;
     });
@@ -2317,16 +2614,17 @@ app.post("/api/documents/:id/complete-handwriting", async (req, res) => {
     documentId: document.id,
     requestId: buildAuditRequestId("handwriting"),
     title: `Handwriting Extraction: ${document.name}`,
-    actor: "user",
-    metadata: {
+    actor: buildRequestActor(req, "user"),
+    metadata: buildRequestAuthMetadata(req, {
       original_run_id: document.auditRunId
-    },
+    }),
   });
 
   const audit = createAuditRunContext(auditRun, {
     workflow: "handwriting_extraction",
     documentId: document.id,
     requestId: auditRun?.requestId || null,
+    authMetadata: buildRequestAuthMetadata(req),
   });
 
   try {
@@ -2392,15 +2690,7 @@ app.post("/api/documents/:id/complete-handwriting", async (req, res) => {
         stage3_complete: true,
         stage3_completed_at: new Date().toISOString()
       };
-      currentDocument.agentInfo = {
-        ...currentDocument.agentInfo,
-        ...result.agentInfo,
-        // Flatten nested agentInfo for telemetry (server expects top-level fields)
-        ...(result.agentInfo?.stages?.length ? {
-          stages: result.agentInfo.stages,
-          pipeline: result.agentInfo.pipeline || "two_stage_prescription"
-        } : {})
-      };
+      currentDocument.agentInfo = mergeAgentInfoForResume(currentDocument.agentInfo, result);
       currentDocument.status = "processed";
       currentDocument.error = null;
     });

@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { DashboardPatientData } from "@/data/patientData";
 import { ArrowLeft, FileText, Download, Copy, Check, Eye, RefreshCw } from "lucide-react";
 import StructuredChartNote from "./StructuredChartNote";
+import { apiFetch } from "@/lib/apiClient";
 import { API_BASE } from "@/lib/processedDocuments";
 
 interface ChartNoteDetailProps {
@@ -31,7 +32,7 @@ const ChartNoteDetail = ({ onBack, data, chartNoteContent, documentId }: ChartNo
   const handleRegenerate = async () => {
     setIsRegenerating(true);
     try {
-      const response = await fetch(`${API_BASE}/documents/${documentId}/chart-note?regenerate=true`);
+      const response = await apiFetch(`${API_BASE}/documents/${documentId}/chart-note?regenerate=true`);
 
       if (!response.ok) {
         throw new Error("Failed to regenerate chart note");
@@ -47,21 +48,11 @@ const ChartNoteDetail = ({ onBack, data, chartNoteContent, documentId }: ChartNo
     }
   };
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(chartNoteContent);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
-    }
-  };
-
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
       // Fetch the chart note PDF from the server
-      const response = await fetch(`${API_BASE}/documents/${documentId}/chart-note/pdf`, {
+      const response = await apiFetch(`${API_BASE}/documents/${documentId}/chart-note/pdf`, {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });

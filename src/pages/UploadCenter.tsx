@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClipboardList, Eye, FileText, FileStack, RefreshCw, Search, Sparkles, Trash2, Upload, Key } from "lucide-react";
 
+import AppShellHeader from "@/components/auth/AppShellHeader";
 import AuditTrailSheet from "@/components/dashboard/AuditTrailSheet";
 import { HandwritingCompletionDialog } from "@/components/dashboard/HandwritingCompletionDialog";
 import ProcessingInsights from "@/components/dashboard/ProcessingInsights";
@@ -12,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { apiFetch, createAuthenticatedEventSource } from "@/lib/apiClient";
+import { useAuth } from "@/lib/auth";
 import {
   API_BASE,
   getProcessedDocumentMrn,
@@ -44,7 +47,9 @@ const statusLabels: Record<QueueStatus, string> = {
 
 const UploadCenter = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
+  const isAdmin = user?.role === "admin";
 
   const [documents, setDocuments] = useState<ProcessedDocument[]>([]);
   const [activeTab, setActiveTab] = useState<QueueTab>("all");
@@ -103,7 +108,7 @@ const UploadCenter = () => {
   };
 
   const loadDocuments = async () => {
-    const response = await fetch(`${API_BASE}/documents`);
+    const response = await apiFetch(`${API_BASE}/documents`);
     if (!response.ok) {
       throw new Error("Unable to load uploaded documents.");
     }
@@ -112,6 +117,10 @@ const UploadCenter = () => {
   };
 
   const loadAnalytics = async () => {
+    if (!isAdmin) {
+      setAnalyticsOverview(null);
+      return;
+    }
     const overview = await fetchLandingAnalyticsOverview();
     setAnalyticsOverview(overview);
   };
@@ -127,12 +136,14 @@ const UploadCenter = () => {
 
     loadAnalytics()
       .catch((error) => {
-        toast.error(error instanceof Error ? error.message : "Unable to load processing insights.");
+        if (isAdmin) {
+          toast.error(error instanceof Error ? error.message : "Unable to load processing insights.");
+        }
       })
       .finally(() => {
         setIsLoadingAnalytics(false);
       });
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     setSelectedIds((current) => current.filter((id) => documents.some((document) => document.id === id)));
@@ -219,7 +230,7 @@ const UploadCenter = () => {
       logClientStage("info", `Uploading ${pdfFiles.length} PDF file(s)`, {
         files: pdfFiles.map((file) => ({ name: file.name, size: file.size })),
       });
-      const response = await fetch(`${API_BASE}/documents/upload`, {
+      const response = await apiFetch(`${API_BASE}/documents/upload`, {
         method: "POST",
         body: formData,
       });
@@ -323,7 +334,7 @@ const UploadCenter = () => {
             documentId: document.id,
             hasGeminiApiKey: Boolean(geminiApiKey),
           });
-          const eventSource = new EventSource(eventSourceUrl);
+          const eventSource = createAuthenticatedEventSource(eventSourceUrl);
 
           eventSource.onopen = () => {
             logClientStage("info", `SSE stream opened for ${document.name}`, { documentId: document.id });
@@ -433,9 +444,19 @@ const UploadCenter = () => {
           };
 
           await new Promise<void>((resolve) => {
+            let settled = false;
+            const finish = () => {
+              if (settled) return;
+              settled = true;
+              clearInterval(checkInterval);
+              clearTimeout(timeoutId);
+              eventSource.close();
+              resolve();
+            };
+
             const checkInterval = setInterval(async () => {
               try {
-                const response = await fetch(`${API_BASE}/documents`);
+                const response = await apiFetch(`${API_BASE}/documents`);
                 if (response.ok) {
                   const payload = await response.json();
                   const currentDoc = payload.documents?.find((d: any) => d.id === document.id);
@@ -458,8 +479,7 @@ const UploadCenter = () => {
                       delete newProgress[document.id];
                       return newProgress;
                     });
-                    eventSource.close();
-                    resolve();
+                    finish();
                   }
                 }
               } catch (e) {
@@ -470,14 +490,12 @@ const UploadCenter = () => {
               }
             }, 2000);
 
-            setTimeout(() => {
+            const timeoutId = setTimeout(() => {
               logClientStage("warn", `Processing timeout reached for ${document.name}`, {
                 documentId: document.id,
                 timeoutMs: 300000,
               });
-              clearInterval(checkInterval);
-              eventSource.close();
-              resolve();
+              finish();
             }, 300000);
           });
 
@@ -525,8 +543,9 @@ const UploadCenter = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!isAdmin) return;
     try {
-      const response = await fetch(`${API_BASE}/documents/${id}`, { method: "DELETE" });
+      const response = await apiFetch(`${API_BASE}/documents/${id}`, { method: "DELETE" });
       if (!response.ok) {
         throw new Error("Unable to delete document.");
       }
@@ -539,11 +558,11 @@ const UploadCenter = () => {
   };
 
   const handleDeleteSelected = async () => {
-    if (!canDeleteSelected) return;
+    if (!isAdmin || !canDeleteSelected) return;
 
     const deleteResults = await Promise.allSettled(
       selectedIds.map(async (id) => {
-        const response = await fetch(`${API_BASE}/documents/${id}`, { method: "DELETE" });
+        const response = await apiFetch(`${API_BASE}/documents/${id}`, { method: "DELETE" });
         if (!response.ok) {
           throw new Error(id);
         }
@@ -624,18 +643,11 @@ const UploadCenter = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-          <div className="flex items-center gap-4">
-            <img src="/manipal-logo.png" alt="Manipal Hospitals" className="h-10" />
-          </div>
-          <img src="/yavar-logo.png" alt="Powered by Yavar.ai" className="h-5 opacity-60" />
-        </div>
-      </header>
+      <AppShellHeader />
 
       <main className="mx-auto max-w-7xl px-5 py-6">
         <div className="grid gap-6">
-          <ProcessingInsights analytics={analyticsOverview} isLoading={isLoadingAnalytics} />
+          {isAdmin ? <ProcessingInsights analytics={analyticsOverview} isLoading={isLoadingAnalytics} /> : null}
 
           {/* Upload Area */}
           <Card>
@@ -748,16 +760,18 @@ const UploadCenter = () => {
                     <Sparkles className="mr-2 h-4 w-4" />
                     Process Selected
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={handleDeleteSelected}
-                    disabled={!canDeleteSelected}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Selected
-                  </Button>
+                  {isAdmin ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={handleDeleteSelected}
+                      disabled={!canDeleteSelected}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Selected
+                    </Button>
+                  ) : null}
                 </div>
               </div>
               <div className="relative w-full sm:w-64">
@@ -876,15 +890,17 @@ const UploadCenter = () => {
                           <TableCell className="text-muted-foreground">{formatDateTime(document.uploadedAt)}</TableCell>
                           <TableCell>
                             <div className="flex items-center justify-end gap-2">
-                              <AuditTrailSheet
-                                documentId={document.id}
-                                processedDocument={document}
-                                trigger={
-                                  <Button variant="ghost" size="icon" title="Audit trail" aria-label={`Open audit trail for ${document.name}`}>
-                                    <ClipboardList className="h-4 w-4" />
-                                  </Button>
-                                }
-                              />
+                              {isAdmin ? (
+                                <AuditTrailSheet
+                                  documentId={document.id}
+                                  processedDocument={document}
+                                  trigger={
+                                    <Button variant="ghost" size="icon" title="Audit trail" aria-label={`Open audit trail for ${document.name}`}>
+                                      <ClipboardList className="h-4 w-4" />
+                                    </Button>
+                                  }
+                                />
+                              ) : null}
                               {document.status === "partial" && (
                                 <Button
                                   variant="ghost"
@@ -920,14 +936,16 @@ const UploadCenter = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => handleDelete(document.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {isAdmin ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => handleDelete(document.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              ) : null}
                             </div>
                           </TableCell>
                         </TableRow>

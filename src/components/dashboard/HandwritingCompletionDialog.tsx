@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { createAuthenticatedEventSource } from "@/lib/apiClient";
 
 const API_BASE = `${(import.meta.env.VITE_API_URL || "").replace(/\/$/, "")}/api`;
 
@@ -96,7 +97,7 @@ export function HandwritingCompletionDialog({
       addLog("Initiating handwriting extraction...", "info");
 
       // Use SSE for real-time progress
-      const eventSource = new EventSource(`${API_BASE}/documents/${documentId}/handwriting-progress?apiKey=${encodeURIComponent(apiKey.trim())}`);
+      const eventSource = createAuthenticatedEventSource(`${API_BASE}/documents/${documentId}/handwriting-progress?apiKey=${encodeURIComponent(apiKey.trim())}`);
       eventSourceRef.current = eventSource;
 
       eventSource.onmessage = (event) => {

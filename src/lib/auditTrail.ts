@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiClient";
 import { API_BASE } from "@/lib/processedDocuments";
 
 export type AuditWorkflow = "extraction" | "chart_note" | "chat";
@@ -74,7 +75,7 @@ export async function fetchAuditRuns(options: FetchAuditRunsOptions = {}): Promi
     limit: options.limit ?? 100,
   });
 
-  const payload = await fetch(url).then((response) =>
+  const payload = await apiFetch(url).then((response) =>
     parseJsonResponse<{ runs?: AuditRun[] }>(response, "Unable to load audit runs.")
   );
 
@@ -86,8 +87,8 @@ export async function fetchAuditRunDetail(runId: string, limit = 500): Promise<A
   const eventsUrl = withParams(`${API_BASE}/audit/runs/${encodeURIComponent(runId)}/events`, { limit });
 
   const [runPayload, eventsPayload] = await Promise.all([
-    fetch(runUrl).then((response) => parseJsonResponse<{ run?: AuditRun }>(response, "Unable to load audit run.")),
-    fetch(eventsUrl).then((response) =>
+    apiFetch(runUrl).then((response) => parseJsonResponse<{ run?: AuditRun }>(response, "Unable to load audit run.")),
+    apiFetch(eventsUrl).then((response) =>
       parseJsonResponse<{ events?: AuditEvent[] }>(response, "Unable to load audit run events.")
     ),
   ]);

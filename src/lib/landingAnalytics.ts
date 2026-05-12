@@ -1,3 +1,5 @@
+import { apiFetch } from "@/lib/apiClient";
+
 const normalizeApiRoot = (value: string) => value.replace(/\/$/, "");
 
 const API_ROOT = normalizeApiRoot(import.meta.env.VITE_API_URL || "");
@@ -32,7 +34,7 @@ export type LandingAnalyticsOverview = {
 };
 
 export async function fetchLandingAnalyticsOverview() {
-  const response = await fetch(`${ANALYTICS_API_BASE}/analytics/overview`);
+  const response = await apiFetch(`${ANALYTICS_API_BASE}/analytics/overview`);
   if (!response.ok) {
     throw new Error("Unable to load processing insights.");
   }

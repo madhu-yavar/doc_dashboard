@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import AppShellHeader from "@/components/auth/AppShellHeader";
 import PatientHeader from "@/components/dashboard/PatientHeader";
 import SectionCard from "@/components/dashboard/SectionCard";
 import StatusBadge from "@/components/dashboard/StatusBadge";
@@ -32,6 +33,8 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { apiFetch } from "@/lib/apiClient";
+import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 
 type Section = null | "vitals" | "diagnosis" | "medications" | "labs" | "radiology" | "treatment" | "notes" | "discharge" | "followup" | "pending" | "riskwatch";
@@ -129,6 +132,7 @@ const parseApiResponse = async (response: Response) => {
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [processedDocument, setProcessedDocument] = useState<ProcessedDocument | null>(null);
   const [processedQueue, setProcessedQueue] = useState<ProcessedDocument[]>([]);
@@ -141,6 +145,7 @@ const Index = () => {
   const [alertPreview, setAlertPreview] = useState<AlertPreviewResponse | null>(null);
   const [isAlertPreviewLoading, setIsAlertPreviewLoading] = useState(false);
   const [isAlertSending, setIsAlertSending] = useState(false);
+  const isAdmin = user?.role === "admin";
 
   const documentId = searchParams.get("documentId");
   const activeSectionParam = searchParams.get("section");
@@ -286,7 +291,7 @@ const Index = () => {
   };
 
   const refreshProcessedQueue = async () => {
-    const response = await fetch(`${API_BASE}/documents`);
+    const response = await apiFetch(`${API_BASE}/documents`);
     if (!response.ok) {
       throw new Error("Unable to load processed queue.");
     }
@@ -299,7 +304,7 @@ const Index = () => {
   };
 
   const refreshCurrentDocument = async (id: string) => {
-    const response = await fetch(`${API_BASE}/documents/${id}`);
+    const response = await apiFetch(`${API_BASE}/documents/${id}`);
     if (!response.ok) {
       throw new Error("Unable to load processed dashboard document.");
     }
@@ -309,14 +314,14 @@ const Index = () => {
   };
 
   const handleOpenAlertPreview = async (target: DashboardAlertTarget) => {
-    if (!documentId) return;
+    if (!documentId || !isAdmin) return;
 
     setAlertPreviewOpen(true);
     setAlertPreview(null);
     setIsAlertPreviewLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/documents/${documentId}/alert-preview`, {
+      const response = await apiFetch(`${API_BASE}/documents/${documentId}/alert-preview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ target }),
@@ -341,7 +346,7 @@ const Index = () => {
 
     setIsAlertSending(true);
     try {
-      const response = await fetch(`${API_BASE}/documents/${documentId}/send-alerts`, {
+      const response = await apiFetch(`${API_BASE}/documents/${documentId}/send-alerts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ target: alertPreview.target }),
@@ -526,7 +531,7 @@ const Index = () => {
 
   useEffect(() => {
     if (!documentId) {
-      navigate("/", { replace: true });
+      navigate("/upload", { replace: true });
     }
   }, [documentId, navigate]);
 
@@ -547,7 +552,7 @@ const Index = () => {
     setIsLoading(true);
     setLoadError(null);
 
-    fetch(`${API_BASE}/documents/${documentId}`)
+    apiFetch(`${API_BASE}/documents/${documentId}`)
       .then(async (response) => {
         if (!response.ok) {
           throw new Error("Unable to load processed dashboard document.");
@@ -597,7 +602,7 @@ const Index = () => {
     setIsExporting(true);
     try {
       // Request PDF export directly from server
-      const response = await fetch(`${API_BASE}/documents/${documentId}/chart-note/pdf`, {
+      const response = await apiFetch(`${API_BASE}/documents/${documentId}/chart-note/pdf`, {
         method: "POST",
         headers: { "Content-Type": "application/json" }
       });
@@ -629,16 +634,11 @@ const Index = () => {
 
   const dashboardToolbar = (
     <div className="mb-5 rounded-[22px] border border-slate-200 bg-white px-4 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
-      <div className="mb-3 flex items-center justify-between">
-        <img src="/manipal-logo.png" alt="Manipal Hospitals" className="h-7" />
-        <img src="/yavar-logo.png" alt="Powered by Yavar.ai" className="h-4 opacity-50" />
-      </div>
-
-      <div className="flex flex-col gap-3 border-t border-slate-100 pt-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <button
             className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-50"
-            onClick={() => (activeSection ? handleBack() : navigate("/"))}
+            onClick={() => (activeSection ? handleBack() : navigate("/upload"))}
           >
             <ArrowLeft className="h-4 w-4" />
             {activeSection ? "Summary" : "Queue"}
@@ -776,7 +776,7 @@ const Index = () => {
             {loadError || "This processed record could not be loaded."}
           </p>
           <div className="mt-4">
-            <Button onClick={() => navigate("/")} className="bg-rose-600 text-white hover:bg-rose-700">
+            <Button onClick={() => navigate("/upload")} className="bg-rose-600 text-white hover:bg-rose-700">
               Back to Queue
             </Button>
           </div>
@@ -800,7 +800,7 @@ const Index = () => {
         <Button
           size="sm"
           variant="outline"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/upload")}
           className="border-purple-300 text-purple-700 hover:bg-purple-100"
         >
           Complete Extraction
@@ -856,8 +856,8 @@ const Index = () => {
                   <div className="flex items-center gap-1">
                     <span className="text-muted-foreground">Providers:</span>
                     <span className="font-medium">
-                      {providerTokens.gemma > 0 && <>Gemma {formatTokenCount(providerTokens.gemma)}{providerTokens.gemini > 0 ? " · " : ""}</>}
-                      {providerTokens.gemini > 0 && <>Gemini {formatTokenCount(providerTokens.gemini)}</>}
+                      {providerTokens.gemma > 0 && <>Internal LLM {formatTokenCount(providerTokens.gemma)}{providerTokens.gemini > 0 ? " · " : ""}</>}
+                      {providerTokens.gemini > 0 && <>External LLM {formatTokenCount(providerTokens.gemini)}</>}
                     </span>
                   </div>
                 )}
@@ -901,7 +901,7 @@ const Index = () => {
                 title={card?.title || config.section}
                 colorClass={config.colorClass}
                 onClick={() => updateSection(config.section)}
-                headerBadge={alertMeta ? (
+                headerBadge={isAdmin && alertMeta ? (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -1171,6 +1171,7 @@ const Index = () => {
 
 const PageWrapper = ({ children }: { children: React.ReactNode }) => (
   <div className="min-h-screen bg-background">
+    <AppShellHeader />
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
       {children}
     </div>

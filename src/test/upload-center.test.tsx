@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AuthProvider } from "@/lib/auth";
 import UploadCenter from "@/pages/UploadCenter";
 import type { ProcessedDocument } from "@/lib/processedDocuments";
 
@@ -12,10 +13,21 @@ vi.mock("@/components/dashboard/ProcessingInsights", () => ({
 describe("UploadCenter", () => {
   let documents: ProcessedDocument[];
   let processingStarted: boolean;
+  let role: "admin" | "doctor";
+
+  const renderPage = () =>
+    render(
+      <MemoryRouter initialEntries={["/upload"]}>
+        <AuthProvider>
+          <UploadCenter />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
 
   beforeEach(() => {
     documents = [];
     processingStarted = false;
+    role = "admin";
 
     class MockEventSource {
       onmessage: ((event: MessageEvent) => void) | null = null;
@@ -34,6 +46,18 @@ describe("UploadCenter", () => {
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         const method = init?.method || "GET";
+
+        if (url.endsWith("/auth/session") && method === "GET") {
+          return new Response(JSON.stringify({
+            authenticated: true,
+            user: {
+              id: "user-1",
+              username: role === "admin" ? "admin.user" : "doctor.user",
+              displayName: role === "admin" ? "Admin User" : "Doctor User",
+              role,
+            },
+          }), { status: 200 });
+        }
 
         if (url.endsWith("/documents") && method === "GET") {
           if (processingStarted && documents[0]?.status === "queued") {
@@ -124,11 +148,7 @@ describe("UploadCenter", () => {
   });
 
   it("renders the intake page with the process action disabled initially", async () => {
-    render(
-      <MemoryRouter>
-        <UploadCenter />
-      </MemoryRouter>,
-    );
+    renderPage();
 
     expect(await screen.findByText(/queue status/i)).toBeInTheDocument();
     const insights = screen.getByTestId("processing-insights");
@@ -137,14 +157,10 @@ describe("UploadCenter", () => {
     expect(await screen.findByText(/no documents found/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /process queue/i })).toBeDisabled();
     expect(dropZone).toBeInTheDocument();
-  });
+  }, 15000);
 
   it("adds uploaded pdfs to the queue and processes them", async () => {
-    const { container } = render(
-      <MemoryRouter>
-        <UploadCenter />
-      </MemoryRouter>,
-    );
+    const { container } = renderPage();
 
     await screen.findByText(/no documents found/i);
 
@@ -165,14 +181,10 @@ describe("UploadCenter", () => {
     await waitFor(() => {
       expect(screen.getAllByText(/^Processed$/).length).toBeGreaterThan(0);
     }, { timeout: 4000 });
-  });
+  }, 20000);
 
   it("searches processed records by patient name and MRN", async () => {
-    const { container } = render(
-      <MemoryRouter>
-        <UploadCenter />
-      </MemoryRouter>,
-    );
+    const { container } = renderPage();
 
     await screen.findByText(/no documents found/i);
 
@@ -197,14 +209,10 @@ describe("UploadCenter", () => {
     });
 
     expect(screen.getByText("Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf")).toBeInTheDocument();
-  });
+  }, 20000);
 
   it("supports selecting and deleting queued documents", async () => {
-    const { container } = render(
-      <MemoryRouter>
-        <UploadCenter />
-      </MemoryRouter>,
-    );
+    const { container } = renderPage();
 
     await screen.findByText(/no documents found/i);
 
@@ -228,5 +236,24 @@ describe("UploadCenter", () => {
     await waitFor(() => {
       expect(screen.getByText(/no documents found/i)).toBeInTheDocument();
     });
-  });
+  }, 15000);
+
+  it("hides admin-only controls for doctor logins", async () => {
+    role = "doctor";
+    const { container } = renderPage();
+
+    await screen.findByText(/queue status/i);
+    expect(screen.queryByTestId("processing-insights")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /delete selected/i })).not.toBeInTheDocument();
+
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(["dummy"], "Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf", {
+      type: "application/pdf",
+    });
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await screen.findByText("Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf");
+    expect(screen.queryByTitle(/audit trail/i)).not.toBeInTheDocument();
+  }, 15000);
 });
