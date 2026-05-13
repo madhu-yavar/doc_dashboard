@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LockKeyhole, ShieldCheck, Stethoscope } from "lucide-react";
+import { LockKeyhole, FileText, Activity, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,40 +35,53 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_28%),linear-gradient(180deg,_#f8fffc_0%,_#edf7f3_100%)] px-6 py-10">
-      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.08),_transparent_30%),linear-gradient(180deg,_#f8fffc_0%,_#edf7f3_100%)] px-6 py-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/75 px-6 py-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur">
+          <img src="/manipal-logo.png" alt="Manipal Hospitals" className="h-10 w-auto object-contain sm:h-12" />
+          <img src="/yavar-logo.png" alt="Powered by Yavar.ai" className="h-10 w-auto object-contain sm:h-12" />
+        </div>
+
+        <div className="grid min-h-[calc(100vh-12rem)] items-center gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-8">
-          <div className="inline-flex items-center gap-3 rounded-full border border-emerald-200 bg-white/70 px-4 py-2 text-sm text-emerald-800 shadow-sm">
-            <Stethoscope className="h-4 w-4" />
-            Secure clinician access
-          </div>
           <div className="max-w-2xl space-y-5">
-            <h1 className="text-5xl font-semibold leading-tight tracking-tight text-slate-900">
-              Secure access to the clinical document and decision-support workspace.
+            <h1 className="text-4xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-5xl">
+              Your AI-powered clinical workspace
             </h1>
             <p className="max-w-xl text-base leading-7 text-slate-600">
-              Sign in with your assigned credentials to review records, process documents, and access workflow tools permitted for your role.
+              Instantly extract patient information, medications, and clinical insights from prescriptions, lab reports, and handwritten notes.
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="border-emerald-100 bg-white/80 shadow-sm">
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card className="rounded-[24px] border-emerald-100 bg-white/80 shadow-sm">
               <CardContent className="flex gap-3 p-5">
-                <ShieldCheck className="mt-1 h-5 w-5 text-emerald-600" />
+                <FileText className="mt-1 h-5 w-5 shrink-0 text-emerald-600" />
                 <div>
-                  <p className="font-medium text-slate-900">Role-based access</p>
+                  <p className="font-medium text-slate-900">Smart extraction</p>
                   <p className="mt-1 text-sm leading-6 text-slate-600">
-                    Access is governed by user role, with controls applied across both the application and server APIs.
+                    Auto-capture patient details, meds, and diagnosis from any document
                   </p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-emerald-100 bg-white/80 shadow-sm">
+            <Card className="rounded-[24px] border-emerald-100 bg-white/80 shadow-sm">
               <CardContent className="flex gap-3 p-5">
-                <LockKeyhole className="mt-1 h-5 w-5 text-emerald-600" />
+                <Activity className="mt-1 h-5 w-5 shrink-0 text-emerald-600" />
                 <div>
-                  <p className="font-medium text-slate-900">Session security</p>
+                  <p className="font-medium text-slate-900">Real-time alerts</p>
                   <p className="mt-1 text-sm leading-6 text-slate-600">
-                    Sessions are maintained server-side and protected in transit using secure HttpOnly session cookies.
+                    Pharmacy & department notifications for faster patient care
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="rounded-[24px] border-emerald-100 bg-white/80 shadow-sm">
+              <CardContent className="flex gap-3 p-5">
+                <Clock className="mt-1 h-5 w-5 shrink-0 text-emerald-600" />
+                <div>
+                  <p className="font-medium text-slate-900">Save time</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    Reduce manual data entry and focus on what matters most
                   </p>
                 </div>
               </CardContent>
@@ -76,15 +89,19 @@ export default function Login() {
           </div>
         </div>
 
-        <Card className="border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-          <CardContent className="p-8">
-            <div className="mb-8">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Sign in</p>
-              <h2 className="mt-3 text-2xl font-semibold text-slate-900">Doctor Dashboard access</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Enter your assigned username and password. Access is determined automatically after authentication.
-              </p>
+        <Card className="overflow-hidden rounded-[28px] border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+          <div className="border-b border-emerald-100 bg-[linear-gradient(135deg,rgba(16,185,129,0.08),rgba(255,255,255,0.7))] px-8 py-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-700">Sign in</p>
+                <h2 className="mt-3 text-2xl font-semibold text-slate-900">Access your dashboard</h2>
+              </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-sm">
+                <LockKeyhole className="h-5 w-5" />
+              </div>
             </div>
+          </div>
+          <CardContent className="p-8 pt-6">
 
             <form className="space-y-5" onSubmit={handleSubmit}>
               <div className="space-y-2">
@@ -114,12 +131,13 @@ export default function Login() {
 
               {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
-              <Button className="w-full" type="submit" disabled={submitting || !username.trim() || !password}>
+              <Button className="h-11 w-full" type="submit" disabled={submitting || !username.trim() || !password}>
                 {submitting ? "Signing in..." : "Sign in"}
               </Button>
             </form>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );
