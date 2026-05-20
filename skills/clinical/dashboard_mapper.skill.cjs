@@ -526,6 +526,7 @@ class DashboardMapperSkill {
     return {
       name: patient.name || "",
       age: patient.age ?? null,
+      gender: patient.gender || "",
       mrn: patient.mrn || patient.hospital_no || "",
       admission_date: patient.admission_date || "",
       discharge_date: patient.discharge_date || "",
@@ -903,10 +904,18 @@ class DashboardMapperSkill {
       }))
     };
 
-    return applyActivationMetadata(
+    const dashboardCards = applyActivationMetadata(
       this.buildDashboardCards(normalizedVoiceData, {}),
       DOCUMENT_TYPES.CHART_NOTE
     );
+
+    // Also build and return patient data for voice extraction
+    const samplePatientData = this.buildSamplePatientData(normalizedVoiceData);
+
+    return {
+      dashboard_cards: dashboardCards,
+      sample_patient_data: samplePatientData
+    };
   }
 }
 
