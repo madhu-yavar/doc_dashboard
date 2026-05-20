@@ -163,9 +163,9 @@ config:
   # Dashboard URLs
   dashboardBaseUrl: https://doctor-dashboard.zagent.dev.yavar.ai
   # Frontend configuration
-  frontendOrigin: https://doctor-dashboard.zagent.dev.yavar.ai
+  frontendOrigin: http://localhost:8081
   # Auth configuration
-  authCookieSecure: "true"
+  authCookieSecure: "false"
   # SMTP configuration for email alerts
   smtpHost: smtp.office365.com
   smtpPort: "587"
@@ -182,9 +182,9 @@ secrets:
   smtpPass: "vzfzglzwqyyqthgj"
   # Auth bootstrap credentials
   authBootstrapAdminUsername: "admin"
-  authBootstrapAdminPasswordHash: "$2b$10$FxnesBTE8PhN..jBw2uxFuHDRkVY5ON62xP38b8p7pLZ3iIF9qiXu"
+  authBootstrapAdminPasswordHash: "$2b$10$JkK5VtzN5yk1ZtcTXyV2gOmFq9mCDImZUVrY8DRM2RHV34OptxZlO"
   authBootstrapDoctorUsername: "madhu"
-  authBootstrapDoctorPasswordHash: "$2b$10$Cf.V36V7AVjzen9tb0cR7uGLRChEI5sBJTapMfn/eWo5eoC56Q8MK"
+  authBootstrapDoctorPasswordHash: "$2b$10$0QpVNSOojr2EwAUK2jUlXuThC/EbY2qROeCBlYE.bBgpPkpikPKOC"
 
 # Node selector
 nodeSelector: {}
