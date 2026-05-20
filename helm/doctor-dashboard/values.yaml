@@ -163,9 +163,9 @@ config:
   # Dashboard URLs
   dashboardBaseUrl: https://doctor-dashboard.zagent.dev.yavar.ai
   # Frontend configuration
-  frontendOrigin: http://localhost:8081
+  frontendOrigin: https://doctor-dashboard.zagent.dev.yavar.ai
   # Auth configuration
-  authCookieSecure: "false"
+  authCookieSecure: "true"
   # SMTP configuration for email alerts
   smtpHost: smtp.office365.com
   smtpPort: "587"
