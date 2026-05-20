@@ -31,7 +31,8 @@ const DOCUMENT_TYPES = {
   OUTPATIENT_RECORD: 'outpatient_record',
   LAB_REPORT: 'lab_report',
   CHART_NOTE: 'chart_note',
-  INPATIENT_RECORD: 'inpatient_record'
+  INPATIENT_RECORD: 'inpatient_record',
+  VOICE: 'voice'
 };
 
 /**
@@ -127,6 +128,21 @@ const ACTIVATION_POLICY = {
     [CARD_IDS.RADIOLOGY]: 'active',
     [CARD_IDS.FOLLOW_UP]: 'active',
     [CARD_IDS.DISCHARGE_PLAN]: 'inactive'  // May have but not primary focus
+  },
+
+  // Voice Dictation - physician voice notes
+  [DOCUMENT_TYPES.VOICE]: {
+    [CARD_IDS.VITALS]: 'active',
+    [CARD_IDS.DIAGNOSIS]: 'active',
+    [CARD_IDS.MEDICATIONS]: 'active',
+    [CARD_IDS.CLINICAL_NOTES]: 'active',
+    [CARD_IDS.FOLLOW_UP]: 'active',
+    // Contextual - depends on what was mentioned in dictation
+    [CARD_IDS.LABS]: 'inactive',         // Only show if labs were mentioned
+    [CARD_IDS.RADIOLOGY]: 'inactive',     // Only show if imaging was mentioned
+    [CARD_IDS.RISK]: 'hidden',           // Risk assessment not typically in dictation
+    [CARD_IDS.TREATMENT]: 'inactive',     // Only show if treatment discussed
+    [CARD_IDS.DISCHARGE_PLAN]: 'hidden'   // Not a discharge document
   }
 };
 

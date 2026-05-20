@@ -8,6 +8,7 @@ const CANONICAL_DOCUMENT_TYPES = [
   "outpatient_record",
   "lab_report",
   "chart_note",
+  "voice",
   "unknown",
 ];
 
@@ -70,7 +71,9 @@ function resolveProviderTokens(document) {
 
 function buildDocumentMetrics(document) {
   const result = document?.result;
+  // For voice documents, check documentType first; otherwise check meta
   const documentType = normalizeDocumentType(
+    document?.documentType === "voice" ? "voice" :
     result?.meta?.router?.detected_type || result?.meta?.document_type
   );
   const investigations = toArray(result?.extracted_data?.investigations);

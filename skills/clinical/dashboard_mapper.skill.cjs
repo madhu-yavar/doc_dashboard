@@ -10,6 +10,12 @@ const {
   DOCUMENT_TYPES
 } = require("./dashboard_card_activation_config.cjs");
 
+// Add voice document type
+const DOCUMENT_TYPES_WITH_VOICE = {
+  ...DOCUMENT_TYPES,
+  VOICE: 'voice'
+};
+
 class DashboardMapperSkill {
   constructor(config = {}) {
     this.name = "Dashboard Mapper";
@@ -41,10 +47,21 @@ class DashboardMapperSkill {
     const dashboardCards = this.buildDashboardCards(data, validation);
 
     // Get document type for activation
-    const documentType = data.meta?.document_type ||
-                         data.meta?.router?.detected_type ||
-                         data.document_type ||
-                         DOCUMENT_TYPES.PRESCRIPTION; // Default to prescription
+    let documentType = data.meta?.document_type ||
+                      data.meta?.router?.detected_type ||
+                      data.document_type;
+
+    // Check for voice documents
+    if (data.meta?.source_type === 'voice_transcript' ||
+        data.meta?.source_type === 'voice' ||
+        data.document_type === 'voice') {
+      documentType = DOCUMENT_TYPES_WITH_VOICE.VOICE;
+    }
+
+    // Fallback to default
+    if (!documentType) {
+      documentType = DOCUMENT_TYPES.PRESCRIPTION;
+    }
 
     // Apply activation metadata based on document type
     const activatedCards = applyActivationMetadata(dashboardCards, documentType);
@@ -75,6 +92,7 @@ class DashboardMapperSkill {
     const treatment = data.treatment || {};
     const procedures = Array.isArray(data.procedures) ? data.procedures : [];
     const radiologyStudies = Array.isArray(data.radiology) ? data.radiology : [];
+    const followUpAppointments = this.normalizeFollowUpAppointments(data.follow_up);
 
     const buildStatus = (items, allowedTypes) => this.sectionStatusResolver.build(items, allowedTypes);
 
@@ -88,6 +106,10 @@ class DashboardMapperSkill {
           heartRate: { value: this.getVitalNumericValue(data.vitals?.latest?.pulse?.value ?? data.vitals?.pulse?.value) },
           spo2: { value: this.getVitalNumericValue(data.vitals?.latest?.spo2?.value ?? data.vitals?.spo2?.value) },
           temperature: { value: this.getVitalNumericValue(data.vitals?.latest?.temperature?.value ?? data.vitals?.temperature?.value) },
+          weight: {
+            value: this.getVitalNumericValue(data.vitals?.latest?.weight?.value ?? data.vitals?.weight?.value),
+            unit: data.vitals?.latest?.weight?.unit || data.vitals?.weight?.unit || "",
+          },
           respiratoryRate: {
             value: this.getVitalNumericValue(
               data.vitals?.latest?.resp_rate?.value ??
@@ -101,10 +123,10 @@ class DashboardMapperSkill {
       },
       diagnosis: {
         principal: {
-          description: data.diagnosis?.principal || "",
-          code: data.diagnosis?.icd_code || "",
+          description: this.getDiagnosisLabel(data.diagnosis?.principal),
+          code: data.diagnosis?.icd_code || data.diagnosis?.principal?.icd_code || "",
         },
-        secondary: Array.isArray(data.diagnosis?.secondary) ? data.diagnosis.secondary.map((description) => ({ description })) : [],
+        secondary: this.normalizeDiagnosisList(data.diagnosis?.secondary).map((description) => ({ description })),
       },
       medications: {
         active: Array.isArray(dashboardCards.medications_card?.medication_list)
@@ -177,7 +199,7 @@ class DashboardMapperSkill {
           is_inferred: Boolean(note.is_inferred),
         })),
       },
-      followUp: data.follow_up?.appointments || [],
+      followUp: followUpAppointments,
       provenance: {
         sections: {
           vitals: buildStatus(
@@ -251,10 +273,11 @@ class DashboardMapperSkill {
       title: "Vital Signs",
       status: this.determineVitalsStatus(vitals, riskScores),
       summary: {
-        latest_bp: this.formatBP(vitals.latest?.bp || vitals.bp),
-        pulse: this.getVitalNumericValue(vitals.latest?.pulse?.value ?? vitals.pulse?.value),
-        temp: this.getVitalNumericValue(vitals.latest?.temperature?.value ?? vitals.temperature?.value),
-        spo2: this.getVitalNumericValue(vitals.latest?.spo2?.value ?? vitals.spo2?.value)
+        latest_bp: this.formatBP(vitals.latest?.bp || vitals.latest?.bloodPressure || vitals.bp),
+        pulse: this.getVitalNumericValue(vitals.latest?.pulse?.value ?? vitals.latest?.heartRate?.value),
+        temp: this.getVitalNumericValue(vitals.latest?.temperature?.value),
+        spo2: this.getVitalNumericValue(vitals.latest?.spo2?.value),
+        weight: this.getVitalNumericValue(vitals.latest?.weight?.value ?? vitals.weight?.value)
       },
       trend: this.determineTrend(vitals),
       data_points: vitals.readings?.length || this.countVitalsDataPoints(vitals),
@@ -272,13 +295,17 @@ class DashboardMapperSkill {
     };
 
     // Diagnosis Card
+    const principalDiagnosis = this.getDiagnosisLabel(clinical.principal);
+    const icdCode = clinical.icd_code || clinical.principal?.icd_code || clinical.principal?.code || "";
+    const secondaryDiagnoses = this.normalizeDiagnosisList(clinical.secondary);
+
     const diagnosisCard = {
       icon: "🩺",
       title: "Diagnosis",
-      principal_diagnosis: clinical.principal || "",
-      icd_code: clinical.icd_code || "",
-      secondary_count: (clinical.secondary || []).length,
-      secondary_diagnoses: clinical.secondary || [],
+      principal_diagnosis: principalDiagnosis,
+      icd_code: icdCode,
+      secondary_count: secondaryDiagnoses.length,
+      secondary_diagnoses: secondaryDiagnoses,
       procedures_count: data.procedures?.length || 0
     };
 
@@ -464,11 +491,13 @@ class DashboardMapperSkill {
     };
 
     // Follow Up Card
+    const followUpAppointments = this.normalizeFollowUpAppointments(data.follow_up);
     const followUpCard = {
       icon: "📅",
       title: "Follow-Up",
-      next_appointment: data.follow_up?.next_appointment || "",
-      appointment_count: data.follow_up?.appointments?.length || 0
+      next_appointment: data.follow_up?.next_appointment || this.getFollowUpNextAppointment(followUpAppointments),
+      appointment_count: followUpAppointments.length,
+      appointments: followUpAppointments
     };
 
     return {
@@ -491,6 +520,8 @@ class DashboardMapperSkill {
   buildSamplePatientData(data) {
     const patient = data.patient || {};
     const vitals = data.vitals || {};
+    const weightValue = this.getVitalNumericValue(vitals.latest?.weight?.value ?? vitals.weight?.value);
+    const weightUnit = vitals.latest?.weight?.unit || vitals.weight?.unit || "";
 
     return {
       name: patient.name || "",
@@ -500,6 +531,7 @@ class DashboardMapperSkill {
       discharge_date: patient.discharge_date || "",
       los_days: this.calculateLOS(patient),
       summary: this.generatePatientSummary(data),
+      weight: weightValue ? { value: weightValue, unit: weightUnit } : null,
       // Add vitals for UI display
       vitals: {
         latest: {
@@ -510,6 +542,7 @@ class DashboardMapperSkill {
           heartRate: { value: this.getVitalNumericValue(vitals.latest?.pulse?.value ?? vitals.pulse?.value) },
           spo2: { value: this.getVitalNumericValue(vitals.latest?.spo2?.value ?? vitals.spo2?.value) },
           temperature: { value: this.getVitalNumericValue(vitals.latest?.temperature?.value ?? vitals.temperature?.value) },
+          weight: { value: weightValue, unit: weightUnit },
           respiratoryRate: {
             value: this.getVitalNumericValue(
               vitals.latest?.resp_rate?.value ??
@@ -540,6 +573,68 @@ class DashboardMapperSkill {
       }
     }
     return null;
+  }
+
+  getDiagnosisLabel(value) {
+    if (!value) return "";
+    if (typeof value === "string") return value;
+    if (Array.isArray(value)) {
+      return value.map((item) => this.getDiagnosisLabel(item)).filter(Boolean)[0] || "";
+    }
+    return value.name || value.description || value.code || "";
+  }
+
+  normalizeDiagnosisList(items) {
+    if (!Array.isArray(items)) return [];
+    return items
+      .map((item) => this.getDiagnosisLabel(item))
+      .filter(Boolean);
+  }
+
+  normalizeFollowUpAppointments(followUp) {
+    const appointments = Array.isArray(followUp?.appointments) ? followUp.appointments : [];
+    if (appointments.length > 0) {
+      return appointments.map((item) => ({
+        department: item.department || item.specialty || "",
+        physician: item.physician || "",
+        date: item.date || item.timing || "",
+        time: item.time || "",
+        purpose: item.purpose || item.reason || item.type || "",
+      }));
+    }
+
+    const items = Array.isArray(followUp?.items)
+      ? followUp.items
+      : Array.isArray(followUp)
+        ? followUp
+        : [];
+
+    return items.map((item) => {
+      if (typeof item === "string") {
+        return {
+          department: "",
+          physician: "",
+          date: "",
+          time: "",
+          purpose: item,
+        };
+      }
+
+      return {
+        department: item.specialty || item.department || "",
+        physician: item.physician || "",
+        date: item.date || item.timing || "",
+        time: item.time || "",
+        purpose: item.reason || item.notes || "",
+      };
+    });
+  }
+
+  getFollowUpNextAppointment(appointments) {
+    if (!Array.isArray(appointments) || appointments.length === 0) return "";
+    const explicitDate = appointments.find((item) => item.date);
+    if (explicitDate?.date) return explicitDate.date;
+    return appointments.find((item) => item.purpose)?.purpose || "";
   }
 
   determineVitalsStatus(vitals, riskScores) {
@@ -733,7 +828,7 @@ class DashboardMapperSkill {
     const ageRaw = patient.age ?? null;
     const ageNumeric = typeof ageRaw === 'string' ? parseInt(ageRaw, 10) || null : ageRaw;
     const gender = patient.gender || "";
-    const principalDiagnosis = diagnosis.principal || "";
+    const principalDiagnosis = this.getDiagnosisLabel(diagnosis.principal);
     const riskLevel = this.determineOverallRiskStatus(riskScores);
 
     const parts = [];
@@ -750,6 +845,68 @@ class DashboardMapperSkill {
     parts.push(`Processed via Agent System v${data.meta?.agent_version || "2.0.0"}.`);
 
     return parts.join(". ");
+  }
+
+  /**
+   * Map voice-extracted data to dashboard schema
+   * Voice data has a different structure than PDF-extracted data
+   */
+  mapVoiceData(voiceData) {
+    if (!voiceData) {
+      return null;
+    }
+
+    // Voice extraction returns diagnosis.principal as an array, but dashboard expects a single object
+    // Convert: diagnosis.principal[0] -> diagnosis.principal object
+    const principalDiagnosis = Array.isArray(voiceData.diagnosis?.principal)
+      ? voiceData.diagnosis.principal[0] || {}
+      : voiceData.diagnosis?.principal || {};
+
+    const principalObj = {
+      name: principalDiagnosis.name || principalDiagnosis.description || "",
+      code: principalDiagnosis.icd_code || principalDiagnosis.code || "",
+      status: principalDiagnosis.status || "active",
+      description: principalDiagnosis.name || principalDiagnosis.description || "",
+      confirmedDate: principalDiagnosis.confirmedDate || null,
+      treatingPhysician: principalDiagnosis.treatingPhysician || null
+    };
+
+    const normalizedVoiceData = {
+      ...voiceData,
+      diagnosis: {
+        principal: principalObj.description || principalObj.name || "",
+        secondary: voiceData.diagnosis?.secondary || [],
+        comorbidities: voiceData.diagnosis?.comorbidities || [],
+        icd_code: principalObj.code || ""
+      },
+      meta: {
+        ...voiceData.meta,
+        source_type: "voice",
+        document_type: "voice_dictation",
+        agent_version: this.version,
+        processed_at: new Date().toISOString()
+      },
+      medications: (voiceData.medications || []).map((med) => ({
+        name: med.name,
+        dose: med.dose,
+        frequency: med.frequency,
+        route: med.route,
+        indication: med.indication,
+        status: med.status || "continue",
+        provenance: med.provenance
+      })),
+      lab_results: (voiceData.lab_results || []).map((lab) => ({
+        test_name: lab.test_name,
+        value: lab.value,
+        flag: lab.flag,
+        provenance: lab.provenance
+      }))
+    };
+
+    return applyActivationMetadata(
+      this.buildDashboardCards(normalizedVoiceData, {}),
+      DOCUMENT_TYPES.CHART_NOTE
+    );
   }
 }
 

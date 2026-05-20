@@ -439,4 +439,114 @@ describe("transformProcessedDocument", () => {
     expect(transformed.presentation.summaryCards.vitals.headlineMetric).toBe("");
     expect(transformed.presentation.summaryCards.vitals.supportingPoints).toContain("No source-backed vitals documented.");
   });
+
+  it("maps voice follow-up appointments and weight into dashboard data", () => {
+    const transformed = transformProcessedDocument(
+      createProcessedDocument({
+        documentType: "voice",
+        result: {
+          meta: {
+            source_type: "voice_transcript",
+            voice_session_id: "voice-1",
+          },
+          sample_patient_data: {
+            name: "John Doe",
+            age: 45,
+            mrn: "MRN-77",
+            admission_date: "",
+            discharge_date: "",
+            weight: { value: 77, unit: "kg" },
+          },
+          dashboard_cards: {
+            vitals_card: {
+              status: "stable",
+              summary: {
+                latest_bp: "120/80",
+                pulse: 72,
+                temp: null,
+                spo2: null,
+                weight: 77,
+              },
+              data_points: 2,
+            },
+            diagnosis_card: {
+              principal_diagnosis: "Coronary artery disease",
+              secondary_diagnoses: ["Hypertension"],
+            },
+            clinical_notes_card: {
+              total_notes: 1,
+              notes: [
+                {
+                  type: "Voice Dictation",
+                  author: "Physician",
+                  date: "2026-05-20",
+                  summary: "Assessment coronary artery disease. Plan follow up in 2 weeks.",
+                },
+              ],
+            },
+            follow_up_card: {
+              next_appointment: "in 2 weeks",
+              appointment_count: 1,
+              appointments: [
+                {
+                  department: "Cardiology",
+                  physician: "",
+                  date: "in 2 weeks",
+                  time: "",
+                  purpose: "review",
+                },
+              ],
+            },
+          },
+          extracted_data: {
+            patient: {
+              name: "John Doe",
+              mrn: "MRN-77",
+              age: 45,
+              gender: "Male",
+            },
+            diagnosis: {
+              principal: "Coronary artery disease",
+              secondary: ["Hypertension"],
+              symptoms: ["Chest pain", "Denies shortness of breath"],
+            },
+            vitals: {
+              latest: {
+                bp: { systolic: 120, diastolic: 80 },
+                pulse: { value: 72 },
+                weight: { value: 77, unit: "kg" },
+              },
+            },
+            follow_up: {
+              items: [
+                {
+                  specialty: "Cardiology",
+                  timing: "in 2 weeks",
+                  reason: "review",
+                },
+              ],
+            },
+            clinical_notes: [
+              {
+                type: "Voice Dictation",
+                author: "Physician",
+                date: "2026-05-20",
+                summary: "Assessment coronary artery disease. Plan follow up in 2 weeks.",
+              },
+            ],
+          },
+        },
+      }),
+    );
+
+    expect(transformed.patient.weight).toEqual({ value: 77, unit: "kg" });
+    expect(transformed.vitals.latest.weight).toEqual({ value: 77, unit: "kg" });
+    expect(transformed.followUp).toEqual([
+      expect.objectContaining({
+        department: "Cardiology",
+        date: "in 2 weeks",
+        purpose: "review",
+      }),
+    ]);
+  });
 });

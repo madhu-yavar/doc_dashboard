@@ -1,0 +1,160 @@
+{
+  "benchmark_id": "voice_prog_001",
+  "name": "Brief Progress Note",
+  "description": "Short clinical progress note with vitals and treatment updates",
+  "created_at": "2026-05-13",
+
+  "transcript": {
+    "rawText": "Patient is improving. Temperature is 98.4 degrees Fahrenheit. Blood pressure 120 over 70. Pulse 72 per minute. SpO2 98 percent on room air. Respiratory rate 16 per minute. Patient is afebrile and hemodynamically stable. Continue current antibiotics Ceftriaxone 2 grams IV once daily for another 3 days. Complete blood count shows hemoglobin improving to 11.2. White cell count normal at 7500. Platelets adequate. Chest X ray today shows resolving infiltrates in right lower zone. Plan to continue current management. Patient may be discharged in 24 hours if clinically stable.",
+    "language": "en-US",
+    "overallConfidence": 0.94,
+    "segments": [
+      {
+        "id": "seg_1",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "0:00",
+        "endLabel": "0:05",
+        "startMs": 0,
+        "endMs": 5000,
+        "text": "Patient is improving.",
+        "confidence": 0.96,
+        "flags": []
+      },
+      {
+        "id": "seg_2",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "0:05",
+        "endLabel": "0:20",
+        "startMs": 5000,
+        "endMs": 20000,
+        "text": "Temperature is 98.4 degrees Fahrenheit. Blood pressure 120 over 70. Pulse 72 per minute. SpO2 98 percent on room air. Respiratory rate 16 per minute.",
+        "confidence": 0.95,
+        "flags": []
+      },
+      {
+        "id": "seg_3",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "0:20",
+        "endLabel": "0:28",
+        "startMs": 20000,
+        "endMs": 28000,
+        "text": "Patient is afebrile and hemodynamically stable.",
+        "confidence": 0.93,
+        "flags": []
+      },
+      {
+        "id": "seg_4",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "0:28",
+        "endLabel": "0:40",
+        "startMs": 28000,
+        "endMs": 40000,
+        "text": "Continue current antibiotics Ceftriaxone 2 grams IV once daily for another 3 days.",
+        "confidence": 0.92,
+        "flags": []
+      },
+      {
+        "id": "seg_5",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "0:40",
+        "endLabel": "0:55",
+        "startMs": 40000,
+        "endMs": 55000,
+        "text": "Complete blood count shows hemoglobin improving to 11.2. White cell count normal at 7500. Platelets adequate.",
+        "confidence": 0.94,
+        "flags": []
+      },
+      {
+        "id": "seg_6",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "0:55",
+        "endLabel": "1:08",
+        "startMs": 55000,
+        "endMs": 68000,
+        "text": "Chest X ray today shows resolving infiltrates in right lower zone. Plan to continue current management. Patient may be discharged in 24 hours if clinically stable.",
+        "confidence": 0.91,
+        "flags": []
+      }
+    ]
+  },
+
+  "ground_truth": {
+    "patient": {
+      "name": "",
+      "mrn": "",
+      "age": null,
+      "gender": null
+    },
+    "diagnosis": {
+      "principal": {
+        "name": "Pneumonia",
+        "status": "improving"
+      }
+    },
+    "medications": [
+      {
+        "name": "Ceftriaxone",
+        "dose": "2 grams",
+        "frequency": "once daily",
+        "route": "IV",
+        "duration": "another 3 days",
+        "status": "continue"
+      }
+    ],
+    "vitals": {
+      "temperature": 98.4,
+      "bp_systolic": 120,
+      "bp_diastolic": 70,
+      "pulse": 72,
+      "spo2": 98,
+      "resp_rate": 16
+    },
+    "lab_results": [
+      {
+        "test_name": "Hemoglobin",
+        "value": "11.2",
+        "flag": "low"
+      },
+      {
+        "test_name": "White Cell Count",
+        "value": "7500",
+        "flag": "normal"
+      },
+      {
+        "test_name": "Platelets",
+        "value": "adequate",
+        "flag": "normal"
+      }
+    ],
+    "radiology": [
+      {
+        "type": "Chest X-ray",
+        "findings": "resolving infiltrates in right lower zone",
+        "status": "completed"
+      }
+    ],
+    "treatment": {
+      "current_approach": "Continuing IV antibiotics for resolving pneumonia",
+      "response": "improving"
+    },
+    "clinical_notes": [
+      {
+        "type": "Voice Dictation",
+        "summary": "Patient improving. Afebrile, hemodynamically stable. Vitals: T 98.4°F, BP 120/70, P 72/min, SpO2 98%, RR 16/min. Hb improving to 11.2. WCC normal 7500. CXR: resolving infiltrates in right lower zone. Continue Ceftriaxone 2g IV OD for 3 more days. Plan to discharge in 24 hours if stable."
+      }
+    ]
+  },
+
+  "expected_extraction_quality": {
+    "vitals_capture_expected": 1.0,
+    "medication_capture_expected": 1.0,
+    "lab_results_capture_expected": 0.9,
+    "radiology_findings_capture_expected": 0.8
+  }
+}

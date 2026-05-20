@@ -99,7 +99,7 @@ const resolveMaskedImagePages = (
     }>;
 };
 
-export type QueueStatus = "queued" | "processing" | "processed" | "failed" | "partial";
+export type QueueStatus = "queued" | "queued_for_extraction" | "processing" | "processed" | "failed" | "partial" | "transcribing" | "review_required";
 
 export type GemmaDashboardResult = {
   meta?: {
@@ -131,6 +131,7 @@ export type GemmaDashboardResult = {
       icd_code?: string;
       secondary?: string[];
       comorbidities?: string[];
+      symptoms?: string[];
       drg?: string;
     };
     risk_scores?: {
@@ -154,6 +155,14 @@ export type GemmaDashboardResult = {
       procedures?: string[];
       response?: string;
       complications?: string[];
+    };
+    review_of_systems?: {
+      positives?: string[];
+      negatives?: string[];
+    };
+    physical_exam?: {
+      normal_findings?: string[];
+      abnormal_findings?: string[];
     };
     nursing_needs?: string[];
     clinical_notes?: Array<{
@@ -528,6 +537,13 @@ export type GemmaDashboardResult = {
     follow_up_card?: {
       next_appointment?: string;
       appointment_count?: number;
+      appointments?: Array<{
+        department?: string;
+        physician?: string;
+        date?: string;
+        time?: string;
+        purpose?: string;
+      }>;
       _activation?: { state?: 'active' | 'inactive' | 'hidden'; documentType?: string };
     };
   };
@@ -575,6 +591,10 @@ export type GemmaDashboardResult = {
     discharge_date?: string;
     los_days?: number | null;
     summary?: string;
+    weight?: {
+      value?: number | null;
+      unit?: string;
+    } | null;
   };
   presentation?: {
     summary_cards?: Record<
@@ -615,10 +635,36 @@ export type ProcessedDocument = {
   uploadedAt: string;
   status: QueueStatus;
   department: string;
+  documentType?: 'pdf' | 'voice';
   auditRunId?: string | null;
   result?: GemmaDashboardResult | null;
   error?: string | null;
   processedAt?: string;
+  // Voice-specific fields
+  audioPath?: string;
+  mimeType?: string;
+  durationLabel?: string;
+  linkedPatient?: string;
+  encounterLabel?: string;
+  transcript?: {
+    rawText: string | null;
+    normalizedText: string | null;
+    language: string | null;
+    overallConfidence: number | null;
+  } | null;
+  segments?: Array<any>;
+  extractionPreview?: {
+    linkedPatient?: string;
+    encounterLabel?: string;
+    diagnosis?: string;
+    medications?: Array<any>;
+    labs?: Array<any>;
+    radiology?: Array<any>;
+    procedures?: Array<any>;
+    followUp?: Array<any>;
+    clinicalNotes?: Array<string>;
+  };
+  reviewItems?: Array<any>;
   agentInfo?: {
     name: string;
     version: string;
@@ -753,8 +799,21 @@ const parseClinicalNoteTimestamp = (value?: string, fallbackYear?: number) => {
   return Number.NEGATIVE_INFINITY;
 };
 
-export const getProcessedDocumentPatientName = (document: ProcessedDocument) =>
-  document.result?.sample_patient_data?.name?.trim() || "";
+export const getProcessedDocumentPatientName = (document: ProcessedDocument) => {
+  // For voice documents, use linkedPatient if sample_patient_data name is not available
+  if (document.documentType === 'voice') {
+    const extractedName = document.result?.sample_patient_data?.name?.trim();
+    if (extractedName) return extractedName;
+    // Use linkedPatient if it's not the placeholder
+    const linkedPatient = document.linkedPatient?.trim();
+    if (linkedPatient && linkedPatient !== 'Encounter link pending') {
+      return linkedPatient;
+    }
+    // Fallback to file name without extension for voice docs
+    return document.name?.replace(/\.[^.]+$/, '') || "Voice Dictation";
+  }
+  return document.result?.sample_patient_data?.name?.trim() || "";
+};
 
 export const getProcessedDocumentMrn = (document: ProcessedDocument) =>
   document.result?.sample_patient_data?.mrn?.trim() || "";
@@ -877,12 +936,24 @@ const isPlaceholderPatientName = (value?: string | null) => {
 const createRange = (count: number, mapper: (index: number) => string) =>
   Array.from({ length: Math.max(count, 0) }, (_, index) => mapper(index));
 
-const dedupeStrings = (items: Array<string | null | undefined>) => {
+const dedupeStrings = (items: Array<string | null | undefined | object>) => {
   const seen = new Set<string>();
   const output: string[] = [];
 
   for (const item of items) {
-    const normalized = item?.trim();
+    let normalized: string | undefined;
+
+    if (typeof item === 'string' || item instanceof String) {
+      normalized = item.toString().trim();
+    } else if (item && typeof item === 'object') {
+      // Handle objects - try to extract a string representation
+      if ('name' in item) normalized = String(item.name).trim();
+      else if ('value' in item) normalized = String(item.value).trim();
+      else normalized = JSON.stringify(item).trim();
+    } else {
+      normalized = item?.toString().trim();
+    }
+
     if (!normalized) continue;
     const key = normalized.toLowerCase();
     if (seen.has(key)) continue;
@@ -1438,6 +1509,7 @@ const getFallbackDashboardData = (document: ProcessedDocument): DashboardPatient
     name: "",
     age: 0,
     gender: "",
+    weight: { value: 0, unit: "" },
     dateOfBirth: "",
     mrn: "",
     bloodGroup: "",
@@ -1462,6 +1534,7 @@ const getFallbackDashboardData = (document: ProcessedDocument): DashboardPatient
       temperature: { value: 0, unit: "°F" },
       respiratoryRate: { value: 0, unit: "/min" },
       spo2: { value: 0, unit: "%" },
+      weight: { value: 0, unit: "" },
       painScore: { value: 0, scale: 10 },
     },
     status: "stable",
@@ -1546,16 +1619,83 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   const extracted = result.extracted_data && Object.keys(result.extracted_data).length > 0
     ? result.extracted_data
     : result;
+
+  // Normalize voice dictation data structure to match expected format
+  // Voice documents have diagnosis.principal as array, medications as array, etc.
+  const isVoiceDocument =
+    result.meta?.source_type === 'voice' ||
+    result.meta?.source_type === 'voice_transcript' ||
+    extracted?.meta?.source_type === 'voice_transcript' ||
+    document.documentType === 'voice';
+  const normalizedExtracted = isVoiceDocument ? {
+    ...extracted,
+    diagnosis: {
+      principal: Array.isArray(extracted.diagnosis?.principal)
+        ? extracted.diagnosis.principal[0]?.name || extracted.diagnosis.principal.map((d: any) => d.name).join(', ')
+        : extracted.diagnosis?.principal || '',
+      secondary: Array.isArray(extracted.diagnosis?.secondary)
+        ? extracted.diagnosis.secondary.map((d: any) => d.name || d)
+        : extracted.diagnosis?.secondary || [],
+      comorbidities: Array.isArray(extracted.diagnosis?.comorbidities)
+        ? extracted.diagnosis.comorbidities
+        : [],
+      symptoms: Array.isArray(extracted.diagnosis?.symptoms)
+        ? extracted.diagnosis.symptoms.map((item: any) => typeof item === 'string' ? item : item.name || item.finding || item.value || '')
+        : [],
+      icd_code: Array.isArray(extracted.diagnosis?.principal)
+        ? extracted.diagnosis.principal[0]?.icd_code || ''
+        : extracted.diagnosis?.icd_code || '',
+    },
+    medications: Array.isArray(extracted.medications)
+      ? extracted.medications.map((m: any) => ({
+          name: m.name,
+          dose: m.dose || '',
+          frequency: m.frequency || '',
+          route: m.route || '',
+          status: m.status || 'active',
+        }))
+      : extracted.medications || [],
+    procedures: Array.isArray(extracted.procedures)
+      ? extracted.procedures.map((p: any) => p.name || p)
+      : extracted.procedures || [],
+    follow_up: typeof extracted.follow_up === 'object' && extracted.follow_up?.items
+      ? {
+          items: extracted.follow_up.items.map((f: any) =>
+            typeof f === 'string' ? f : f.timing || f.reason || f.specialty || JSON.stringify(f)
+          )
+        }
+      : extracted.follow_up || { items: [] },
+    review_of_systems: extracted.review_of_systems || { positives: [], negatives: [] },
+    physical_exam: extracted.physical_exam || { normal_findings: [], abnormal_findings: [] },
+    clinical_notes: Array.isArray(extracted.clinical_notes)
+      ? extracted.clinical_notes
+      : [],
+    labs: {
+      results: Array.isArray(extracted.lab_results) ? extracted.lab_results : [],
+    },
+    investigations: Array.isArray(extracted.investigations) ? extracted.investigations : [],
+    radiology: {
+      findings: Array.isArray(extracted.radiology?.findings) ? extracted.radiology.findings : [],
+      pending: Array.isArray(extracted.radiology?.pending) ? extracted.radiology.pending.map((r: any) => r.type || r.body_part || r) : [],
+    },
+    treatment: {
+      procedures: Array.isArray(extracted.treatment?.procedures) ? extracted.treatment.procedures : extracted.procedures || [],
+      management_items: Array.isArray(extracted.treatment?.management_items) ? extracted.treatment.management_items : [],
+    },
+    patient: extracted.patient || { name: '', mrn: '', age: null, gender: '' },
+    vitals: extracted.vitals || { bp: {}, pulse: {}, temperature: {}, spo2: {}, resp_rate: {} },
+  } : extracted;
+
   const sampleName = firstNonEmptyString(
     !isPlaceholderPatientName(sample.name) ? sample.name : "",
-    extracted?.patient?.name,
-    extracted?.stage1?.patient?.name,
+    normalizedExtracted?.patient?.name,
+    normalizedExtracted?.stage1?.patient?.name,
   );
-  const sampleAge = typeof sample.age === "number" && sample.age > 0 ? sample.age : (Number(extracted?.patient?.age || extracted?.stage1?.patient?.age) || 0);
+  const sampleAge = typeof sample.age === "number" && sample.age > 0 ? sample.age : (Number(normalizedExtracted?.patient?.age || normalizedExtracted?.stage1?.patient?.age) || 0);
   const sampleLosDays = typeof sample.los_days === "number" && sample.los_days > 0 ? sample.los_days : 0;
-  const extractedProvenance = result.provenance || extracted.provenance || {};
-  const extractedDiagnosis = result.diagnosis || extracted.diagnosis || {};
-  const extractedTreatment = result.treatment || extracted.treatment || {};
+  const extractedProvenance = result.provenance || normalizedExtracted.provenance || {};
+  const extractedDiagnosis = result.diagnosis || normalizedExtracted.diagnosis || {};
+  const extractedTreatment = result.treatment || normalizedExtracted.treatment || {};
 
   console.log('[transformProcessedDocument] Debug: cards type', typeof cards, 'Array.isArray?', Array.isArray(cards));
   console.log('[transformProcessedDocument] Debug: cards keys', Object.keys(cards));
@@ -1720,7 +1860,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   const latestVitals = result.vitals?.latest || extracted.latest || {};
   const visitType = String(
     result.meta?.visit_type ||
-    extracted.meta?.visit_type ||
+    normalizedExtracted.meta?.visit_type ||
     extracted.visit?.visit_type ||
     extracted.stage1?.visit?.visit_type ||
     ""
@@ -1735,7 +1875,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
         : null;
   const hasSourceBackedVitals = Boolean(
     result.vitals?.has_vitals ||
-    extracted.vitals?.has_vitals ||
+    normalizedExtracted.vitals?.has_vitals ||
     cards.vitals_card?.data_points ||
     safeVitalsProvenanceItems.length > 0 ||
     (
@@ -1777,14 +1917,21 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
         : 0)
     : 0;
   const painScore = typeof latestVitals.pain_score?.value === "number" ? latestVitals.pain_score.value : 0;
+  const weightValue =
+    typeof latestVitals.weight?.value === "number" && latestVitals.weight.value > 0
+      ? latestVitals.weight.value
+      : typeof sample.weight?.value === "number" && sample.weight.value > 0
+        ? sample.weight.value
+        : 0;
+  const weightUnit = latestVitals.weight?.unit || sample.weight?.unit || "";
   const secondaryDiagnoses = dedupeStrings(
     diagnosisSectionSupported ? (cards.diagnosis_card?.secondary_diagnoses || extractedDiagnosis.secondary || []) : []
   );
-  const allergies = normalizeAllergyEntries(Array.isArray(cards.medications_card?.allergies) ? cards.medications_card.allergies : Array.isArray(extracted.allergies) ? extracted.allergies : []);
+  const allergies = normalizeAllergyEntries(Array.isArray(cards.medications_card?.allergies) ? cards.medications_card.allergies : Array.isArray(normalizedExtracted.allergies) ? normalizedExtracted.allergies : []);
   const medicationList = medicationsSectionSupported
-    ? dedupeMedicationEntries(Array.isArray(cards.medications_card?.medication_list) ? cards.medications_card.medication_list : Array.isArray(extracted.medications) ? extracted.medications : [])
+    ? dedupeMedicationEntries(Array.isArray(cards.medications_card?.medication_list) ? cards.medications_card.medication_list : Array.isArray(normalizedExtracted.medications) ? normalizedExtracted.medications : [])
     : [];
-  const extractedLabResults = Array.isArray(extracted.lab_results) ? extracted.lab_results.map((result) => ({
+  const extractedLabResults = Array.isArray(normalizedExtracted.lab_results) ? normalizedExtracted.lab_results.map((result) => ({
     test: result.test_name || result.test || "Unknown",
     value: result.value || "",
     reference: result.reference || result.ref || "N/A",
@@ -1802,7 +1949,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       )
     : [];
   const hasActualLabResults = (cards.labs_card?.has_results || false) && labResults.length > 0;
-  const ungatedInvestigationList = normalizeInvestigationEntries(Array.isArray(cards.labs_card?.investigations_list) ? cards.labs_card.investigations_list : Array.isArray(extracted.investigations) ? extracted.investigations : []);
+  const ungatedInvestigationList = normalizeInvestigationEntries(Array.isArray(cards.labs_card?.investigations_list) ? cards.labs_card.investigations_list : Array.isArray(normalizedExtracted.investigations) ? normalizedExtracted.investigations : []);
   const investigationList = labsSectionSupported
     ? (
         labsSectionProvenance.hasRaw
@@ -1828,7 +1975,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     const parsed = Date.parse(cards.clinical_notes_card?.last_update || document.processedAt || document.uploadedAt || "");
     return Number.isNaN(parsed) ? undefined : new Date(parsed).getUTCFullYear();
   })();
-  const explicitClinicalNotes = (Array.isArray(cards.clinical_notes_card?.notes) ? cards.clinical_notes_card.notes : Array.isArray(extracted.clinical_notes) ? extracted.clinical_notes : [])
+  const explicitClinicalNotes = (Array.isArray(cards.clinical_notes_card?.notes) ? cards.clinical_notes_card.notes : Array.isArray(normalizedExtracted.clinical_notes) ? normalizedExtracted.clinical_notes : [])
     .map((note) => ({
       date: note.date || "",
       author: note.author || "",
@@ -1888,7 +2035,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   const handoverNote = explicitClinicalNotes.find((note) => /handover/i.test(note.type));
   const residentNote = explicitClinicalNotes.find((note) => /resident/i.test(note.type));
   const admissionNote = explicitClinicalNotes.find((note) => /initial assessment|admission/i.test(note.type));
-  const rawRiskScores = extracted.risk_scores || {};
+  const rawRiskScores = normalizedExtracted.risk_scores || {};
   const riskScores = {
     ...rawRiskScores,
     fall_risk: normalizeRiskEntry(rawRiskScores.fall_risk),
@@ -2065,7 +2212,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
     Array.isArray(extractedTreatment.management_items) ? extractedTreatment.management_items : []
   );
   // For prescriptions, procedures may be at root level (from handwriting extraction agent)
-  const extractedProcedures = extractedTreatment.procedures || extracted.procedures || [];
+  const extractedProcedures = extractedTreatment.procedures || normalizedExtracted.procedures || [];
   // Keep full procedure objects for prescriptions (with name, category, is_uncertain, confidence_reason)
   const procedureObjects = Array.isArray(extractedProcedures)
     ? extractedProcedures.map((p: any) => {
@@ -2473,6 +2620,22 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
           time: "",
           purpose: toSentence(item.value),
         }))
+      : Array.isArray(cards.follow_up_card?.appointments) && cards.follow_up_card.appointments.length > 0
+        ? cards.follow_up_card.appointments.map((item) => ({
+            department: item.department || resolveDepartmentLabel(result, document),
+            physician: item.physician || "",
+            date: item.date || "",
+            time: item.time || "",
+            purpose: item.purpose || "",
+          }))
+        : Array.isArray(normalizedExtracted.follow_up?.items) && normalizedExtracted.follow_up.items.length > 0
+          ? normalizedExtracted.follow_up.items.map((item: any) => ({
+              department: resolveDepartmentLabel(result, document),
+              physician: "",
+              date: "",
+              time: "",
+              purpose: toSentence(typeof item === "string" ? item : item?.timing || item?.reason || item?.specialty || ""),
+            }))
       : cards.follow_up_card?.next_appointment
         ? [{
             department: resolveDepartmentLabel(result, document),
@@ -2701,7 +2864,8 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       id: document.id,
       name: sampleName,
       age: sampleAge,
-      gender: firstNonEmptyString(extracted.patient?.gender, extracted.stage1?.patient?.gender),
+      gender: firstNonEmptyString(normalizedExtracted.patient?.gender, normalizedExtracted.stage1?.patient?.gender),
+      weight: weightValue > 0 ? { value: weightValue, unit: weightUnit || "kg" } : null,
       dateOfBirth: "",
       mrn: resolvedPatientMrn,
       bloodGroup: "",
@@ -2734,6 +2898,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
         temperature: { value: temp, unit: "°F" },
         respiratoryRate: { value: respRate, unit: "/min" },
         spo2: { value: spo2, unit: "%" },
+        weight: { value: weightValue, unit: weightUnit || "kg" },
         painScore: { value: painScore, scale: 10 },
       },
       status: cards.vitals_card?.status || "stable",

@@ -1,12 +1,24 @@
 import type { DashboardPatientData } from "@/data/patientData";
-import { User, Calendar, Building2 } from "lucide-react";
+import { User, Calendar, Building2, Mic } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-const PatientHeader = ({ data }: { data: DashboardPatientData }) => {
+type PatientHeaderProps = {
+  data: DashboardPatientData;
+  documentType?: 'pdf' | 'voice';
+};
+
+const PatientHeader = ({ data, documentType }: PatientHeaderProps) => {
   const { patient, admission } = data;
+  const isVoiceDocument = documentType === 'voice';
+  const weightValue = patient.weight?.value ?? data.vitals?.latest?.weight?.value ?? 0;
+  const weightUnit = patient.weight?.unit || data.vitals?.latest?.weight?.unit || "";
+  const weightLabel = weightValue > 0 ? `${weightValue}${weightUnit ? ` ${weightUnit}` : ""}` : "";
+  const missingVoiceDemographics = isVoiceDocument && !patient.name && !(patient.age > 0) && !patient.gender;
+
   const demographicItems = [
     patient.age > 0 ? `${patient.age}y` : "",
     patient.gender || "",
+    weightLabel,
     admission.department || "",
   ].filter(Boolean);
   const hasInpatientContext = Boolean(
@@ -44,11 +56,16 @@ const PatientHeader = ({ data }: { data: DashboardPatientData }) => {
             <div className="min-w-0">
               <div className="mb-0.5 flex flex-wrap items-center gap-2">
                 <h1 className="truncate text-[24px] font-semibold leading-none text-slate-900">
-                  {patient.name || "Patient details unavailable"}
+                  {patient.name || (isVoiceDocument ? "Patient name not extracted" : "Patient name unavailable")}
                 </h1>
                 {patient.mrn ? (
                   <Badge variant="outline" className="h-6 rounded-md border-blue-200 bg-blue-50 px-2 font-mono text-[11px] text-blue-700">
                     {patient.mrn}
+                  </Badge>
+                ) : null}
+                {missingVoiceDemographics ? (
+                  <Badge variant="outline" className="h-6 rounded-md border-amber-200 bg-amber-50 px-2 text-[11px] text-amber-700">
+                    Demographics missing
                   </Badge>
                 ) : null}
                 {hasAdmissionMeta ? (
@@ -66,6 +83,11 @@ const PatientHeader = ({ data }: { data: DashboardPatientData }) => {
                       {item}
                     </span>
                   ))
+                ) : isVoiceDocument ? (
+                  <span className="flex items-center gap-1.5">
+                    <Mic className="h-3.5 w-3.5" />
+                    Demographics not extracted from voice dictation
+                  </span>
                 ) : (
                   <span>No demographic details extracted</span>
                 )}
@@ -113,3 +135,4 @@ const PatientHeader = ({ data }: { data: DashboardPatientData }) => {
 };
 
 export default PatientHeader;
+export type { PatientHeaderProps };

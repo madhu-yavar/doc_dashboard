@@ -90,6 +90,9 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 | Skills Framework | Reusable AI skills documentation | [View](./architecture/skills-framework.md) |
 | Chatbot Architecture | Doctor Assistant chat system | [View](./architecture/chatbot-architecture.md) |
 | Chart Note React Agent | Chart note generation architecture | [View](./architecture/CHART_NOTE_REACT_AGENT.md) |
+| Voice Intake LangGraph Plan | Architecture plan for dictation/conversation-to-dashboard flow | [View](./architecture/voice-intake-langgraph-plan.md) |
+| Voice Intake Phase 0 Baseline | Locked Phase 0 UI, contracts, storage, and implementation order | [View](./architecture/voice-intake-phase0-baseline.md) |
+| Voice Intake Implementation Checklist | Execution tracker for the voice intake module | [View](./architecture/voice-intake-implementation-checklist.md) |
 
 ### 2. Project Planning & Research
 

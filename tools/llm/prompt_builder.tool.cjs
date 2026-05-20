@@ -58,6 +58,33 @@ Return ONLY JSON:
   "sources": ["where you found each piece of data"]
 }`,
 
+      voice_demographics_extractor: `You are extracting patient demographics from a physician dictation transcript.
+This is conversational clinical speech, not a labeled PDF form.
+
+TRANSCRIPT:
+{{transcriptText}}
+
+Think through this step-by-step:
+1. Look for explicit name mentions such as "this is John Doe", "Mr. John Doe", or "Jane Smith is a..."
+2. Extract age only when the transcript clearly states it, such as "65-year-old"
+3. Extract gender only when it is explicitly spoken or directly inferable from phrases like "male patient" or "female patient"
+4. Extract MRN / hospital number only if it is explicitly spoken
+5. Extract admission/discharge dates only if the dictation clearly documents them
+6. Do NOT rely on PDF-style labels like "Name:" or "Date of Admission"
+7. Do NOT guess missing demographics
+
+Return ONLY JSON:
+{
+  "name": "",
+  "mrn": "",
+  "age": 0,
+  "gender": "",
+  "admission_date": "",
+  "discharge_date": "",
+  "confidence_notes": "what you found and how confident you are",
+  "sources": ["short transcript evidence for each populated field"]
+}`,
+
       risk_scores_extractor: `You are extracting risk assessment scores from a hospital discharge summary.
 These are CRITICAL clinical values - be EXTRA careful and cross-verify.
 

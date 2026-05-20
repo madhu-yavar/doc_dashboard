@@ -14,6 +14,8 @@ const DashboardMapperSkill = require("../skills/clinical/dashboard_mapper.skill.
 const DoctorAssistantAgent = require("../agents/doctor_assistant_agent.cjs");
 const ChatExportBuilderSkill = require("../skills/chat/chat_export_builder.skill.cjs");
 const SourceHealthTool = require("../tools/chat/source_health.tool.cjs");
+const GeminiAudioTranscriptionTool = require("../tools/llm/gemini_audio_transcription.tool.cjs");
+const VoiceExtractorAgent = require("../agents/voice_extractor_agent.cjs");
 const { AuthService } = require("./auth_service.cjs");
 
 const app = express();
@@ -44,6 +46,11 @@ const chatExportsPath = path.join(storageDir, "chat_exports.json");
 const searchCachePath = path.join(storageDir, "search_cache.json");
 const auditRunsPath = path.join(storageDir, "audit_runs.json");
 const auditEventsPath = path.join(storageDir, "audit_events.jsonl");
+const voiceSessionsPath = path.join(storageDir, "voice_sessions.json");
+const voiceReviewsPath = path.join(storageDir, "voice_reviews.json");
+const voiceAudioDir = path.join(storageDir, "voice_audio");
+const voiceTranscriptsDir = path.join(storageDir, "voice_transcripts");
+const voiceGraphCheckpointsDir = path.join(storageDir, "voice_graph_checkpoints");
 const frontendOrigins = new Set(
   [
     process.env.FRONTEND_ORIGIN,
@@ -94,7 +101,7 @@ app.get('/test-agent', (req, res) => {
 });
 
 function publicDocument(document) {
-  const { filePath, ...rest } = document;
+  const { filePath, audioPath, transcriptPath, ...rest } = document;
 
   // Fix status if user_action_required is true but status is "processed"
   const needsAction = rest.result?.meta?.user_action_required ||
@@ -103,6 +110,11 @@ function publicDocument(document) {
 
   if (needsAction && rest.status === "processed") {
     rest.status = "partial";
+  }
+
+  // Ensure documentType is set (default to 'pdf' for backward compatibility)
+  if (!rest.documentType) {
+    rest.documentType = rest.audioPath ? 'voice' : 'pdf';
   }
 
   return rest;
@@ -119,11 +131,16 @@ function computeHash(buffer) {
 
 async function ensureStorage() {
   await fs.mkdir(uploadsDir, { recursive: true });
+  await fs.mkdir(voiceAudioDir, { recursive: true });
+  await fs.mkdir(voiceTranscriptsDir, { recursive: true });
+  await fs.mkdir(voiceGraphCheckpointsDir, { recursive: true });
   await ensureCollectionFile(documentsPath, { documents: [] });
   await ensureCollectionFile(chatSessionsPath, { sessions: [] });
   await ensureCollectionFile(chatActionsPath, { actions: [] });
   await ensureCollectionFile(chatExportsPath, { exports: [] });
   await ensureCollectionFile(searchCachePath, { entries: [] });
+  await ensureCollectionFile(voiceSessionsPath, { sessions: [] });
+  await ensureCollectionFile(voiceReviewsPath, { reviews: [] });
   await authService.ensureStorage();
   await auditLogger.ensureStorage();
   await analyticsStore.initialize();
@@ -150,10 +167,15 @@ async function writeDocuments(documents) {
 }
 
 async function readCollection(filePath, key) {
-  await ensureStorage();
-  const raw = await fs.readFile(filePath, "utf8");
-  const parsed = JSON.parse(raw);
-  return Array.isArray(parsed[key]) ? parsed[key] : [];
+  try {
+    await ensureStorage();
+    const raw = await fs.readFile(filePath, "utf8");
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed[key]) ? parsed[key] : [];
+  } catch (error) {
+    console.error(`Error reading collection from ${filePath}:`, error.message);
+    return [];
+  }
 }
 
 async function writeCollection(filePath, key, items) {
@@ -162,10 +184,17 @@ async function writeCollection(filePath, key, items) {
 }
 
 let documentMutationQueue = Promise.resolve();
+let voiceSessionMutationQueue = Promise.resolve();
 
 function queueDocumentMutation(task) {
   const run = documentMutationQueue.then(task, task);
   documentMutationQueue = run.catch(() => {});
+  return run;
+}
+
+function queueVoiceSessionMutation(task) {
+  const run = voiceSessionMutationQueue.then(task, task);
+  voiceSessionMutationQueue = run.catch(() => {});
   return run;
 }
 
@@ -187,6 +216,47 @@ async function updateDocument(id, updater) {
 
     await updater(document, documents);
     return { ...document };
+  });
+}
+
+async function readVoiceSessions() {
+  return readCollection(voiceSessionsPath, "sessions");
+}
+
+async function writeVoiceSessions(sessions) {
+  return writeCollection(voiceSessionsPath, "sessions", sessions);
+}
+
+async function mutateVoiceSessions(mutator) {
+  return queueVoiceSessionMutation(async () => {
+    const sessions = await readVoiceSessions();
+    const value = await mutator(sessions);
+    await writeVoiceSessions(sessions);
+    return value;
+  });
+}
+
+async function updateVoiceSession(id, updater) {
+  return mutateVoiceSessions(async (sessions) => {
+    const session = sessions.find((item) => item.id === id);
+    if (!session) {
+      return null;
+    }
+
+    await updater(session, sessions);
+    return { ...session };
+  });
+}
+
+async function removeVoiceSession(id) {
+  return mutateVoiceSessions(async (sessions) => {
+    const index = sessions.findIndex((item) => item.id === id);
+    if (index === -1) {
+      return null;
+    }
+
+    const [session] = sessions.splice(index, 1);
+    return session;
   });
 }
 
@@ -387,6 +457,22 @@ const documentRouter = new DocumentTypeRouter({
 const dashboardMapper = new DashboardMapperSkill();
 const chatExportBuilder = new ChatExportBuilderSkill();
 const sourceHealthTool = new SourceHealthTool();
+const voiceTranscriptionTool = new GeminiAudioTranscriptionTool({
+  model: process.env.VOICE_GEMINI_MODEL || process.env.GEMINI_MODEL || "gemini-2.5-pro",
+  apiKey: process.env.GEMINI_API_KEY || "",
+});
+
+// Initialize Voice Extractor Agent for Phase 2 structured extraction
+const voiceExtractorAgent = new VoiceExtractorAgent({
+  gemma: {
+    baseUrl: GEMMA_URL,
+    model: MODEL,
+    timeout: 180000,
+    defaultJsonMode: true,
+  },
+  logSteps: true,
+});
+
 const doctorAssistantAgent = new DoctorAssistantAgent({
   gemma: {
     baseUrl: GEMMA_URL,
@@ -601,6 +687,634 @@ function buildFallbackPatientData(data) {
   };
 }
 
+function formatVoiceTimeLabel(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function estimateVoiceDurationLabel(size = 0) {
+  const estimatedSeconds = Math.max(30, Math.min(4 * 60, Math.round(size / 24000)));
+  return formatVoiceTimeLabel(estimatedSeconds);
+}
+
+function normalizeVoiceText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function normalizeSpeakerRole(role) {
+  if (role === "doctor" || role === "patient") {
+    return role;
+  }
+  return "unknown";
+}
+
+function normalizeVoiceFlags(flags = []) {
+  const normalized = Array.isArray(flags)
+    ? flags
+        .map((flag) => normalizeVoiceText(flag).toLowerCase().replace(/\s+/g, "_"))
+        .filter(Boolean)
+    : [];
+
+  return Array.from(new Set(normalized));
+}
+
+function fallbackVoiceTimeLabel(index = 0) {
+  return formatVoiceTimeLabel(index * 12);
+}
+
+function buildVoiceSegmentsFromTranscript(transcript = {}) {
+  const speakers = Array.isArray(transcript.speakers) ? transcript.speakers : [];
+  const speakerById = new Map(speakers.map((speaker) => [speaker.id, speaker]));
+  const sourceSegments = Array.isArray(transcript.segments) ? transcript.segments : [];
+
+  if (sourceSegments.length === 0) {
+    const rawText = normalizeVoiceText(transcript.normalizedText || transcript.rawText);
+    return rawText
+      ? [
+          {
+            id: "seg_1",
+            speakerRole: "unknown",
+            speakerLabel: "Speaker 1",
+            startLabel: "00:00",
+            endLabel: "00:30",
+            text: rawText,
+            confidence: null,
+            flags: ["fallback_transcript"],
+          },
+        ]
+      : [];
+  }
+
+  return sourceSegments.map((segment, index) => {
+    const linkedSpeaker = segment?.speakerId ? speakerById.get(segment.speakerId) : null;
+    const text = normalizeVoiceText(segment?.text || segment?.normalizedText);
+    const confidenceValue = Number(segment?.confidence);
+    const flags = normalizeVoiceFlags(segment?.flags);
+    const speakerRole = normalizeSpeakerRole(segment?.speakerRole || linkedSpeaker?.role);
+    return {
+      id: segment?.segmentId || `seg_${index + 1}`,
+      speakerRole,
+      speakerLabel: normalizeVoiceText(segment?.speakerLabel || linkedSpeaker?.label || `Speaker ${index + 1}`) || `Speaker ${index + 1}`,
+      startLabel: normalizeVoiceText(segment?.startLabel) || fallbackVoiceTimeLabel(index),
+      endLabel: normalizeVoiceText(segment?.endLabel) || fallbackVoiceTimeLabel(index + 1),
+      text: text || "[No transcript text returned]",
+      confidence: Number.isFinite(confidenceValue) ? Math.max(0, Math.min(1, confidenceValue)) : null,
+      flags,
+    };
+  });
+}
+
+function buildVoiceTranscriptQuality(transcript = {}, segments = []) {
+  const confidences = segments
+    .map((segment) => (typeof segment.confidence === "number" ? segment.confidence : null))
+    .filter((value) => typeof value === "number");
+  const lowConfidenceSegmentCount = segments.filter((segment) =>
+    segment.flags.includes("low_confidence") ||
+    (typeof segment.confidence === "number" && segment.confidence < 0.75)
+  ).length;
+  const quality = transcript.quality || {};
+  const overallConfidence = typeof quality.overallConfidence === "number"
+    ? quality.overallConfidence
+    : (confidences.length > 0
+        ? Number((confidences.reduce((sum, value) => sum + value, 0) / confidences.length).toFixed(2))
+        : null);
+
+  const medicationRisk =
+    quality.medicationRisk === "high" || quality.medicationRisk === "medium" || quality.medicationRisk === "low"
+      ? quality.medicationRisk
+      : segments.some((segment) => segment.flags.includes("dosage") || segment.flags.includes("medication"))
+        ? "medium"
+        : "low";
+
+  return {
+    overallConfidence,
+    lowConfidenceSegmentCount,
+    medicationRisk,
+  };
+}
+
+function inferVoiceReviewDescriptor(segment) {
+  const flags = new Set(segment.flags || []);
+
+  if (flags.has("dosage")) {
+    return {
+      category: "medication",
+      severity: "high",
+      reasonCode: "dosage_ambiguity",
+      title: "Confirm medication dosage wording",
+    };
+  }
+
+  if (flags.has("medication")) {
+    return {
+      category: "medication",
+      severity: "medium",
+      reasonCode: "low_confidence",
+      title: "Confirm medication instruction",
+    };
+  }
+
+  if (flags.has("labs")) {
+    return {
+      category: "lab_order",
+      severity: "medium",
+      reasonCode: "possible_missing_context",
+      title: "Confirm lab order wording",
+    };
+  }
+
+  if (flags.has("radiology")) {
+    return {
+      category: "radiology_order",
+      severity: "medium",
+      reasonCode: "possible_missing_context",
+      title: "Confirm imaging order wording",
+    };
+  }
+
+  if (flags.has("follow_up")) {
+    return {
+      category: "follow_up",
+      severity: "low",
+      reasonCode: "low_confidence",
+      title: "Confirm follow-up instruction",
+    };
+  }
+
+  return {
+    category: "transcript",
+    severity: "low",
+    reasonCode: "low_confidence",
+    title: "Review low-confidence transcript span",
+  };
+}
+
+function buildVoiceReviewItemsFromTranscript(segments = [], transcript = {}) {
+  const reviewItems = [];
+
+  for (const segment of segments) {
+    const needsReview =
+      segment.flags.includes("low_confidence") ||
+      segment.flags.includes("dosage") ||
+      segment.flags.includes("medication") ||
+      segment.flags.includes("labs") ||
+      segment.flags.includes("radiology") ||
+      segment.flags.includes("follow_up") ||
+      (typeof segment.confidence === "number" && segment.confidence < 0.75);
+
+    if (!needsReview) {
+      continue;
+    }
+
+    const descriptor = inferVoiceReviewDescriptor(segment);
+    reviewItems.push({
+      id: crypto.randomUUID(),
+      category: descriptor.category,
+      severity: descriptor.severity,
+      reasonCode: descriptor.reasonCode,
+      title: descriptor.title,
+      extractedValue: segment.text,
+      suggestedValue: segment.text,
+      provenanceText: segment.text,
+      provenanceTime: `${segment.startLabel} - ${segment.endLabel}`,
+      resolution: "pending",
+      editedValue: "",
+    });
+  }
+
+  if (reviewItems.length === 0 && transcript?.quality?.missingAudioSuspected) {
+    reviewItems.push({
+      id: crypto.randomUUID(),
+      category: "transcript",
+      severity: "high",
+      reasonCode: "possible_missing_context",
+      title: "Review transcript for missing audio",
+      extractedValue: "Gemini signaled potential missing audio in the dictation.",
+      suggestedValue: "Gemini signaled potential missing audio in the dictation.",
+      provenanceText: normalizeVoiceText(transcript.rawText || transcript.normalizedText) || "Transcript quality gate raised a missing-audio flag.",
+      provenanceTime: "Full audio",
+      resolution: "pending",
+      editedValue: "",
+    });
+  }
+
+  return reviewItems;
+}
+
+function buildVoiceExtractionPreview(session, transcript = {}, reviewItems = []) {
+  const rawText = normalizeVoiceText(transcript.normalizedText || transcript.rawText);
+  const lowConfidenceCount = reviewItems.filter((item) => item.resolution === "pending").length;
+  const extractedData = session.extractedData || {};
+
+  // Build medications from extracted data
+  const medications = (extractedData.medications || []).map((med) => ({
+    name: med.name,
+    instruction: `${med.dose} ${med.frequency} ${med.route}`.trim(),
+    status: med.needs_review ? "review" : "confirmed",
+  }));
+
+  // Build labs from extracted data
+  const labs = (extractedData.lab_results || []).map((lab) => lab.test_name);
+
+  // Build radiology from extracted data
+  const radiology = (extractedData.radiology?.pending || extractedData.radiology || []).map((rad) => {
+    const type = rad.type || "";
+    const bodyPart = rad.body_part ? ` ${rad.body_part}` : "";
+    return type + bodyPart;
+  });
+
+  // Build procedures from extracted data
+  const procedures = (extractedData.procedures || []).map((proc) => proc.name);
+
+  // Build follow-up from extracted data
+  const followUp = (extractedData.follow_up?.items || extractedData.follow_up || []).map((fu) => {
+    const specialty = fu.specialty || "";
+    const timing = fu.timing || "";
+    const reason = fu.reason ? ` - ${fu.reason}` : "";
+    // Build clean follow-up string without extra " in" prefix
+    const parts = [specialty, timing, reason].filter(Boolean);
+    return parts.join(" ").trim();
+  });
+
+  return {
+    linkedPatient: session.linkedPatient || "Encounter link pending",
+    encounterLabel: session.encounterLabel || "Not linked",
+    diagnosis: Array.isArray(extractedData.diagnosis?.principal)
+      ? (extractedData.diagnosis.principal[0]?.name || "")
+      : (extractedData.diagnosis?.principal?.name || ""),
+    medications,
+    labs,
+    radiology,
+    procedures,
+    followUp,
+    clinicalNotes: [
+      `Gemini transcription completed for ${session.fileName}.`,
+      rawText
+        ? `Structured extraction completed. ${medications.length} medications, ${labs.length} labs, ${procedures.length} procedures extracted.`
+        : "No transcript text was returned. Review the audio or retry the session.",
+      lowConfidenceCount > 0
+        ? `${lowConfidenceCount} transcript span${lowConfidenceCount > 1 ? "s" : ""} still require review before downstream mapping.`
+        : "No transcript review items remain pending.",
+    ],
+  };
+}
+
+function publicVoiceSession(session) {
+  const {
+    audioPath,
+    hash,
+    transcriptPath,
+    ...rest
+  } = session;
+
+  return {
+    ...rest,
+    transcriptPath: transcriptPath
+      ? `/api/voice/${session.id}`
+      : null,
+  };
+}
+
+function buildVoiceTranscriptObject(source = {}) {
+  const sourceSegments = Array.isArray(source.segments) ? source.segments : [];
+  const segments = sourceSegments.map((segment, index) => ({
+    id: segment.id || segment.segmentId || `seg_${index + 1}`,
+    segmentId: segment.segmentId || segment.id || `seg_${index + 1}`,
+    speakerId: segment.speakerId || null,
+    speakerRole: normalizeSpeakerRole(segment.speakerRole),
+    speakerLabel: normalizeVoiceText(segment.speakerLabel || `Speaker ${index + 1}`) || `Speaker ${index + 1}`,
+    startLabel: normalizeVoiceText(segment.startLabel) || fallbackVoiceTimeLabel(index),
+    endLabel: normalizeVoiceText(segment.endLabel) || fallbackVoiceTimeLabel(index + 1),
+    startMs: typeof segment.startMs === "number" ? segment.startMs : null,
+    endMs: typeof segment.endMs === "number" ? segment.endMs : null,
+    text: normalizeVoiceText(segment.text),
+    normalizedText: normalizeVoiceText(segment.normalizedText || segment.text),
+    confidence: typeof segment.confidence === "number" ? segment.confidence : null,
+    flags: normalizeVoiceFlags(segment.flags),
+  }));
+
+  const transcriptText = normalizeVoiceText(
+    source.transcript?.normalizedText ||
+    source.transcript?.rawText ||
+    source.normalizedText ||
+    source.rawText ||
+    segments.map((segment) => segment.text).join(" ")
+  );
+
+  return {
+    segments,
+    rawText: normalizeVoiceText(source.transcript?.rawText || transcriptText),
+    normalizedText: transcriptText,
+    language: source.transcript?.language || source.language || null,
+    overallConfidence:
+      source.transcript?.overallConfidence ??
+      source.transcriptQuality?.overallConfidence ??
+      null,
+  };
+}
+
+function buildVoiceDocumentResult({
+  documentId,
+  uploadedAt,
+  sttBackend,
+  extractedData,
+  dashboardPayload,
+}) {
+  const normalizeVoiceDashboardSourceData = (data = {}) => {
+    const principal = data?.diagnosis?.principal;
+    // Handle principal diagnosis as string, object, or array (voice extraction returns array)
+    const principalText = typeof principal === "string"
+      ? principal
+      : Array.isArray(principal)
+        ? (principal[0]?.name || principal[0] || "")
+        : (principal?.name || principal?.description || "");
+
+    return {
+      ...data,
+      diagnosis: {
+        ...(data.diagnosis || {}),
+        principal: principalText,
+        secondary: Array.isArray(data?.diagnosis?.secondary)
+          ? data.diagnosis.secondary.map((item) => typeof item === "string" ? item : item?.name || item?.description || "").filter(Boolean)
+          : [],
+        comorbidities: Array.isArray(data?.diagnosis?.comorbidities) ? data.diagnosis.comorbidities : [],
+        icd_code: data?.diagnosis?.icd_code || principal?.icd_code || principal?.code || "",
+      },
+      medications: Array.isArray(data?.medications)
+        ? data.medications.map((med) => ({
+            ...med,
+            name: med?.name || "",
+            dose: med?.dose || "",
+            frequency: med?.frequency || "",
+            route: med?.route || "",
+          }))
+        : [],
+      procedures: Array.isArray(data?.procedures)
+        ? data.procedures.map((item) => typeof item === "string" ? item : item?.name || "").filter(Boolean)
+        : [],
+      follow_up: typeof data?.follow_up === "object" && data.follow_up
+        ? data.follow_up
+        : { items: [] },
+      radiology: Array.isArray(data?.radiology)
+        ? data.radiology
+        : {
+            findings: Array.isArray(data?.radiology?.findings) ? data.radiology.findings : [],
+            pending: Array.isArray(data?.radiology?.pending) ? data.radiology.pending : [],
+          },
+    };
+  };
+  const knownVoiceCardKeys = [
+    "vitals_card",
+    "diagnosis_card",
+    "medications_card",
+    "labs_card",
+    "radiology_card",
+    "treatment_card",
+    "clinical_notes_card",
+    "discharge_plan_card",
+    "follow_up_card",
+    "risk_card",
+  ];
+  const payloadObject = dashboardPayload && typeof dashboardPayload === "object" ? dashboardPayload : {};
+  const sourceDataRaw = extractedData && typeof extractedData === "object" ? extractedData : payloadObject;
+  const sourceData = normalizeVoiceDashboardSourceData(sourceDataRaw);
+  const normalizedDashboardCards = payloadObject.dashboard_cards && typeof payloadObject.dashboard_cards === "object"
+    ? payloadObject.dashboard_cards
+    : knownVoiceCardKeys.some((key) => Object.prototype.hasOwnProperty.call(payloadObject, key))
+      ? payloadObject
+      : dashboardMapper.buildDashboardCards(sourceData, {});
+  if (normalizedDashboardCards.diagnosis_card && typeof normalizedDashboardCards.diagnosis_card === "object") {
+    normalizedDashboardCards.diagnosis_card.principal_diagnosis = sourceData?.diagnosis?.principal || "";
+    normalizedDashboardCards.diagnosis_card.icd_code = sourceData?.diagnosis?.icd_code || normalizedDashboardCards.diagnosis_card.icd_code || "";
+  }
+  const samplePatientData = payloadObject.sample_patient_data && typeof payloadObject.sample_patient_data === "object"
+    ? payloadObject.sample_patient_data
+    : dashboardMapper.buildSamplePatientData(sourceData);
+  samplePatientData.summary = dashboardMapper.generatePatientSummary(sourceData);
+  const presentation = payloadObject.presentation && typeof payloadObject.presentation === "object"
+    ? payloadObject.presentation
+    : { summary_cards: {}, notes_rail: [] };
+
+  return {
+    dashboard_cards: normalizedDashboardCards,
+    sample_patient_data: samplePatientData,
+    presentation,
+    meta: {
+      ...(extractedData?.meta || {}),
+      source_type: "voice",
+      voice_session_id: documentId,
+      stt_backend: sttBackend || "unknown",
+      transcript_date: uploadedAt?.split("T")[0] || new Date().toISOString().split("T")[0],
+    },
+    extracted_data: extractedData || {},
+  };
+}
+
+function deriveVoiceDocumentStatus(session = {}) {
+  const reviewItems = Array.isArray(session.reviewItems) ? session.reviewItems : [];
+  const hasPendingReview = reviewItems.some((item) => item?.resolution === "pending");
+  if (hasPendingReview) {
+    return "review_required";
+  }
+  if (session.extractedData && session.dashboardPayload) {
+    return "processed";
+  }
+  if (Array.isArray(session.segments) && session.segments.length > 0) {
+    return "queued";
+  }
+  return session.status || "failed";
+}
+
+function applyVoiceSessionToDocument(document, voiceSession, options = {}) {
+  if (!document || !voiceSession) return false;
+
+  const transcript = buildVoiceTranscriptObject(voiceSession);
+  const hasSavedExtraction = Boolean(voiceSession.extractedData && voiceSession.dashboardPayload);
+  const nextResult = hasSavedExtraction
+    ? buildVoiceDocumentResult({
+        documentId: document.id,
+        uploadedAt: voiceSession.uploadedAt || document.uploadedAt,
+        sttBackend: voiceSession.sttBackend,
+        extractedData: voiceSession.extractedData,
+        dashboardPayload: voiceSession.dashboardPayload,
+      })
+    : document.result;
+
+  const nextStatus = hasSavedExtraction
+    ? deriveVoiceDocumentStatus(voiceSession)
+    : document.status;
+
+  document.documentType = "voice";
+  document.mimeType = voiceSession.mimeType || document.mimeType || "audio/wav";
+  document.durationLabel = voiceSession.durationLabel || document.durationLabel || null;
+  document.linkedPatient = voiceSession.linkedPatient || document.linkedPatient || "Encounter link pending";
+  document.encounterLabel = voiceSession.encounterLabel || document.encounterLabel || "Not linked";
+  document.segments = transcript.segments;
+  document.transcript = {
+    rawText: transcript.rawText,
+    normalizedText: transcript.normalizedText,
+    language: transcript.language,
+    overallConfidence: transcript.overallConfidence,
+  };
+  document.transcriptQuality = voiceSession.transcriptQuality || document.transcriptQuality || null;
+  document.reviewItems = Array.isArray(voiceSession.reviewItems) ? voiceSession.reviewItems : (document.reviewItems || []);
+  document.extractionPreview = voiceSession.extractionPreview || document.extractionPreview || null;
+
+  if (hasSavedExtraction) {
+    document.result = nextResult;
+    document.status = nextStatus;
+    document.error = null;
+    document.processedAt = document.processedAt || options.processedAt || new Date().toISOString();
+    document.agentInfo = document.agentInfo || {
+      name: `${voiceExtractorAgent.name} (reused)`,
+      version: voiceExtractorAgent.version || "unknown",
+      latency: 0,
+      tokensUsed: 0,
+      providerTokens: { gemma: 0, gemini: 0 },
+      steps: [{ name: "reuse_voice_extraction", status: "completed" }],
+      validation: null,
+    };
+  }
+
+  return hasSavedExtraction;
+}
+
+async function repairVoiceDocumentsFromSessions() {
+  const voiceSessions = await readVoiceSessions();
+  const sessionById = new Map(voiceSessions.map((session) => [session.id, session]));
+  const repairedIds = [];
+
+  await mutateDocuments(async (documents) => {
+    for (const document of documents) {
+      if ((document.documentType && document.documentType !== "voice") || !sessionById.has(document.id)) {
+        continue;
+      }
+
+      const voiceSession = sessionById.get(document.id);
+      const repaired = applyVoiceSessionToDocument(document, voiceSession);
+      if (repaired) {
+        repairedIds.push(document.id);
+      }
+    }
+  });
+
+  return repairedIds;
+}
+
+async function resolveVoiceDocumentProcessing(document) {
+  const voiceSessions = await readVoiceSessions();
+  const voiceSession = voiceSessions.find((item) => item.id === document.id) || null;
+
+  const storedExtractedData =
+    voiceSession?.extractedData ||
+    document.result?.extracted_data ||
+    null;
+  const storedDashboardPayload =
+    voiceSession?.dashboardPayload ||
+    document.result?.dashboard_cards ||
+    document.result?.dashboard_payload ||
+    null;
+  const sttBackend =
+    voiceSession?.sttBackend ||
+    document.result?.meta?.stt_backend ||
+    "unknown";
+
+  if (storedExtractedData && storedDashboardPayload) {
+    return {
+      agentResult: {
+        success: true,
+        agent: `${voiceExtractorAgent.name} (reused)`,
+        latency: 0,
+        tokensUsed: 0,
+        steps: [{ name: "reuse_voice_extraction", status: "completed" }],
+        metadata: {},
+      },
+      result: buildVoiceDocumentResult({
+        documentId: document.id,
+        uploadedAt: document.uploadedAt,
+        sttBackend,
+        extractedData: storedExtractedData,
+        dashboardPayload: storedDashboardPayload,
+      }),
+      reusedExistingExtraction: true,
+    };
+  }
+
+  let transcriptObject = buildVoiceTranscriptObject(voiceSession || document);
+
+  if (!transcriptObject.normalizedText && transcriptObject.segments.length === 0) {
+    const audioPath = voiceSession?.audioPath || document.filePath;
+    const mimeType = voiceSession?.mimeType || document.mimeType || "audio/mpeg";
+
+    if (!audioPath) {
+      throw new Error("No transcript found for voice document");
+    }
+
+    const transcriptionResult = await voiceTranscriptionTool.execute(audioPath, { mimeType });
+    if (!transcriptionResult.success) {
+      throw new Error(transcriptionResult.error || "Voice transcription failed");
+    }
+
+    const transcript = transcriptionResult.data || {};
+    const normalizedSegments = buildVoiceSegmentsFromTranscript(transcript);
+    const normalizedQuality = buildVoiceTranscriptQuality(transcript, normalizedSegments);
+
+    transcriptObject = {
+      segments: normalizedSegments,
+      rawText: normalizeVoiceText(transcript.rawText),
+      normalizedText: normalizeVoiceText(transcript.normalizedText || transcript.rawText),
+      language: transcript.language || null,
+      overallConfidence: normalizedQuality.overallConfidence,
+    };
+
+    if (voiceSession) {
+      await updateVoiceSession(document.id, async (currentSession) => {
+        currentSession.sttBackend = `Gemini ${transcriptionResult.model || voiceTranscriptionTool.model}`;
+        currentSession.transcriptQuality = normalizedQuality;
+        currentSession.segments = normalizedSegments;
+        currentSession.error = null;
+      });
+    }
+  }
+
+  if (!transcriptObject.normalizedText && transcriptObject.segments.length === 0) {
+    throw new Error("No transcript found for voice document");
+  }
+
+  const voiceResult = await voiceExtractorAgent.execute(document.id, transcriptObject);
+  if (!voiceResult.success) {
+    throw new Error(voiceResult.errors?.[0]?.error || "Voice extraction failed");
+  }
+
+  if (voiceSession) {
+    await updateVoiceSession(document.id, async (currentSession) => {
+      currentSession.extractedData = voiceResult.extractedData;
+      currentSession.dashboardPayload = voiceResult.dashboardPayload;
+      currentSession.error = null;
+    });
+  }
+
+  return {
+    agentResult: {
+      success: true,
+      agent: voiceExtractorAgent.name,
+      latency: 0,
+      tokensUsed: 0,
+      steps: voiceResult.steps || [],
+      metadata: {},
+    },
+    result: buildVoiceDocumentResult({
+      documentId: document.id,
+      uploadedAt: document.uploadedAt,
+      sttBackend,
+      extractedData: voiceResult.extractedData,
+      dashboardPayload: voiceResult.dashboardPayload,
+    }),
+    reusedExistingExtraction: false,
+  };
+}
+
 function getSseCorsOrigin(req) {
   const requestOrigin = req.headers.origin;
   if (requestOrigin && frontendOrigins.has(requestOrigin)) {
@@ -684,6 +1398,10 @@ function isAdminOnlyApiRequest(req) {
   }
 
   if (method === "DELETE" && /^\/api\/documents\/[^/]+$/.test(routePath)) {
+    return true;
+  }
+
+  if (method === "DELETE" && /^\/api\/voice\/[^/]+$/.test(routePath)) {
     return true;
   }
 
@@ -928,6 +1646,675 @@ app.get("/api/documents/:id", async (req, res) => {
   return res.json({ document: publicDocument(document) });
 });
 
+app.get("/api/voice", async (_req, res) => {
+  const sessions = await readVoiceSessions();
+  const sorted = [...sessions].sort((a, b) => Date.parse(b.uploadedAt || "") - Date.parse(a.uploadedAt || ""));
+  res.json({ sessions: sorted.map(publicVoiceSession) });
+});
+
+app.get("/api/voice/:id", async (req, res) => {
+  const sessions = await readVoiceSessions();
+  const session = sessions.find((item) => item.id === req.params.id);
+
+  if (!session) {
+    return res.status(404).json({ error: "Voice session not found" });
+  }
+
+  return res.json({ session: publicVoiceSession(session) });
+});
+
+app.get("/api/voice/:id/audio", async (req, res) => {
+  const sessions = await readVoiceSessions();
+  const session = sessions.find((item) => item.id === req.params.id);
+
+  if (!session) {
+    return res.status(404).json({ error: "Voice session not found" });
+  }
+
+  res.setHeader("Content-Type", session.mimeType || "application/octet-stream");
+  res.setHeader("Cache-Control", "private, no-store");
+  return res.sendFile(session.audioPath);
+});
+
+app.post("/api/voice/upload", upload.array("files"), async (req, res) => {
+  const files = Array.isArray(req.files) ? req.files : [];
+  const linkedPatient = typeof req.body?.linkedPatient === "string" ? req.body.linkedPatient.trim() : "";
+  const encounterLabel = typeof req.body?.encounterLabel === "string" ? req.body.encounterLabel.trim() : "";
+
+  if (files.length === 0) {
+    return res.status(400).json({ error: "No audio files uploaded" });
+  }
+
+  const existingSessions = await readVoiceSessions();
+  const existingDocuments = await readDocuments();
+  const existingHashes = new Map();
+  for (const session of existingSessions) {
+    if (session.hash) {
+      existingHashes.set(session.hash, session);
+    }
+  }
+  // Also check for duplicates in documents collection
+  for (const doc of existingDocuments) {
+    if (doc.hash && doc.documentType === 'voice') {
+      existingHashes.set(doc.hash, doc);
+    }
+  }
+
+  const uploaded = [];
+  const duplicates = [];
+
+  await mutateVoiceSessions(async (sessions) => {
+    for (const file of files) {
+      const extension = (path.extname(file.originalname) || "").toLowerCase();
+      const looksLikeAudio =
+        file.mimetype?.startsWith("audio/") ||
+        [".wav", ".mp3", ".m4a", ".aac", ".ogg"].includes(extension);
+
+      if (!looksLikeAudio) {
+        continue;
+      }
+
+      const hash = computeHash(file.buffer);
+      const existing = existingHashes.get(hash);
+      if (existing) {
+        duplicates.push({
+          name: file.originalname,
+          existingSession: publicVoiceSession(existing),
+        });
+        continue;
+      }
+
+      const id = crypto.randomUUID();
+      const safeExtension = extension || ".bin";
+      const audioPath = path.join(voiceAudioDir, `${id}${safeExtension}`);
+      await fs.writeFile(audioPath, file.buffer);
+
+      const sessionData = {
+        id,
+        fileName: file.originalname,
+        mimeType: file.mimetype || "application/octet-stream",
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+        durationLabel: estimateVoiceDurationLabel(file.size),
+        linkedPatient: linkedPatient || "Encounter link pending",
+        encounterLabel: encounterLabel || "Not linked",
+        status: "queued",
+        sttBackend: "Transcription Service",
+        transcriptQuality: {
+          overallConfidence: null,
+          lowConfidenceSegmentCount: 0,
+          medicationRisk: "medium",
+        },
+        segments: [],
+        reviewItems: [],
+        extractionPreview: {
+          linkedPatient: linkedPatient || "Encounter link pending",
+          encounterLabel: encounterLabel || "Not linked",
+          diagnosis: "",
+          medications: [],
+          labs: [],
+          radiology: [],
+          procedures: [],
+          followUp: [],
+          clinicalNotes: [],
+        },
+        audioPath,
+        transcriptPath: null,
+        dashboardDocumentId: null,
+        hash,
+        error: null,
+      };
+
+      sessions.unshift(sessionData);
+      uploaded.push(publicVoiceSession(sessionData));
+      existingHashes.set(hash, sessionData);
+    }
+  });
+
+  // Also create entries in the documents collection for unified queue
+  await mutateDocuments(async (documents) => {
+    for (const uploadedSession of uploaded) {
+      // Check if document already exists
+      if (documents.some(d => d.id === uploadedSession.id)) {
+        continue;
+      }
+
+      const document = {
+        id: uploadedSession.id,
+        name: uploadedSession.fileName,
+        documentType: 'voice',
+        size: uploadedSession.size,
+        uploadedAt: uploadedSession.uploadedAt,
+        status: uploadedSession.status,
+        hash: uploadedSession.hash,
+        // Voice-specific fields
+        audioPath: uploadedSession.audioPath,
+        mimeType: uploadedSession.mimeType,
+        durationLabel: uploadedSession.durationLabel,
+        linkedPatient: uploadedSession.linkedPatient,
+        encounterLabel: uploadedSession.encounterLabel,
+        // Transcript and extraction (will be populated later)
+        segments: [],
+        transcript: null,
+        extractionPreview: uploadedSession.extractionPreview,
+        reviewItems: [],
+        // Placeholder for result (will be populated after extraction)
+        result: null,
+      };
+
+      documents.unshift(document);
+    }
+  });
+
+  return res.status(201).json({ sessions: uploaded, duplicates });
+});
+
+app.post("/api/voice/process", async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+
+  if (ids.length === 0) {
+    return res.status(400).json({ error: "No voice session ids provided" });
+  }
+
+  const updated = [];
+  const reviewEvents = [];
+
+  for (const id of ids) {
+    const queuedSession = await updateVoiceSession(id, async (currentSession) => {
+      currentSession.status = "transcribing";
+      currentSession.error = null;
+    });
+
+    // Sync transcribing status to documents collection
+    await mutateDocuments(async (documents) => {
+      const doc = documents.find(d => d.id === id && d.documentType === 'voice');
+      if (doc) {
+        doc.status = "transcribing";
+      }
+    });
+
+    if (!queuedSession) {
+      continue;
+    }
+
+    const transcriptionResult = await voiceTranscriptionTool.execute(queuedSession.audioPath, {
+      mimeType: queuedSession.mimeType,
+    });
+
+    if (!transcriptionResult.success) {
+      const failedSession = await updateVoiceSession(id, async (currentSession) => {
+        currentSession.status = "failed";
+        currentSession.error = transcriptionResult.error || "Transcription failed.";
+      });
+
+      if (failedSession) {
+        updated.push(publicVoiceSession(failedSession));
+        reviewEvents.push({
+          id: crypto.randomUUID(),
+          sessionId: failedSession.id,
+          type: "voice_transcription_failed",
+          createdAt: new Date().toISOString(),
+          error: failedSession.error,
+        });
+
+        // Sync failed status to documents collection
+        await mutateDocuments(async (documents) => {
+          const doc = documents.find(d => d.id === id && d.documentType === 'voice');
+          if (doc) {
+            doc.status = "failed";
+            doc.error = failedSession.error;
+          }
+        });
+      }
+
+      continue;
+    }
+
+    const transcript = transcriptionResult.data || {};
+    const normalizedSegments = buildVoiceSegmentsFromTranscript(transcript);
+    const normalizedQuality = buildVoiceTranscriptQuality(transcript, normalizedSegments);
+
+    // Build transcript object for voice extractor agent
+    const transcriptForExtraction = {
+      segments: normalizedSegments,
+      rawText: normalizeVoiceText(transcript.rawText),
+      normalizedText: normalizeVoiceText(transcript.normalizedText || transcript.rawText),
+      language: transcript.language || null,
+      overallConfidence: normalizedQuality.overallConfidence
+    };
+
+    // Phase 2: Run Voice Extractor Agent for structured clinical extraction
+    let extractionResult = null;
+    let structuredReviewItems = [];
+    let extractionError = null;
+
+    try {
+      extractionResult = await voiceExtractorAgent.execute(id, transcriptForExtraction);
+
+      if (extractionResult.success) {
+        // Convert agent review items to voice session format
+        structuredReviewItems = (extractionResult.reviewItems || []).map((item) => ({
+          id: item.id,
+          category: item.category,
+          severity: item.severity,
+          reasonCode: item.reasonCode,
+          title: item.title,
+          extractedValue: JSON.stringify(item.extractedValue),
+          suggestedValue: JSON.stringify(item.suggestedValue),
+          provenanceText: item.provenanceText,
+          provenanceTime: item.provenanceTime,
+          resolution: item.resolution || "pending"
+        }));
+
+        console.log(`[VoiceExtractor] Session ${id}: extraction completed`, {
+          status: extractionResult.status,
+          medications: extractionResult.extractedData?.medications?.length || 0,
+          diagnosis: extractionResult.extractedData?.diagnosis?.principal ? 1 : 0,
+          reviewItems: structuredReviewItems.length
+        });
+      } else {
+        console.error(`[VoiceExtractor] Session ${id}: extraction failed`, extractionResult.errors);
+        extractionError = extractionResult.errors?.[0]?.error || "Extraction failed";
+      }
+    } catch (err) {
+      console.error(`[VoiceExtractor] Session ${id}: extraction exception`, err.message);
+      extractionError = err.message;
+    }
+
+    // Merge transcript-level and extraction-level review items
+    const transcriptReviewItems = buildVoiceReviewItemsFromTranscript(normalizedSegments, transcript);
+    const allReviewItems = [...transcriptReviewItems, ...structuredReviewItems];
+
+    const session = await updateVoiceSession(id, async (currentSession) => {
+      // If extraction failed, mark session as failed with error message
+      if (extractionError) {
+        currentSession.status = "failed";
+        currentSession.error = `Extraction failed: ${extractionError}`;
+        currentSession.sttBackend = `Gemini ${transcriptionResult.model || voiceTranscriptionTool.model}`;
+        currentSession.transcriptQuality = normalizedQuality;
+        currentSession.segments = normalizedSegments;
+        currentSession.reviewItems = allReviewItems;
+        currentSession.transcriptPath = path.join(voiceTranscriptsDir, `${currentSession.id}.json`);
+        return; // Don't continue processing
+      }
+
+      // Determine status based on review items
+      const hasPendingReview = allReviewItems.some((item) => item.resolution === "pending");
+      currentSession.status = hasPendingReview ? "review_required" : "processed";
+      currentSession.error = null;
+      currentSession.sttBackend = `Gemini ${transcriptionResult.model || voiceTranscriptionTool.model}`;
+      currentSession.transcriptQuality = normalizedQuality;
+      currentSession.segments = normalizedSegments;
+      currentSession.reviewItems = allReviewItems;
+
+      // Update durationLabel with actual duration from last segment's endMs
+      const lastSegmentWithTime = [...normalizedSegments].reverse().find(s => typeof s.endMs === "number" && s.endMs > 0);
+      if (lastSegmentWithTime) {
+        const actualSeconds = Math.ceil(lastSegmentWithTime.endMs / 1000);
+        currentSession.durationLabel = formatVoiceTimeLabel(actualSeconds);
+      }
+
+      // Store extraction result if available
+      if (extractionResult?.success) {
+        currentSession.extractedData = extractionResult.extractedData;
+        currentSession.dashboardPayload = extractionResult.dashboardPayload;
+      }
+
+      currentSession.extractionPreview = buildVoiceExtractionPreview(currentSession, transcript, allReviewItems);
+      currentSession.transcriptPath = path.join(voiceTranscriptsDir, `${currentSession.id}.json`);
+
+      const transcriptPayload = {
+        transcriptId: currentSession.id,
+        sourceType: "dictation_upload",
+        fileName: currentSession.fileName,
+        linkedPatient: currentSession.linkedPatient,
+        encounterLabel: currentSession.encounterLabel,
+        sttBackend: currentSession.sttBackend,
+        model: transcriptionResult.model || voiceTranscriptionTool.model,
+        usage: transcriptionResult.usage || null,
+        language: transcript.language || null,
+        rawText: normalizeVoiceText(transcript.rawText),
+        normalizedText: normalizeVoiceText(transcript.normalizedText || transcript.rawText),
+        speakers: Array.isArray(transcript.speakers) ? transcript.speakers : [],
+        segments: normalizedSegments.map((segment) => ({
+          segmentId: segment.id,
+          speakerRole: segment.speakerRole,
+          speakerLabel: segment.speakerLabel,
+          startLabel: segment.startLabel,
+          endLabel: segment.endLabel,
+          text: segment.text,
+          normalizedText: segment.text,
+          confidence: segment.confidence,
+          flags: segment.flags,
+        })),
+        quality: {
+          ...transcript.quality,
+          ...normalizedQuality,
+        },
+      };
+
+      await fs.writeFile(currentSession.transcriptPath, JSON.stringify(transcriptPayload, null, 2), "utf8");
+    });
+
+    if (session) {
+      updated.push(publicVoiceSession(session));
+      reviewEvents.push({
+        id: crypto.randomUUID(),
+        sessionId: session.id,
+        type: extractionError ? "voice_extraction_failed" : "voice_transcription_completed",
+        createdAt: new Date().toISOString(),
+        model: transcriptionResult.model || voiceTranscriptionTool.model,
+        error: extractionError || undefined,
+      });
+
+      // Sync with documents collection
+      await mutateDocuments(async (documents) => {
+        const docIndex = documents.findIndex(d => d.id === session.id && d.documentType === 'voice');
+        if (docIndex >= 0) {
+          const doc = documents[docIndex];
+          doc.status = session.status;
+          doc.error = session.error; // Sync error field
+          doc.sttBackend = session.sttBackend;
+          doc.durationLabel = session.durationLabel;
+          doc.segments = session.segments;
+          doc.transcript = session.transcriptPath ? {
+            rawText: normalizeVoiceText(transcript.rawText),
+            normalizedText: normalizeVoiceText(transcript.normalizedText || transcript.rawText),
+            language: transcript.language || null,
+            overallConfidence: normalizedQuality.overallConfidence
+          } : null;
+          doc.transcriptQuality = session.transcriptQuality;
+          doc.extractionPreview = session.extractionPreview;
+          doc.reviewItems = session.reviewItems;
+          // Store extracted data for dashboard display
+          if (extractionResult?.success) {
+            doc.result = buildVoiceDocumentResult({
+              documentId: session.id,
+              uploadedAt: session.uploadedAt,
+              sttBackend: session.sttBackend,
+              extractedData: extractionResult.extractedData,
+              dashboardPayload: extractionResult.dashboardPayload,
+            });
+          }
+        }
+      });
+    }
+  }
+
+  if (reviewEvents.length > 0) {
+    const reviews = await readCollection(voiceReviewsPath, "reviews");
+    reviews.unshift(...reviewEvents);
+    await writeCollection(voiceReviewsPath, "reviews", reviews);
+  }
+
+  return res.json({ sessions: updated });
+});
+
+app.post("/api/voice/:id/review", async (req, res) => {
+  const reviewItemId = typeof req.body?.reviewItemId === "string" ? req.body.reviewItemId : "";
+  const resolution = typeof req.body?.resolution === "string" ? req.body.resolution : "";
+  const editedValue = typeof req.body?.editedValue === "string" ? req.body.editedValue : "";
+
+  if (!reviewItemId || !["approved", "edited", "rejected"].includes(resolution)) {
+    return res.status(400).json({ error: "reviewItemId and valid resolution are required" });
+  }
+
+  const updatedSession = await updateVoiceSession(req.params.id, async (session) => {
+    const reviewItem = session.reviewItems.find((item) => item.id === reviewItemId);
+    if (!reviewItem) {
+      return;
+    }
+
+    reviewItem.resolution = resolution;
+    if (resolution === "edited") {
+      reviewItem.editedValue = editedValue || reviewItem.suggestedValue || reviewItem.extractedValue;
+    }
+
+    const hasPending = session.reviewItems.some((item) => item.resolution === "pending");
+    session.status = hasPending ? "review_required" : "processed";
+  });
+
+  if (!updatedSession) {
+    return res.status(404).json({ error: "Voice session not found" });
+  }
+
+  const reviews = await readCollection(voiceReviewsPath, "reviews");
+  reviews.unshift({
+    id: crypto.randomUUID(),
+    sessionId: updatedSession.id,
+    reviewItemId,
+    resolution,
+    editedValue: resolution === "edited" ? editedValue : "",
+    createdAt: new Date().toISOString(),
+    username: req.user?.username || "unknown",
+    role: req.user?.role || "unknown",
+  });
+  await writeCollection(voiceReviewsPath, "reviews", reviews);
+
+  return res.json({ session: publicVoiceSession(updatedSession) });
+});
+
+app.post("/api/voice/:id/add-to-queue", async (req, res) => {
+  const sessionId = req.params.id;
+
+  const updatedSession = await updateVoiceSession(sessionId, async (session) => {
+    // Verify transcript is ready
+    if (session.segments.length === 0) {
+      throw new Error("Transcript not ready. Please transcribe first.");
+    }
+
+    // Verify all reviews are resolved
+    const pendingReviews = session.reviewItems.filter((item) => item.resolution === "pending");
+    if (pendingReviews.length > 0) {
+      throw new Error(`Please resolve ${pendingReviews.length} review item(s) before adding to queue.`);
+    }
+
+    // Update status to indicate ready for extraction queue
+    session.status = "queued_for_extraction";
+  });
+
+  if (!updatedSession) {
+    return res.status(404).json({ error: "Voice session not found" });
+  }
+
+  // Sync to documents collection with queued status for processing
+  await mutateDocuments(async (documents) => {
+    const existingDoc = documents.find((d) => d.id === sessionId && d.documentType === "voice");
+
+    if (existingDoc) {
+      // Update existing document
+      existingDoc.status = "queued";
+      existingDoc.segments = updatedSession.segments || [];
+      existingDoc.transcript = {
+        rawText: updatedSession.segments.map((s) => s.text).join(" "),
+        normalizedText: updatedSession.segments.map((s) => s.text).join(" "),
+        language: "en",
+        overallConfidence: updatedSession.transcriptQuality?.overallConfidence || 0,
+      };
+    } else {
+      // Create new document entry for the queue
+      const newDoc = {
+        id: updatedSession.id,
+        name: updatedSession.fileName,
+        size: updatedSession.size,
+        uploadedAt: updatedSession.uploadedAt,
+        status: "queued",
+        department: "Voice Dictation",
+        filePath: updatedSession.audioPath,
+        hash: updatedSession.hash,
+        documentType: "voice",
+        durationLabel: updatedSession.durationLabel,
+        linkedPatient: updatedSession.linkedPatient,
+        encounterLabel: updatedSession.encounterLabel,
+        segments: updatedSession.segments,
+        transcript: {
+          rawText: updatedSession.segments.map((s) => s.text).join(" "),
+          normalizedText: updatedSession.segments.map((s) => s.text).join(" "),
+          language: "en",
+          overallConfidence: updatedSession.transcriptQuality?.overallConfidence || 0,
+        },
+        result: null,
+        error: null,
+      };
+      documents.unshift(newDoc);
+    }
+  });
+
+  return res.json({ success: true, session: publicVoiceSession(updatedSession) });
+});
+
+app.delete("/api/voice/:id", async (req, res) => {
+  const session = await removeVoiceSession(req.params.id);
+
+  if (!session) {
+    return res.status(404).json({ error: "Voice session not found" });
+  }
+
+  await Promise.all([
+    session.audioPath ? fs.rm(session.audioPath, { force: true }) : Promise.resolve(),
+    session.transcriptPath ? fs.rm(session.transcriptPath, { force: true }) : Promise.resolve(),
+  ]);
+
+  const reviews = await readCollection(voiceReviewsPath, "reviews");
+  const filteredReviews = reviews.filter((item) => item.sessionId !== session.id);
+  if (filteredReviews.length !== reviews.length) {
+    await writeCollection(voiceReviewsPath, "reviews", filteredReviews);
+  }
+
+  return res.status(204).end();
+});
+
+// Extract clinical data from voice transcripts (called after transcript is approved and added to queue)
+app.post("/api/voice/extract", async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+
+  if (ids.length === 0) {
+    return res.status(400).json({ error: "No voice session ids provided" });
+  }
+
+  console.log(`\n🔄 Voice extraction request for ${ids.length} session(s)`);
+  const processed = [];
+  const failed = [];
+
+  for (const id of ids) {
+    try {
+      // Update status to processing
+      await updateVoiceSession(id, async (session) => {
+        session.status = "processing";
+        session.error = null;
+      });
+
+      // Also update documents collection
+      await mutateDocuments(async (documents) => {
+        const doc = documents.find((d) => d.id === id && d.documentType === "voice");
+        if (doc) {
+          doc.status = "processing";
+        }
+      });
+
+      // Get the voice session with transcript
+      const voiceSessions = await readVoiceSessions();
+      if (!voiceSessions || !Array.isArray(voiceSessions)) {
+        throw new Error(`Failed to read voice sessions - got ${typeof voiceSessions}`);
+      }
+      const session = voiceSessions.find((s) => s.id === id);
+
+      if (!session || !session.segments || session.segments.length === 0) {
+        throw new Error("No transcript found for this session");
+      }
+
+      // Build transcript for extraction
+      const transcriptForExtraction = {
+        segments: session.segments.map((s) => ({
+          id: s.id,
+          speakerRole: s.speakerRole,
+          speakerLabel: s.speakerLabel,
+          startLabel: s.startLabel,
+          endLabel: s.endLabel,
+          text: s.text,
+          confidence: s.confidence,
+          flags: s.flags || [],
+        })),
+        rawText: session.segments.map((s) => s.text).join(" "),
+        normalizedText: session.segments.map((s) => s.text).join(" "),
+        language: null,
+        overallConfidence: session.transcriptQuality?.overallConfidence || 0,
+      };
+
+      // Run VoiceExtractorAgent
+      const extractionResult = await voiceExtractorAgent.execute(id, transcriptForExtraction);
+
+      if (!extractionResult.success) {
+        throw new Error(extractionResult.errors?.[0]?.error || "Extraction failed");
+      }
+
+      // Update session with extraction results
+      await updateVoiceSession(id, async (currentSession) => {
+        currentSession.extractedData = extractionResult.extractedData;
+        currentSession.dashboardPayload = extractionResult.dashboardPayload;
+        currentSession.status = "processed";
+        currentSession.extractionPreview = {
+          linkedPatient: currentSession.linkedPatient,
+          encounterLabel: currentSession.encounterLabel,
+          diagnosis: Array.isArray(extractionResult.extractedData?.diagnosis?.principal)
+            ? (extractionResult.extractedData.diagnosis.principal[0]?.name || "")
+            : (extractionResult.extractedData?.diagnosis?.principal?.name || ""),
+          medications: extractionResult.extractedData?.medications?.map((med) => ({
+            name: med.name,
+            instruction: `${med.dose} ${med.frequency} ${med.route}`.trim(),
+            status: "confirmed",
+          })) || [],
+          labs: extractionResult.extractedData?.lab_results?.map((lab) => lab.test_name) || [],
+          radiology: extractionResult.extractedData?.radiology?.pending?.map((rad) => rad.type) || [],
+          procedures: extractionResult.extractedData?.procedures?.map((proc) => proc.name) || [],
+          followUp: extractionResult.extractedData?.follow_up?.items?.map((fu) => fu.reason || fu.timing) || [],
+          clinicalNotes: ["Voice extraction completed via VoiceExtractorAgent"],
+        };
+      });
+
+      // Sync to documents collection
+      await mutateDocuments(async (documents) => {
+        const docIndex = documents.findIndex((d) => d.id === id && d.documentType === "voice");
+        if (docIndex >= 0) {
+          const doc = documents[docIndex];
+          doc.status = "processed";
+          doc.result = buildVoiceDocumentResult({
+            documentId: id,
+            uploadedAt: session.uploadedAt,
+            sttBackend: session.sttBackend,
+            extractedData: extractionResult.extractedData,
+            dashboardPayload: extractionResult.dashboardPayload,
+          });
+        }
+      });
+
+      processed.push(id);
+      console.log(`   ✅ Extraction complete: ${session.fileName}`);
+    } catch (error) {
+      console.error(`   ❌ Extraction failed for ${id}:`, error.message);
+
+      // Update status to failed
+      await updateVoiceSession(id, async (currentSession) => {
+        currentSession.status = "failed";
+        currentSession.error = error.message;
+      });
+
+      await mutateDocuments(async (documents) => {
+        const doc = documents.find((d) => d.id === id && d.documentType === "voice");
+        if (doc) {
+          doc.status = "failed";
+          doc.error = error.message;
+        }
+      });
+
+      failed.push(id);
+    }
+  }
+
+  console.log(`📊 Voice extraction complete: ${processed.length} success, ${failed.length} failed\n`);
+  return res.json({ processed, failed });
+});
+
 // Serve masked images.
 // First serve the correct storage location, then fall back to the legacy mistakenly nested path
 // so previously generated masked images still load in the UI.
@@ -1049,6 +2436,13 @@ app.post("/api/documents/process", async (req, res) => {
         name: document.name,
         filePath: document.filePath,
         department: document.department,
+        documentType: document.documentType || 'pdf',
+        uploadedAt: document.uploadedAt,
+        mimeType: document.mimeType,
+        transcript: document.transcript,
+        segments: document.segments,
+        transcriptQuality: document.transcriptQuality,
+        result: document.result,
       });
     }
 
@@ -1089,22 +2483,35 @@ app.post("/api/documents/process", async (req, res) => {
         hasGeminiKey: !!geminiApiKey,
       });
 
-      const agentResult = await documentRouter.process(document.filePath, {
-        pdfName: document.name,
-        geminiApiKey: geminiApiKey, // Pass through to two-stage agent
-        onProgress: (progress) => {
-          void audit.event("agent_progress", progress.type === "error" ? "error" : "info", progress.step || progress.type || "progress", extractStepSummary(progress));
-        },
-      });
+      let agentResult;
+      let result;
 
-      if (!agentResult.success) {
-        throw new Error(agentResult.error);
+      // Handle voice documents with VoiceExtractorAgent
+      if (document.documentType === 'voice') {
+        console.log(`   🎤 Processing voice document with VoiceExtractorAgent: ${document.name}`);
+        const voiceProcessing = await resolveVoiceDocumentProcessing(document);
+        agentResult = voiceProcessing.agentResult;
+        result = voiceProcessing.result;
+      } else {
+        // Process PDF documents through standard router
+        agentResult = await documentRouter.process(document.filePath, {
+          pdfName: document.name,
+          geminiApiKey: geminiApiKey,
+          onProgress: (progress) => {
+            void audit.event("agent_progress", progress.type === "error" ? "error" : "info", progress.step || progress.type || "progress", extractStepSummary(progress));
+          },
+        });
+
+        if (!agentResult.success) {
+          throw new Error(agentResult.error);
+        }
+
+        result = await transformAgentResultToDashboard(agentResult);
       }
 
-      const result = await transformAgentResultToDashboard(agentResult);
       const updatedDocument = await updateDocument(document.id, async (currentDocument) => {
         currentDocument.status = agentResult.metadata?.user_action_required ? "partial" : "processed";
-        currentDocument.department = result?.meta?.department_type || currentDocument.department;
+        currentDocument.department = result?.meta?.department_type || currentDocument.department || (document.documentType === 'voice' ? 'Voice Dictation' : undefined);
         currentDocument.result = result;
         currentDocument.agentInfo = buildAgentInfo(agentResult);
         currentDocument.error = null;
@@ -1142,7 +2549,25 @@ app.delete("/api/documents/:id", async (req, res) => {
     return res.status(404).json({ error: "Document not found" });
   }
 
-  await fs.rm(document.filePath, { force: true });
+  if (document.documentType === "voice") {
+    const session = await updateVoiceSession(document.id, async (currentSession) => {
+      const hasPendingReview = Array.isArray(currentSession.reviewItems)
+        && currentSession.reviewItems.some((item) => item.resolution === "pending");
+      currentSession.status = hasPendingReview ? "review_required" : "processed";
+    });
+
+    if (session) {
+      await analyticsStore.deleteDocumentMetrics(document.id);
+      return res.status(204).end();
+    }
+  }
+
+  const cleanupPaths = new Set(
+    [document.filePath, document.audioPath, document.transcriptPath]
+      .filter((value) => typeof value === "string" && value.trim())
+  );
+
+  await Promise.all(Array.from(cleanupPaths).map((filePath) => fs.rm(filePath, { force: true })));
   await analyticsStore.deleteDocumentMetrics(document.id);
   res.status(204).end();
 });
@@ -1167,9 +2592,8 @@ app.get("/api/documents/process/progress", async (req, res) => {
   res.write(`data: ${JSON.stringify({ type: "connected", documentId, hasGeminiKey: !!geminiApiKey })}\n\n`);
 
   // Process the document with progress callbacks
-  let audit = createAuditRunContext(null, {
-    authMetadata: buildRequestAuthMetadata(req),
-  });
+  let audit;
+  let auditRun;
 
   try {
     const documents = await readDocuments();
@@ -1181,33 +2605,131 @@ app.get("/api/documents/process/progress", async (req, res) => {
       return;
     }
 
+    // Handle voice documents - use VoiceExtractorAgent with DashboardMapper
+    if (document.documentType === 'voice') {
+      console.log(`   🎤 Processing voice document with VoiceExtractorAgent: ${document.name}`);
+
+      try {
+        // Initialize audit run for voice processing
+        auditRun = await startAuditRunSafe({
+          workflow: "extraction",
+          documentId: document.id,
+          requestId: buildAuditRequestId("extract"),
+          title: document.name,
+          actor: buildRequestActor(req, "system"),
+          metadata: buildRequestAuthMetadata(req, {
+            department: document.department,
+            mode: "interactive_sse",
+          }),
+        });
+        audit = createAuditRunContext(auditRun, {
+          workflow: "extraction",
+          documentId: document.id,
+          requestId: auditRun?.requestId || null,
+          authMetadata: buildRequestAuthMetadata(req),
+        });
+
+        await audit.event("document_processing_started", "info", "Document processing started", {
+          name: document.name,
+          hasGeminiKey: !!geminiApiKey,
+        });
+
+        // Send SSE start event
+        res.write(`data: ${JSON.stringify({ type: 'start', documentId, totalSteps: 4, stage: 'voice_extraction' })}\n\n`);
+
+        const voiceProcessing = await resolveVoiceDocumentProcessing(document);
+
+        // Send SSE complete event
+        res.write(`data: ${JSON.stringify({
+          type: 'complete',
+          documentId,
+          stepNumber: 4,
+          totalSteps: 4,
+          stepName: 'Voice extraction completed',
+          tokensUsed: 0
+        })}\n\n`);
+
+        const result = voiceProcessing.result;
+        const agentInfo = voiceProcessing.agentResult;
+
+        // Update document with standard result structure including dashboard_cards
+        const updatedDocument = await updateDocument(documentId, async (currentDocument) => {
+          currentDocument.status = "processed";
+          currentDocument.department = "Voice Dictation";
+          currentDocument.result = result;
+          currentDocument.agentInfo = {
+            agent: agentInfo.agent,
+            version: voiceExtractorAgent.version,
+            latency: agentInfo.latency || 0,
+            timestamp: new Date().toISOString()
+          };
+          currentDocument.error = null;
+          currentDocument.processedAt = new Date().toISOString();
+          currentDocument.auditRunId = auditRun?.runId;
+        });
+
+        await audit.complete({
+          documentId: document.id,
+          agentName: voiceExtractorAgent.name,
+          latency: 0,
+          tokensUsed: 0,
+          stepsCount: voiceProcessing.agentResult?.steps?.length || 0,
+        });
+
+        res.write(`data: ${JSON.stringify({
+          type: "done",
+          document: updatedDocument,
+          tokensUsed: 0,
+        })}\n\n`);
+
+        res.end();
+        return;
+
+      } catch (voiceError) {
+        console.error(`   ❌ Voice processing error:`, voiceError);
+        await updateDocument(documentId, async (currentDocument) => {
+          currentDocument.status = "failed";
+          currentDocument.error = voiceError instanceof Error ? voiceError.message : String(voiceError);
+        });
+        res.write(`data: ${JSON.stringify({
+          type: "error",
+          error: voiceError instanceof Error ? voiceError.message : String(voiceError),
+        })}\n\n`);
+        res.end();
+        return;
+      }
+    }
+
     await updateDocument(documentId, async (currentDocument) => {
       currentDocument.status = "processing";
       currentDocument.error = null;
     });
 
-    const auditRun = await startAuditRunSafe({
-      workflow: "extraction",
-      documentId: document.id,
-      requestId: buildAuditRequestId("extract"),
-      title: document.name,
-      actor: buildRequestActor(req, "system"),
-      metadata: buildRequestAuthMetadata(req, {
-        department: document.department,
-        mode: "interactive_sse",
-      }),
-    });
-    audit = createAuditRunContext(auditRun, {
-      workflow: "extraction",
-      documentId: document.id,
-      requestId: auditRun?.requestId || null,
-      authMetadata: buildRequestAuthMetadata(req),
-    });
+    // Initialize audit run for regular document processing
+    if (!auditRun) {
+      auditRun = await startAuditRunSafe({
+        workflow: "extraction",
+        documentId: document.id,
+        requestId: buildAuditRequestId("extract"),
+        title: document.name,
+        actor: buildRequestActor(req, "system"),
+        metadata: buildRequestAuthMetadata(req, {
+          department: document.department,
+          mode: "interactive_sse",
+        }),
+      });
+      audit = createAuditRunContext(auditRun, {
+        workflow: "extraction",
+        documentId: document.id,
+        requestId: auditRun?.requestId || null,
+        authMetadata: buildRequestAuthMetadata(req),
+      });
 
-    await audit.event("document_processing_started", "info", "Document processing started", {
-      name: document.name,
-      hasGeminiKey: !!geminiApiKey,
-    });
+      await audit.event("document_processing_started", "info", "Document processing started", {
+        name: document.name,
+        hasGeminiKey: !!geminiApiKey,
+      });
+    }
 
     const agentResult = await documentRouter.process(document.filePath, {
       pdfName: document.name,
@@ -3093,6 +4615,10 @@ app.post("/api/documents/:id/send-alerts", async (req, res) => {
 
 ensureStorage()
   .then(async () => {
+    const repairedVoiceDocumentIds = await repairVoiceDocumentsFromSessions();
+    if (repairedVoiceDocumentIds.length > 0) {
+      console.log(`Repaired ${repairedVoiceDocumentIds.length} voice document record(s) from saved voice sessions.`);
+    }
     const documents = await readDocuments();
     await analyticsStore.backfillDocuments(documents);
     app.listen(PORT, () => {

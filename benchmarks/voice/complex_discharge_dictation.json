@@ -1,0 +1,230 @@
+{
+  "benchmark_id": "voice_disch_001",
+  "name": "Complex Discharge Dictation",
+  "description": "Comprehensive discharge dictation covering diagnosis, medications, procedures, and follow-up",
+  "created_at": "2026-05-13",
+
+  "transcript": {
+    "rawText": "65 year old male patient admitted with acute coronary syndrome underwent primary PCI with drug eluting stent placement to left anterior descending artery. Procedure was uncomplicated. Principal diagnosis is acute ST elevation myocardial infarction. Secondary diagnoses include hypertension dyslipidemia and smoker. During the hospital stay patient was started on dual antiplatelet therapy with Aspirin 75 milligrams once daily and Clopidogrel 75 milligrams once daily for 12 months. Also started on Metoprolol 25 milligrams twice daily for heart rate control and blood pressure. Atorvastatin 80 milligrams at bedtime continued. Ramipril 2.5 milligrams once daily started for LV function improvement. Patient was counseled on lifestyle modifications including smoking cessation dietary changes and regular exercise. Discharge medications include Aspirin Clopidogrel Metoprolol Atorvastatin Ramipril and Pantoprazole 40 milligrams once daily for gastric protection. Patient to follow up with cardiology after 1 month and with cardiologist after 1 week for wound check. Echocardiogram showed LV ejection fraction 45 percent with mild hypokinesia of inferior wall. No signs of heart failure. Patient is stable for discharge in good condition.",
+    "language": "en-US",
+    "overallConfidence": 0.89,
+    "segments": [
+      {
+        "id": "seg_1",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "0:00",
+        "endLabel": "0:20",
+        "startMs": 0,
+        "endMs": 20000,
+        "text": "65 year old male patient admitted with acute coronary syndrome underwent primary PCI with drug eluting stent placement to left anterior descending artery. Procedure was uncomplicated.",
+        "confidence": 0.92,
+        "flags": []
+      },
+      {
+        "id": "seg_2",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "0:20",
+        "endLabel": "0:35",
+        "startMs": 20000,
+        "endMs": 35000,
+        "text": "Principal diagnosis is acute ST elevation myocardial infarction. Secondary diagnoses include hypertension dyslipidemia and smoker.",
+        "confidence": 0.90,
+        "flags": []
+      },
+      {
+        "id": "seg_3",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "0:35",
+        "endLabel": "1:00",
+        "startMs": 35000,
+        "endMs": 60000,
+        "text": "During the hospital stay patient was started on dual antiplatelet therapy with Aspirin 75 milligrams once daily and Clopidogrel 75 milligrams once daily for 12 months. Also started on Metoprolol 25 milligrams twice daily for heart rate control and blood pressure. Atorvastatin 80 milligrams at bedtime continued. Ramipril 2.5 milligrams once daily started for LV function improvement.",
+        "confidence": 0.88,
+        "flags": []
+      },
+      {
+        "id": "seg_4",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "1:00",
+        "endLabel": "1:20",
+        "startMs": 60000,
+        "endMs": 80000,
+        "text": "Patient was counseled on lifestyle modifications including smoking cessation dietary changes and regular exercise.",
+        "confidence": 0.91,
+        "flags": []
+      },
+      {
+        "id": "seg_5",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "1:20",
+        "endLabel": "1:40",
+        "startMs": 80000,
+        "endMs": 100000,
+        "text": "Discharge medications include Aspirin Clopidogrel Metoprolol Atorvastatin Ramipril and Pantoprazole 40 milligrams once daily for gastric protection.",
+        "confidence": 0.87,
+        "flags": []
+      },
+      {
+        "id": "seg_6",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "1:40",
+        "endLabel": "1:55",
+        "startMs": 100000,
+        "endMs": 115000,
+        "text": "Patient to follow up with cardiology after 1 month and with cardiologist after 1 week for wound check.",
+        "confidence": 0.90,
+        "flags": []
+      },
+      {
+        "id": "seg_7",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "1:55",
+        "endLabel": "2:10",
+        "startMs": 115000,
+        "endMs": 130000,
+        "text": "Echocardiogram showed LV ejection fraction 45 percent with mild hypokinesia of inferior wall. No signs of heart failure.",
+        "confidence": 0.89,
+        "flags": []
+      },
+      {
+        "id": "seg_8",
+        "speakerRole": "doctor",
+        "speakerLabel": "Physician",
+        "startLabel": "2:10",
+        "endLabel": "2:15",
+        "startMs": 130000,
+        "endMs": 135000,
+        "text": "Patient is stable for discharge in good condition.",
+        "confidence": 0.93,
+        "flags": []
+      }
+    ]
+  },
+
+  "ground_truth": {
+    "patient": {
+      "name": "",
+      "mrn": "",
+      "age": 65,
+      "gender": "male"
+    },
+    "diagnosis": {
+      "principal": {
+        "name": "Acute ST Elevation Myocardial Infarction",
+        "status": "active",
+        "icd_code": "I21.0"
+      },
+      "secondary": [
+        { "name": "Hypertension", "status": "chronic", "icd_code": "I10" },
+        { "name": "Dyslipidemia", "status": "chronic", "icd_code": "E78.5" },
+        { "name": "Smoker", "status": "historical", "icd_code": "Z72.0" }
+      ]
+    },
+    "medications": [
+      {
+        "name": "Aspirin",
+        "dose": "75mg",
+        "frequency": "once daily",
+        "route": "Oral",
+        "indication": "dual antiplatelet therapy",
+        "duration": "12 months",
+        "status": "start"
+      },
+      {
+        "name": "Clopidogrel",
+        "dose": "75mg",
+        "frequency": "once daily",
+        "route": "Oral",
+        "indication": "dual antiplatelet therapy",
+        "duration": "12 months",
+        "status": "start"
+      },
+      {
+        "name": "Metoprolol",
+        "dose": "25mg",
+        "frequency": "twice daily",
+        "route": "Oral",
+        "indication": "heart rate control and blood pressure",
+        "status": "start"
+      },
+      {
+        "name": "Atorvastatin",
+        "dose": "80mg",
+        "frequency": "at bedtime",
+        "route": "Oral",
+        "indication": "lipid management",
+        "status": "continue"
+      },
+      {
+        "name": "Ramipril",
+        "dose": "2.5mg",
+        "frequency": "once daily",
+        "route": "Oral",
+        "indication": "LV function improvement",
+        "status": "start"
+      },
+      {
+        "name": "Pantoprazole",
+        "dose": "40mg",
+        "frequency": "once daily",
+        "route": "Oral",
+        "indication": "gastric protection",
+        "status": "start"
+      }
+    ],
+    "procedures": [
+      {
+        "name": "Primary PCI with drug eluting stent placement",
+        "body_part": "Left Anterior Descending Artery",
+        "status": "completed"
+      },
+      {
+        "name": "Echocardiogram",
+        "status": "completed"
+      }
+    ],
+    "radiology": [
+      {
+        "type": "Echocardiogram",
+        "findings": "LV ejection fraction 45% with mild hypokinesia of inferior wall",
+        "status": "completed"
+      }
+    ],
+    "follow_up": [
+      {
+        "specialty": "Cardiology",
+        "timing": "1 month",
+        "reason": "post PCI follow up"
+      },
+      {
+        "specialty": "Cardiologist",
+        "timing": "1 week",
+        "reason": "wound check"
+      }
+    ],
+    "clinical_notes": [
+      {
+        "type": "Voice Dictation",
+        "summary": "65 year old male, admitted with acute coronary syndrome. Underwent primary PCI with DES to LAD. Started on DAPT (Aspirin, Clopidogrel), Metoprolol, Atorvastatin 80mg, Ramipril. Echo: LVEF 45% with mild inferior wall hypokinesia. Stable for discharge."
+      }
+    ],
+    "treatment": {
+      "current_approach": "Post PCI management with dual antiplatelet therapy, beta blocker, statin, and ACE inhibitor",
+      "procedures": ["Primary PCI with DES", "Echocardiogram"]
+    }
+  },
+
+  "expected_extraction_quality": {
+    "medication_recall_expected": 1.0,
+    "diagnosis_capture_expected": 1.0,
+    "procedure_capture_expected": 0.8,
+    "follow_up_capture_expected": 1.0
+  }
+}

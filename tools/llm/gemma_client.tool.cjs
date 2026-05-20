@@ -7,21 +7,43 @@
 class GemmaClientTool {
   constructor(config = {}) {
     this.name = "Gemma LLM Client";
-    this.version = "2.0.0";
+    this.version = "2.1.0";
 
     // Primary model configuration
     this.baseUrl = config.baseUrl || process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions";
-    this.model = config.model || process.env.GEMMA_MODEL || "google/gemma-4-31B-it";
+    this.model = config.model || process.env.GEMMA_MODEL || "google/gemma-4-26B-A4B-it";
     this.timeout = config.timeout || 180000;
+    this.defaultJsonMode = config.defaultJsonMode ?? false; // JSON mode not supported by Gemma/vLLM, use prompt engineering instead
 
     // Fallback model configuration (for 26B or alternative endpoint)
     this.fallbackBaseUrl = config.fallbackBaseUrl || process.env.GEMMA_FALLBACK_URL || this.baseUrl;
-    this.fallbackModel = config.fallbackModel || process.env.GEMMA_FALLBACK_MODEL || "google/gemma-2-27b-it";
+    this.fallbackModel = config.fallbackModel || process.env.GEMMA_FALLBACK_MODEL || "google/gemma-4-26B-A4B-it";
     this.enableFallback = config.enableFallback ?? process.env.GEMMA_ENABLE_FALLBACK !== "false";
 
-    // Gemma 4-31B has a max context of 16384 tokens
+    // Gemma 4-26B has a max context of 26384 tokens
     // Leave room for input tokens by defaulting to 2048 max output
     this.defaultMaxTokens = config.maxTokens || 2048;
+    this.defaultMaxRetries = Number.isFinite(config.maxRetries) ? config.maxRetries : 2;
+    this.defaultRetryDelayMs = Number.isFinite(config.retryDelayMs) ? config.retryDelayMs : 1200;
+  }
+
+  sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  isRetryableStatus(status) {
+    return [408, 429, 500, 502, 503, 504].includes(Number(status));
+  }
+
+  isRetryableError(error) {
+    const message = String(error?.message || error || "");
+    return (
+      error?.name === "AbortError" ||
+      message.includes("fetch failed") ||
+      message.includes("ECONNRESET") ||
+      message.includes("ETIMEDOUT") ||
+      message.includes("ENOTFOUND")
+    );
   }
 
   /**
@@ -55,78 +77,108 @@ class GemmaClientTool {
    * Execute with a specific model/endpoint
    */
   async executeWithModel(baseUrl, model, prompt, options = {}) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    const maxRetries = Number.isFinite(options.maxRetries) ? options.maxRetries : this.defaultMaxRetries;
+    const retryDelayMs = Number.isFinite(options.retryDelayMs) ? options.retryDelayMs : this.defaultRetryDelayMs;
 
-    try {
-      const startTime = Date.now();
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
-      const response = await fetch(baseUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
+      try {
+        const startTime = Date.now();
+
+        // Build request body
+        const requestBody = {
           model: model,
           messages: [{ role: "user", content: prompt }],
           temperature: options.temperature ?? 0.1,
           max_tokens: options.maxTokens ?? this.defaultMaxTokens,
-        }),
-      });
+        };
 
-      clearTimeout(timeoutId);
+        // Enable JSON mode if requested (forces model to return valid JSON)
+        const useJsonMode = options.jsonMode ?? this.defaultJsonMode;
+        if (useJsonMode) {
+          requestBody.response_format = { type: "json_object" };
+        }
 
-      if (!response.ok) {
-        const text = await response.text();
+        const response = await fetch(baseUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify(requestBody),
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const text = await response.text();
+          const error = {
+            success: false,
+            error: `Gemma request failed (${response.status}): ${text}`,
+            content: "",
+            model,
+            status: response.status,
+          };
+
+          if (this.isRetryableStatus(response.status) && attempt < maxRetries) {
+            await this.sleep(retryDelayMs * (attempt + 1));
+            continue;
+          }
+
+          return error;
+        }
+
+        const payload = await response.json();
+        let content = payload.choices?.[0]?.message?.content || "";
+
+        // When JSON mode is enabled, the content should already be valid JSON
+        // But we still clean up any markdown code blocks just in case
+        if (content.includes("```json")) {
+          content = content.split("```json")[1].split("```")[0].trim();
+        } else if (content.includes("```")) {
+          content = content.split("```")[1].split("```")[0].trim();
+        }
+
+        const endTime = Date.now();
+
+        return {
+          success: true,
+          content,
+          usage: {
+            promptTokens: payload.usage?.prompt_tokens || 0,
+            completionTokens: payload.usage?.completion_tokens || 0,
+            totalTokens: payload.usage?.total_tokens || 0,
+            latency: endTime - startTime
+          },
+          model
+        };
+      } catch (error) {
+        clearTimeout(timeoutId);
+
+        const errorMessage = error?.name === "AbortError"
+          ? `Request timeout after ${this.timeout}ms`
+          : error.message;
+
+        if (this.isRetryableError(error) && attempt < maxRetries) {
+          await this.sleep(retryDelayMs * (attempt + 1));
+          continue;
+        }
+
         return {
           success: false,
-          error: `Gemma request failed (${response.status}): ${text}`,
+          error: errorMessage,
           content: "",
           model
         };
       }
-
-      const payload = await response.json();
-      let content = payload.choices?.[0]?.message?.content || "";
-
-      // Clean up markdown code blocks
-      if (content.includes("```json")) {
-        content = content.split("```json")[1].split("```")[0].trim();
-      } else if (content.includes("```")) {
-        content = content.split("```")[1].split("```")[0].trim();
-      }
-
-      const endTime = Date.now();
-
-      return {
-        success: true,
-        content,
-        usage: {
-          promptTokens: payload.usage?.prompt_tokens || 0,
-          completionTokens: payload.usage?.completion_tokens || 0,
-          totalTokens: payload.usage?.total_tokens || 0,
-          latency: endTime - startTime
-        },
-        model
-      };
-    } catch (error) {
-      clearTimeout(timeoutId);
-
-      if (error.name === "AbortError") {
-        return {
-          success: false,
-          error: `Request timeout after ${this.timeout}ms`,
-          content: "",
-          model
-        };
-      }
-
-      return {
-        success: false,
-        error: error.message,
-        content: "",
-        model
-      };
     }
+
+    return {
+      success: false,
+      error: "Gemma request failed after retries",
+      content: "",
+      model
+    };
   }
 
   /**

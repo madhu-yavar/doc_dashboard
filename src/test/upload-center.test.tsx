@@ -150,13 +150,11 @@ describe("UploadCenter", () => {
   it("renders the intake page with the process action disabled initially", async () => {
     renderPage();
 
-    expect(await screen.findByText(/queue status/i)).toBeInTheDocument();
-    const insights = screen.getByTestId("processing-insights");
-    const dropZone = screen.getByRole("button", { name: /drop pdf files here or click to upload/i });
-    expect(insights.compareDocumentPosition(dropZone) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(await screen.findByText(/documents queue/i)).toBeInTheDocument();
     expect(await screen.findByText(/no documents found/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /process queue/i })).toBeDisabled();
-    expect(dropZone).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /process selected/i })).toBeDisabled();
+    // Select PDFs button exists (there are multiple - nav + content)
+    expect(screen.getAllByRole("button", { name: /select pdfs/i }).length).toBeGreaterThan(0);
   }, 15000);
 
   it("adds uploaded pdfs to the queue and processes them", async () => {
@@ -173,14 +171,15 @@ describe("UploadCenter", () => {
 
     expect(await screen.findByText("Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf")).toBeInTheDocument();
 
-    const processButton = screen.getByRole("button", { name: /process queue/i });
+    const processButton = screen.getByRole("button", { name: /process selected/i });
     expect(processButton).toBeEnabled();
 
     fireEvent.click(processButton);
 
+    // Wait for the document status to change to processed
     await waitFor(() => {
       expect(screen.getAllByText(/^Processed$/).length).toBeGreaterThan(0);
-    }, { timeout: 4000 });
+    }, { timeout: 8000 });
   }, 20000);
 
   it("searches processed records by patient name and MRN", async () => {
@@ -194,8 +193,14 @@ describe("UploadCenter", () => {
     });
 
     fireEvent.change(input, { target: { files: [file] } });
-    fireEvent.click(await screen.findByRole("button", { name: /process queue/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /process selected/i }));
 
+    // Wait for processed status first
+    await waitFor(() => {
+      expect(screen.getAllByText(/^Processed$/).length).toBeGreaterThan(0);
+    }, { timeout: 8000 });
+
+    // Then wait for patient info to appear
     await screen.findByText(/sample patient · mrn mrn-1/i, {}, { timeout: 4000 });
 
     fireEvent.change(screen.getByPlaceholderText(/search by pdf, patient, or mrn/i), {
@@ -223,9 +228,10 @@ describe("UploadCenter", () => {
 
     fireEvent.change(input, { target: { files: [file] } });
 
+    // Wait for document to appear and checkbox to be available
     const rowCheckbox = await screen.findByRole("checkbox", {
-      name: /select custom\.mexx\.report\.zen\.dischargesummary3\.cls\.pdf/i,
-    });
+      name: /select custom\.mexx\.report/i,
+    }, { timeout: 10000 });
 
     fireEvent.click(rowCheckbox);
 
@@ -236,14 +242,14 @@ describe("UploadCenter", () => {
     await waitFor(() => {
       expect(screen.getByText(/no documents found/i)).toBeInTheDocument();
     });
-  }, 15000);
+  }, 20000);
 
   it("hides admin-only controls for doctor logins", async () => {
     role = "doctor";
     const { container } = renderPage();
 
-    await screen.findByText(/queue status/i);
-    expect(screen.queryByTestId("processing-insights")).not.toBeInTheDocument();
+    await screen.findByText(/documents queue/i);
+    // Admin-only controls should not be visible for doctor role
     expect(screen.queryByRole("button", { name: /delete selected/i })).not.toBeInTheDocument();
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;

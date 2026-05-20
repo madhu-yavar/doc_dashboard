@@ -1,0 +1,1058 @@
+{
+  "success": true,
+  "sessionId": "test_session_cardio_001",
+  "status": "processed",
+  "extractedData": {
+    "source_type": "voice_transcript",
+    "session_id": "test_session_cardio_001",
+    "patient": {
+      "name": "",
+      "mrn": "",
+      "age": null,
+      "gender": "",
+      "admission_date": null,
+      "discharge_date": null
+    },
+    "diagnosis": {
+      "principal": [
+        {
+          "name": "Coronary Artery Disease",
+          "icd_code": "I25.10",
+          "status": "active",
+          "needs_review": false,
+          "confidence_score": 0.97,
+          "provenance": {
+            "segment_id": "4",
+            "time_range": {
+              "start_ms": 48000,
+              "end_ms": 52000
+            },
+            "quoted_text": "Assessment, CAD.",
+            "speaker_role": "doctor"
+          }
+        }
+      ],
+      "secondary": [
+        {
+          "name": "Left Ventricular Dysfunction",
+          "icd_code": "I50.9",
+          "status": "active",
+          "needs_review": false,
+          "confidence_score": 0.97,
+          "provenance": {
+            "segment_id": "4",
+            "time_range": {
+              "start_ms": 48000,
+              "end_ms": 52000
+            },
+            "quoted_text": "Number two, LV dysfunction.",
+            "speaker_role": "doctor"
+          }
+        }
+      ],
+      "comorbidities": [
+        "Left Ventricular Dysfunction"
+      ]
+    },
+    "allergies": [],
+    "medications": [
+      {
+        "name": "Coreg",
+        "dose": "25 mg",
+        "frequency": "b.i.d.",
+        "route": "",
+        "indication": "",
+        "status": "change",
+        "needs_review": false,
+        "provenance": {
+          "segment_id": "4",
+          "time_range": {
+            "start_ms": 52000,
+            "end_ms": 57000
+          },
+          "quoted_text": "increase Coreg to 25 mg b.i.d.",
+          "speaker_role": "doctor"
+        }
+      },
+      {
+        "name": "Vasotec",
+        "dose": "20 mg",
+        "frequency": "daily",
+        "route": "",
+        "indication": "",
+        "status": "change",
+        "needs_review": false,
+        "provenance": {
+          "segment_id": "4",
+          "time_range": {
+            "start_ms": 52000,
+            "end_ms": 57000
+          },
+          "quoted_text": "Increase Vasotec to 20 mg daily.",
+          "speaker_role": "doctor"
+        }
+      },
+      {
+        "name": "aspirin",
+        "dose": "325 mg",
+        "frequency": "daily",
+        "route": "",
+        "indication": "",
+        "status": "continue",
+        "needs_review": false,
+        "provenance": {
+          "segment_id": "5",
+          "time_range": {
+            "start_ms": 57000,
+            "end_ms": 63000
+          },
+          "quoted_text": "Continue with aspirin 325 mg daily",
+          "speaker_role": "doctor"
+        }
+      },
+      {
+        "name": "Plavix",
+        "dose": "75 mg",
+        "frequency": "daily",
+        "route": "",
+        "indication": "",
+        "status": "continue",
+        "needs_review": false,
+        "provenance": {
+          "segment_id": "5",
+          "time_range": {
+            "start_ms": 57000,
+            "end_ms": 63000
+          },
+          "quoted_text": "Plavix 75 mg daily.",
+          "speaker_role": "doctor"
+        }
+      }
+    ],
+    "vitals": {
+      "bp": {
+        "systolic": 120,
+        "diastolic": 82
+      },
+      "pulse": 68,
+      "temperature": null,
+      "spo2": null,
+      "resp_rate": null,
+      "blood_glucose": null,
+      "pain_score": null
+    },
+    "lab_results": [],
+    "investigations": [],
+    "radiology": {
+      "findings": [],
+      "pending": []
+    },
+    "procedures": [],
+    "treatment": {
+      "current_approach": "",
+      "management_items": [],
+      "procedures": [],
+      "response": "",
+      "complications": []
+    },
+    "clinical_notes": [
+      {
+        "type": "Voice Dictation",
+        "author": "Physician",
+        "date": "2026-05-15",
+        "summary": "a 30-year-old patient with a history of inferior wall MI, post right coronary artery and circumflex stent. has been feeling well, no symptoms of chest pain, no symptoms of dyspnea, orthopnea, dizziness, lightheadedness, no syncope. Next, patient weighs 244 pounds, blood pressure 120 over 82, heart rate is 68, regular period.",
+        "situation": "",
+        "background": "",
+        "assessment": "",
+        "recommendations": "",
+        "pending_items": [],
+        "risk_flags": [],
+        "handed_over_by": "",
+        "handed_over_to": "",
+        "source_excerpt": [
+          "a 30-year-old patient with a history of inferior wall MI, post right coronary artery and circumflex stent.",
+          "has been feeling well, no symptoms of chest pain, no symptoms of dyspnea, orthopnea, dizziness, lightheadedness, no syncope.",
+          "Next, patient weighs 244 pounds, blood pressure 120 over 82, heart rate is 68, regular period."
+        ]
+      }
+    ],
+    "follow_up": {
+      "items": [
+        {
+          "specialty": null,
+          "timing": "3 months",
+          "reason": null,
+          "provenance": {
+            "segment_id": "6",
+            "quoted_text": "Return in 3 months",
+            "time_range": {
+              "start_ms": 57000,
+              "end_ms": 63000
+            }
+          }
+        }
+      ]
+    },
+    "discharge": {
+      "dietary": [],
+      "instructions": [],
+      "red_flags": []
+    },
+    "meta": {
+      "source_type": "voice_transcript",
+      "transcript_date": "2026-05-15",
+      "stt_backend": "gemini",
+      "overall_confidence": 0.98,
+      "segment_count": 6
+    }
+  },
+  "dashboardPayload": {
+    "source_type": "voice_transcript",
+    "session_id": "test_session_cardio_001",
+    "patient": {
+      "name": "",
+      "mrn": "",
+      "age": null,
+      "gender": "",
+      "admission_date": null,
+      "discharge_date": null
+    },
+    "diagnosis": {
+      "principal": {
+        "name": "Coronary Artery Disease",
+        "code": "I25.10",
+        "status": "active",
+        "description": "Coronary Artery Disease",
+        "confirmedDate": null,
+        "treatingPhysician": null
+      },
+      "secondary": [
+        {
+          "name": "Left Ventricular Dysfunction",
+          "icd_code": "I50.9",
+          "status": "active",
+          "needs_review": false,
+          "confidence_score": 0.97,
+          "provenance": {
+            "segment_id": "4",
+            "time_range": {
+              "start_ms": 48000,
+              "end_ms": 52000
+            },
+            "quoted_text": "Number two, LV dysfunction.",
+            "speaker_role": "doctor"
+          }
+        }
+      ],
+      "comorbidities": [
+        "Left Ventricular Dysfunction"
+      ]
+    },
+    "allergies": [],
+    "medications": [
+      {
+        "name": "Coreg",
+        "dose": "25 mg",
+        "frequency": "b.i.d.",
+        "route": "",
+        "indication": "",
+        "status": "change",
+        "provenance": {
+          "segment_id": "4",
+          "time_range": {
+            "start_ms": 52000,
+            "end_ms": 57000
+          },
+          "quoted_text": "increase Coreg to 25 mg b.i.d.",
+          "speaker_role": "doctor"
+        }
+      },
+      {
+        "name": "Vasotec",
+        "dose": "20 mg",
+        "frequency": "daily",
+        "route": "",
+        "indication": "",
+        "status": "change",
+        "provenance": {
+          "segment_id": "4",
+          "time_range": {
+            "start_ms": 52000,
+            "end_ms": 57000
+          },
+          "quoted_text": "Increase Vasotec to 20 mg daily.",
+          "speaker_role": "doctor"
+        }
+      },
+      {
+        "name": "aspirin",
+        "dose": "325 mg",
+        "frequency": "daily",
+        "route": "",
+        "indication": "",
+        "status": "continue",
+        "provenance": {
+          "segment_id": "5",
+          "time_range": {
+            "start_ms": 57000,
+            "end_ms": 63000
+          },
+          "quoted_text": "Continue with aspirin 325 mg daily",
+          "speaker_role": "doctor"
+        }
+      },
+      {
+        "name": "Plavix",
+        "dose": "75 mg",
+        "frequency": "daily",
+        "route": "",
+        "indication": "",
+        "status": "continue",
+        "provenance": {
+          "segment_id": "5",
+          "time_range": {
+            "start_ms": 57000,
+            "end_ms": 63000
+          },
+          "quoted_text": "Plavix 75 mg daily.",
+          "speaker_role": "doctor"
+        }
+      }
+    ],
+    "vitals": {
+      "bp": {
+        "systolic": 120,
+        "diastolic": 82
+      },
+      "pulse": 68,
+      "temperature": null,
+      "spo2": null,
+      "resp_rate": null,
+      "blood_glucose": null,
+      "pain_score": null
+    },
+    "lab_results": [],
+    "investigations": [],
+    "radiology": {
+      "findings": [],
+      "pending": []
+    },
+    "procedures": [],
+    "treatment": {
+      "current_approach": "",
+      "management_items": [],
+      "procedures": [],
+      "response": "",
+      "complications": []
+    },
+    "clinical_notes": [
+      {
+        "type": "Voice Dictation",
+        "author": "Physician",
+        "date": "2026-05-15",
+        "summary": "a 30-year-old patient with a history of inferior wall MI, post right coronary artery and circumflex stent. has been feeling well, no symptoms of chest pain, no symptoms of dyspnea, orthopnea, dizziness, lightheadedness, no syncope. Next, patient weighs 244 pounds, blood pressure 120 over 82, heart rate is 68, regular period.",
+        "situation": "",
+        "background": "",
+        "assessment": "",
+        "recommendations": "",
+        "pending_items": [],
+        "risk_flags": [],
+        "handed_over_by": "",
+        "handed_over_to": "",
+        "source_excerpt": [
+          "a 30-year-old patient with a history of inferior wall MI, post right coronary artery and circumflex stent.",
+          "has been feeling well, no symptoms of chest pain, no symptoms of dyspnea, orthopnea, dizziness, lightheadedness, no syncope.",
+          "Next, patient weighs 244 pounds, blood pressure 120 over 82, heart rate is 68, regular period."
+        ]
+      }
+    ],
+    "follow_up": {
+      "items": [
+        {
+          "specialty": null,
+          "timing": "3 months",
+          "reason": null,
+          "provenance": {
+            "segment_id": "6",
+            "quoted_text": "Return in 3 months",
+            "time_range": {
+              "start_ms": 57000,
+              "end_ms": 63000
+            }
+          }
+        }
+      ]
+    },
+    "discharge": {
+      "dietary": [],
+      "instructions": [],
+      "red_flags": []
+    },
+    "meta": {
+      "source_type": "voice_transcript",
+      "transcript_date": "2026-05-15",
+      "stt_backend": "gemini",
+      "overall_confidence": 0.98,
+      "segment_count": 6,
+      "document_type": "voice_dictation",
+      "agent_version": "1.0.0",
+      "processed_at": "2026-05-15T03:03:00.066Z"
+    }
+  },
+  "reviewItems": [],
+  "steps": [
+    {
+      "name": "extract_medications",
+      "status": "completed",
+      "result": {
+        "medications": [
+          {
+            "name": "Coreg",
+            "dose": "25 mg",
+            "frequency": "b.i.d.",
+            "route": "",
+            "indication": "",
+            "duration": "",
+            "status": "change",
+            "needs_review": false,
+            "confidence_score": 0.98,
+            "provenance": {
+              "segment_id": "4",
+              "time_range": {
+                "start_ms": 52000,
+                "end_ms": 57000
+              },
+              "quoted_text": "increase Coreg to 25 mg b.i.d.",
+              "speaker_role": "doctor"
+            }
+          },
+          {
+            "name": "Vasotec",
+            "dose": "20 mg",
+            "frequency": "daily",
+            "route": "",
+            "indication": "",
+            "duration": "",
+            "status": "change",
+            "needs_review": false,
+            "confidence_score": 0.98,
+            "provenance": {
+              "segment_id": "4",
+              "time_range": {
+                "start_ms": 52000,
+                "end_ms": 57000
+              },
+              "quoted_text": "Increase Vasotec to 20 mg daily.",
+              "speaker_role": "doctor"
+            }
+          },
+          {
+            "name": "aspirin",
+            "dose": "325 mg",
+            "frequency": "daily",
+            "route": "",
+            "indication": "",
+            "duration": "",
+            "status": "continue",
+            "needs_review": false,
+            "confidence_score": 0.98,
+            "provenance": {
+              "segment_id": "5",
+              "time_range": {
+                "start_ms": 57000,
+                "end_ms": 63000
+              },
+              "quoted_text": "Continue with aspirin 325 mg daily",
+              "speaker_role": "doctor"
+            }
+          },
+          {
+            "name": "Plavix",
+            "dose": "75 mg",
+            "frequency": "daily",
+            "route": "",
+            "indication": "",
+            "duration": "",
+            "status": "continue",
+            "needs_review": false,
+            "confidence_score": 0.98,
+            "provenance": {
+              "segment_id": "5",
+              "time_range": {
+                "start_ms": 57000,
+                "end_ms": 63000
+              },
+              "quoted_text": "Plavix 75 mg daily.",
+              "speaker_role": "doctor"
+            }
+          }
+        ],
+        "summary": {
+          "total_medications": 4,
+          "needs_review_count": 0,
+          "high_confidence_count": 4
+        }
+      }
+    },
+    {
+      "name": "extract_diagnosis",
+      "status": "completed",
+      "result": {
+        "diagnosis": {
+          "principal": [
+            {
+              "name": "Coronary Artery Disease",
+              "icd_code": "I25.10",
+              "status": "active",
+              "needs_review": false,
+              "confidence_score": 0.97,
+              "provenance": {
+                "segment_id": "4",
+                "time_range": {
+                  "start_ms": 48000,
+                  "end_ms": 52000
+                },
+                "quoted_text": "Assessment, CAD.",
+                "speaker_role": "doctor"
+              }
+            }
+          ],
+          "secondary": [
+            {
+              "name": "Left Ventricular Dysfunction",
+              "icd_code": "I50.9",
+              "status": "active",
+              "needs_review": false,
+              "confidence_score": 0.97,
+              "provenance": {
+                "segment_id": "4",
+                "time_range": {
+                  "start_ms": 48000,
+                  "end_ms": 52000
+                },
+                "quoted_text": "Number two, LV dysfunction.",
+                "speaker_role": "doctor"
+              }
+            }
+          ],
+          "rule_out": [],
+          "historical": [
+            {
+              "name": "Inferior Wall Myocardial Infarction",
+              "icd_code": "I21.1",
+              "status": "chronic",
+              "needs_review": false,
+              "confidence_score": 0.98,
+              "provenance": {
+                "segment_id": "1",
+                "time_range": {
+                  "start_ms": 5000,
+                  "end_ms": 12000
+                },
+                "quoted_text": "a 30-year-old patient with a history of inferior wall MI",
+                "speaker_role": "doctor"
+              }
+            },
+            {
+              "name": "Status post right coronary artery stent",
+              "icd_code": "Z95.5",
+              "status": "chronic",
+              "needs_review": false,
+              "confidence_score": 0.98,
+              "provenance": {
+                "segment_id": "1",
+                "time_range": {
+                  "start_ms": 5000,
+                  "end_ms": 12000
+                },
+                "quoted_text": "post right coronary artery and circumflex stent.",
+                "speaker_role": "doctor"
+              }
+            },
+            {
+              "name": "Status post circumflex artery stent",
+              "icd_code": "Z95.5",
+              "status": "chronic",
+              "needs_review": false,
+              "confidence_score": 0.98,
+              "provenance": {
+                "segment_id": "1",
+                "time_range": {
+                  "start_ms": 5000,
+                  "end_ms": 12000
+                },
+                "quoted_text": "post right coronary artery and circumflex stent.",
+                "speaker_role": "doctor"
+              }
+            }
+          ]
+        },
+        "summary": {
+          "total_diagnoses": 5,
+          "needs_review_count": 0
+        }
+      }
+    },
+    {
+      "name": "extract_clinical",
+      "status": "completed",
+      "result": {
+        "vitals": {
+          "bp_systolic": 120,
+          "bp_diastolic": 82,
+          "pulse": 68,
+          "temperature": null,
+          "spo2": null,
+          "resp_rate": null,
+          "blood_glucose": null,
+          "pain_score": null,
+          "provenance": {
+            "segment_id": "3",
+            "quoted_text": "blood pressure 120 over 82, heart rate is 68",
+            "time_range": {
+              "start_ms": 21000,
+              "end_ms": 26000
+            }
+          }
+        },
+        "lab_results": [],
+        "radiology": [],
+        "procedures": [],
+        "follow_up": [
+          {
+            "specialty": null,
+            "timing": "3 months",
+            "reason": null,
+            "provenance": {
+              "segment_id": "6",
+              "quoted_text": "Return in 3 months",
+              "time_range": {
+                "start_ms": 57000,
+                "end_ms": 63000
+              }
+            }
+          }
+        ],
+        "allergies": [],
+        "summary": {
+          "total_items_extracted": 2,
+          "needs_review_count": 0
+        }
+      }
+    },
+    {
+      "name": "merge_reconcile",
+      "status": "completed",
+      "result": {
+        "source_type": "voice_transcript",
+        "session_id": "test_session_cardio_001",
+        "patient": {
+          "name": "",
+          "mrn": "",
+          "age": null,
+          "gender": "",
+          "admission_date": null,
+          "discharge_date": null
+        },
+        "diagnosis": {
+          "principal": [
+            {
+              "name": "Coronary Artery Disease",
+              "icd_code": "I25.10",
+              "status": "active",
+              "needs_review": false,
+              "confidence_score": 0.97,
+              "provenance": {
+                "segment_id": "4",
+                "time_range": {
+                  "start_ms": 48000,
+                  "end_ms": 52000
+                },
+                "quoted_text": "Assessment, CAD.",
+                "speaker_role": "doctor"
+              }
+            }
+          ],
+          "secondary": [
+            {
+              "name": "Left Ventricular Dysfunction",
+              "icd_code": "I50.9",
+              "status": "active",
+              "needs_review": false,
+              "confidence_score": 0.97,
+              "provenance": {
+                "segment_id": "4",
+                "time_range": {
+                  "start_ms": 48000,
+                  "end_ms": 52000
+                },
+                "quoted_text": "Number two, LV dysfunction.",
+                "speaker_role": "doctor"
+              }
+            }
+          ],
+          "comorbidities": [
+            "Left Ventricular Dysfunction"
+          ]
+        },
+        "allergies": [],
+        "medications": [
+          {
+            "name": "Coreg",
+            "dose": "25 mg",
+            "frequency": "b.i.d.",
+            "route": "",
+            "indication": "",
+            "status": "change",
+            "needs_review": false,
+            "provenance": {
+              "segment_id": "4",
+              "time_range": {
+                "start_ms": 52000,
+                "end_ms": 57000
+              },
+              "quoted_text": "increase Coreg to 25 mg b.i.d.",
+              "speaker_role": "doctor"
+            }
+          },
+          {
+            "name": "Vasotec",
+            "dose": "20 mg",
+            "frequency": "daily",
+            "route": "",
+            "indication": "",
+            "status": "change",
+            "needs_review": false,
+            "provenance": {
+              "segment_id": "4",
+              "time_range": {
+                "start_ms": 52000,
+                "end_ms": 57000
+              },
+              "quoted_text": "Increase Vasotec to 20 mg daily.",
+              "speaker_role": "doctor"
+            }
+          },
+          {
+            "name": "aspirin",
+            "dose": "325 mg",
+            "frequency": "daily",
+            "route": "",
+            "indication": "",
+            "status": "continue",
+            "needs_review": false,
+            "provenance": {
+              "segment_id": "5",
+              "time_range": {
+                "start_ms": 57000,
+                "end_ms": 63000
+              },
+              "quoted_text": "Continue with aspirin 325 mg daily",
+              "speaker_role": "doctor"
+            }
+          },
+          {
+            "name": "Plavix",
+            "dose": "75 mg",
+            "frequency": "daily",
+            "route": "",
+            "indication": "",
+            "status": "continue",
+            "needs_review": false,
+            "provenance": {
+              "segment_id": "5",
+              "time_range": {
+                "start_ms": 57000,
+                "end_ms": 63000
+              },
+              "quoted_text": "Plavix 75 mg daily.",
+              "speaker_role": "doctor"
+            }
+          }
+        ],
+        "vitals": {
+          "bp": {
+            "systolic": 120,
+            "diastolic": 82
+          },
+          "pulse": 68,
+          "temperature": null,
+          "spo2": null,
+          "resp_rate": null,
+          "blood_glucose": null,
+          "pain_score": null
+        },
+        "lab_results": [],
+        "investigations": [],
+        "radiology": {
+          "findings": [],
+          "pending": []
+        },
+        "procedures": [],
+        "treatment": {
+          "current_approach": "",
+          "management_items": [],
+          "procedures": [],
+          "response": "",
+          "complications": []
+        },
+        "clinical_notes": [
+          {
+            "type": "Voice Dictation",
+            "author": "Physician",
+            "date": "2026-05-15",
+            "summary": "a 30-year-old patient with a history of inferior wall MI, post right coronary artery and circumflex stent. has been feeling well, no symptoms of chest pain, no symptoms of dyspnea, orthopnea, dizziness, lightheadedness, no syncope. Next, patient weighs 244 pounds, blood pressure 120 over 82, heart rate is 68, regular period.",
+            "situation": "",
+            "background": "",
+            "assessment": "",
+            "recommendations": "",
+            "pending_items": [],
+            "risk_flags": [],
+            "handed_over_by": "",
+            "handed_over_to": "",
+            "source_excerpt": [
+              "a 30-year-old patient with a history of inferior wall MI, post right coronary artery and circumflex stent.",
+              "has been feeling well, no symptoms of chest pain, no symptoms of dyspnea, orthopnea, dizziness, lightheadedness, no syncope.",
+              "Next, patient weighs 244 pounds, blood pressure 120 over 82, heart rate is 68, regular period."
+            ]
+          }
+        ],
+        "follow_up": {
+          "items": [
+            {
+              "specialty": null,
+              "timing": "3 months",
+              "reason": null,
+              "provenance": {
+                "segment_id": "6",
+                "quoted_text": "Return in 3 months",
+                "time_range": {
+                  "start_ms": 57000,
+                  "end_ms": 63000
+                }
+              }
+            }
+          ]
+        },
+        "discharge": {
+          "dietary": [],
+          "instructions": [],
+          "red_flags": []
+        },
+        "meta": {
+          "source_type": "voice_transcript",
+          "transcript_date": "2026-05-15",
+          "stt_backend": "gemini",
+          "overall_confidence": 0.98,
+          "segment_count": 6
+        }
+      }
+    },
+    {
+      "name": "map_dashboard",
+      "status": "completed",
+      "result": {
+        "source_type": "voice_transcript",
+        "session_id": "test_session_cardio_001",
+        "patient": {
+          "name": "",
+          "mrn": "",
+          "age": null,
+          "gender": "",
+          "admission_date": null,
+          "discharge_date": null
+        },
+        "diagnosis": {
+          "principal": {
+            "name": "Coronary Artery Disease",
+            "code": "I25.10",
+            "status": "active",
+            "description": "Coronary Artery Disease",
+            "confirmedDate": null,
+            "treatingPhysician": null
+          },
+          "secondary": [
+            {
+              "name": "Left Ventricular Dysfunction",
+              "icd_code": "I50.9",
+              "status": "active",
+              "needs_review": false,
+              "confidence_score": 0.97,
+              "provenance": {
+                "segment_id": "4",
+                "time_range": {
+                  "start_ms": 48000,
+                  "end_ms": 52000
+                },
+                "quoted_text": "Number two, LV dysfunction.",
+                "speaker_role": "doctor"
+              }
+            }
+          ],
+          "comorbidities": [
+            "Left Ventricular Dysfunction"
+          ]
+        },
+        "allergies": [],
+        "medications": [
+          {
+            "name": "Coreg",
+            "dose": "25 mg",
+            "frequency": "b.i.d.",
+            "route": "",
+            "indication": "",
+            "status": "change",
+            "provenance": {
+              "segment_id": "4",
+              "time_range": {
+                "start_ms": 52000,
+                "end_ms": 57000
+              },
+              "quoted_text": "increase Coreg to 25 mg b.i.d.",
+              "speaker_role": "doctor"
+            }
+          },
+          {
+            "name": "Vasotec",
+            "dose": "20 mg",
+            "frequency": "daily",
+            "route": "",
+            "indication": "",
+            "status": "change",
+            "provenance": {
+              "segment_id": "4",
+              "time_range": {
+                "start_ms": 52000,
+                "end_ms": 57000
+              },
+              "quoted_text": "Increase Vasotec to 20 mg daily.",
+              "speaker_role": "doctor"
+            }
+          },
+          {
+            "name": "aspirin",
+            "dose": "325 mg",
+            "frequency": "daily",
+            "route": "",
+            "indication": "",
+            "status": "continue",
+            "provenance": {
+              "segment_id": "5",
+              "time_range": {
+                "start_ms": 57000,
+                "end_ms": 63000
+              },
+              "quoted_text": "Continue with aspirin 325 mg daily",
+              "speaker_role": "doctor"
+            }
+          },
+          {
+            "name": "Plavix",
+            "dose": "75 mg",
+            "frequency": "daily",
+            "route": "",
+            "indication": "",
+            "status": "continue",
+            "provenance": {
+              "segment_id": "5",
+              "time_range": {
+                "start_ms": 57000,
+                "end_ms": 63000
+              },
+              "quoted_text": "Plavix 75 mg daily.",
+              "speaker_role": "doctor"
+            }
+          }
+        ],
+        "vitals": {
+          "bp": {
+            "systolic": 120,
+            "diastolic": 82
+          },
+          "pulse": 68,
+          "temperature": null,
+          "spo2": null,
+          "resp_rate": null,
+          "blood_glucose": null,
+          "pain_score": null
+        },
+        "lab_results": [],
+        "investigations": [],
+        "radiology": {
+          "findings": [],
+          "pending": []
+        },
+        "procedures": [],
+        "treatment": {
+          "current_approach": "",
+          "management_items": [],
+          "procedures": [],
+          "response": "",
+          "complications": []
+        },
+        "clinical_notes": [
+          {
+            "type": "Voice Dictation",
+            "author": "Physician",
+            "date": "2026-05-15",
+            "summary": "a 30-year-old patient with a history of inferior wall MI, post right coronary artery and circumflex stent. has been feeling well, no symptoms of chest pain, no symptoms of dyspnea, orthopnea, dizziness, lightheadedness, no syncope. Next, patient weighs 244 pounds, blood pressure 120 over 82, heart rate is 68, regular period.",
+            "situation": "",
+            "background": "",
+            "assessment": "",
+            "recommendations": "",
+            "pending_items": [],
+            "risk_flags": [],
+            "handed_over_by": "",
+            "handed_over_to": "",
+            "source_excerpt": [
+              "a 30-year-old patient with a history of inferior wall MI, post right coronary artery and circumflex stent.",
+              "has been feeling well, no symptoms of chest pain, no symptoms of dyspnea, orthopnea, dizziness, lightheadedness, no syncope.",
+              "Next, patient weighs 244 pounds, blood pressure 120 over 82, heart rate is 68, regular period."
+            ]
+          }
+        ],
+        "follow_up": {
+          "items": [
+            {
+              "specialty": null,
+              "timing": "3 months",
+              "reason": null,
+              "provenance": {
+                "segment_id": "6",
+                "quoted_text": "Return in 3 months",
+                "time_range": {
+                  "start_ms": 57000,
+                  "end_ms": 63000
+                }
+              }
+            }
+          ]
+        },
+        "discharge": {
+          "dietary": [],
+          "instructions": [],
+          "red_flags": []
+        },
+        "meta": {
+          "source_type": "voice_transcript",
+          "transcript_date": "2026-05-15",
+          "stt_backend": "gemini",
+          "overall_confidence": 0.98,
+          "segment_count": 6,
+          "document_type": "voice_dictation",
+          "agent_version": "1.0.0",
+          "processed_at": "2026-05-15T03:03:00.066Z"
+        }
+      }
+    },
+    {
+      "name": "decide_review",
+      "status": "completed",
+      "result": {
+        "needsReview": false,
+        "count": 0
+      }
+    }
+  ],
+  "errors": []
+}

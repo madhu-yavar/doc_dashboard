@@ -130,6 +130,29 @@ const parseApiResponse = async (response: Response) => {
   }
 };
 
+const getProcessedDocumentCacheKey = (documentId: string) => `processed-document:${documentId}`;
+
+const readCachedProcessedDocument = (documentId: string): ProcessedDocument | null => {
+  if (typeof window === "undefined" || !documentId) return null;
+  try {
+    const raw = window.localStorage.getItem(getProcessedDocumentCacheKey(documentId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return extractProcessedDocumentResponse({ document: parsed });
+  } catch {
+    return null;
+  }
+};
+
+const writeCachedProcessedDocument = (document: ProcessedDocument | null) => {
+  if (typeof window === "undefined" || !document?.id) return;
+  try {
+    window.localStorage.setItem(getProcessedDocumentCacheKey(document.id), JSON.stringify(document));
+  } catch {
+    // ignore cache write failures
+  }
+};
+
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -298,7 +321,7 @@ const Index = () => {
 
     const payload = await response.json();
     const queue = (payload.documents ?? []).filter((document: ProcessedDocument) =>
-      document.status === "processed" || document.status === "partial"
+      document.status === "processed" || document.status === "partial" || document.status === "review_required"
     );
     setProcessedQueue(queue);
   };
@@ -549,6 +572,10 @@ const Index = () => {
     }
 
     let cancelled = false;
+    const cachedDocument = readCachedProcessedDocument(documentId);
+    if (cachedDocument) {
+      setProcessedDocument(cachedDocument);
+    }
     setIsLoading(true);
     setLoadError(null);
 
@@ -562,7 +589,9 @@ const Index = () => {
       })
       .then((payload) => {
         if (!cancelled) {
-          setProcessedDocument(extractProcessedDocumentResponse(payload));
+          const nextDocument = extractProcessedDocumentResponse(payload);
+          setProcessedDocument(nextDocument);
+          writeCachedProcessedDocument(nextDocument);
           setAlertPreview(null);
           setAlertPreviewOpen(false);
         }
@@ -570,7 +599,13 @@ const Index = () => {
       .catch((error) => {
         if (!cancelled) {
           setLoadError(error instanceof Error ? error.message : "Unable to load processed document.");
-          setProcessedDocument(null);
+          const queueFallback = processedQueue.find((document) => document.id === documentId) || null;
+          const cachedFallback = readCachedProcessedDocument(documentId);
+          if (queueFallback) {
+            setProcessedDocument(queueFallback);
+          } else if (cachedFallback) {
+            setProcessedDocument(cachedFallback);
+          }
         }
       })
       .finally(() => {
@@ -582,7 +617,7 @@ const Index = () => {
     return () => {
       cancelled = true;
     };
-  }, [documentId]);
+  }, [documentId, processedQueue]);
 
   const currentProcessedIndex = processedQueue.findIndex((document) => document.id === documentId);
   const previousProcessedDocument = currentProcessedIndex > 0 ? processedQueue[currentProcessedIndex - 1] : null;
@@ -885,7 +920,7 @@ const Index = () => {
         </div>
       )}
 
-      <PatientHeader data={d} />
+      <PatientHeader data={d} documentType={processedDocument?.documentType} />
 
       <div className="mt-5 grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:auto-rows-[156px] xl:grid-cols-3">
