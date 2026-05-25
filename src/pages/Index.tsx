@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import AppShellHeader from "@/components/auth/AppShellHeader";
 import PatientHeader from "@/components/dashboard/PatientHeader";
 import SectionCard from "@/components/dashboard/SectionCard";
@@ -21,6 +21,7 @@ import type { DashboardPatientData } from "@/data/patientData";
 import {
   API_BASE,
   extractProcessedDocumentResponse,
+  getVoiceDocumentDashboardError,
   getProcessedDocumentMrn,
   getProcessedDocumentPatientName,
   transformProcessedDocument,
@@ -171,6 +172,10 @@ const Index = () => {
   const isAdmin = user?.role === "admin";
 
   const documentId = searchParams.get("documentId");
+  const voiceDashboardError = useMemo(
+    () => getVoiceDocumentDashboardError(processedDocument),
+    [processedDocument],
+  );
   const activeSectionParam = searchParams.get("section");
   const activeSection: Section = activeSectionParam && SECTIONS.has(activeSectionParam as Exclude<Section, null>)
     ? (activeSectionParam as Exclude<Section, null>)
@@ -178,6 +183,9 @@ const Index = () => {
   const providerTokens = processedDocument?.agentInfo?.providerTokens;
   const d: DashboardPatientData | null = useMemo(
     () => {
+      if (voiceDashboardError) {
+        return null;
+      }
       const transformed = processedDocument?.result ? transformProcessedDocument(processedDocument) : null;
       if (transformed) {
         console.log('[Index] Transformed data:', {
@@ -188,7 +196,7 @@ const Index = () => {
       }
       return transformed;
     },
-    [processedDocument],
+    [processedDocument, voiceDashboardError],
   );
   const maskedPreviewPages = d?.maskedImagePages?.length
     ? d.maskedImagePages
@@ -553,12 +561,6 @@ const Index = () => {
   const handleBack = () => updateSection(null);
 
   useEffect(() => {
-    if (!documentId) {
-      navigate("/upload", { replace: true });
-    }
-  }, [documentId, navigate]);
-
-  useEffect(() => {
     refreshProcessedQueue().catch(() => {
       setProcessedQueue([]);
     });
@@ -788,7 +790,7 @@ const Index = () => {
     />
   );
 
-  if (!documentId) return null;
+  if (!documentId) return <Navigate to="/upload" replace />;
 
   if (isLoading && !d) {
     return (
@@ -808,7 +810,7 @@ const Index = () => {
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-6">
           <h2 className="text-base font-semibold text-rose-900">Processed document unavailable</h2>
           <p className="mt-2 text-sm text-rose-700">
-            {loadError || "This processed record could not be loaded."}
+            {voiceDashboardError || loadError || "This processed record could not be loaded."}
           </p>
           <div className="mt-4">
             <Button onClick={() => navigate("/upload")} className="bg-rose-600 text-white hover:bg-rose-700">

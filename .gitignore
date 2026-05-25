@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 server/storage/
+tests/fixtures/audio/
+models/
+tmp/

@@ -1,5 +1,8 @@
 # Voice Intake Phase 0 Baseline
 
+> Historical baseline
+> This document captures the original Phase 0 decisions made before implementation. The live code now includes automatic upload-to-process behavior, unified queue integration, and dashboard-readiness validation for voice records. For current runtime behavior, use [voice-intake-phase2-implementation-summary.md](./voice-intake-phase2-implementation-summary.md).
+
 ## Purpose
 This document finalizes the **Phase 0 baseline** for the voice intake module.
 

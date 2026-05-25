@@ -1,5 +1,8 @@
 # Voice Intake Implementation Checklist
 
+> Historical tracker
+> This checklist was the execution tracker for the original voice rollout plan. The current repository has moved beyond several items here, and some unchecked boxes no longer describe the primary runtime path exactly. For current behavior, use [voice-intake-phase2-implementation-summary.md](./voice-intake-phase2-implementation-summary.md).
+
 ## Purpose
 This checklist is the execution tracker for the voice intake module defined in [voice-intake-langgraph-plan.md](./voice-intake-langgraph-plan.md).
 

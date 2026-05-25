@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   extractProcessedDocumentResponse,
+  getVoiceDocumentDashboardError,
+  isVoiceDocumentDashboardReady,
   transformProcessedDocument,
   type ProcessedDocument,
 } from "@/lib/processedDocuments";
@@ -548,5 +550,72 @@ describe("transformProcessedDocument", () => {
         purpose: "review",
       }),
     ]);
+  });
+
+  it("treats valid processed voice documents as dashboard-ready", () => {
+    const document = createProcessedDocument({
+      documentType: "voice",
+      result: {
+        meta: {
+          source_type: "voice",
+          voice_session_id: "voice-ready",
+        },
+        dashboard_cards: {
+          diagnosis_card: {
+            principal_diagnosis: "Coronary artery disease",
+          },
+          clinical_notes_card: {
+            total_notes: 1,
+            notes: [{ summary: "Assessment documented." }],
+          },
+        },
+        sample_patient_data: {
+          name: "John Doe",
+          age: 45,
+          mrn: "MRN-77",
+        },
+        extracted_data: {
+          diagnosis: {
+            principal: "Coronary artery disease",
+          },
+          clinical_notes: [
+            {
+              type: "Voice Dictation",
+              summary: "Assessment documented.",
+            },
+          ],
+        },
+      },
+    });
+
+    expect(getVoiceDocumentDashboardError(document)).toBeNull();
+    expect(isVoiceDocumentDashboardReady(document)).toBe(true);
+  });
+
+  it("flags processed voice documents with incomplete payloads as not dashboard-ready", () => {
+    const document = createProcessedDocument({
+      documentType: "voice",
+      error: null,
+      result: {
+        meta: {
+          source_type: "voice",
+          voice_session_id: "voice-bad",
+        },
+        dashboard_cards: {},
+        sample_patient_data: {
+          name: "",
+          age: null,
+          mrn: "",
+        },
+        extracted_data: {
+          meta: {
+            source_type: "voice_transcript",
+          },
+        },
+      },
+    });
+
+    expect(getVoiceDocumentDashboardError(document)).toBe("Voice extraction completed but dashboard payload was incomplete.");
+    expect(isVoiceDocumentDashboardReady(document)).toBe(false);
   });
 });

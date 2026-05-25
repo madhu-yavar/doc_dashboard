@@ -75,6 +75,15 @@ type VoiceSession = {
   encounterLabel: string;
   status: VoiceQueueStatus;
   sttBackend: string;
+  sttAudit?: {
+    backend?: string;
+    latency?: number;
+    steps?: Array<{ name: string; status: string; result?: Record<string, unknown>; error?: string | null }>;
+    primaryBackend?: string;
+    enableFallback?: boolean;
+    whisperSuccess?: boolean;
+    geminiSuccess?: boolean;
+  };
   error?: string | null;
   transcriptQuality: {
     overallConfidence: number | null;
@@ -243,6 +252,9 @@ type VoiceDictationWorkspaceProps = {
 };
 
 export default function VoiceDictationWorkspace({ onDocumentsChanged }: VoiceDictationWorkspaceProps) {
+  // Console log to verify the component loaded
+  console.log("🎤 Voice Dictation Workspace loaded - STT console logging enabled!");
+
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const inputRef = useRef<HTMLInputElement>(null);
@@ -398,7 +410,7 @@ export default function VoiceDictationWorkspace({ onDocumentsChanged }: VoiceDic
         ids.includes(session.id)
           ? {
               ...session,
-              status: "transcribing",
+              status: "transcribing" as VoiceQueueStatus,
               error: null,
             }
           : session,
@@ -406,15 +418,77 @@ export default function VoiceDictationWorkspace({ onDocumentsChanged }: VoiceDic
     );
 
     try {
-      const response = await apiFetch(`${API_BASE}/voice/process`, {
+      console.log("🎤 Starting STT transcription for", ids.length, "file(s)...");
+      console.log("🎤 Backend: Whisper (self-hosted at WHISPER_STT_URL)");
+
+      // Start transcription in background
+      const transcriptionPromise = apiFetch(`${API_BASE}/voice/process`, {
         method: "POST",
         body: JSON.stringify({ ids }),
       });
-      await expectApiJson<{ sessions: VoiceSession[] }>(response, "Unable to process voice sessions.");
+
+      // Poll for status updates while transcribing
+      const pollInterval = setInterval(async () => {
+        try {
+          const response = await apiFetch(`${API_BASE}/voice`);
+          const payload = await expectApiJson<{ sessions: VoiceSession[] }>(response, "Unable to load voice sessions.");
+          const updatedSessions = payload.sessions || [];
+
+          // Update sessions with new status
+          setVoiceSessions((current) =>
+            current.map((session) => {
+              const updated = updatedSessions.find((s) => s.id === session.id);
+              if (updated && ids.includes(session.id)) {
+                // Log progress for sessions still transcribing
+                if (updated.status === "transcribing") {
+                  console.log(`⏳️ [${session.fileName}] Still transcribing...`);
+                }
+                return updated;
+              }
+              return session;
+            }),
+          );
+        } catch {
+          // Ignore polling errors, transcription promise will handle real errors
+        }
+      }, 2000); // Poll every 2 seconds
+
+      // Wait for transcription to complete
+      const response = await transcriptionPromise;
+      clearInterval(pollInterval);
+      const result = await expectApiJson<{ sessions: VoiceSession[] }>(response, "Unable to process voice sessions.");
+
+      console.log("🔍 DEBUG - API Response:", result);
+      console.log("🔍 DEBUG - Sessions count:", result.sessions?.length);
+      console.log("🔍 DEBUG - First session:", result.sessions?.[0]);
+
+      // Log STT backend info to browser console
+      result.sessions.forEach((session, index) => {
+        const backend = session.sttBackend || "unknown";
+        console.group(`🎤 [${index + 1}] STT Transcription: ${session.fileName}`);
+        console.log("✅ Backend:", backend.toUpperCase());
+        console.log("📝 Status:", session.status);
+        console.log("📄 Segments:", session.segments?.length || 0);
+        console.log("🔍 Full session data:", session);
+        console.log("📋 Transcript preview:", (session.segments?.[0]?.text || "").substring(0, 100) + "...");
+
+        // Try to log audit info if available
+        if (session.sttAudit) {
+          console.log("⏱️  Latency:", session.sttAudit.latency || 0, "ms");
+          if (session.sttAudit.steps) {
+            console.log("📋 Steps:", session.sttAudit.steps);
+          }
+        }
+        console.groupEnd();
+      });
+
+      console.log("✅ All transcriptions complete!");
+
       await loadVoiceSessions(preferredSessionId || ids[0]);
       await onDocumentsChanged?.();
       toast.success(`${ids.length} voice ${ids.length > 1 ? "sessions" : "session"} transcribed and staged for review.`);
     } catch (error) {
+      console.error("❌ Transcription failed:", error);
       toast.error(error instanceof Error ? error.message : "Unable to process voice sessions.");
     } finally {
       setProcessingIds((current) => current.filter((id) => !ids.includes(id)));
@@ -501,6 +575,7 @@ export default function VoiceDictationWorkspace({ onDocumentsChanged }: VoiceDic
       setSelectedSessionId(payload.session.id);
       setEditingItemId(null);
       setEditingValue("");
+      await onDocumentsChanged?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to save review decision.");
     }

@@ -2,18 +2,24 @@
 
 ## Doctor Dashboard - Clinical Intelligence System
 
-**Version:** 2.0.0
+**Version:** 3.1.0
 **Base URL:** `http://localhost:8001/api`
-**Last Updated:** 2026-04-15
+**Last Updated:** 2026-05-21
 
 ---
 
 ## Overview
 
-The Doctor Dashboard provides a REST API for document processing, audit logging, chat interactions, and chart note generation. All endpoints return JSON responses unless otherwise specified.
+The Doctor Dashboard provides a REST API for PDF processing, voice dictation intake, audit logging, chat interactions, and chart note generation. All endpoints return JSON responses unless otherwise specified.
 
 > Note
 > This reference documents the current Express server in `server/index.cjs`. Some older architecture docs in this repository describe historical or planned systems and may not match these endpoint shapes.
+
+Voice-specific status semantics:
+
+- `processed` for voice means the stored result passed dashboard-readiness validation and is expected to render.
+- `review_required` means transcript and extraction completed, but unresolved review items remain.
+- `failed` includes transcription failures and voice extractions that completed without a usable dashboard payload.
 
 ---
 
@@ -68,7 +74,7 @@ Get AI agent system status.
 
 ### GET /documents
 
-List all processed documents.
+List all queue documents. This unified collection includes both PDFs and voice dictation rows.
 
 **Response:**
 ```json
@@ -77,6 +83,7 @@ List all processed documents.
     {
       "id": "uuid",
       "name": "discharge_summary.pdf",
+      "documentType": "pdf",
       "size": 250000,
       "uploadedAt": "2026-04-15T10:00:00Z",
       "status": "processed",
@@ -100,7 +107,8 @@ Get a single processed document.
 {
   "document": {
     "id": "uuid",
-    "name": "discharge_summary.pdf",
+    "documentType": "voice",
+    "name": "dictation.wav",
     "result": {
       "meta": { /* metadata */ },
       "dashboard_cards": { /* card data */ },
@@ -144,6 +152,10 @@ Upload one or more PDF files.
 
 Process uploaded documents (batch mode).
 
+Notes:
+- PDF documents use `DocumentTypeRouter`.
+- Voice documents in the unified queue reuse stored voice extraction when valid, or recompute it from transcript/audio if required.
+
 **Request Body:**
 ```json
 {
@@ -171,22 +183,24 @@ Subscribe to processing progress via Server-Sent Events (SSE).
 **Query Parameters:**
 - `documentId`: Document UUID to track
 
-**Response:** SSE stream with events:
+**Response:** SSE stream with events.
+
+For voice documents, the SSE route still uses `/documents/process/progress`, but the stage is `voice_extraction` and the current server emits a shorter four-step flow:
 ```json
 // Event: connected
 {"type": "connected", "documentId": "uuid"}
 
-// Event: step
+// Event: start (voice)
+{"type": "start", "documentId": "uuid", "totalSteps": 4, "stage": "voice_extraction"}
+
+// Event: complete (voice)
 {
-  "type": "step",
-  "step": "Risk Scores Extractor",
-  "stepNumber": 2,
-  "totalSteps": 7,
-  "status": "complete",
-  "data": {
-    "tokens": 1200,
-    "latency": 3500
-  }
+  "type": "complete",
+  "documentId": "uuid",
+  "stepNumber": 4,
+  "totalSteps": 4,
+  "stepName": "Voice extraction completed",
+  "tokensUsed": 0
 }
 
 // Event: done
@@ -203,6 +217,113 @@ Subscribe to processing progress via Server-Sent Events (SSE).
   "error": "Processing failed"
 }
 ```
+
+---
+
+## Voice Intake
+
+### GET /voice
+
+List persisted voice sessions ordered by `uploadedAt` descending.
+
+**Response:**
+```json
+{
+  "sessions": [
+    {
+      "id": "uuid",
+      "fileName": "dictation.wav",
+      "status": "processed",
+      "uploadedAt": "2026-05-21T08:27:00Z",
+      "durationLabel": "00:30",
+      "linkedPatient": "Encounter link pending",
+      "encounterLabel": "Not linked",
+      "reviewItems": []
+    }
+  ]
+}
+```
+
+### GET /voice/:id
+
+Get one persisted voice session.
+
+### GET /voice/:id/audio
+
+Download or stream the stored uploaded audio for a voice session.
+
+### POST /voice/upload
+
+Upload one or more audio files.
+
+**Request:** `multipart/form-data`
+- `files`: audio file(s), currently `.wav`, `.mp3`, `.m4a`, `.aac`, `.ogg`
+- `linkedPatient` (optional)
+- `encounterLabel` (optional)
+
+**Behavior:**
+- creates a voice session in `voice_sessions.json`
+- creates a matching voice row in `documents.json`
+- returns duplicates when the file hash already exists
+- the current frontend immediately follows this with `POST /voice/process`
+
+### POST /voice/process
+
+Run transcription plus structured extraction for one or more uploaded voice sessions.
+
+**Request Body:**
+```json
+{
+  "ids": ["uuid1", "uuid2"]
+}
+```
+
+**Behavior:**
+- transcribes audio with Gemini
+- normalizes transcript segments and transcript quality
+- runs `VoiceExtractorAgent`
+- merges transcript review items with extraction review items
+- only persists `processed` if the resulting dashboard payload passes voice dashboard validation
+- marks the session and the unified queue document `failed` if the payload is incomplete
+
+### POST /voice/:id/review
+
+Resolve a single voice review item.
+
+**Request Body:**
+```json
+{
+  "reviewItemId": "review-uuid",
+  "resolution": "approved"
+}
+```
+
+Valid `resolution` values:
+- `approved`
+- `edited`
+- `rejected`
+
+If the last pending review item is resolved, the voice session status becomes `processed`.
+
+### POST /voice/:id/add-to-queue
+
+Legacy/manual path for moving an approved voice session into the documents queue.
+
+Notes:
+- the current upload flow already creates a queue row during `/voice/upload`
+- this route remains useful for manual or older review-driven flows
+
+### POST /voice/extract
+
+Legacy/manual extraction route for sessions already holding transcripts.
+
+Notes:
+- the primary current path is `/voice/process`
+- this route still exists in the server for manual recovery or older flows
+
+### DELETE /voice/:id
+
+Delete a voice session plus its stored audio/transcript artifacts.
 
 ### GET /analytics/overview
 

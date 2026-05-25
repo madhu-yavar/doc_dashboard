@@ -2,9 +2,9 @@
 
 ## Doctor Dashboard - Clinical Intelligence System
 
-**Version:** 2.0.0
+**Version:** 3.1.0
 **Environment:** Production
-**Last Updated:** 2026-04-15
+**Last Updated:** 2026-05-21
 
 ---
 
@@ -13,7 +13,7 @@
 This guide covers deploying the Doctor Dashboard system to production environments, including infrastructure setup, configuration, and monitoring.
 
 > Note
-> The current repository ships a file-backed Express server in `server/index.cjs`. The environment block below documents the variables actually read by that server today; storage path remapping, TLS, auth, and log shipping are deployment concerns around the app rather than toggles built into the current root server.
+> The current repository ships a file-backed Express server in `server/index.cjs`. That single process serves both the built frontend and the JSON API, including long-running voice intake and SSE progress routes. The environment block below documents the variables actually read by that server today; storage path remapping, TLS, auth, and log shipping are deployment concerns around the app rather than toggles built into the current root server.
 
 ---
 
@@ -162,7 +162,7 @@ PORT=8001
 
 # Gemma LLM
 GEMMA_URL=http://your-gemma-service:8000
-GEMMA_MODEL=google/gemma-4-26B-A4B-it
+GEMMA_MODEL=google/gemma-4-31B-it
 
 # Optional Gemini external-knowledge mode
 USE_GEMINI_FOR_EXTERNAL=true
@@ -170,17 +170,20 @@ GEMINI_MODEL=gemini-2.5-flash
 GEMINI_API_KEY=your-gemini-api-key
 
 # Optional extractor tuning
-EXTRACTION_PER_DOCUMENT_CONCURRENCY=3
-ENABLE_PENDING_ITEMS_EXTRACTION=true
-ENABLE_DOCUMENT_ANALYZER=false
+EXTRACTION_GEMMA_TIMEOUT_MS=240000
 ```
 
 ### 3. Create Storage Directory
 
 ```bash
 sudo mkdir -p /var/www/doctor-dashboard/server/storage/uploads
+sudo mkdir -p /var/www/doctor-dashboard/server/storage/voice_audio
+sudo mkdir -p /var/www/doctor-dashboard/server/storage/voice_transcripts
+sudo mkdir -p /var/www/doctor-dashboard/server/storage/voice_graph_checkpoints
 sudo chown -R www-data:www-data /var/www/doctor-dashboard/server/storage
 ```
+
+Persist the entire `server/storage/` directory. The app now stores queue state, audit history, PDFs, voice uploads, transcripts, and analytics under that root.
 
 ---
 

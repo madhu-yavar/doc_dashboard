@@ -1,8 +1,8 @@
 # Manipal CoE - Doctor Dashboard Documentation
 
 **Project:** Doctor Dashboard - Clinical Intelligence System
-**Version:** 3.0.0
-**Last Updated:** 2026-04-27
+**Version:** 3.1.0
+**Last Updated:** 2026-05-21
 **Status:** Production
 
 ---
@@ -48,22 +48,25 @@ For detailed setup instructions, see [Getting Started Guide](./guides/getting-st
 
 ### What is Doctor Dashboard?
 
-The Doctor Dashboard is an **AI-powered clinical intelligence system** that transforms unstructured discharge summary PDFs into interactive, clinically-actionable dashboards. It uses a multi-agent ReAct (Reasoning + Acting) pattern with specialized skills to enable accurate extraction, validation, and presentation of clinical data.
+The Doctor Dashboard is an **AI-powered clinical intelligence system** that transforms unstructured clinical PDFs and physician dictation audio into interactive, clinically-actionable dashboards. It uses a document router for PDFs, a dedicated voice extraction path for audio dictation, and shared dashboard presentation logic in the UI.
 
 ### Key Capabilities
 
 | Capability | Description |
 |------------|-------------|
 | **PDF Understanding** | Extract structured data from unstructured clinical PDFs |
+| **Voice Dictation Intake** | Upload audio dictation, transcribe it, extract structured clinical content, and open the same dashboard route |
 | **Agentic Document Classification** | ReAct-based classification with 95%+ confidence |
 | **Dynamic Skill Selection** | Agents decide which extraction skills to run based on content |
 | **Scalable Architecture** | Add new document types via configuration, not code |
 | **Document Type Detection** | Auto-detects prescriptions, discharge summaries, outpatient records, lab reports, chart notes |
+| **Unified Queue** | PDFs and voice dictations share the same processed-documents queue and dashboard entry point |
 | **Processing Insights** | Analytics overview backed by `analytics.sqlite` |
 | **Data Validation** | Cross-validate extracted data against source with citations |
 | **Chart Note Generation** | Generate clinical SOAP notes with ReAct reasoning |
 | **Doctor Chat Assistant** | Interactive Q&A with internal + external knowledge |
 | **Dashboard Presentation** | Transform extracted data into UI components |
+| **Voice Dashboard Readiness Guard** | Voice items are only exposed as `processed` when the stored dashboard payload is renderable |
 | **Safety Guardrails** | Prevent hallucinations and unsafe medical advice |
 | **Pending Items Extraction** | LLM-only extraction of pending labs, radiology, follow-ups |
 | **Audit Trail** | Complete audit logging for all operations |
@@ -72,7 +75,7 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 
 - **Frontend:** React + TypeScript + Tailwind CSS + Vite
 - **Backend:** Express.js + Node.js
-- **AI/LLM:** Google Gemma 4-31B-it (primary default), Gemini 2.5 Flash (external)
+- **AI/LLM:** Google Gemma 4-31B-it (primary default), Gemini 2.5 Flash (external and STT)
 - **PDF Processing:** Custom PDF extraction tools
 - **Architecture:** Multi-agent ReAct pattern with parallel execution
 
@@ -90,9 +93,10 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 | Skills Framework | Reusable AI skills documentation | [View](./architecture/skills-framework.md) |
 | Chatbot Architecture | Doctor Assistant chat system | [View](./architecture/chatbot-architecture.md) |
 | Chart Note React Agent | Chart note generation architecture | [View](./architecture/CHART_NOTE_REACT_AGENT.md) |
+| Voice Intake Phase 2 Implementation Summary | Current-state voice runtime architecture and lifecycle | [View](./architecture/voice-intake-phase2-implementation-summary.md) |
 | Voice Intake LangGraph Plan | Architecture plan for dictation/conversation-to-dashboard flow | [View](./architecture/voice-intake-langgraph-plan.md) |
-| Voice Intake Phase 0 Baseline | Locked Phase 0 UI, contracts, storage, and implementation order | [View](./architecture/voice-intake-phase0-baseline.md) |
-| Voice Intake Implementation Checklist | Execution tracker for the voice intake module | [View](./architecture/voice-intake-implementation-checklist.md) |
+| Voice Intake Phase 0 Baseline | Historical baseline document for initial voice decisions | [View](./architecture/voice-intake-phase0-baseline.md) |
+| Voice Intake Implementation Checklist | Historical execution tracker; use the Phase 2 summary for current runtime behavior | [View](./architecture/voice-intake-implementation-checklist.md) |
 
 ### 2. Project Planning & Research
 
@@ -134,7 +138,8 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 manipal-coe/
 ├── server/                    # Root backend server
 │   ├── index.cjs              # Main Express server with audit
-│   └── audit_logger.cjs       # Audit logging system
+│   ├── audit_logger.cjs       # Audit logging system
+│   └── voice_result_validation.cjs # Voice dashboard readiness validator
 ├── agents/                    # AI Agents
 │   ├── core/                        # Core agent framework
 │   │   ├── base_agent.cjs           # Base ReAct agent class
@@ -145,6 +150,7 @@ manipal-coe/
 │   │   ├── document_classifier_agent.cjs  # Agentic classifier
 │   │   └── react_extraction_agent.cjs     # Optional ReAct extraction path
 │   ├── document_type_router.cjs           # Auto-detects doc type (updated v3.0)
+│   ├── voice_extractor_agent.cjs          # Voice dictation extraction path
 │   ├── discharge_extractor_agent.cjs      # Discharge summary extraction
 │   ├── outpatient_extractor_agent.cjs     # OPD record extraction
 │   ├── lab_report_extractor_agent.cjs      # Lab report extraction
@@ -200,11 +206,16 @@ manipal-coe/
 │   └── main.tsx
 ├── server/storage/           # Data storage
 │   ├── uploads/              # PDF files
-│   ├── documents.json        # Processed documents
+│   ├── documents.json        # Unified processed queue for PDFs and voice dictation
 │   ├── analytics.sqlite      # Processing insights store
 │   ├── audit_runs.json       # Audit run metadata
 │   ├── audit_events.jsonl    # Audit event log
-│   └── chat_sessions.json    # Chat history
+│   ├── chat_sessions.json    # Chat history
+│   ├── voice_sessions.json   # Voice intake session store
+│   ├── voice_reviews.json    # Voice review/audit events
+│   ├── voice_audio/          # Stored uploaded audio
+│   ├── voice_transcripts/    # Normalized transcript payloads
+│   └── voice_graph_checkpoints/ # Reserved for voice checkpoint state
 └── docs/                     # Documentation (this folder)
 ```
 
@@ -222,6 +233,28 @@ The system automatically detects document types and routes to specialized extrac
 | Outpatient Record | "OPD", "clinic", "consultation" | OutpatientExtractorAgent |
 | Lab Report | "lab results", "CBC", "reference range" | LabReportExtractorAgent |
 | Chart Note | "progress note", "SOAP", "resident note" | ChartNoteExtractorAgent |
+
+### Voice Intake Lifecycle
+
+Voice dictation is a parallel runtime path rather than a `DocumentTypeRouter` document type.
+
+Current behavior:
+
+1. Upload audio through `POST /api/voice/upload`.
+2. Create a voice session record and a matching queue document row immediately.
+3. Auto-start `POST /api/voice/process` from the frontend upload flow.
+4. Transcribe audio with Gemini and normalize transcript segments.
+5. Extract structured data with `VoiceExtractorAgent`.
+6. Validate the mapped dashboard payload before exposing the item as `processed`.
+7. Open the result through the same `/dashboard?documentId=<id>` route used by PDFs.
+
+Voice status semantics:
+
+- `queued`: uploaded, not yet transcribed
+- `transcribing`: STT in progress
+- `review_required`: extraction completed but one or more review items remain unresolved
+- `processed`: dashboard-ready and renderable
+- `failed`: transcription or extraction finished without a usable dashboard payload
 
 ### Parallel Extraction Architecture
 
@@ -304,4 +337,4 @@ For questions or support, contact the development team.
 ---
 
 *Documentation maintained by the AI Architecture Team*
-*Last updated: April 27, 2026*
+*Last updated: May 21, 2026*

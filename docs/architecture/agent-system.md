@@ -3,13 +3,16 @@
 ## Multi-Agent Clinical Intelligence System
 
 **Project:** Doctor Dashboard
-**Version:** 3.0.0
-**Last Updated:** 2026-04-27
+**Version:** 3.1.0
+**Last Updated:** 2026-05-21
 
 ---
 
 > Note
 > This document reflects the current agent design, but some path references below used an older `doctor_dashboard/` folder prefix. The current repository paths are rooted directly at `agents/`, `skills/`, `tools/`, and `server/`.
+
+> Current runtime note
+> Voice dictation is now a first-class intake path, but it does **not** go through `DocumentTypeRouter`. Voice documents use a parallel STT boundary plus `agents/voice_extractor_agent.cjs`, then map into the same shared dashboard contract. The current workspace uses Gemini STT; the target voice architecture keeps STT pluggable so Whisper can be primary and Gemini can remain fallback.
 
 ## Overview
 
@@ -19,6 +22,29 @@ The Doctor Dashboard uses a **multi-agent architecture** where each agent specia
 - **Dynamic skill selection** - Agents decide which skills to run based on document content
 - **Scalable skill registry** - Add new document types via configuration, not code
 - **Agentic document classification** - Think-Act-Observe loop for document type detection
+
+## Voice Runtime Path
+
+Voice is a specialized runtime path layered beside the PDF router flow.
+
+```text
+Audio upload
+  -> STT backend (Whisper primary target / Gemini current-fallback path)
+  -> normalized transcript segments
+  -> VoiceExtractorAgent
+  -> dashboard mapping
+  -> voice dashboard validation
+  -> documents.json + shared dashboard route
+```
+
+Key differences from the PDF path:
+
+- no `DocumentTypeRouter` classification step
+- transcript segments and transcript-quality metadata are first-class inputs
+- review items come from both STT quality signals and extraction ambiguity
+- final status is constrained by dashboard readiness validation, not just pipeline completion
+
+The current server treats voice `processed` as "renderable dashboard exists", not merely "transcription and extraction ran".
 
 ---
 

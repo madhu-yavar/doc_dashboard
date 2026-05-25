@@ -78,6 +78,10 @@ describe("UploadCenter", () => {
           return new Response(JSON.stringify({ documents }), { status: 200 });
         }
 
+        if (url.endsWith("/voice") && method === "GET") {
+          return new Response(JSON.stringify({ sessions: [] }), { status: 200 });
+        }
+
         if (url.endsWith("/analytics/overview") && method === "GET") {
           const processedDocuments = documents.filter((document) => document.status === "processed");
           return new Response(JSON.stringify({
@@ -261,5 +265,20 @@ describe("UploadCenter", () => {
 
     await screen.findByText("Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf");
     expect(screen.queryByTitle(/audit trail/i)).not.toBeInTheDocument();
+  }, 15000);
+
+  it("renders the live conversation UI shell without disturbing the dictation workspace", async () => {
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("tab", { name: /voice dictation/i }));
+    expect(await screen.findByText(/conversation and dictation workspace/i)).toBeInTheDocument();
+    expect(await screen.findByText(/dictation review queue/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: /live conversation/i }));
+
+    expect(await screen.findByText(/live doctor-patient conversation/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start new session/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start session/i })).toBeInTheDocument();
+    expect(screen.getByText(/mock events active/i)).toBeInTheDocument();
   }, 15000);
 });

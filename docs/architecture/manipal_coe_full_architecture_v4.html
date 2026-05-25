@@ -637,7 +637,7 @@
   <div class="container">
     <div class="header">
       <h1>Multi-Agent Clinical Intelligence System</h1>
-      <p>AI-Patient Care Assistant v2.0 • Clinical Decision Support System</p>
+      <p>Doctor Dashboard v3.1 • PDF + Voice Clinical Intelligence System</p>
     </div>
 
     <div class="nav">
@@ -655,9 +655,7 @@
           <h2>Orchestrator → Agents → Skills → Tools → LLM</h2>
         </div>
         <div class="runtime-note">
-          Current runtime: the Express server calls <strong>DocumentTypeRouter</strong>, which classifies the PDF and routes it to a specialized extractor agent.
-          <strong>ReActExtractionAgent</strong> exists in the repository but is optional rather than the default processing path.
-          Processing Insights are served separately from <code>analytics.sqlite</code> through <code>/api/analytics/overview</code>.
+          Current runtime: the Express server supports <strong>two intake paths</strong>. PDFs go through <strong>DocumentTypeRouter</strong>, which classifies the document and routes it to a specialized extractor agent. Voice dictations go through a <strong>swappable STT boundary</strong>, then <strong>VoiceExtractorAgent</strong>, shared dashboard mapping, and <strong>dashboard-readiness validation</strong> before a record can remain <code>processed</code>. In the current workspace, Gemini STT is the active path; the voice architecture is intentionally modular so <strong>Whisper can become the primary STT backend</strong> with Gemini as fallback. <strong>ReActExtractionAgent</strong> exists in the repository but is optional rather than the default document-processing path. Processing Insights are served separately from <code>analytics.sqlite</code> through <code>/api/analytics/overview</code>.
         </div>
 
         <div class="level">
@@ -665,7 +663,7 @@
           <div class="level-content">
             <div class="box orchestrator active">
               <div class="box-title">🎯 Orchestrator</div>
-              <div class="box-desc">Routes requests • Coordinates workflows</div>
+              <div class="box-desc">Upload Center • Queue sync • PDF/voice workflows</div>
             </div>
           </div>
         </div>
@@ -679,6 +677,11 @@
               <div class="box-title">📋 Document Type Router</div>
               <div class="box-desc">Auto-detects doc type • Routes to specialist</div>
               <span class="tag">Classifier</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">🎙️ Voice Extractor Agent</div>
+              <div class="box-desc">LangGraph-style nodes • review gating • dashboard map</div>
+              <span class="tag">Voice</span>
             </div>
             <div class="box agent active">
               <div class="box-title">📄 Discharge Extractor</div>
@@ -763,6 +766,18 @@
               <div class="box-title">👤 Demographics</div>
             </div>
             <div class="box skill active">
+              <div class="box-title">🎤 Voice Demographics</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">💊 Voice Medications</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🩻 Voice Diagnosis</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">📝 Voice Clinical</div>
+            </div>
+            <div class="box skill active">
               <div class="box-title">🩺 Vitals</div>
             </div>
             <div class="box skill active">
@@ -825,6 +840,9 @@
               <div class="box-title">📖 PDF Reader</div>
             </div>
             <div class="box tool active">
+              <div class="box-title">🎙️ STT Backend Layer</div>
+            </div>
+            <div class="box tool active">
               <div class="box-title">🧠 Gemma Client</div>
             </div>
             <div class="box tool active">
@@ -879,6 +897,9 @@
               <div class="box-title">📋 Audit Logger</div>
             </div>
             <div class="box tool active">
+              <div class="box-title">✅ Dashboard Validator</div>
+            </div>
+            <div class="box tool active">
               <div class="box-title">⚡ Parallel Runner</div>
             </div>
           </div>
@@ -891,7 +912,7 @@
           <div class="level-content">
             <div class="box llm active">
               <div class="box-title">🧠 LLM Foundation</div>
-              <div class="box-desc">Gemma-compatible endpoint • current default model: 4-31B</div>
+              <div class="box-desc">Gemma default inference • STT backend remains pluggable</div>
             </div>
           </div>
         </div>
@@ -917,6 +938,31 @@
           </div>
         </div>
 
+        <div class="example-section">
+          <div class="example-title">🎙️ Voice Orchestration: Upload to Dashboard</div>
+          <div class="example-flow">
+            <div class="example-step">Upload Center</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">STT Backend</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">extract_medications</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">extract_demographics</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">extract_diagnosis</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">extract_clinical</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">merge_reconcile</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">map_dashboard</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">decide_review</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">documents.json</div>
+          </div>
+        </div>
+
         <div class="legend">
           <div class="legend-item">
             <div class="legend-box legend-orchestrator"></div>
@@ -924,15 +970,15 @@
           </div>
           <div class="legend-item">
             <div class="legend-box legend-agent"></div>
-            <span>Primary Agents (8) • Sub-Agents (7)</span>
+            <span>Primary Agents • Sub-Agents</span>
           </div>
           <div class="legend-item">
             <div class="legend-box legend-skill"></div>
-            <span>Skills (20)</span>
+            <span>Skills</span>
           </div>
           <div class="legend-item">
             <div class="legend-box legend-tool"></div>
-            <span>Tools (35)</span>
+            <span>Tools</span>
           </div>
           <div class="legend-item">
             <div class="legend-box legend-llm"></div>
@@ -946,7 +992,7 @@
     <!-- ===== SECTION 2: DATA FLOW ===== -->
     <div class="section" id="data-flow">
       <h2 class="section-title">📊 Data Flow Architecture</h2>
-      <p style="text-align: center; font-size: 14px; color: #64748b; margin-bottom: 20px;">Three operational flows, one storage boundary, and a single grounded path back to the clinician</p>
+      <p style="text-align: center; font-size: 14px; color: #64748b; margin-bottom: 20px;">Four operational flows, one storage boundary, and a single grounded path back to the clinician</p>
 
       <div class="dataflow-shell">
         <div class="dataflow-header">
@@ -966,14 +1012,16 @@
           <div class="band-card">
             <div class="dataflow-eyebrow">Origin</div>
             <h3>Clinician</h3>
-            <p>Uploads records, asks chart questions, and drafts notes inside the workspace.</p>
+            <p>Uploads PDFs or audio, asks chart questions, reviews voice extraction state, and drafts notes inside the workspace.</p>
           </div>
           <div class="band-arrow">→</div>
           <div class="band-card band-card-workspace">
             <div class="dataflow-eyebrow" style="color:#bfdbfe;">Interaction Surface</div>
             <h3>Clinical Workspace</h3>
-            <p>One interface for patient summary, doctor chat, chart-note editing, timeline review, and citation inspection.</p>
+            <p>One interface for upload intake, queue management, voice review, patient summary, doctor chat, chart-note editing, timeline review, and citation inspection.</p>
             <div class="band-tags">
+              <span class="band-tag">Upload Center</span>
+              <span class="band-tag">Voice Review</span>
               <span class="band-tag">Patient Summary</span>
               <span class="band-tag">Doctor Chat</span>
               <span class="band-tag">Chart Note Editor</span>
@@ -1000,8 +1048,8 @@
             <div class="df-card df-card-request">
               <div>
                 <div class="df-card-kicker">Lane 1</div>
-                <h4>Document Ingestion</h4>
-                <p>Clinician uploads discharge, outpatient, lab, or chart-note source material.</p>
+                <h4>PDF Intake</h4>
+                <p>Clinician uploads discharge, prescription, outpatient, lab, or chart-note PDF source material through Upload Center.</p>
               </div>
               <div class="df-card-metric">Upload + route start</div>
             </div>
@@ -1009,8 +1057,8 @@
             <div class="df-card df-card-action">
               <div>
                 <div class="df-card-kicker">Agent Action</div>
-                <h4>Router + Specialist Extraction</h4>
-                <p>Document type router selects the correct extractor, then extraction agents normalize content into structured fields with citations.</p>
+                <h4>DocumentTypeRouter + Specialist Extraction</h4>
+                <p>Document type router selects the correct PDF extractor, then specialized agents normalize content into structured fields with citations.</p>
               </div>
               <div class="df-card-metric">Router &lt;1s • Extraction 30-45s</div>
             </div>
@@ -1018,17 +1066,17 @@
             <div class="df-card df-card-storage">
               <div>
                 <div class="df-card-kicker">Write</div>
-                <h4>Structured Clinical Store</h4>
-                <p>Patient entities, vitals, labs, risk scores, citations, and audit metadata are persisted as the system record.</p>
+                <h4>PDF Queue + Structured Store</h4>
+                <p>Uploaded files, normalized extraction output, citations, and audit metadata are persisted through <code>documents.json</code> and supporting storage artifacts.</p>
               </div>
-              <div class="df-card-metric">Single source of truth</div>
+              <div class="df-card-metric">Unified queue entry created</div>
             </div>
             <div class="lane-arrow">→</div>
             <div class="df-card df-card-reason">
               <div>
                 <div class="df-card-kicker">Validation</div>
-                <h4>Grounding Check</h4>
-                <p>Outputs are checked for structured completeness, provenance, and policy compliance before they can be shown.</p>
+                <h4>Grounding + Completeness Check</h4>
+                <p>PDF outputs are checked for structured completeness, provenance, citations, and policy compliance before they can be shown.</p>
               </div>
               <div class="df-card-metric">No ungrounded extraction output</div>
             </div>
@@ -1036,10 +1084,10 @@
             <div class="df-card df-card-result">
               <div>
                 <div class="df-card-kicker">Result</div>
-                <h4>Summary + Timeline Ready</h4>
-                <p>The workspace renders normalized data into patient summary cards, timeline events, and evidence-linked views.</p>
+                <h4>Shared Dashboard Ready</h4>
+                <p>The workspace renders normalized PDF data into the shared dashboard, patient summary cards, timeline events, and evidence-linked views.</p>
               </div>
-              <div class="df-card-metric">Read models for UI</div>
+              <div class="df-card-metric">Dashboard route hydrated from storage</div>
             </div>
           </div>
 
@@ -1047,6 +1095,53 @@
             <div class="df-card df-card-request">
               <div>
                 <div class="df-card-kicker">Lane 2</div>
+                <h4>Voice Dictation Intake</h4>
+                <p>Clinician uploads <code>.wav</code>, <code>.mp3</code>, or <code>.m4a</code> dictation audio in Upload Center. The current UI auto-starts processing after upload.</p>
+              </div>
+              <div class="df-card-metric">Upload + auto-process start</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-action">
+              <div>
+                <div class="df-card-kicker">Agent Action</div>
+                <h4>STT Backend + VoiceExtractorAgent</h4>
+                <p>Voice transcription is kept behind a swappable backend boundary. The target operating mode is <strong>Whisper primary</strong> with <strong>Gemini fallback</strong>. The normalized transcript then flows through voice extraction nodes for medications, demographics, diagnosis, clinical data, merge/reconcile, dashboard mapping, and review decision.</p>
+              </div>
+              <div class="df-card-metric">STT + extraction varies by audio length</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-storage">
+              <div>
+                <div class="df-card-kicker">Write</div>
+                <h4>Voice Session + Unified Queue</h4>
+                <p>Audio, transcript state, <code>sttBackend</code>, review items, extraction preview, and reusable voice extraction are persisted in <code>voice_sessions.json</code> while the shared queue row lives in <code>documents.json</code>.</p>
+              </div>
+              <div class="df-card-metric">Session and queue stay synchronized</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-reason">
+              <div>
+                <div class="df-card-kicker">Validation</div>
+                <h4>Review State + Dashboard Readiness</h4>
+                <p>Pending review items keep the record in <code>review_required</code>. Incomplete voice payloads are downgraded to <code>failed</code> instead of surfacing as a blank processed dashboard.</p>
+              </div>
+              <div class="df-card-metric">No false processed voice dashboard</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-result">
+              <div>
+                <div class="df-card-kicker">Result</div>
+                <h4>Shared Dashboard Route</h4>
+                <p>Validated voice records open through the same <code>/dashboard?documentId=</code> route as PDFs, with one queue and one dashboard presentation model.</p>
+              </div>
+              <div class="df-card-metric">One queue • one dashboard contract</div>
+            </div>
+          </div>
+
+          <div class="dataflow-lane">
+            <div class="df-card df-card-request">
+              <div>
+                <div class="df-card-kicker">Lane 3</div>
                 <h4>Doctor Question</h4>
                 <p>Clinician asks a patient-specific question in chat from the active workspace session.</p>
               </div>
@@ -1093,7 +1188,7 @@
           <div class="dataflow-lane">
             <div class="df-card df-card-request">
               <div>
-                <div class="df-card-kicker">Lane 3</div>
+                <div class="df-card-kicker">Lane 4</div>
                 <h4>Chart-Note Drafting</h4>
                 <p>Clinician opens a SOAP workflow to generate or refine a chart note from current patient context.</p>
               </div>
@@ -1141,19 +1236,19 @@
         <div class="dataflow-footer">
           <div class="footer-card footer-write">
             <h4>Storage Discipline</h4>
-            <p><strong>All writes</strong> pass through the same storage boundary. Extraction output, chat state, note drafts, citations, and audit events are persisted in one place.</p>
+            <p><strong>All writes</strong> pass through the same storage boundary. PDF queue rows, voice sessions, transcripts, extraction output, chat state, note drafts, citations, and audit events are persisted as stored system state.</p>
           </div>
           <div class="footer-card footer-read">
             <h4>Read Discipline</h4>
-            <p><strong>The UI does not bypass storage.</strong> Summary panels, chat context, and timelines are all hydrated from stored read models rather than ad hoc state.</p>
+            <p><strong>The UI does not bypass storage.</strong> Queue rows, dashboards, chat context, and timelines are all hydrated from stored read models rather than ad hoc client state.</p>
           </div>
           <div class="footer-card footer-llm">
             <h4>Inference Guardrail</h4>
-            <p><strong>Gemma is self-hosted.</strong> PHI stays on-premise, and every response path is expected to meet grounding and validation checks before display.</p>
+            <p><strong>Primary extraction runs on self-hosted Gemma.</strong> The current voice STT path uses Gemini, and every response or extraction path is expected to meet grounding, readiness, and policy checks before display.</p>
           </div>
           <div class="footer-card footer-time">
             <h4>Operational Envelope</h4>
-            <p><strong>Router &lt;1s</strong> • <strong>Chat 3-8s</strong> • <strong>SOAP 15-25s</strong> • <strong>Extraction 30-45s</strong></p>
+            <p><strong>Router &lt;1s</strong> • <strong>Chat 3-8s</strong> • <strong>SOAP 15-25s</strong> • <strong>PDF extraction 30-45s</strong> • <strong>Voice varies by audio length</strong></p>
           </div>
         </div>
       </div>
@@ -1162,13 +1257,13 @@
     <!-- ===== SECTION 3: SKILLS FRAMEWORK ===== -->
     <div class="section" id="skills-framework">
       <h2 class="section-title">🛠️ Skills Framework</h2>
-      <p style="text-align: center; font-size: 14px; color: #64748b; margin-bottom: 20px;">20 Reusable AI Capabilities organized by category</p>
+      <p style="text-align: center; font-size: 14px; color: #64748b; margin-bottom: 20px;">PDF, voice, presentation, validation, and chat capabilities organized by category</p>
 
       <div class="skills-grid">
-        <!-- Document Classification (1) -->
+        <!-- Document Classification -->
         <div class="skill-category">
           <div class="skill-category-header header-extraction">
-            📋 Document Classification (1)
+            📋 Document Classification
           </div>
           <div class="skill-items">
             <div class="skill-item">
@@ -1178,10 +1273,10 @@
           </div>
         </div>
 
-        <!-- Extraction Skills (10) -->
+        <!-- Extraction Skills -->
         <div class="skill-category">
           <div class="skill-category-header header-extraction">
-            📊 Extraction Skills (10)
+            📊 Extraction Skills (PDF + Voice)
           </div>
           <div class="skill-items">
             <div class="skill-item">
@@ -1191,6 +1286,26 @@
             <div class="skill-item">
               <span class="skill-name">Demographics Extractor</span>
               <span class="skill-tools">Patient Info</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Voice Demographics Extractor</span>
+              <span class="skill-tools">Transcript • Patient context</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Voice Medications Extractor</span>
+              <span class="skill-tools">Dictation • Dose • Frequency</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Voice Diagnosis Extractor</span>
+              <span class="skill-tools">Principal • Secondary • Rule out</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Voice Clinical Extractor</span>
+              <span class="skill-tools">Vitals • Labs • Follow-up</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Dashboard Mapper</span>
+              <span class="skill-tools">Shared PDF + Voice contract</span>
             </div>
             <div class="skill-item">
               <span class="skill-name">Risk Scores Extractor</span>
@@ -1224,17 +1339,13 @@
               <span class="skill-name">Progress Notes Extractor</span>
               <span class="skill-tools">SOAP • Resident notes</span>
             </div>
-            <div class="skill-item">
-              <span class="skill-name">Cross Validator</span>
-              <span class="skill-tools">Source Check • Citations</span>
-            </div>
           </div>
         </div>
 
-        <!-- Validation Skills (2) -->
+        <!-- Validation Skills -->
         <div class="skill-category">
           <div class="skill-category-header header-validation">
-            ✅ Validation Skills (2)
+            ✅ Validation Skills
           </div>
           <div class="skill-items">
             <div class="skill-item">
@@ -1245,13 +1356,17 @@
               <span class="skill-name">Cross Validation Agent</span>
               <span class="skill-tools">Confidence • Scoring</span>
             </div>
+            <div class="skill-item">
+              <span class="skill-name">Voice Dashboard Readiness Validation</span>
+              <span class="skill-tools">Processed means renderable</span>
+            </div>
           </div>
         </div>
 
-        <!-- Generation Skills (1) -->
+        <!-- Generation Skills -->
         <div class="skill-category">
           <div class="skill-category-header header-generation">
-            📝 Generation Skills (1)
+            📝 Generation Skills
           </div>
           <div class="skill-items">
             <div class="skill-item">
@@ -1261,10 +1376,10 @@
           </div>
         </div>
 
-        <!-- Presentation Skills (3) -->
+        <!-- Presentation Skills -->
         <div class="skill-category">
           <div class="skill-category-header header-presentation">
-            🎨 Presentation Skills (3)
+            🎨 Presentation Skills
           </div>
           <div class="skill-items">
             <div class="skill-item">
@@ -1282,10 +1397,10 @@
           </div>
         </div>
 
-        <!-- Chat Skills (3) -->
+        <!-- Chat Skills -->
         <div class="skill-category">
           <div class="skill-category-header header-chat">
-            💬 Chat Skills (3)
+            💬 Chat Skills
           </div>
           <div class="skill-items">
             <div class="skill-item">
@@ -1304,10 +1419,21 @@
         </div>
       </div>
 
+      <div class="example-section" style="margin-top: 24px;">
+        <div class="example-title">🔧 Voice Skills + Orchestration Notes</div>
+        <div style="font-size: 11px; line-height: 1.7; color: #475569;">
+          <strong>Current voice agent flow:</strong> <code>extract_medications</code> → <code>extract_demographics</code> → <code>extract_diagnosis</code> → <code>extract_clinical</code> → <code>merge_reconcile</code> → <code>map_dashboard</code> → <code>decide_review</code>.
+          <br/>
+          <strong>Shared output contract:</strong> both PDF and voice end in the same dashboard contract and the same <code>/dashboard?documentId=</code> route.
+          <br/>
+          <strong>STT architecture direction:</strong> keep STT pluggable so Whisper can be primary and Gemini can serve as fallback without changing downstream voice extraction skills.
+        </div>
+      </div>
+
       <!-- Tools Layer -->
       <div style="margin-top: 30px;">
         <div style="background: #1e293b; border-radius: 10px; padding: 25px; color: white;">
-          <h3 style="font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 20px;">Tools Layer (35 utilities)</h3>
+          <h3 style="font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 20px;">Tools Layer (PDF, voice, chat, and presentation utilities)</h3>
 
           <!-- Document Router Tools -->
           <div style="margin-bottom: 18px;">
@@ -1319,15 +1445,26 @@
 
           <!-- PDF Tools -->
           <div style="margin-bottom: 18px;">
-            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">PDF (1)</div>
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">PDF</div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📖 PDF Reader</div>
             </div>
           </div>
 
+          <!-- Voice / Audio Tools -->
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Voice / Audio</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <div style="background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🎙️ Whisper STT Service (target primary)</div>
+              <div style="background: rgba(245,158,11,0.18); border: 1px solid rgba(245,158,11,0.38); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🎤 Gemini Audio Transcription (current / fallback)</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧾 Transcript Normalization</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">✅ Voice Dashboard Validation</div>
+            </div>
+          </div>
+
           <!-- LLM Tools -->
           <div style="margin-bottom: 18px;">
-            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">LLM (4)</div>
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">LLM</div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧠 Gemma Client</div>
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧠 External LLM Client</div>
@@ -1338,7 +1475,7 @@
 
           <!-- Clinical Tools -->
           <div style="margin-bottom: 18px;">
-            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Clinical (2)</div>
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Clinical</div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🩺 Vitals Interpreter</div>
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📊 Provenance Builder</div>
@@ -1347,7 +1484,7 @@
 
           <!-- Orchestration Tools -->
           <div style="margin-bottom: 18px;">
-            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Orchestration (2)</div>
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Orchestration</div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
               <div style="background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📋 Audit Logger</div>
               <div style="background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">⚡ Parallel Runner</div>
@@ -1356,7 +1493,7 @@
 
           <!-- Presentation Tools -->
           <div style="margin-bottom: 18px;">
-            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Presentation (4)</div>
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Presentation</div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📊 Card Selector</div>
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🏥 Section Status</div>
@@ -1367,7 +1504,7 @@
 
           <!-- Chat Tools -->
           <div style="margin-bottom: 18px;">
-            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Chat (20)</div>
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Chat</div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
               <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🔍 Query Classifier</div>
               <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">❓ Section Hint Resolver</div>
@@ -1430,7 +1567,7 @@
 
             <g transform="translate(255, 12)">
               <text x="0" y="17" font-size="8" fill="#64748b">Every fact checked</text>
-              <text x="0" y="28" font-size="8" fill="#64748b">against source PDF</text>
+              <text x="0" y="28" font-size="8" fill="#64748b">against source material</text>
 
               <text x="0" y="49" font-size="8" fill="#64748b">Character-level</text>
               <text x="0" y="60" font-size="8" fill="#64748b">citations mandatory</text>
@@ -1456,8 +1593,8 @@
 
             <g transform="translate(0, 20)">
               <circle cx="8" cy="5" r="4" fill="#22c55e"/>
-              <text x="18" y="8" font-size="9" fill="#475569">LLM self-hosted on-premises</text>
-              <text x="18" y="20" font-size="8" fill="#64748b">(no external API calls)</text>
+              <text x="18" y="8" font-size="9" fill="#475569">Primary extraction stays on-premises</text>
+              <text x="18" y="20" font-size="8" fill="#64748b">(Gemma default processing path)</text>
 
               <circle cx="8" cy="40" r="4" fill="#22c55e"/>
               <text x="18" y="43" font-size="9" fill="#475569">PHI encrypted at rest</text>
@@ -1470,6 +1607,10 @@
 
               <circle cx="240" cy="70" r="4" fill="#22c55e"/>
               <text x="250" y="73" font-size="9" fill="#475569">External search requires consent</text>
+
+              <circle cx="200" cy="5" r="4" fill="#22c55e"/>
+              <text x="210" y="8" font-size="9" fill="#475569">Voice STT backend logged per session</text>
+              <text x="210" y="20" font-size="8" fill="#64748b">(target: Whisper primary, Gemini fallback)</text>
             </g>
           </g>
         </g>

@@ -14,9 +14,13 @@ const DashboardMapperSkill = require("../skills/clinical/dashboard_mapper.skill.
 const DoctorAssistantAgent = require("../agents/doctor_assistant_agent.cjs");
 const ChatExportBuilderSkill = require("../skills/chat/chat_export_builder.skill.cjs");
 const SourceHealthTool = require("../tools/chat/source_health.tool.cjs");
-const GeminiAudioTranscriptionTool = require("../tools/llm/gemini_audio_transcription.tool.cjs");
+const STTRouterAgent = require("../agents/stt_router_agent.cjs");
 const VoiceExtractorAgent = require("../agents/voice_extractor_agent.cjs");
 const { AuthService } = require("./auth_service.cjs");
+const {
+  VOICE_DASHBOARD_INCOMPLETE_ERROR,
+  validateVoiceDashboardResult,
+} = require("./voice_result_validation.cjs");
 
 const app = express();
 
@@ -114,10 +118,26 @@ function publicDocument(document) {
 
   // Ensure documentType is set (default to 'pdf' for backward compatibility)
   if (!rest.documentType) {
-    rest.documentType = rest.audioPath ? 'voice' : 'pdf';
+    rest.documentType = audioPath ? "voice" : "pdf";
+  }
+
+  if (rest.documentType === "voice" && (rest.status === "processed" || rest.status === "review_required")) {
+    const validation = validateVoiceDashboardResult(rest.result);
+    if (!validation.valid) {
+      rest.status = "failed";
+      rest.error = validation.error || VOICE_DASHBOARD_INCOMPLETE_ERROR;
+    }
   }
 
   return rest;
+}
+
+function logVoiceDashboardValidationFailure(message, validation, details = {}) {
+  console.warn(message, {
+    error: validation?.error || VOICE_DASHBOARD_INCOMPLETE_ERROR,
+    details: validation?.details || [],
+    ...details,
+  });
 }
 
 /**
@@ -457,9 +477,17 @@ const documentRouter = new DocumentTypeRouter({
 const dashboardMapper = new DashboardMapperSkill();
 const chatExportBuilder = new ChatExportBuilderSkill();
 const sourceHealthTool = new SourceHealthTool();
-const voiceTranscriptionTool = new GeminiAudioTranscriptionTool({
-  model: process.env.VOICE_GEMINI_MODEL || process.env.GEMINI_MODEL || "gemini-2.5-pro",
-  apiKey: process.env.GEMINI_API_KEY || "",
+
+// STT Router Agent - Agentic orchestration for Speech-to-Text
+const voiceTranscriptionTool = new STTRouterAgent({
+  primaryBackend: process.env.STT_BACKEND || "whisper",
+  enableFallback: true,
+  whisperUrl: process.env.WHISPER_STT_URL,
+  language: process.env.WHISPER_LANGUAGE || "auto",
+  temperature: process.env.WHISPER_TEMPERATURE || "0",
+  geminiModel: process.env.VOICE_GEMINI_MODEL || process.env.GEMINI_MODEL,
+  geminiApiKey: process.env.GEMINI_API_KEY,
+  debug: process.env.STT_DEBUG === "true",
 });
 
 // Initialize Voice Extractor Agent for Phase 2 structured extraction
@@ -1131,7 +1159,7 @@ function applyVoiceSessionToDocument(document, voiceSession, options = {}) {
 
   const transcript = buildVoiceTranscriptObject(voiceSession);
   const hasSavedExtraction = Boolean(voiceSession.extractedData && voiceSession.dashboardPayload);
-  const nextResult = hasSavedExtraction
+  const candidateResult = hasSavedExtraction
     ? buildVoiceDocumentResult({
         documentId: document.id,
         uploadedAt: voiceSession.uploadedAt || document.uploadedAt,
@@ -1140,8 +1168,11 @@ function applyVoiceSessionToDocument(document, voiceSession, options = {}) {
         dashboardPayload: voiceSession.dashboardPayload,
       })
     : document.result;
-
-  const nextStatus = hasSavedExtraction
+  const validation = hasSavedExtraction
+    ? validateVoiceDashboardResult(candidateResult)
+    : { valid: false, error: null, details: [] };
+  const hasReusableExtraction = Boolean(hasSavedExtraction && validation.valid);
+  const nextStatus = hasReusableExtraction
     ? deriveVoiceDocumentStatus(voiceSession)
     : document.status;
 
@@ -1161,8 +1192,8 @@ function applyVoiceSessionToDocument(document, voiceSession, options = {}) {
   document.reviewItems = Array.isArray(voiceSession.reviewItems) ? voiceSession.reviewItems : (document.reviewItems || []);
   document.extractionPreview = voiceSession.extractionPreview || document.extractionPreview || null;
 
-  if (hasSavedExtraction) {
-    document.result = nextResult;
+  if (hasReusableExtraction) {
+    document.result = candidateResult;
     document.status = nextStatus;
     document.error = null;
     document.processedAt = document.processedAt || options.processedAt || new Date().toISOString();
@@ -1175,9 +1206,17 @@ function applyVoiceSessionToDocument(document, voiceSession, options = {}) {
       steps: [{ name: "reuse_voice_extraction", status: "completed" }],
       validation: null,
     };
+  } else if (hasSavedExtraction) {
+    logVoiceDashboardValidationFailure("Rejecting persisted voice extraction during document hydration", validation, {
+      documentId: document.id,
+      sessionId: voiceSession.id,
+    });
+    document.status = "failed";
+    document.error = validation.error || VOICE_DASHBOARD_INCOMPLETE_ERROR;
+    document.result = null;
   }
 
-  return hasSavedExtraction;
+  return hasReusableExtraction;
 }
 
 async function repairVoiceDocumentsFromSessions() {
@@ -1221,24 +1260,33 @@ async function resolveVoiceDocumentProcessing(document) {
     "unknown";
 
   if (storedExtractedData && storedDashboardPayload) {
-    return {
-      agentResult: {
-        success: true,
-        agent: `${voiceExtractorAgent.name} (reused)`,
-        latency: 0,
-        tokensUsed: 0,
-        steps: [{ name: "reuse_voice_extraction", status: "completed" }],
-        metadata: {},
-      },
-      result: buildVoiceDocumentResult({
+    const reusedResult = buildVoiceDocumentResult({
+      documentId: document.id,
+      uploadedAt: document.uploadedAt,
+      sttBackend,
+      extractedData: storedExtractedData,
+      dashboardPayload: storedDashboardPayload,
+    });
+    const reusedValidation = validateVoiceDashboardResult(reusedResult);
+    if (!reusedValidation.valid) {
+      logVoiceDashboardValidationFailure("Rejecting stale persisted voice extraction and recomputing", reusedValidation, {
         documentId: document.id,
-        uploadedAt: document.uploadedAt,
-        sttBackend,
-        extractedData: storedExtractedData,
-        dashboardPayload: storedDashboardPayload,
-      }),
-      reusedExistingExtraction: true,
-    };
+        sessionId: voiceSession?.id || null,
+      });
+    } else {
+      return {
+        agentResult: {
+          success: true,
+          agent: `${voiceExtractorAgent.name} (reused)`,
+          latency: 0,
+          tokensUsed: 0,
+          steps: [{ name: "reuse_voice_extraction", status: "completed" }],
+          metadata: {},
+        },
+        result: reusedResult,
+        reusedExistingExtraction: true,
+      };
+    }
   }
 
   let transcriptObject = buildVoiceTranscriptObject(voiceSession || document);
@@ -1287,6 +1335,22 @@ async function resolveVoiceDocumentProcessing(document) {
     throw new Error(voiceResult.errors?.[0]?.error || "Voice extraction failed");
   }
 
+  const nextResult = buildVoiceDocumentResult({
+    documentId: document.id,
+    uploadedAt: document.uploadedAt,
+    sttBackend,
+    extractedData: voiceResult.extractedData,
+    dashboardPayload: voiceResult.dashboardPayload,
+  });
+  const nextValidation = validateVoiceDashboardResult(nextResult);
+  if (!nextValidation.valid) {
+    logVoiceDashboardValidationFailure("Downgrading fresh voice extraction because dashboard payload was incomplete", nextValidation, {
+      documentId: document.id,
+      sessionId: voiceSession?.id || null,
+    });
+    throw new Error(nextValidation.error || VOICE_DASHBOARD_INCOMPLETE_ERROR);
+  }
+
   if (voiceSession) {
     await updateVoiceSession(document.id, async (currentSession) => {
       currentSession.extractedData = voiceResult.extractedData;
@@ -1304,13 +1368,7 @@ async function resolveVoiceDocumentProcessing(document) {
       steps: voiceResult.steps || [],
       metadata: {},
     },
-    result: buildVoiceDocumentResult({
-      documentId: document.id,
-      uploadedAt: document.uploadedAt,
-      sttBackend,
-      extractedData: voiceResult.extractedData,
-      dashboardPayload: voiceResult.dashboardPayload,
-    }),
+    result: nextResult,
     reusedExistingExtraction: false,
   };
 }
@@ -1887,6 +1945,7 @@ app.post("/api/voice/process", async (req, res) => {
     let extractionResult = null;
     let structuredReviewItems = [];
     let extractionError = null;
+    let validatedVoiceResult = null;
 
     try {
       extractionResult = await voiceExtractorAgent.execute(id, transcriptForExtraction);
@@ -1925,6 +1984,25 @@ app.post("/api/voice/process", async (req, res) => {
     const transcriptReviewItems = buildVoiceReviewItemsFromTranscript(normalizedSegments, transcript);
     const allReviewItems = [...transcriptReviewItems, ...structuredReviewItems];
 
+    if (extractionResult?.success) {
+      validatedVoiceResult = buildVoiceDocumentResult({
+        documentId: id,
+        uploadedAt: queuedSession.uploadedAt,
+        sttBackend: `Gemini ${transcriptionResult.model || voiceTranscriptionTool.model}`,
+        extractedData: extractionResult.extractedData,
+        dashboardPayload: extractionResult.dashboardPayload,
+      });
+      const validation = validateVoiceDashboardResult(validatedVoiceResult);
+      if (!validation.valid) {
+        extractionError = validation.error || VOICE_DASHBOARD_INCOMPLETE_ERROR;
+        validatedVoiceResult = null;
+        logVoiceDashboardValidationFailure("Downgrading voice upload processing result because dashboard payload was incomplete", validation, {
+          documentId: id,
+          sessionId: id,
+        });
+      }
+    }
+
     const session = await updateVoiceSession(id, async (currentSession) => {
       // If extraction failed, mark session as failed with error message
       if (extractionError) {
@@ -1942,10 +2020,16 @@ app.post("/api/voice/process", async (req, res) => {
       const hasPendingReview = allReviewItems.some((item) => item.resolution === "pending");
       currentSession.status = hasPendingReview ? "review_required" : "processed";
       currentSession.error = null;
-      currentSession.sttBackend = `Gemini ${transcriptionResult.model || voiceTranscriptionTool.model}`;
+      currentSession.sttBackend = transcriptionResult.backend || `Gemini ${transcriptionResult.model || voiceTranscriptionTool.model}`;
       currentSession.transcriptQuality = normalizedQuality;
       currentSession.segments = normalizedSegments;
       currentSession.reviewItems = allReviewItems;
+      // Add STT audit trail for UI console logs
+      currentSession.sttAudit = transcriptionResult.audit || {
+        backend: transcriptionResult.backend,
+        latency: transcriptionResult.latency,
+        steps: transcriptionResult.steps?.map(s => ({ name: s.name, status: s.status })),
+      };
 
       // Update durationLabel with actual duration from last segment's endMs
       const lastSegmentWithTime = [...normalizedSegments].reverse().find(s => typeof s.endMs === "number" && s.endMs > 0);
@@ -1954,8 +2038,8 @@ app.post("/api/voice/process", async (req, res) => {
         currentSession.durationLabel = formatVoiceTimeLabel(actualSeconds);
       }
 
-      // Store extraction result if available
-      if (extractionResult?.success) {
+      // Store extraction result only when the dashboard payload is renderable
+      if (extractionResult?.success && validatedVoiceResult) {
         currentSession.extractedData = extractionResult.extractedData;
         currentSession.dashboardPayload = extractionResult.dashboardPayload;
       }
@@ -2012,8 +2096,8 @@ app.post("/api/voice/process", async (req, res) => {
         const docIndex = documents.findIndex(d => d.id === session.id && d.documentType === 'voice');
         if (docIndex >= 0) {
           const doc = documents[docIndex];
-          doc.status = session.status;
-          doc.error = session.error; // Sync error field
+          doc.status = extractionError ? "failed" : session.status;
+          doc.error = extractionError ? `Extraction failed: ${extractionError}` : session.error;
           doc.sttBackend = session.sttBackend;
           doc.durationLabel = session.durationLabel;
           doc.segments = session.segments;
@@ -2026,16 +2110,7 @@ app.post("/api/voice/process", async (req, res) => {
           doc.transcriptQuality = session.transcriptQuality;
           doc.extractionPreview = session.extractionPreview;
           doc.reviewItems = session.reviewItems;
-          // Store extracted data for dashboard display
-          if (extractionResult?.success) {
-            doc.result = buildVoiceDocumentResult({
-              documentId: session.id,
-              uploadedAt: session.uploadedAt,
-              sttBackend: session.sttBackend,
-              extractedData: extractionResult.extractedData,
-              dashboardPayload: extractionResult.dashboardPayload,
-            });
-          }
+          doc.result = validatedVoiceResult;
         }
       });
     }
@@ -2077,6 +2152,14 @@ app.post("/api/voice/:id/review", async (req, res) => {
   if (!updatedSession) {
     return res.status(404).json({ error: "Voice session not found" });
   }
+
+  // Sync review status to documents collection
+  await mutateDocuments(async (documents) => {
+    const doc = documents.find((d) => d.id === req.params.id && d.documentType === "voice");
+    if (doc) {
+      doc.status = updatedSession.status;
+    }
+  });
 
   const reviews = await readCollection(voiceReviewsPath, "reviews");
   reviews.unshift({
@@ -2534,6 +2617,9 @@ app.post("/api/documents/process", async (req, res) => {
       await updateDocument(document.id, async (currentDocument) => {
         currentDocument.status = "failed";
         currentDocument.error = error instanceof Error ? error.message : "Unknown processing error";
+        if (document.documentType === "voice") {
+          currentDocument.result = null;
+        }
       });
     }
   }
@@ -2650,6 +2736,14 @@ app.get("/api/documents/process/progress", async (req, res) => {
         })}\n\n`);
 
         const result = voiceProcessing.result;
+        const validation = validateVoiceDashboardResult(result);
+        if (!validation.valid) {
+          logVoiceDashboardValidationFailure("Rejecting voice SSE result because dashboard payload was incomplete", validation, {
+            documentId,
+            sessionId: document.id,
+          });
+          throw new Error(validation.error || VOICE_DASHBOARD_INCOMPLETE_ERROR);
+        }
         const agentInfo = voiceProcessing.agentResult;
 
         // Update document with standard result structure including dashboard_cards
@@ -2666,6 +2760,13 @@ app.get("/api/documents/process/progress", async (req, res) => {
           currentDocument.error = null;
           currentDocument.processedAt = new Date().toISOString();
           currentDocument.auditRunId = auditRun?.runId;
+        });
+
+        // Sync voice session status to processed
+        await updateVoiceSession(documentId, async (session) => {
+          session.status = "processed";
+          session.extractedData = result?.extracted_data || null;
+          session.dashboardPayload = result || null;
         });
 
         await audit.complete({
@@ -2690,6 +2791,7 @@ app.get("/api/documents/process/progress", async (req, res) => {
         await updateDocument(documentId, async (currentDocument) => {
           currentDocument.status = "failed";
           currentDocument.error = voiceError instanceof Error ? voiceError.message : String(voiceError);
+          currentDocument.result = null;
         });
         res.write(`data: ${JSON.stringify({
           type: "error",

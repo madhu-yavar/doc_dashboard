@@ -8,7 +8,7 @@ import { HandwritingCompletionDialog } from "@/components/dashboard/HandwritingC
 import ProcessingInsights from "@/components/dashboard/ProcessingInsights";
 import PharmacyAlertBadge from "@/components/dashboard/PharmacyAlertBadge";
 import DepartmentAlertBadge from "@/components/dashboard/DepartmentAlertBadge";
-import VoiceDictationWorkspace from "@/components/voice/VoiceDictationWorkspace";
+import VoiceWorkspace from "@/components/voice/VoiceWorkspace";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,8 @@ import {
   API_BASE,
   getProcessedDocumentMrn,
   getProcessedDocumentPatientName,
+  getVoiceDocumentDashboardError,
+  isVoiceDocumentDashboardReady,
   matchesProcessedDocumentQuery,
   type ProcessedDocument,
   type QueueStatus,
@@ -956,6 +958,10 @@ const UploadCenter = () => {
                       filteredDocuments.map((document) => {
                         const patientName = getProcessedDocumentPatientName(document);
                         const mrn = getProcessedDocumentMrn(document);
+                        const voiceDashboardError = getVoiceDocumentDashboardError(document);
+                        const canOpenDashboard =
+                          (document.status === "processed" || document.status === "partial" || document.status === "review_required") &&
+                          (document.documentType !== "voice" || isVoiceDocumentDashboardReady(document));
 
                         return (
                           <TableRow key={document.id} className="align-top">
@@ -1081,14 +1087,25 @@ const UploadCenter = () => {
                                   variant="ghost"
                                   size="icon"
                                   className={ICON_TEAL_BUTTON}
+                                  title={voiceDashboardError || "View dashboard"}
                                   onClick={() => {
-                                    if (document.status === "processed" || document.status === "partial" || document.status === "review_required") {
+                                    if (canOpenDashboard) {
                                       navigate(`/dashboard?documentId=${document.id}`);
+                                    } else if (voiceDashboardError) {
+                                      toast.error(voiceDashboardError);
                                     } else {
                                       toast.info("Process this document first.");
                                     }
                                   }}
-                                  disabled={document.status === "queued" || document.status === "processing" || document.status === "transcribing" || document.status === "failed"}
+                                  disabled={
+                                    document.status === "queued" ||
+                                    document.status === "processing" ||
+                                    document.status === "transcribing" ||
+                                    document.status === "failed" ||
+                                    (document.documentType === "voice" &&
+                                      (document.status === "processed" || document.status === "review_required") &&
+                                      !isVoiceDocumentDashboardReady(document))
+                                  }
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
@@ -1115,7 +1132,7 @@ const UploadCenter = () => {
           </TabsContent>
 
           <TabsContent value="voice" className="mt-0">
-            <VoiceDictationWorkspace onDocumentsChanged={loadDocuments} />
+            <VoiceWorkspace onDocumentsChanged={loadDocuments} />
           </TabsContent>
         </Tabs>
       </main>

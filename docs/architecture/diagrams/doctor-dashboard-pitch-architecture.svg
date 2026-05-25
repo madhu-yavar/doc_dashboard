@@ -1,0 +1,116 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7F8FA"/>
+      <stop offset="1" stop-color="#EEF2F6"/>
+    </linearGradient>
+    <linearGradient id="core" x1="472" y1="194" x2="1128" y2="706" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101828"/>
+      <stop offset="1" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="band" x1="552" y1="372" x2="1048" y2="646" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#24344D"/>
+      <stop offset="1" stop-color="#1A2435"/>
+    </linearGradient>
+    <filter id="panelShadow" x="-20%" y="-20%" width="140%" height="160%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#101828" flood-opacity="0.08"/>
+    </filter>
+    <filter id="coreShadow" x="-20%" y="-20%" width="140%" height="170%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="28" stdDeviation="36" flood-color="#101828" flood-opacity="0.16"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5L0 10V0Z" fill="#98A2B3"/>
+    </marker>
+    <style>
+      .title { font: 700 46px 'Aptos', 'Segoe UI', Arial, sans-serif; fill: #0F172A; letter-spacing: -0.04em; }
+      .subtitle { font: 400 20px 'Aptos', 'Segoe UI', Arial, sans-serif; fill: #475467; }
+      .eyebrow { font: 700 12px 'Aptos', 'Segoe UI', Arial, sans-serif; fill: #667085; letter-spacing: 0.20em; text-transform: uppercase; }
+      .cardTitle { font: 700 24px 'Aptos', 'Segoe UI', Arial, sans-serif; fill: #101828; letter-spacing: -0.02em; }
+      .body { font: 500 15px 'Aptos', 'Segoe UI', Arial, sans-serif; fill: #475467; }
+      .pill { font: 700 12px 'Aptos', 'Segoe UI', Arial, sans-serif; fill: #475467; letter-spacing: 0.08em; text-transform: uppercase; }
+      .coreTitle { font: 700 36px 'Aptos', 'Segoe UI', Arial, sans-serif; fill: #FFFFFF; letter-spacing: -0.04em; }
+      .coreBody { font: 400 16px 'Aptos', 'Segoe UI', Arial, sans-serif; fill: #C7D0DD; }
+      .bandTitle { font: 700 32px 'Aptos', 'Segoe UI', Arial, sans-serif; fill: #FFFFFF; letter-spacing: -0.03em; }
+      .tag { font: 700 12px 'Aptos', 'Segoe UI', Arial, sans-serif; fill: #334155; letter-spacing: 0.08em; text-transform: uppercase; }
+      .tagLight { font: 700 12px 'Aptos', 'Segoe UI', Arial, sans-serif; fill: #DCE6F2; letter-spacing: 0.08em; text-transform: uppercase; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect x="32" y="32" width="1536" height="836" rx="38" fill="#FCFCFD" stroke="#E4E7EC"/>
+
+  <text x="96" y="114" class="title">Doctor Dashboard Platform</text>
+  <text x="96" y="150" class="subtitle">Clinical intelligence for modern care delivery</text>
+
+  <text x="120" y="224" class="eyebrow">Inputs</text>
+  <text x="694" y="224" class="eyebrow">Intelligence Core</text>
+  <text x="1284" y="224" class="eyebrow">Applications</text>
+
+  <g filter="url(#panelShadow)">
+    <rect x="96" y="258" width="292" height="154" rx="28" fill="#FFFFFF" stroke="#E4E7EC"/>
+    <text x="128" y="314" class="cardTitle">Documents</text>
+    <text x="128" y="346" class="body">Prescriptions, reports, summaries</text>
+    <rect x="128" y="372" width="102" height="32" rx="16" fill="#F2F4F7"/>
+    <text x="154" y="393" class="pill">PDF Intake</text>
+  </g>
+
+  <g filter="url(#panelShadow)">
+    <rect x="96" y="446" width="292" height="154" rx="28" fill="#FFFFFF" stroke="#E4E7EC"/>
+    <text x="128" y="502" class="cardTitle">Voice</text>
+    <text x="128" y="534" class="body">Dictation and encounter audio</text>
+    <rect x="128" y="560" width="118" height="32" rx="16" fill="#EAF6F0"/>
+    <text x="154" y="581" class="pill">Whisper-first</text>
+    <rect x="256" y="560" width="118" height="32" rx="16" fill="#F2F4F7"/>
+    <text x="280" y="581" class="pill">Fallback-ready</text>
+  </g>
+
+  <path d="M388 335H472" stroke="#98A2B3" stroke-width="3" marker-end="url(#arrow)"/>
+  <path d="M388 523H472" stroke="#98A2B3" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g filter="url(#coreShadow)">
+    <rect x="472" y="194" width="656" height="512" rx="42" fill="url(#core)"/>
+    <rect x="472" y="194" width="656" height="512" rx="42" stroke="#344054"/>
+    <rect x="508" y="230" width="584" height="440" rx="30" fill="#FFFFFF" fill-opacity="0.03" stroke="#FFFFFF" stroke-opacity="0.06"/>
+
+    <rect x="930" y="262" width="128" height="34" rx="17" fill="#FFFFFF"/>
+    <text x="956" y="284" class="tag">Operational AI</text>
+
+    <text x="552" y="286" class="coreTitle">Clinical Intelligence Core</text>
+    <text x="552" y="320" class="coreBody">Turns documents and dictation into validated clinical intelligence.</text>
+
+    <rect x="552" y="372" width="496" height="82" rx="26" fill="url(#band)" stroke="#FFFFFF" stroke-opacity="0.08"/>
+    <text x="586" y="424" class="bandTitle">Understand</text>
+    <rect x="886" y="394" width="134" height="36" rx="18" fill="#FFFFFF"/>
+    <text x="915" y="417" class="tag">Multi-modal</text>
+
+    <rect x="552" y="472" width="496" height="82" rx="26" fill="url(#band)" stroke="#FFFFFF" stroke-opacity="0.08"/>
+    <text x="586" y="524" class="bandTitle">Validate</text>
+    <rect x="870" y="494" width="150" height="36" rx="18" fill="#FFFFFF"/>
+    <text x="897" y="517" class="tag">Guardrails</text>
+
+    <rect x="552" y="572" width="496" height="82" rx="26" fill="url(#band)" stroke="#FFFFFF" stroke-opacity="0.08"/>
+    <text x="586" y="624" class="bandTitle">Activate</text>
+    <rect x="850" y="594" width="170" height="36" rx="18" fill="#FFFFFF"/>
+    <text x="877" y="617" class="tag">Workflow output</text>
+  </g>
+
+  <path d="M1128 450H1212" stroke="#98A2B3" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g filter="url(#panelShadow)">
+    <rect x="1212" y="258" width="292" height="120" rx="28" fill="#FFFFFF" stroke="#E4E7EC"/>
+    <text x="1244" y="312" class="cardTitle">Clinical Dashboard</text>
+    <text x="1244" y="343" class="body">Unified patient view</text>
+  </g>
+
+  <g filter="url(#panelShadow)">
+    <rect x="1212" y="396" width="292" height="120" rx="28" fill="#FFFFFF" stroke="#E4E7EC"/>
+    <text x="1244" y="450" class="cardTitle">Doctor Copilot</text>
+    <text x="1244" y="481" class="body">Context-aware assistance</text>
+  </g>
+
+  <g filter="url(#panelShadow)">
+    <rect x="1212" y="534" width="292" height="120" rx="28" fill="#FFFFFF" stroke="#E4E7EC"/>
+    <text x="1244" y="588" class="cardTitle">Chart Notes</text>
+    <text x="1244" y="619" class="body">Structured documentation</text>
+  </g>
+</svg>

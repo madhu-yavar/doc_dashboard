@@ -1,17 +1,43 @@
+/**
+ * Gemini STT Skill
+ * Speech-to-Text using Google Gemini API
+ *
+ * Features:
+ * - Configurable retry strategies
+ * - Multi-apikey support
+ * - Request/response logging
+ * - Quality metrics
+ */
+
 const fs = require("fs/promises");
 const path = require("path");
 
-class GeminiAudioTranscriptionTool {
+class GeminiSTTSkill {
   constructor(config = {}) {
-    this.name = "Gemini Audio Transcription Tool";
+    this.name = "Gemini STT Skill";
     this.version = "1.0.0";
+    this.type = "stt_skill";
+
+    // Configuration
     this.baseUrl = config.baseUrl || process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta/models";
     this.model = config.model || process.env.VOICE_GEMINI_MODEL || process.env.GEMINI_MODEL || "gemini-2.5-pro";
-    this.timeout = config.timeout || 300000;
     this.apiKey = config.apiKey || process.env.GEMINI_API_KEY || "";
     this.apiKeyFallback = config.apiKeyFallback || process.env.GEMINI_API_KEY_FALLBACK || "";
     this.apiKeys = [this.apiKey, this.apiKeyFallback].filter(Boolean);
+    this.timeout = config.timeout || 300000;
+    this.maxRetries = config.maxRetries || 2;
+    this.debug = config.debug || false;
     this.uploadBaseUrl = this.deriveUploadBaseUrl(this.baseUrl);
+  }
+
+  log(message, data = {}) {
+    if (this.debug) {
+      console.log(`[GeminiSTT] ${message}`, data);
+    }
+  }
+
+  sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   deriveUploadBaseUrl(baseUrl) {
@@ -21,10 +47,6 @@ class GeminiAudioTranscriptionTool {
       return String(baseUrl).slice(0, index);
     }
     return "https://generativelanguage.googleapis.com";
-  }
-
-  sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   isRetryableStatus(status) {
@@ -40,33 +62,6 @@ class GeminiAudioTranscriptionTool {
       message.includes("ETIMEDOUT") ||
       message.includes("ENOTFOUND")
     );
-  }
-
-  normalizeUsage(usage = {}) {
-    const promptTokens = Number(
-      usage.promptTokens ??
-      usage.promptTokenCount ??
-      0
-    ) || 0;
-
-    const completionTokens = Number(
-      usage.completionTokens ??
-      usage.candidatesTokenCount ??
-      0
-    ) || 0;
-
-    const totalTokens = Number(
-      usage.totalTokens ??
-      usage.totalTokenCount ??
-      (promptTokens + completionTokens)
-    ) || 0;
-
-    return {
-      ...usage,
-      promptTokens,
-      completionTokens,
-      totalTokens,
-    };
   }
 
   extractText(payload = {}) {
@@ -124,108 +119,6 @@ class GeminiAudioTranscriptionTool {
     } catch {
       return null;
     }
-  }
-
-  async uploadAudioFile(filePath, mimeType, apiKey) {
-    const buffer = await fs.readFile(filePath);
-    const numBytes = buffer.byteLength;
-    const displayName = path.basename(filePath);
-
-    const startResponse = await fetch(`${this.uploadBaseUrl}/upload/v1beta/files`, {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": apiKey,
-        "X-Goog-Upload-Protocol": "resumable",
-        "X-Goog-Upload-Command": "start",
-        "X-Goog-Upload-Header-Content-Length": String(numBytes),
-        "X-Goog-Upload-Header-Content-Type": mimeType,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        file: {
-          display_name: displayName,
-        },
-      }),
-    });
-
-    if (!startResponse.ok) {
-      const text = await startResponse.text();
-      throw new Error(`Gemini file upload start failed (${startResponse.status}): ${text}`);
-    }
-
-    const uploadUrl = startResponse.headers.get("x-goog-upload-url");
-    if (!uploadUrl) {
-      throw new Error("Gemini file upload URL missing from response headers.");
-    }
-
-    const uploadResponse = await fetch(uploadUrl, {
-      method: "POST",
-      headers: {
-        "Content-Length": String(numBytes),
-        "X-Goog-Upload-Offset": "0",
-        "X-Goog-Upload-Command": "upload, finalize",
-      },
-      body: buffer,
-    });
-
-    if (!uploadResponse.ok) {
-      const text = await uploadResponse.text();
-      throw new Error(`Gemini file upload finalize failed (${uploadResponse.status}): ${text}`);
-    }
-
-    const payload = await uploadResponse.json();
-    const file = payload?.file;
-    if (!file?.uri) {
-      throw new Error("Gemini file upload succeeded but no file URI was returned.");
-    }
-
-    return {
-      uri: file.uri,
-      mimeType: file.mimeType || mimeType,
-      name: file.name || null,
-      sizeBytes: numBytes,
-    };
-  }
-
-  buildPrompt() {
-    return [
-      "Transcribe this clinical dictation audio into structured JSON.",
-      "The audio may contain physician dictation for a clinical dashboard workflow.",
-      "Return valid JSON only with this exact top-level shape:",
-      "{",
-      '  "language": string | null,',
-      '  "rawText": string,',
-      '  "normalizedText": string,',
-      '  "speakers": [{ "id": string, "label": string, "role": "doctor" | "patient" | "unknown" }],',
-      '  "segments": [{',
-      '    "segmentId": string,',
-      '    "speakerId": string | null,',
-      '    "speakerRole": "doctor" | "patient" | "unknown",',
-      '    "speakerLabel": string,',
-      '    "startLabel": string,',
-      '    "endLabel": string,',
-      '    "text": string,',
-      '    "normalizedText": string,',
-      '    "confidence": number | null,',
-      '    "flags": string[]',
-      "  }],",
-      '  "quality": {',
-      '    "overallConfidence": number | null,',
-      '    "lowConfidenceSegmentCount": number,',
-      '    "missingAudioSuspected": boolean,',
-      '    "overlappingSpeechSuspected": boolean,',
-      '    "medicationRisk": "low" | "medium" | "high"',
-      "  }",
-      "}",
-      "Requirements:",
-      "- Preserve medical meaning faithfully.",
-      "- Use concise transcript segments instead of one giant block.",
-      "- If timestamps are uncertain, still provide startLabel and endLabel estimates such as 00:00, 00:12.",
-      "- If only one dominant speaker is present, use a single doctor speaker.",
-      "- Set flags like low_confidence, medication, labs, follow_up, dosage when applicable.",
-      "- Do not summarize instead of transcribing.",
-      "- If something is unclear, keep the spoken wording and lower confidence.",
-    ].join("\n");
   }
 
   recoverJsonString(text, fieldName) {
@@ -319,6 +212,11 @@ class GeminiAudioTranscriptionTool {
         overlappingSpeechSuspected: false,
         medicationRisk: "medium",
       },
+      metadata: {
+        backend: "gemini",
+        model: this.model,
+        recovery: "partial_json_recovery",
+      },
     };
   }
 
@@ -356,22 +254,138 @@ class GeminiAudioTranscriptionTool {
         overlappingSpeechSuspected: false,
         medicationRisk: "medium",
       },
+      metadata: {
+        backend: "gemini",
+        model: this.model,
+        recovery: "fallback",
+      },
     };
   }
 
-  async execute(filePath, options = {}) {
-    // Get available API keys - use provided key, then primary, then fallback
+  buildPrompt() {
+    return [
+      "Transcribe this clinical dictation audio into structured JSON.",
+      "The audio may contain physician dictation for a clinical dashboard workflow.",
+      "Return valid JSON only with this exact top-level shape:",
+      "{",
+      '  "language": string | null,',
+      '  "rawText": string,',
+      '  "normalizedText": string,',
+      '  "speakers": [{ "id": string, "label": string, "role": "doctor" | "patient" | "unknown" }],',
+      '  "segments": [{',
+      '    "segmentId": string,',
+      '    "speakerId": string | null,',
+      '    "speakerRole": "doctor" | "patient" | "unknown",',
+      '    "speakerLabel": string,',
+      '    "startLabel": string,',
+      '    "endLabel": string,',
+      '    "text": string,',
+      '    "normalizedText": string,',
+      '    "confidence": number | null,',
+      '    "flags": string[]',
+      "  }],",
+      '  "quality": {',
+      '    "overallConfidence": number | null,',
+      '    "lowConfidenceSegmentCount": number,',
+      '    "missingAudioSuspected": boolean,',
+      '    "overlappingSpeechSuspected": boolean,',
+      '    "medicationRisk": "low" | "medium" | "high"',
+      "  }",
+      "}",
+      "Requirements:",
+      "- Preserve medical meaning faithfully.",
+      "- Use concise transcript segments instead of one giant block.",
+      "- If timestamps are uncertain, still provide startLabel and endLabel estimates such as 00:00, 00:12.",
+      "- If only one dominant speaker is present, use a single doctor speaker.",
+      "- Set flags like low_confidence, medication, labs, follow_up, dosage when applicable.",
+      "- Do not summarize instead of transcribing.",
+      "- If something is unclear, keep the spoken wording and lower confidence.",
+    ].join("\n");
+  }
+
+  async uploadAudioFile(filePath, mimeType, apiKey) {
+    const buffer = await fs.readFile(filePath);
+    const numBytes = buffer.byteLength;
+    const displayName = path.basename(filePath);
+
+    const startResponse = await fetch(`${this.uploadBaseUrl}/upload/v1beta/files`, {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": apiKey,
+        "X-Goog-Upload-Protocol": "resumable",
+        "X-Goog-Upload-Command": "start",
+        "X-Goog-Upload-Header-Content-Length": String(numBytes),
+        "X-Goog-Upload-Header-Content-Type": mimeType,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        file: {
+          display_name: displayName,
+        },
+      }),
+    });
+
+    if (!startResponse.ok) {
+      const text = await startResponse.text();
+      throw new Error(`Gemini file upload start failed (${startResponse.status}): ${text}`);
+    }
+
+    const uploadUrl = startResponse.headers.get("x-goog-upload-url");
+    if (!uploadUrl) {
+      throw new Error("Gemini file upload URL missing from response headers.");
+    }
+
+    const uploadResponse = await fetch(uploadUrl, {
+      method: "POST",
+      headers: {
+        "Content-Length": String(numBytes),
+        "X-Goog-Upload-Offset": "0",
+        "X-Goog-Upload-Command": "upload, finalize",
+      },
+      body: buffer,
+    });
+
+    if (!uploadResponse.ok) {
+      const text = await uploadResponse.text();
+      throw new Error(`Gemini file upload finalize failed (${uploadResponse.status}): ${text}`);
+    }
+
+    const payload = await uploadResponse.json();
+    const file = payload?.file;
+    if (!file?.uri) {
+      throw new Error("Gemini file upload succeeded but no file URI was returned.");
+    }
+
+    return {
+      uri: file.uri,
+      mimeType: file.mimeType || mimeType,
+      name: file.name || null,
+      sizeBytes: numBytes,
+    };
+  }
+
+  /**
+   * Main execution method
+   */
+  async execute(context) {
+    const { audioPath, mimeType, options = {} } = context;
+
+    this.log("execute", { audioPath, mimeType });
+
     const availableKeys = this.apiKeys.length > 0 ? this.apiKeys : [this.apiKey].filter(Boolean);
     if (availableKeys.length === 0) {
       return {
         success: false,
         error: "Gemini API key is required.",
+        backend: "gemini",
       };
     }
 
-    const mimeType = String(options.mimeType || "").trim() || "audio/mpeg";
-    const maxRetries = Number.isFinite(options.maxRetries) ? options.maxRetries : 2;
+    const targetMimeType = String(mimeType || "").trim() || "audio/mpeg";
+    const maxRetries = options.maxRetries ?? this.maxRetries;
     const prompt = options.prompt || this.buildPrompt();
+
+    const startTime = Date.now();
 
     // Try each API key with retries before moving to the next key
     for (let keyIndex = 0; keyIndex < availableKeys.length; keyIndex++) {
@@ -383,7 +397,9 @@ class GeminiAudioTranscriptionTool {
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
         try {
-          const uploadedFile = await this.uploadAudioFile(filePath, mimeType, apiKey);
+          this.log(`attempt ${attempt + 1}/${maxRetries + 1}`, { keyIndex: keyIndex + 1, isFallback });
+
+          const uploadedFile = await this.uploadAudioFile(audioPath, targetMimeType, apiKey);
 
           const response = await fetch(`${this.baseUrl}/${this.model}:generateContent`, {
             method: "POST",
@@ -420,14 +436,18 @@ class GeminiAudioTranscriptionTool {
             const text = await response.text();
             const isRetryable = this.isRetryableStatus(response.status);
 
+            this.log("http_error", { status: response.status, body: text, isRetryable });
+
             if (!isRetryable || attempt >= maxRetries) {
               if (keyIndex < availableKeys.length - 1) {
-                console.warn(`[GeminiAudio] API key ${keyIndex + 1} failed with HTTP ${response.status}. Trying fallback key...`);
+                this.log("switching_key", { from: keyIndex + 1, to: keyIndex + 2 });
                 break;
               }
               return {
                 success: false,
-                error: `Gemini audio transcription failed (${response.status}): ${text}`,
+                error: `Gemini STT failed (${response.status}): ${text}`,
+                backend: "gemini",
+                attempt: attempt + 1,
               };
             }
 
@@ -437,36 +457,50 @@ class GeminiAudioTranscriptionTool {
           }
 
           const payload = await response.json();
-          const parsed = this.extractJson(payload) || this.buildFallbackTranscript(payload, path.basename(filePath));
-          const usage = this.normalizeUsage(payload.usageMetadata || {});
+          const parsed = this.extractJson(payload) || this.buildFallbackTranscript(payload, path.basename(audioPath));
+          const elapsed = Date.now() - startTime;
 
-          if (isFallback) {
-            console.log(`[GeminiAudio] Transcription succeeded with fallback API key`);
-          }
+          // Add metadata
+          parsed.metadata = {
+            backend: "gemini",
+            model: this.model,
+            endpoint: this.baseUrl,
+            isFallback,
+            attempts: attempt + 1,
+          };
+
+          this.log("success", { elapsed, isFallback, textLength: parsed.rawText?.length || 0 });
 
           return {
             success: true,
             data: parsed,
-            usage,
+            backend: "gemini",
             model: this.model,
+            usage: payload.usageMetadata || null,
+            latency: elapsed,
             uploadedFile,
             rawResponse: payload,
           };
+
         } catch (error) {
           clearTimeout(timeoutId);
 
           const isRetryable = this.isRetryableError(error) || this.isRetryableStatus(error?.status);
 
+          this.log("error", { message: error.message, isRetryable, attempt: attempt + 1 });
+
           if (!isRetryable || attempt >= maxRetries) {
             if (keyIndex < availableKeys.length - 1 && error?.name !== "AbortError") {
-              console.warn(`[GeminiAudio] API key ${keyIndex + 1} failed: ${error.message}. Trying fallback key...`);
+              this.log("switching_key_after_error", { from: keyIndex + 1, to: keyIndex + 2 });
               break;
             }
             return {
               success: false,
-              error: error?.name === "AbortError"
-                ? `Gemini audio transcription timeout after ${this.timeout}ms`
-                : String(error?.message || error || "Unknown Gemini audio transcription error"),
+              error: error.name === "AbortError"
+                ? `Gemini STT timeout after ${this.timeout}ms`
+                : String(error?.message || error || "Unknown Gemini STT error"),
+              backend: "gemini",
+              attempt: attempt + 1,
             };
           }
 
@@ -479,9 +513,10 @@ class GeminiAudioTranscriptionTool {
 
     return {
       success: false,
-      error: "Gemini audio transcription failed with all available API keys.",
+      error: "Gemini STT failed with all available API keys.",
+      backend: "gemini",
     };
   }
 }
 
-module.exports = GeminiAudioTranscriptionTool;
+module.exports = GeminiSTTSkill;

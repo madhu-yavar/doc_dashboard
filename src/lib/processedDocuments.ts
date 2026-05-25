@@ -50,6 +50,7 @@ declare module "@/data/patientData" {
 }
 
 export const API_BASE = `${API_ROOT}/api`;
+export const VOICE_DASHBOARD_INCOMPLETE_ERROR = "Voice extraction completed but dashboard payload was incomplete.";
 
 const resolveMaskedImageUrl = (
   maskedImageUrl?: string | null,
@@ -817,6 +818,82 @@ export const getProcessedDocumentPatientName = (document: ProcessedDocument) => 
 
 export const getProcessedDocumentMrn = (document: ProcessedDocument) =>
   document.result?.sample_patient_data?.mrn?.trim() || "";
+
+const hasVoiceText = (value: unknown) => typeof value === "string" && value.trim().length > 0;
+const hasVoicePositiveNumber = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value > 0;
+const hasVoiceArrayItems = (value: unknown) => Array.isArray(value) && value.length > 0;
+
+const extractVoicePrincipalDiagnosis = (value: unknown) => {
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => typeof item === "string" ? item.trim() : String(item?.name || item?.description || "").trim())
+      .find(Boolean) || "";
+  }
+  if (value && typeof value === "object") {
+    return String((value as { name?: string; description?: string; value?: string }).name || (value as { description?: string }).description || (value as { value?: string }).value || "").trim();
+  }
+  return "";
+};
+
+export const getVoiceDocumentDashboardError = (document: ProcessedDocument | null | undefined) => {
+  if (!document || document.documentType !== "voice") return null;
+
+  const result = document.result;
+  if (!result || typeof result !== "object") {
+    return document.error || VOICE_DASHBOARD_INCOMPLETE_ERROR;
+  }
+
+  const cards = result.dashboard_cards;
+  const extracted = result.extracted_data;
+  if (!cards || typeof cards !== "object" || !extracted || typeof extracted !== "object") {
+    return document.error || VOICE_DASHBOARD_INCOMPLETE_ERROR;
+  }
+
+  const hasRenderableContent = Boolean(
+    hasVoicePositiveNumber(cards.vitals_card?.data_points) ||
+    hasVoiceText(cards.vitals_card?.summary?.latest_bp) ||
+    hasVoicePositiveNumber(cards.vitals_card?.summary?.pulse) ||
+    hasVoicePositiveNumber(extracted.vitals?.latest?.bp?.systolic) ||
+    hasVoicePositiveNumber(extracted.vitals?.latest?.pulse?.value) ||
+    hasVoiceText(cards.diagnosis_card?.principal_diagnosis) ||
+    hasVoiceText(extractVoicePrincipalDiagnosis(extracted.diagnosis?.principal)) ||
+    hasVoiceArrayItems(cards.diagnosis_card?.secondary_diagnoses) ||
+    hasVoiceArrayItems(extracted.diagnosis?.secondary) ||
+    hasVoiceArrayItems(cards.medications_card?.medication_list) ||
+    hasVoiceArrayItems(extracted.medications) ||
+    hasVoiceArrayItems(cards.labs_card?.lab_results) ||
+    hasVoiceArrayItems(cards.labs_card?.investigations_list) ||
+    hasVoiceArrayItems(extracted.lab_results) ||
+    hasVoiceArrayItems(extracted.investigations) ||
+    hasVoicePositiveNumber(cards.radiology_card?.studies_completed) ||
+    hasVoiceText(cards.radiology_card?.key_finding) ||
+    hasVoiceArrayItems(extracted.radiology) ||
+    hasVoiceArrayItems(extracted.radiology?.findings) ||
+    hasVoiceArrayItems(extracted.radiology?.pending) ||
+    hasVoiceText(cards.treatment_card?.current_approach) ||
+    hasVoiceArrayItems(cards.treatment_card?.management_items) ||
+    hasVoiceText(extracted.treatment?.current_approach) ||
+    hasVoiceArrayItems(extracted.treatment?.management_items) ||
+    hasVoiceArrayItems(extracted.procedures) ||
+    hasVoicePositiveNumber(cards.clinical_notes_card?.total_notes) ||
+    hasVoiceArrayItems(cards.clinical_notes_card?.notes) ||
+    hasVoiceArrayItems(extracted.clinical_notes) ||
+    hasVoiceText(cards.follow_up_card?.next_appointment) ||
+    hasVoicePositiveNumber(cards.follow_up_card?.appointment_count) ||
+    hasVoiceArrayItems(cards.follow_up_card?.appointments) ||
+    hasVoiceArrayItems(extracted.follow_up?.items) ||
+    hasVoiceArrayItems(extracted.follow_up) ||
+    hasVoiceText(cards.discharge_plan_card?.condition) ||
+    hasVoicePositiveNumber(cards.discharge_plan_card?.instruction_count) ||
+    hasVoiceArrayItems(extracted.discharge?.instructions)
+  );
+
+  return hasRenderableContent ? null : document.error || VOICE_DASHBOARD_INCOMPLETE_ERROR;
+};
+
+export const isVoiceDocumentDashboardReady = (document: ProcessedDocument | null | undefined) =>
+  !getVoiceDocumentDashboardError(document);
 
 export const matchesProcessedDocumentQuery = (document: ProcessedDocument, query: string) => {
   const normalized = query.trim().toLowerCase();

@@ -1,6 +1,6 @@
 # Doctor Dashboard
 
-Doctor Dashboard is a React + Express application for uploading clinical PDFs, processing them with a Gemma-backed extraction pipeline, and reviewing the structured output in a browser UI.
+Doctor Dashboard is a React + Express application for processing clinical source material into a shared dashboard. The current product supports both uploaded clinical PDFs and uploaded physician dictation audio, then renders the structured result in the same browser UI.
 
 In production, the Express server serves both:
 
@@ -13,8 +13,11 @@ That means a single public address is enough for normal usage.
 
 - Frontend: React + Vite
 - Backend: Express
-- Document processing: `DocumentTypeRouter` plus local agent/skill pipeline in `agents/`, `skills/`, and `tools/`
+- Document processing:
+  - PDF path: `DocumentTypeRouter` plus local agent/skill pipeline in `agents/`, `skills/`, and `tools/`
+  - Voice path: Gemini transcription plus `VoiceExtractorAgent`
 - LLM backend: Gemma-compatible chat-completions endpoint
+- Speech-to-text: Gemini audio transcription tool
 - Storage: local filesystem under `server/storage` plus analytics metrics in `server/storage/analytics.sqlite`
 
 ## Runtime Ports
@@ -53,15 +56,34 @@ Notes:
 
 ## Runtime Architecture
 
-The current production path is:
+The current production path has two intake flows that converge on the same dashboard route and shared processed-documents store.
 
-1. UI uploads PDFs to the Express server.
+### PDF flow
+
+1. UI uploads PDFs to the Express server through `POST /api/documents/upload`.
 2. `server/index.cjs` hands processing to `agents/document_type_router.cjs`.
 3. The router classifies the document and dispatches to a specialized extractor agent.
 4. Processed documents are persisted in `server/storage/documents.json`.
-5. Processing Insights are served from `server/storage/analytics.sqlite` through `/api/analytics/overview`.
+
+### Voice flow
+
+1. UI uploads audio files through `POST /api/voice/upload`.
+2. The server creates both a voice session record and a unified queue document row up front.
+3. The current UI immediately starts `POST /api/voice/process` after upload.
+4. Gemini STT produces transcript segments and transcript quality metadata.
+5. `agents/voice_extractor_agent.cjs` extracts structured clinical data and maps it into the shared dashboard contract.
+6. `server/voice_result_validation.cjs` validates that the voice result is actually renderable before the document can remain `processed`.
+7. Valid voice results are persisted into `server/storage/voice_sessions.json` and `server/storage/documents.json`; invalid or incomplete results are marked `failed` with an explicit error.
+
+### Shared downstream behavior
+
+1. The dashboard route loads processed documents from `/api/documents/:id`.
+2. Processing Insights are served from `server/storage/analytics.sqlite` through `/api/analytics/overview`.
+3. Voice and PDF documents both open through the same `/dashboard?documentId=<id>` route.
 
 `agents/extraction/react_extraction_agent.cjs` exists in the repo, but it is not the default extraction path for the main document-processing flow unless agentic extraction is explicitly enabled.
+
+For voice documents, `processed` now has a stricter meaning: the stored result must contain a renderable dashboard payload. A voice pipeline run that finishes without usable dashboard content is downgraded to `failed` rather than surfacing as a blank dashboard.
 
 ## Local Development
 
@@ -212,6 +234,11 @@ Important files/directories include:
 - `server/storage/uploads/`
 - `server/storage/documents.json`
 - `server/storage/analytics.sqlite`
+- `server/storage/voice_sessions.json`
+- `server/storage/voice_reviews.json`
+- `server/storage/voice_audio/`
+- `server/storage/voice_transcripts/`
+- `server/storage/voice_graph_checkpoints/`
 - `server/storage/chat_sessions.json`
 - `server/storage/chat_actions.json`
 - `server/storage/chat_exports.json`
@@ -228,6 +255,14 @@ Mount `server/storage` as a persistent volume in Docker.
 - `POST /api/documents/upload`
 - `POST /api/documents/process`
 - `GET /api/documents/process/progress`
+- `GET /api/voice`
+- `GET /api/voice/:id`
+- `GET /api/voice/:id/audio`
+- `POST /api/voice/upload`
+- `POST /api/voice/process`
+- `POST /api/voice/:id/review`
+- `POST /api/voice/:id/add-to-queue`
+- `POST /api/voice/extract`
 - `GET /api/documents/:id/handwriting-progress`
 - `POST /api/documents/:id/complete-handwriting`
 - `GET /api/chat/history/:documentId`
