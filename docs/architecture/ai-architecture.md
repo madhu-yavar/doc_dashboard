@@ -95,8 +95,8 @@ The Doctor Dashboard is an AI-powered clinical intelligence system that transfor
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          EXTERNAL SERVICES                                   │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐         │
-│  │  Gemma LLM API   │  │  Storage Layer   │  │  External Search │         │
-│  │  (Google 4-26B)  │  │  (File System)   │  │  (Medical Web)   │         │
+│  │ Proprietary AI   │  │  Storage Layer   │  │  External Search │         │
+│  │ Inference API    │  │  (File System)   │  │  (Medical Web)   │         │
 │  └──────────────────┘  └──────────────────┘  └──────────────────┘         │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -107,18 +107,18 @@ The Doctor Dashboard is an AI-powered clinical intelligence system that transfor
 
 ### 1. Language Model Foundation
 
-**Primary LLM: Google Gemma 4-26B-A4B-it**
+**Primary Inference: Proprietary On-Prem Model Service**
 
 | Configuration | Value | Purpose |
 |---------------|-------|---------|
-| Model | `google/gemma-4-26B-A4B-it` | Main inference engine |
+| Model Profile | deployment-specific | Main inference engine |
 | Context Window | ~24K tokens | Large document processing |
 | Temperature | 0.1-0.4 (task-dependent) | Balancing creativity vs accuracy |
 | Timeout | 60-180s per step | Preventing hanging requests |
-| API Endpoint | Configurable `GEMMA_URL` | Deployment flexibility |
+| API Endpoint | Configurable internal endpoint | Deployment flexibility |
 
-**Why Gemma 4-26B?**
-- Clinical understanding without GPT-4 costs
+**Why this deployment profile?**
+- Clinical understanding with controlled infrastructure cost
 - Self-hosted for data privacy
 - Good balance of capability vs latency
 - Instruction-tuned for reasoning tasks
@@ -248,7 +248,7 @@ class Skill {
   }
 
   async execute(context) {
-    // context: { pdfText, gemmaClient, promptBuilder, ... }
+    // context: { pdfText, inferenceClient, promptBuilder, ... }
     return {
       success: boolean,
       data: object,
@@ -324,9 +324,9 @@ collectList()          // Split by newlines, strip prefixes
 
 **After (LLM-Only):**
 ```javascript
-// Pure Gemma LLM extraction
+// Pure proprietary inference extraction
 promptBuilder.build("pending_items_extractor", { pdfText })
-gemmaClient.execute(prompt, { temperature: 0.1, maxTokens: 3000 })
+inferenceClient.execute(prompt, { temperature: 0.1, maxTokens: 3000 })
 ```
 
 #### 7-Step LLM Process
@@ -444,7 +444,7 @@ const PendingItemsExtractor = require('./skills/extraction/pending_items_extract
 const pendingExtractor = new PendingItemsExtractorSkill(config);
 const result = await pendingExtractor.execute({
   pdfText,
-  gemmaClient,
+  inferenceClient,
   promptBuilder
 });
 
@@ -470,7 +470,7 @@ Tools are **lower-level utilities** used by skills and agents.
 | Tool | Purpose |
 |------|---------|
 | `PDFReaderTool` | Extract text from PDF files |
-| `GemmaClientTool` | Interface to Gemma LLM API |
+| `InferenceClientTool` | Interface to the proprietary inference API |
 | `PromptBuilderTool` | Build structured prompts |
 
 #### 2. Clinical Tools
@@ -663,7 +663,7 @@ App.tsx
 │                                          │                                   │
 │                                          ↓                                   │
 │                                  ┌───────────────┐                          │
-│                                  │ Gemma LLM API │                          │
+│                              │ Proprietary AI API │                          │
 │                                  │ Port: 8000    │                          │
 │                                  └───────────────┘                          │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -686,7 +686,7 @@ App.tsx
 │  └────────────────────────────────────────────────────────────────────┘    │
 │                                    ↓                                        │
 │  ┌────────────────────────────────────────────────────────────────────┐    │
-│  │                      Gemma LLM Service                               │    │
+│  │               Proprietary On-Prem Inference Service                  │    │
 │  │                   (Self-hosted / vLLM)                               │    │
 │  └────────────────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────────────────┘

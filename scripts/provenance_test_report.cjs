@@ -3,7 +3,7 @@ const path = require("path");
 const DischargeExtractorAgent = require("../agents/discharge_extractor_agent.cjs");
 
 const GEMMA_URL = process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions";
-const MODEL = process.env.GEMMA_MODEL || "google/gemma-4-31B-it";
+const MODEL = process.env.GEMMA_MODEL || "google/gemma-4-26B-A4B-it";
 const DATA_DIR = process.env.DATA_DIR || path.resolve(process.cwd(), "../data");
 const DEFAULT_FILES = [
   "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",

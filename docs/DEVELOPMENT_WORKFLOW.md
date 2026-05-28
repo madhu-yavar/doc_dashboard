@@ -70,7 +70,7 @@ NODE_ENV=development
 
 # LLM Configuration
 GEMMA_URL=http://localhost:8000/v1/chat/completions
-GEMMA_MODEL=google/gemma-4-31B-it
+GEMMA_MODEL=google/gemma-4-26B-A4B-it
 ```
 
 2. **Never commit** `.env` files - use `.env.example` as template

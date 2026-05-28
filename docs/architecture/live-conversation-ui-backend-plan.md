@@ -1,10 +1,10 @@
 # Live Conversation UI + Backend Fit Plan
 
 ## Date
-2026-05-22
+2026-05-26
 
 ## Purpose
-Define a detailed implementation plan for adding **live doctor-patient conversation** support that fits the current repository instead of introducing a parallel product stack.
+Capture the current implementation fit and remaining work for **live doctor-patient conversation** inside the existing repository, without introducing a parallel product stack.
 
 This plan is intentionally aligned to:
 - the existing `/upload` intake workspace
@@ -16,25 +16,47 @@ This plan is intentionally aligned to:
 ## Current Repo Constraints
 
 ### Frontend
-- `src/pages/UploadCenter.tsx` already contains a top-level `voice` workspace.
+- `src/pages/UploadCenter.tsx` already owns the `workspace` and `mode` query-state for the shared intake page.
 - `src/components/voice/VoiceDictationWorkspace.tsx` is the existing upload-first voice UI.
-- The app uses `apiFetch(...)`, `EventSource`, and mostly local component state today.
-- `@tanstack/react-query` is available globally, but the current codebase does not depend on it for the voice path.
-- The dashboard already knows how to open a processed voice document through the same route as PDFs.
+- `src/components/voice/LiveConversationWorkspace.tsx` now exists as the live transcript-first shell.
+- `src/hooks/useLiveConversationAPI.ts` and `src/hooks/useLiveConversationAudio.ts` split REST snapshot hydration from browser audio transport.
+- The dashboard already knows how to open a validated processed voice document through the same route as PDFs.
 
 ### Backend
-- `server/index.cjs` exposes the current voice APIs under `/api/voice`.
-- The server currently starts with `app.listen(...)`, not `http.createServer(...)`.
-- Existing STT tools are **file-oriented**, not true streaming session adapters:
-  - `GeminiAudioTranscriptionTool` uploads a file and asks for structured JSON.
-  - `WhisperTranscriptionTool` posts a file to a Whisper HTTP endpoint.
-- Storage is file-backed under `server/storage/`.
-- Auth is already enforced for `/api/*` and asset access via session cookie.
+- `server/index.cjs` exposes both uploaded dictation and live-conversation APIs under `/api/voice`.
+- The server now boots through `http.createServer(...)` and attaches `LiveConversationWebSocket`.
+- `server/live_conversation_routes.cjs` owns live session lifecycle endpoints.
+- `server/live_conversation_websocket.cjs` owns websocket auth, chunk buffering, transcript events, and periodic draft extraction.
+- `server/live_conversation_store.cjs` persists sessions and audit-style events in dedicated `live_conversation_*` files under `server/storage/`.
+- `agents/live_conversation_stt_agent.cjs` already supports a primary proprietary chunked transcription path, secondary clinical shadow transcription, reconciliation, optional speaker attribution, VAD segmentation, and an optional proprietary fallback path.
+- The current websocket path still uses a conservative runtime profile:
+  - fixed-window chunking
+  - no VAD in the default live path
+  - no speaker diarization in the default live path
+  - validation skipped during live chunk transcription
+- Auth is already enforced for `/api/*` and websocket session access via the same cookie-backed request authentication.
 
 ### Product Reality
-- Current voice is **uploaded dictation**.
-- There is **no microphone capture**, `MediaRecorder`, `AudioContext`, or websocket transport in the repo today.
-- Live conversation therefore needs both a new UI mode and a new backend session transport.
+- Voice now has **two active product shapes**:
+  - uploaded dictation
+  - live conversation
+- The repo now contains browser microphone capture via `MediaRecorder`, device enumeration, and websocket audio transport.
+- The live path already supports draft, live, paused, review-required, finalized, and failed session states.
+- The remaining gap is publication fidelity: live finalize currently creates a lightweight `voice-live-*` queue row, but it does **not** yet publish the same validated dashboard payload that uploaded dictation uses.
+
+## Current Implementation Status
+
+### Implemented now
+- live session creation, list, get, patch, pause, resume, review, finalize, delete, and event-history endpoints
+- websocket audio transport at `WS /api/voice/live/sessions/:sessionId/stream`
+- rolling transcript persistence under `live_conversation_sessions.json`
+- timer-based draft note extraction during active sessions
+- review UI and finalize action inside the Voice workspace
+
+### Still incomplete
+- the live finalize path does not yet reuse `buildVoiceDocumentResult(...)`
+- finalized live sessions are not yet validated through `validateVoiceDashboardResult(...)`
+- the frontend currently relies mainly on periodic REST refresh for transcript and draft hydration, even though the websocket emits transcript and draft events
 
 ## Recommended Product Shape
 
@@ -53,26 +75,31 @@ Treat a live conversation session as a **draft workspace**, not as a processed d
 That means:
 - a live session exists before any dashboard document exists
 - the session has its own lifecycle, transcript, and draft extraction state
-- only `Finalize` creates the standard `documents.json` row used by `/dashboard`
+- `Finalize` is the only point where a `documents.json` row is created
 
-This is the cleanest fit with the existing dashboard contract.
+That is still the cleanest fit with the existing dashboard contract, even though the current finalize implementation has not yet been upgraded to the full validated voice document shape.
 
 ## Information Architecture
 
 ### `/upload` page structure
-- Keep the existing top-level tabs:
+- Keep `/upload` as the shared intake page.
+- Use a **left workspace rail** with:
   - `Documents`
   - `Voice`
-- Inside `Voice`, add nested mode tabs:
-  - `Dictation`
-  - `Live conversation`
+- Keep `Voice` as a single workspace entry in the rail. Do **not** show always-visible `Dictation` / `Live conversation` controls beside it.
+- Switch voice modes from a **single compact control inside the Voice workspace header**. The user already knows they are in Voice; mode choice should not compete with the main workspace navigation.
 
-### Session list behavior
-The live conversation mode should show:
-- `Start new session`
-- `Resume active session`
-- `Recent finalized sessions`
-- `Failed / interrupted sessions`
+### Live navigation behavior
+The live conversation screen should use a compact left rail labeled `Visits`:
+- `In progress`
+- `Completed`
+- `Interrupted`
+
+The user resumes or reviews work by selecting a visit row.
+
+Avoid showing both `New session` and `Start session` at the same time for the active draft visit. That felt redundant in UI review.
+
+`Create new visit` should remain available as a secondary icon action when the current visit is already in `review_required`, `finalizing`, `finalized`, or `failed` state.
 
 Phase 1 can keep this inside the `Voice` workspace. A dedicated route is not required initially.
 
@@ -87,82 +114,133 @@ This is worth doing early because live sessions are long-lived and refresh recov
 
 ### Core screen flow
 
-#### 1. Idle / preflight
-The user sees:
-- patient / encounter link controls
-- microphone permission status
+#### 1. Voice workspace entry
+The user enters `Voice` from the left workspace rail.
+
+Inside the voice workspace:
+- a single `Mode` control switches `Dictation` vs `Live conversation`
+- the rest of the screen is dedicated to the chosen mode
+
+This keeps navigation quiet and reduces the number of visible toggles.
+
+#### 2. Encounter prep
+The live conversation screen opens with a transcript-first shell.
+
+The right panel contains an `Encounter` section with:
+- patient link
+- encounter link
+- microphone permission state
 - input device selection
-- short checklist for recording readiness
-- `Start session`
 
-#### 2. Starting
+The primary action is:
+- `Start`
+
+There is no separate checklist card in the current UI. Readiness is conveyed through compact field state and badges.
+
+#### 3. Starting
 The UI shows:
-- connection spinner
-- websocket / session bootstrap state
+- session status changes
+- transport state
 - mic initialization
-- a clear failure state if permission or connection fails
+- inline error state if permission or connection fails
 
-#### 3. Live capture
-The main live layout should be a 3-zone workspace:
+#### 4. Live capture
+The live mode now follows a **doctor-facing 3-zone layout**:
 
-1. `Session rail`
-- elapsed time
-- connection state
-- device name
-- pause / resume / stop
-- quick markers such as `Medication discussed` or `Follow-up discussed` later if needed
+1. `Visits rail`
+- compact left rail for in-progress, completed, and interrupted visits
+- selecting a visit restores its current draft, review, or published state
+- historical sections are collapsed by default
 
-2. `Transcript panel`
-- rolling transcript
+2. `Encounter header + Transcript`
+- encounter title
+- patient / encounter context
+- status, duration, connection badges
+- `Start`, `Pause`, `Resume`, `End`
+- rolling transcript as the primary working surface
 - speaker chips: `Doctor`, `Patient`, `Unknown`
 - interim vs finalized styling
 - low-confidence flags
 - reconnect gap markers
 
-3. `Draft extraction panel`
-- symptoms / diagnosis draft
-- medications draft
-- labs / radiology / procedures draft
-- follow-up / plan draft
-- unresolved review items count
+3. `Encounter / Note / Review accordion`
+- `Encounter`: patient, visit context, mic/device
+- `Note`: note-style summary instead of feature cards
+- `Review`: blocking review items and finalize action
 
-#### 4. Paused / reconnecting
+The current note panel is intentionally closer to ambient documentation products than to a dashboard of cards. It reads as:
+- `Assessment`
+- `History`
+- `Medications`
+- `Orders`
+- `Plan`
+
+#### 5. Paused / reconnecting
 The transcript remains visible.
-The controls become stateful:
-- `Paused`
-- `Reconnecting`
-- `Waiting for microphone`
+
+State remains visible through compact status badges and inline error surfaces rather than large instructional banners.
 
 The UI must not look like the session was lost unless it actually ended.
 
-#### 5. Review and finalize
+#### 6. Review and finalize
 When the user ends the session:
 - freeze transcript edits
 - run final reconciliation
 - surface a review queue for ambiguous content
 - allow `Finalize to dashboard` only when blocking review items are resolved
 
-#### 6. Published
+#### 7. Published
 After finalize:
 - show `Open dashboard`
 - show `Back to voice workspace`
-- preserve the live session as a historical record
+- preserve the visit as a historical record in the `Completed` section
+
+## Current UI Baseline
+
+As of 2026-05-26, the implemented live UI shell is:
+- left rail workspace entry for `Voice`, not nested voice tabs
+- one `Mode` menu inside the voice workspace
+- `Visits` rail on the left
+- encounter/status/transcript in the center
+- compact `Encounter`, `Note`, `Review` accordion on the right
+- reduced explanatory copy and fewer competing actions
+
+This is the UI shape the backend contract should now target.
 
 ## Recommended Frontend Structure
 
-### New components
+### Current implementation-aligned components
+- `src/pages/UploadCenter.tsx`
+  - owns the workspace rail and `workspace` query state
+- `src/components/voice/VoiceWorkspace.tsx`
+  - owns the compact `Mode` switch for `Dictation` vs `Live conversation`
 - `src/components/voice/LiveConversationWorkspace.tsx`
-- `src/components/voice/LiveConversationSessionList.tsx`
-- `src/components/voice/LiveConversationSetupCard.tsx`
-- `src/components/voice/LiveConversationStatusBar.tsx`
-- `src/components/voice/LiveConversationTranscriptPanel.tsx`
-- `src/components/voice/LiveConversationDraftPanel.tsx`
-- `src/components/voice/LiveConversationReviewPanel.tsx`
+  - owns the live transcript-first shell
+- `src/hooks/useLiveConversationAPI.ts`
+  - owns live session lifecycle, review/finalize actions, and polling hydration
+- `src/hooks/useLiveConversationAudio.ts`
+  - owns `MediaRecorder`, device enumeration, and websocket audio transport
+- `server/live_conversation_routes.cjs`
+  - owns `/api/voice/live/*` REST lifecycle
+- `server/live_conversation_websocket.cjs`
+  - owns chunk buffering, transcript emission, and draft extraction timers
+- `server/live_conversation_store.cjs`
+  - owns dedicated live session persistence
 
-### New hook
-- `src/hooks/useLiveConversationSession.ts`
+### Refactor guidance
+The current single-file live workspace is acceptable for UI iteration.
 
-Use a dedicated hook with `useReducer`, not scattered `useState`, because live conversation has multiple concurrent state machines:
+Later, if backend wiring increases complexity, split into subcomponents such as:
+- `LiveConversationVisitList`
+- `LiveConversationControlBar`
+- `LiveConversationTranscriptPanel`
+- `LiveConversationEncounterPanel`
+- `LiveConversationNotePanel`
+- `LiveConversationReviewPanel`
+
+The current implementation has already moved past mock-state-only UI. If client complexity keeps growing, consolidate transport, polling, transcript, and finalize state under a reducer-backed controller rather than adding more scattered `useState` branches.
+
+The state machines that still need to stay coherent are:
 - recorder state
 - websocket state
 - transcript state
@@ -171,40 +249,35 @@ Use a dedicated hook with `useReducer`, not scattered `useState`, because live c
 
 ### React Query recommendation
 Best fit for this repo:
-- use the custom reducer hook for the active live session
-- use React Query only later for session list/history caching if needed
+- keep active live session state in custom hooks
+- keep REST snapshot loading simple while the websocket transport remains session-specific
+- introduce React Query later only if history caching or invalidation becomes hard to reason about
 
 Do **not** make the websocket event loop depend on React Query cache mutation from day one. That adds complexity without matching the current voice UI style.
 
 ## UI Implementation Matrix
 
-This table converts the planned live conversation UI into implementation-facing rows so each control is tied to expected state and backend behavior.
+This table reflects the **current UI shape** so backend work is planned against the interaction model users will actually see.
 
 | Area | Component / UI element | UI type | What user does | Functionality | Frontend state involved | Backend API / event | Priority |
 |---|---|---|---|---|---|---|---|
-| Workspace navigation | `Documents` / `Voice` | Top-level tabs | Switch workspace | Moves user between document intake and voice workflows in `/upload` | `workspace` URL/query state | None | P1 |
-| Voice mode | `Dictation` / `Live conversation` | Nested tabs | Switch mode | Separates upload-first dictation from live conversation | `mode` URL/query state | None | P1 |
-| Session list | `Start new session` | Primary button | Start a new live encounter | Creates a new draft live session and opens preflight | `sessionId`, `session.status = draft` | `POST /api/voice/live/sessions` | P1 |
-| Session list | `Resume active session` | Button / row action | Resume interrupted or active session | Restores a session using `sessionId` | `sessionId`, snapshot hydration | `GET /api/voice/live/sessions/:id` | P1 |
-| Session list | `Recent finalized sessions` | List / table | Review completed sessions | Shows past finalized sessions and lets user re-open context | session history state | `GET /api/voice/live/sessions` | P2 |
-| Session list | `Failed / interrupted sessions` | List / table | Recover failed work | Shows sessions needing retry or review | session history state | `GET /api/voice/live/sessions` | P2 |
-| Preflight | Patient link control | Search/select | Link patient | Associates the live session with patient context | `session.linkedPatient` | `POST /api/voice/live/sessions` or patch later | P1 |
-| Preflight | Encounter link control | Search/select or text input | Link encounter | Associates encounter/workflow context | `session.encounterLabel` | `POST /api/voice/live/sessions` or patch later | P1 |
-| Preflight | Microphone permission status | Status badge | Check permission | Shows whether mic access is granted/denied/unknown | `recorder.permission` | Browser media permission only | P1 |
-| Preflight | Input device selector | Dropdown | Choose mic | Selects capture device | `recorder.deviceId` | None | P1 |
-| Preflight | Recording readiness checklist | Info/checklist card | Verify setup | Confirms mic, patient context, and connection readiness | derived UI state | None | P2 |
-| Preflight | `Start session` | Primary button | Begin live recording | Starts mic capture and websocket session | `recorder.captureState`, `transport.connectionState`, `session.status` | `WS /api/voice/live/sessions/:id/stream` | P1 |
-| Starting | Connection spinner | Loading indicator | Wait for startup | Shows live startup progress | `transport.connectionState = connecting` | websocket handshake | P1 |
-| Starting | Bootstrap status text | Inline status/banner | Observe startup | Shows websocket/session bootstrap progress | `transport.connectionState` | websocket `session.ready` / `session.state` | P1 |
-| Starting | Failure banner | Error banner/dialog | Retry or stop | Explains permission or connection failures | `transport.lastError`, `recorder.captureState = failed` | websocket / REST error | P1 |
-| Live capture | Session rail | Sticky side/top panel | Monitor session | Holds core live controls and status | whole session reducer | None | P1 |
+| Workspace navigation | `Documents` / `Voice` | Left workspace rail | Switch workspace | Moves user between document intake and voice workflows in `/upload` | `workspace` URL/query state | None | P1 |
+| Voice mode | `Mode` menu | Compact dropdown menu | Switch mode | Separates upload-first dictation from live conversation without permanent nested toggles | `mode` URL/query state | None | P1 |
+| Visits rail | `In progress` visit rows | Compact left rail list | Open current visit | Restores the selected draft/live/review visit | `selectedSessionId`, `session.status` | `GET /api/voice/live/sessions/:id` | P1 |
+| Visits rail | `Completed` disclosure | Collapsible history section | Review published visits | Shows finalized visits without crowding the default UI | session history state | `GET /api/voice/live/sessions` | P2 |
+| Visits rail | `Interrupted` disclosure | Collapsible history section | Recover failed work | Shows interrupted visits needing retry or review | session history state | `GET /api/voice/live/sessions` | P2 |
+| Visits rail | `Create new visit` | Icon button | Start a new visit after closing the current one | Creates a new draft visit without competing with the active `Start` action | `sessionId`, `session.status` | `POST /api/voice/live/sessions` | P2 |
+| Encounter | Patient control | Search/select or text input | Link patient | Associates the live visit with patient context | `session.linkedPatient` | `POST /api/voice/live/sessions` or patch later | P1 |
+| Encounter | Encounter control | Search/select or text input | Link encounter | Associates encounter/workflow context | `session.encounterLabel` | `POST /api/voice/live/sessions` or patch later | P1 |
+| Encounter | Mic permission badge | Status badge | Check readiness | Shows whether mic access is granted/denied/unknown | `recorder.permission` | Browser media permission only | P1 |
+| Encounter | Input device selector | Dropdown | Choose mic | Selects capture device | `recorder.deviceId` | None | P1 |
+| Control bar | `Start` | Primary button | Begin live recording | Starts mic capture and websocket session | `recorder.captureState`, `transport.connectionState`, `session.status` | `WS /api/voice/live/sessions/:id/stream` | P1 |
+| Control bar | `Pause` | Secondary button | Pause capture | Temporarily stops sending audio without closing session | `recorder.captureState = paused`, `session.status = paused` | `POST /api/voice/live/sessions/:id/pause` or websocket `session.pause` | P1 |
+| Control bar | `Resume` | Secondary button | Resume capture | Restarts audio streaming after pause | `recorder.captureState = recording`, `session.status = live` | `POST /api/voice/live/sessions/:id/resume` or websocket `session.resume` | P1 |
+| Control bar | `End` | Primary button | End recording | Stops capture and transitions to review/finalization | `recorder.captureState = stopping`, `session.status` | websocket `session.end` | P1 |
+| Control bar | Encounter status badges | Inline badges | Monitor visit | Shows status, duration, and connection state in one compact strip | `session.durationMs`, `transport.connectionState`, `session.status` | websocket `session.state` | P1 |
 | Live capture | Elapsed time | Timer label | Monitor duration | Shows live session duration | `session.durationMs` | optional heartbeat/session state | P1 |
 | Live capture | Connection state | Badge/pill | Monitor connection | Shows connected/reconnecting/error state | `transport.connectionState` | websocket `session.state` | P1 |
-| Live capture | Device name | Read-only text | Verify input | Shows active microphone name | local recorder/device state | None | P2 |
-| Live capture | `Pause` | Button | Pause capture | Temporarily stops sending audio without closing session | `recorder.captureState = paused`, `session.status = paused` | `POST /api/voice/live/sessions/:id/pause` or websocket `session.pause` | P1 |
-| Live capture | `Resume` | Button | Resume capture | Restarts audio streaming after pause | `recorder.captureState = recording`, `session.status = live` | `POST /api/voice/live/sessions/:id/resume` or websocket `session.resume` | P1 |
-| Live capture | `Stop` / end session | Button | End recording | Stops capture and transitions to review/finalization | `recorder.captureState = stopping`, `session.status` | websocket `session.end` | P1 |
-| Live capture | Quick marker buttons | Secondary buttons | Mark important moments | Adds lightweight semantic markers like meds/follow-up | marker state if added | later event endpoint | P3 |
 | Transcript | Transcript panel | Scrollable panel | Read transcript live | Displays rolling transcript as conversation unfolds | `transcript.segments`, `transcript.interimText` | websocket `transcript.partial`, `transcript.final` | P1 |
 | Transcript | Transcript segment rows | Streamed text rows | Follow conversation | Shows segment-by-segment transcript | `transcript.segments` | websocket transcript events | P1 |
 | Transcript | Speaker chips | Badge/chip | See attribution | Labels each segment as `Doctor`, `Patient`, or `Unknown` | segment speaker metadata | transcript normalization / diarization output | P1 |
@@ -212,15 +285,10 @@ This table converts the planned live conversation UI into implementation-facing 
 | Transcript | Final styling | Visual text state | Trust stable text | Marks stabilized transcript content | finalized segment flags | `transcript.final` | P1 |
 | Transcript | Low-confidence flags | Warning badge/icon | Spot ambiguity | Highlights uncertain transcript spans | segment confidence / flags | transcript quality output | P1 |
 | Transcript | Reconnect gap markers | Inline marker | Notice missing context | Shows likely missing audio/transcript gaps after reconnect | `transcript.hasGap` | connection + transcript events | P2 |
-| Draft extraction | Draft extraction panel | Side panel/cards | Watch structured draft | Shows live extracted clinical data | `draft.extractedData`, `draft.lastUpdatedAt` | websocket `draft.updated` | P2 |
-| Draft extraction | Symptoms / diagnosis draft | Data card | Review early interpretation | Displays draft diagnosis/symptom extraction | `draft.extractedData` | incremental extraction | P2 |
-| Draft extraction | Medications draft | Data card | Review med mentions/orders | Shows draft medications and possible orders | `draft.extractedData` | incremental extraction | P2 |
-| Draft extraction | Labs / radiology / procedures draft | Data cards | Review planned workup | Shows draft tests/procedures from transcript | `draft.extractedData` | incremental extraction | P2 |
-| Draft extraction | Follow-up / plan draft | Data card | Review care plan | Shows draft plan and follow-up content | `draft.extractedData` | incremental extraction | P2 |
-| Draft extraction | Review items count | Counter/badge | Monitor blockers | Shows number of unresolved review items | `draft.reviewItems.length` | `draft.updated`, `review.item.created` | P2 |
-| Pause/reconnect | `Paused` state banner | Status banner | Understand current state | Confirms session is paused, not lost | `session.status = paused` | session state event | P1 |
-| Pause/reconnect | `Reconnecting` banner | Status banner | Wait safely | Indicates websocket recovery in progress | `transport.connectionState = reconnecting` | session state event | P1 |
-| Pause/reconnect | `Waiting for microphone` banner | Status banner | Fix device issue | Indicates mic/device restoration is needed | `recorder.permission`, `recorder.captureState` | local/browser state | P1 |
+| Note panel | `Encounter` accordion section | Collapsible section | Review or edit visit metadata | Keeps patient/encounter/mic state visible without always occupying space | `session.linkedPatient`, `session.encounterLabel`, `recorder.*` | session snapshot + later patch API | P1 |
+| Note panel | `Note` accordion section | Collapsible section | Review generated note summary | Shows draft note in clinical terms: assessment, history, medications, orders, plan | `draft.extractedData`, `draft.lastUpdatedAt` | websocket `draft.updated` | P2 |
+| Note panel | Note review count | Badge/count | Monitor blockers | Shows unresolved review items without using a full dashboard card grid | `draft.reviewItems.length` | `draft.updated`, `review.item.created` | P2 |
+| State handling | Paused / reconnecting / mic error states | Compact badges + inline error surface | Understand current state | Keeps the visit looking stable and in-progress rather than lost | `session.status`, `transport.connectionState`, `session.error`, `recorder.permission` | session state event | P1 |
 | Review | Review queue | Review panel/list | Resolve ambiguities | Lists transcript/extraction items needing human review | `draft.reviewItems` | `GET /api/voice/live/sessions/:id`, review events | P2 |
 | Review | Approve/edit/reject controls | Action buttons + text input | Resolve review item | Lets user confirm or edit ambiguous structured items | review item local edit state | `POST /api/voice/live/sessions/:id/review` | P2 |
 | Review | Blocking review guard | Disabled state + helper text | Attempt finalize | Prevents finalize while blocking items remain | derived from review items | local + server validation | P2 |
@@ -234,17 +302,17 @@ This table converts the planned live conversation UI into implementation-facing 
 
 | Phase | UI scope |
 |---|---|
-| P1 | Navigation, preflight, start, pause, resume, stop, connection states, live transcript shell |
-| P2 | Draft extraction panel, review queue, finalize flow, open dashboard |
-| P3 | Historical refinements, quick markers, richer session history/admin polish |
+| P1 | Workspace rail, quiet mode switch, visits rail, encounter shell, start/pause/resume/end, transcript shell |
+| P2 | Note panel, review queue, finalize flow, open dashboard |
+| P3 | Historical refinements, transcript-to-note evidence linking, richer recovery/admin polish |
 
 ## Key UI Dependencies
 
 | UI feature | Backend dependency |
 |---|---|
-| `Start session` | session creation + websocket handshake |
+| `Start` | session creation + websocket handshake |
 | Live transcript panel | `transcript.partial` and `transcript.final` websocket events |
-| Draft extraction panel | incremental extraction + `draft.updated` events |
+| `Note` panel | incremental extraction + `draft.updated` events |
 | Review queue | review item persistence + review API |
 | `Finalize to dashboard` | final reconciliation + processed document creation |
 | `Open dashboard` | finalize response returning `documentId` |
@@ -387,7 +455,7 @@ type LiveTranscriptionAdapter = {
 
 Under the hood in phase 1:
 - chunks are assembled into short `.webm` or converted window files
-- the adapter invokes the current Gemini or Whisper file-based transcription tool
+- the adapter invokes the current proprietary file-based transcription path
 - the backend emits `partial` and `final` transcript events to the UI
 
 Later, the adapter can be swapped for a true streaming provider without changing the UI contract.
@@ -584,12 +652,14 @@ Track:
 
 ## Recommended Implementation Slices
 
+Slices 1-3 are largely implemented in the current workspace. The biggest remaining work is Slice 4 publication fidelity and Slice 5 hardening.
+
 ### Slice 1: Session skeleton
 - add storage bootstrap
 - add REST session create/list/get/delete
 - switch server bootstrap to shared HTTP server
 - add websocket auth and heartbeat
-- add UI preflight + start / pause / resume / stop shell
+- add UI encounter shell + start / pause / resume / end controls
 
 Acceptance:
 - a doctor can start a live session
@@ -597,7 +667,7 @@ Acceptance:
 - the backend persists session state
 
 ### Slice 2: Audio ingest + rolling transcript
-- add browser `MediaRecorder`
+- stabilize browser `MediaRecorder` capture across devices
 - send chunks over websocket
 - persist chunks and rolling combined asset
 - run micro-batch STT windows
@@ -609,16 +679,17 @@ Acceptance:
 
 ### Slice 3: Draft extraction
 - incremental extraction on stable transcript windows
-- draft cards in UI
+- note panel updates in UI
 - speaker-sensitive safety gating
 
 Acceptance:
-- medications / diagnosis / follow-up draft cards update during the session
+- medications / diagnosis / plan content updates inside the note panel during the session
 
 ### Slice 4: Review + finalize
 - review queue UI
 - final extraction reconciliation
-- processed document creation
+- published live document creation
+- dashboard-contract upgrade for live finalize
 - `Open dashboard`
 
 Acceptance:
@@ -635,11 +706,11 @@ Acceptance:
 ## Testing Plan
 
 ### Frontend
-- reducer tests for session state transitions
+- live session hook tests for session state transitions
 - component tests for:
-  - preflight
+  - encounter panel
   - transcript rendering
-  - reconnect banner
+  - compact reconnect / error state
   - finalize gating
 
 ### Backend
@@ -655,25 +726,26 @@ Acceptance:
 - receive transcript updates
 - resolve review items
 - finalize
-- open dashboard
+- verify publication handoff, including the current lightweight live-document behavior
 
-## Decisions To Lock Before Coding
+## Implementation Defaults To Keep
 
 ### Recommended defaults
 - keep live conversation inside `/upload` -> `Voice`
-- add nested mode tabs under Voice
+- keep `Voice` as one left-rail entry and switch modes from a single compact control
 - use `/api/voice/live/*` namespace
 - use websocket for transport, REST for lifecycle
 - use chunked micro-batch STT first, not vendor live API first
 - create `documents.json` entry only on finalize
 - use a dedicated live-session collection, not `voice_sessions.json`
-- use `useReducer` + custom hook for the active live session UI
+- accept the current split of websocket transport + REST snapshot hydration until direct websocket state consumption is worth the extra complexity
 
 ## Open Questions
 - Is encounter linking required before recording starts, or only before finalize?
 - Is transcript text editable before final extraction, or should review stay structured-item only?
 - Do we need clinician-only audio, or full doctor-patient diarization, in the first release?
-- Should live sessions appear in the main `/api/documents` queue after finalize only, or also in a separate history panel?
+- Should live finalize be upgraded to reuse `buildVoiceDocumentResult(...)` and `validateVoiceDashboardResult(...)` before publication?
+- Should the client consume `transcript.final` / `draft.updated` directly instead of relying mainly on five-second REST refresh?
 - What is the acceptable latency target for:
   - time to first transcript
   - time to first draft extraction
@@ -681,11 +753,12 @@ Acceptance:
 
 ## Recommendation Summary
 The best fit for this repository is:
-- a **nested live conversation mode** inside the current Voice workspace
+- a **quiet live conversation mode** inside the current Voice workspace
 - a **dedicated live session resource** under `/api/voice/live/*`
 - **websocket audio + event transport**
 - **file-backed rolling session persistence**
 - **micro-batch transcription first**, using the existing file-based STT boundary
 - **shared dashboard publication only at finalize**
+- a follow-up change that upgrades finalize from a lightweight `voice-live-*` row to the same validated dashboard contract used by uploaded dictation
 
 That path keeps the current architecture coherent while still opening the door to a true streaming STT provider later.

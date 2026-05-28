@@ -2,6 +2,7 @@ const cors = require("cors");
 const crypto = require("crypto");
 const express = require("express");
 const fs = require("fs/promises");
+const http = require("http");
 const multer = require("multer");
 const path = require("path");
 
@@ -17,10 +18,22 @@ const SourceHealthTool = require("../tools/chat/source_health.tool.cjs");
 const STTRouterAgent = require("../agents/stt_router_agent.cjs");
 const VoiceExtractorAgent = require("../agents/voice_extractor_agent.cjs");
 const { AuthService } = require("./auth_service.cjs");
+
+// Live Conversation Support
+const LiveConversationWebSocket = require("./live_conversation_websocket.cjs");
+const LiveConversationRoutes = require("./live_conversation_routes.cjs");
+const {
+  hydrateLiveConversationDocument,
+  isLiveConversationDocument,
+} = require("./live_conversation_document.cjs");
 const {
   VOICE_DASHBOARD_INCOMPLETE_ERROR,
   validateVoiceDashboardResult,
 } = require("./voice_result_validation.cjs");
+
+// Prescription Generation Support
+const { PrescriptionService } = require("./prescription_service.cjs");
+const prescriptionService = new PrescriptionService();
 
 const app = express();
 
@@ -32,7 +45,7 @@ function logWithFlush(...args) {
 
 const PORT = Number(process.env.PORT || 8001);
 const GEMMA_URL = process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions";
-const MODEL = process.env.GEMMA_MODEL || "google/gemma-4-31B-it";
+const MODEL = process.env.GEMMA_MODEL || "google/gemma-4-26B-A4B-it";
 const EXTRACTION_GEMMA_TIMEOUT_MS = Number.parseInt(
   process.env.EXTRACTION_GEMMA_TIMEOUT_MS || process.env.GEMMA_TIMEOUT_MS || "240000",
   10
@@ -87,6 +100,16 @@ const authService = new AuthService({
   storageDir,
 });
 
+// Initialize Live Conversation components
+const liveConversationWebSocket = new LiveConversationWebSocket({
+  storageDir,
+  debug: process.env.LIVE_CONVERSATION_DEBUG === "true",
+});
+const liveConversationRoutes = new LiveConversationRoutes({
+  storageDir,
+  documentsPath,
+});
+
 app.use(cors({
   origin(origin, callback) {
     if (!origin || frontendOrigins.has(origin)) {
@@ -106,6 +129,10 @@ app.get('/test-agent', (req, res) => {
 
 function publicDocument(document) {
   const { filePath, audioPath, transcriptPath, ...rest } = document;
+
+  if (isLiveConversationDocument(rest) && !rest.result?.dashboard_cards) {
+    hydrateLiveConversationDocument(rest, null);
+  }
 
   // Fix status if user_action_required is true but status is "processed"
   const needsAction = rest.result?.meta?.user_action_required ||
@@ -883,6 +910,7 @@ function buildVoiceReviewItemsFromTranscript(segments = [], transcript = {}) {
 
   for (const segment of segments) {
     const needsReview =
+      segment.flags.includes("requires_review") ||
       segment.flags.includes("low_confidence") ||
       segment.flags.includes("dosage") ||
       segment.flags.includes("medication") ||
@@ -922,6 +950,24 @@ function buildVoiceReviewItemsFromTranscript(segments = [], transcript = {}) {
       suggestedValue: "Gemini signaled potential missing audio in the dictation.",
       provenanceText: normalizeVoiceText(transcript.rawText || transcript.normalizedText) || "Transcript quality gate raised a missing-audio flag.",
       provenanceTime: "Full audio",
+      resolution: "pending",
+      editedValue: "",
+    });
+  }
+
+  // If we have transcript segments but no review items, create a default approval item
+  if (reviewItems.length === 0 && segments.length > 0) {
+    const firstSegment = segments[0];
+    reviewItems.push({
+      id: crypto.randomUUID(),
+      category: "transcript",
+      severity: "low",
+      reasonCode: "transcript_approval",
+      title: "Review and approve transcript",
+      extractedValue: firstSegment.text || "",
+      suggestedValue: firstSegment.text || "",
+      provenanceText: firstSegment.text || "",
+      provenanceTime: `${firstSegment.startLabel || "00:00"} - ${firstSegment.endLabel || "00:30"}`,
       resolution: "pending",
       editedValue: "",
     });
@@ -1142,14 +1188,18 @@ function buildVoiceDocumentResult({
 function deriveVoiceDocumentStatus(session = {}) {
   const reviewItems = Array.isArray(session.reviewItems) ? session.reviewItems : [];
   const hasPendingReview = reviewItems.some((item) => item?.resolution === "pending");
+
+  console.log(`[deriveVoiceDocumentStatus] hasPendingReview: ${hasPendingReview}, reviewItems.length: ${reviewItems.length}, segments.length: ${session.segments?.length || 0}`);
+
   if (hasPendingReview) {
     return "review_required";
   }
-  if (session.extractedData && session.dashboardPayload) {
+  // If all reviews are resolved and we have a transcript, we're "processed" (ready for queue/Phase 2)
+  if (Array.isArray(session.segments) && session.segments.length > 0) {
     return "processed";
   }
-  if (Array.isArray(session.segments) && session.segments.length > 0) {
-    return "queued";
+  if (session.extractedData && session.dashboardPayload) {
+    return "queued_for_extraction";
   }
   return session.status || "failed";
 }
@@ -1232,6 +1282,28 @@ async function repairVoiceDocumentsFromSessions() {
 
       const voiceSession = sessionById.get(document.id);
       const repaired = applyVoiceSessionToDocument(document, voiceSession);
+      if (repaired) {
+        repairedIds.push(document.id);
+      }
+    }
+  });
+
+  return repairedIds;
+}
+
+async function repairLiveConversationDocuments() {
+  const liveSessions = await liveConversationRoutes.store.list();
+  const sessionByDocumentId = new Map(
+    liveSessions.map((session) => [`voice-live-${session.id}`, session]),
+  );
+  const repairedIds = [];
+
+  await mutateDocuments(async (documents) => {
+    for (const document of documents) {
+      if (!isLiveConversationDocument(document)) continue;
+
+      const liveSession = sessionByDocumentId.get(document.id) || null;
+      const repaired = hydrateLiveConversationDocument(document, liveSession);
       if (repaired) {
         repairedIds.push(document.id);
       }
@@ -1435,7 +1507,9 @@ function isPublicApiRequest(req) {
     (method === "GET" && routePath === "/api/health") ||
     (method === "GET" && routePath === "/api/auth/session") ||
     (method === "POST" && routePath === "/api/auth/login") ||
-    (method === "POST" && routePath === "/api/auth/logout")
+    (method === "POST" && routePath === "/api/auth/logout") ||
+    // Prescription generation routes (TODO: require auth in production)
+    (routePath.startsWith("/api/prescriptions"))
   );
 }
 
@@ -1598,6 +1672,9 @@ app.use(async (req, res, next) => {
 });
 
 registerAnalyticsRoutes(app, analyticsStore, readDocuments);
+
+// Register Live Conversation routes
+liveConversationRoutes.registerRoutes(app, authService);
 
 async function requireAuthenticatedAssetAccess(req, res, next) {
   try {
@@ -1895,8 +1972,15 @@ app.post("/api/voice/process", async (req, res) => {
       continue;
     }
 
-    const transcriptionResult = await voiceTranscriptionTool.execute(queuedSession.audioPath, {
+    const transcriptionResult = await voiceTranscriptionTool.executeWithProgress(queuedSession.audioPath, {
       mimeType: queuedSession.mimeType,
+    }, async (progress) => {
+      // Update voice session with progress message
+      await updateVoiceSession(id, async (currentSession) => {
+        currentSession.progressMessage = progress.message;
+        currentSession.progressStage = progress.stage;
+        currentSession.progressPercent = progress.progress;
+      });
     });
 
     if (!transcriptionResult.success) {
@@ -2137,9 +2221,11 @@ app.post("/api/voice/:id/review", async (req, res) => {
   const updatedSession = await updateVoiceSession(req.params.id, async (session) => {
     const reviewItem = session.reviewItems.find((item) => item.id === reviewItemId);
     if (!reviewItem) {
+      console.log(`[review] Review item ${reviewItemId} not found in session ${req.params.id}`);
       return;
     }
 
+    console.log(`[review] Before: resolution=${reviewItem.resolution}, status=${session.status}`);
     reviewItem.resolution = resolution;
     if (resolution === "edited") {
       reviewItem.editedValue = editedValue || reviewItem.suggestedValue || reviewItem.extractedValue;
@@ -2147,6 +2233,7 @@ app.post("/api/voice/:id/review", async (req, res) => {
 
     const hasPending = session.reviewItems.some((item) => item.resolution === "pending");
     session.status = hasPending ? "review_required" : "processed";
+    console.log(`[review] After: resolution=${reviewItem.resolution}, hasPending=${hasPending}, new status=${session.status}`);
   });
 
   if (!updatedSession) {
@@ -2397,6 +2484,114 @@ app.post("/api/voice/extract", async (req, res) => {
   console.log(`📊 Voice extraction complete: ${processed.length} success, ${failed.length} failed\n`);
   return res.json({ processed, failed });
 });
+
+// ============================================================================
+// PRESCRIPTION GENERATION API
+// ============================================================================
+
+/**
+ * GET /api/prescriptions/data/:documentId
+ * Get prescription data for review/edit (without generating files)
+ */
+app.get("/api/prescriptions/data/:documentId", async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const data = await prescriptionService.getPrescriptionData(documentId);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error("Error getting prescription data:", error.message);
+    res.status(404).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/prescriptions/generate
+ * Generate prescription HTML/PDF from processed document
+ * Body: { documentId, format: "html" | "pdf" | "both", updateData }
+ */
+app.post("/api/prescriptions/generate", async (req, res) => {
+  try {
+    const { documentId, format = "both", updateData = null } = req.body;
+
+    if (!documentId) {
+      return res.status(400).json({ success: false, error: "documentId is required" });
+    }
+
+    // Initialize service
+    await prescriptionService.initialize();
+
+    // Generate prescription
+    const result = await prescriptionService.generatePrescription(documentId, {
+      format,
+      updateData
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error("Error generating prescription:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/prescriptions/download/:filename
+ * Download generated prescription file
+ */
+app.get("/api/prescriptions/download/:filename", async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, "storage", "prescriptions", filename);
+
+    // Security check: ensure filename doesn't contain path traversal
+    if (filename.includes("..") || filename.includes("/")) {
+      return res.status(400).json({ success: false, error: "Invalid filename" });
+    }
+
+    // Check if file exists
+    try {
+      await fs.access(filePath);
+    } catch {
+      return res.status(404).json({ success: false, error: "File not found" });
+    }
+
+    // Determine content type
+    const ext = path.extname(filename).toLowerCase();
+    const contentType = ext === ".pdf" ? "application/pdf" : "text/html";
+
+    // Send file
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error("Error downloading prescription:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Serve prescription files as static assets (no auth required for generated prescriptions)
+app.use('/prescriptions', express.static(path.join(__dirname, "storage", "prescriptions")));
+
+// Serve live conversation audio files with audio-friendly content types.
+app.use('/live-conversation-audio', express.static(path.join(__dirname, "storage", "live_conversation_audio"), {
+  setHeaders(res, filePath) {
+    const lowerPath = String(filePath || "").toLowerCase();
+    if (lowerPath.endsWith(".webm")) {
+      res.setHeader("Content-Type", "audio/webm");
+      return;
+    }
+    if (lowerPath.endsWith(".mp4") || lowerPath.endsWith(".m4a")) {
+      res.setHeader("Content-Type", "audio/mp4");
+      return;
+    }
+    if (lowerPath.endsWith(".mp3")) {
+      res.setHeader("Content-Type", "audio/mpeg");
+      return;
+    }
+    if (lowerPath.endsWith(".ogg")) {
+      res.setHeader("Content-Type", "audio/ogg");
+    }
+  },
+}));
 
 // Serve masked images.
 // First serve the correct storage location, then fall back to the legacy mistakenly nested path
@@ -4721,10 +4916,22 @@ ensureStorage()
     if (repairedVoiceDocumentIds.length > 0) {
       console.log(`Repaired ${repairedVoiceDocumentIds.length} voice document record(s) from saved voice sessions.`);
     }
+    const repairedLiveConversationDocumentIds = await repairLiveConversationDocuments();
+    if (repairedLiveConversationDocumentIds.length > 0) {
+      console.log(`Repaired ${repairedLiveConversationDocumentIds.length} live conversation document record(s).`);
+    }
     const documents = await readDocuments();
     await analyticsStore.backfillDocuments(documents);
-    app.listen(PORT, () => {
+
+    // Create HTTP server and attach Express app
+    const server = http.createServer(app);
+
+    // Attach WebSocket server for live conversation
+    liveConversationWebSocket.attach(server, authService);
+
+    server.listen(PORT, () => {
       console.log(`Doctor dashboard processing server listening on http://localhost:${PORT}`);
+      console.log(`Live conversation WebSocket: ws://localhost:${PORT}/api/voice/live/sessions/:sessionId/stream`);
     });
   })
   .catch((error) => {

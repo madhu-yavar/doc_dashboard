@@ -59,7 +59,7 @@
     <text x="128" y="502" class="cardTitle">Voice</text>
     <text x="128" y="534" class="body">Dictation and encounter audio</text>
     <rect x="128" y="560" width="118" height="32" rx="16" fill="#EAF6F0"/>
-    <text x="154" y="581" class="pill">Whisper-first</text>
+    <text x="154" y="581" class="pill">Voice-first</text>
     <rect x="256" y="560" width="118" height="32" rx="16" fill="#F2F4F7"/>
     <text x="280" y="581" class="pill">Fallback-ready</text>
   </g>

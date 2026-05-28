@@ -93,6 +93,9 @@ type VoiceSession = {
   segments: VoiceSegment[];
   reviewItems: VoiceReviewItem[];
   extractionPreview?: VoiceExtractionPreview;
+  progressMessage?: string;
+  progressStage?: string;
+  progressPercent?: number;
 };
 
 const STATUS_META: Record<
@@ -229,7 +232,20 @@ function getStatusMeta(status: VoiceQueueStatus) {
 function isSessionReadyForQueue(session: VoiceSession) {
   const hasTranscript = session.segments.length > 0;
   const allReviewsResolved = session.reviewItems.every((item) => item.resolution !== "pending");
-  return hasTranscript && allReviewsResolved && session.status !== "queued_for_extraction";
+  const isAlreadyQueued = session.status === "queued_for_extraction" || session.status === "queued";
+  // Session is ready if it has transcript, all reviews resolved, and is not already queued
+  const isReady = hasTranscript && allReviewsResolved && !isAlreadyQueued;
+  console.log("🔍 [queue] Session ready check:", {
+    sessionId: session.id,
+    fileName: session.fileName,
+    hasTranscript,
+    allReviewsResolved,
+    pendingReviewCount: session.reviewItems.filter((i) => i.resolution === "pending").length,
+    status: session.status,
+    isAlreadyQueued,
+    isReady,
+  });
+  return isReady;
 }
 
 function VoiceMetricInline({
@@ -419,13 +435,16 @@ export default function VoiceDictationWorkspace({ onDocumentsChanged }: VoiceDic
 
     try {
       console.log("🎤 Starting STT transcription for", ids.length, "file(s)...");
-      console.log("🎤 Backend: Whisper (self-hosted at WHISPER_STT_URL)");
+      console.log("🎤 Mode: HYBRID (MedASR + Whisper → Gemma Reconciliation)");
 
       // Start transcription in background
       const transcriptionPromise = apiFetch(`${API_BASE}/voice/process`, {
         method: "POST",
         body: JSON.stringify({ ids }),
       });
+
+      // Track last progress message to avoid spam
+      const lastProgressMessage = new Map<string, string>();
 
       // Poll for status updates while transcribing
       const pollInterval = setInterval(async () => {
@@ -440,8 +459,12 @@ export default function VoiceDictationWorkspace({ onDocumentsChanged }: VoiceDic
               const updated = updatedSessions.find((s) => s.id === session.id);
               if (updated && ids.includes(session.id)) {
                 // Log progress for sessions still transcribing
-                if (updated.status === "transcribing") {
-                  console.log(`⏳️ [${session.fileName}] Still transcribing...`);
+                if (updated.status === "transcribing" && updated.progressMessage) {
+                  const lastMessage = lastProgressMessage.get(session.id);
+                  if (updated.progressMessage !== lastMessage) {
+                    console.log(`⏳️ [${session.fileName}] ${updated.progressMessage}`);
+                    lastProgressMessage.set(session.id, updated.progressMessage);
+                  }
                 }
                 return updated;
               }
@@ -560,6 +583,7 @@ export default function VoiceDictationWorkspace({ onDocumentsChanged }: VoiceDic
     }
 
     try {
+      console.log("🔍 [review] Resolving review item:", { itemId, resolution });
       const response = await apiFetch(`${API_BASE}/voice/${selectedSessionId}/review`, {
         method: "POST",
         body: JSON.stringify({
@@ -569,6 +593,11 @@ export default function VoiceDictationWorkspace({ onDocumentsChanged }: VoiceDic
         }),
       });
       const payload = await expectApiJson<{ session: VoiceSession }>(response, "Unable to save review decision.");
+      console.log("🔍 [review] Updated session:", {
+        id: payload.session.id,
+        status: payload.session.status,
+        reviewItems: payload.session.reviewItems.map((ri) => ({ id: ri.id, resolution: ri.resolution })),
+      });
       setVoiceSessions((current) =>
         current.map((session) => (session.id === payload.session.id ? payload.session : session)),
       );
@@ -577,6 +606,7 @@ export default function VoiceDictationWorkspace({ onDocumentsChanged }: VoiceDic
       setEditingValue("");
       await onDocumentsChanged?.();
     } catch (error) {
+      console.error("❌ [review] Error:", error);
       toast.error(error instanceof Error ? error.message : "Unable to save review decision.");
     }
   };
@@ -979,12 +1009,17 @@ export default function VoiceDictationWorkspace({ onDocumentsChanged }: VoiceDic
                     </TabsList>
                   </Tabs>
                 ) : null}
-                {selectedSession.status !== "queued_for_extraction" && selectedSession.reviewItems.some((item) => item.resolution === "pending") ? (
+                {selectedSession.reviewItems.some((item) => item.resolution === "pending") && selectedSession.status !== "queued_for_extraction" && selectedSession.status !== "queued" ? (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                     <p className="font-medium">Approval required</p>
                     <p className="text-xs">Approve this transcript, then select it above and add it to queue.</p>
                   </div>
-                ) : selectedSession.status !== "queued_for_extraction" && selectedSession.segments.length > 0 ? (
+                ) : selectedSession.status === "queued_for_extraction" || selectedSession.status === "queued" ? (
+                  <div className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800">
+                    <p className="font-medium">In queue</p>
+                    <p className="text-xs">This session has been added to the documents queue.</p>
+                  </div>
+                ) : selectedSession.segments.length > 0 ? (
                   <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                     <p className="font-medium">Ready for queue</p>
                     <p className="text-xs">Select this file above to add it to the documents queue.</p>

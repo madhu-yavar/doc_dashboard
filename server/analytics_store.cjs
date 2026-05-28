@@ -8,6 +8,8 @@ const CANONICAL_DOCUMENT_TYPES = [
   "outpatient_record",
   "lab_report",
   "chart_note",
+  "voice_dictation",
+  "live_conversation",
   "voice",
   "unknown",
 ];
@@ -71,9 +73,12 @@ function resolveProviderTokens(document) {
 
 function buildDocumentMetrics(document) {
   const result = document?.result;
+  const isLiveConversation = result?.meta?.sessionType === "live_conversation";
   // For voice documents, check documentType first; otherwise check meta
   const documentType = normalizeDocumentType(
-    document?.documentType === "voice" ? "voice" :
+    document?.documentType === "voice"
+      ? (isLiveConversation ? "live_conversation" : "voice_dictation")
+      :
     result?.meta?.router?.detected_type || result?.meta?.document_type
   );
   const investigations = toArray(result?.extracted_data?.investigations);
@@ -236,7 +241,9 @@ class AnalyticsStore {
     // since both use the same DischargeExtractorAgent
     function normalizeForAnalytics(documentType) {
       const normalized = normalizeDocumentType(documentType);
-      return normalized === "inpatient_record" ? "discharge_summary" : normalized;
+      if (normalized === "inpatient_record") return "discharge_summary";
+      if (normalized === "voice") return "voice_dictation";
+      return normalized;
     }
 
     const byType = new Map(

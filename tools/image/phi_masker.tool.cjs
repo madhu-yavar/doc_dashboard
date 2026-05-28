@@ -19,7 +19,7 @@ class PhiMaskerTool {
     this.name = "PHI Masker";
     this.version = "1.0.0";
     this.gemmaUrl = config.gemmaUrl || process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions";
-    this.gemmaModel = config.gemmaModel || "google/gemma-4-31B-it";
+    this.gemmaModel = config.gemmaModel || "google/gemma-4-26B-A4B-it";
     this.tempDir = config.tempDir || "/tmp/phi_masking";
     this.maskColor = config.maskColor || [0, 0, 0]; // Black
   }

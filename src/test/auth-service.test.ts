@@ -87,6 +87,24 @@ describe("AuthService", () => {
     expect(session?.user.role).toBe("doctor");
   });
 
+  it("authenticates users directly from request cookies for live conversation routes", async () => {
+    process.env.AUTH_BOOTSTRAP_DOCTOR_USERNAME = "doctor.user";
+    process.env.AUTH_BOOTSTRAP_DOCTOR_PASSWORD_HASH = await bcrypt.hash("doctor-pass", 8);
+
+    const authService = await makeAuthService();
+    const loginResult = await authService.login("doctor.user", "doctor-pass");
+
+    const req = {
+      headers: {
+        cookie: `dd_session=${encodeURIComponent(loginResult?.session.sessionId || "")}`,
+      },
+    };
+    const user = await authService.authenticateFromRequest(req);
+
+    expect(user?.username).toBe("doctor.user");
+    expect(user?.role).toBe("doctor");
+  });
+
   it("rejects expired sessions and removes them on logout", async () => {
     process.env.AUTH_BOOTSTRAP_ADMIN_USERNAME = "admin.user";
     process.env.AUTH_BOOTSTRAP_ADMIN_PASSWORD_HASH = await bcrypt.hash("admin-pass", 8);

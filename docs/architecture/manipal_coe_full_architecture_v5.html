@@ -1,0 +1,1900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Agent Clinical Intelligence System v5</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-primary: #2563eb;
+      --color-primary-dark: #1e40af;
+      --color-primary-light: #eff6ff;
+      --color-secondary: #64748b;
+      --color-accent: #0ea5e9;
+      --color-success: #22c55e;
+      --color-warning: #f59e0b;
+      --color-surface: #ffffff;
+      --color-background: #f8fafc;
+      --color-text-primary: #1e293b;
+      --color-text-secondary: #64748b;
+      --color-border: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--color-background);
+      padding: 20px;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: var(--color-surface);
+      border-radius: 16px;
+      box-shadow: var(--shadow-lg);
+    }
+    .header {
+      background: var(--color-primary);
+      color: white;
+      padding: 28px 40px;
+      text-align: center;
+      border-radius: 16px 16px 0 0;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.3px;
+    }
+    .header p {
+      font-size: 15px;
+      opacity: 0.9;
+    }
+    .nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 16px 40px;
+      background: white;
+      border-bottom: 1px solid var(--color-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-btn {
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      background: var(--color-background);
+      color: var(--color-text-primary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .nav-btn:hover {
+      border-color: var(--color-primary);
+      background: var(--color-primary-light);
+    }
+    .section {
+      padding: 40px 32px;
+      border-bottom: 1px solid var(--color-border);
+    }
+    .section:last-child {
+      border-bottom: none;
+      border-radius: 0 0 16px 16px;
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--color-primary);
+    }
+    .runtime-note {
+      margin: 0 0 24px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #ecfeff;
+      border: 1px solid #a5f3fc;
+      color: #155e75;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    /* Anchor link offset for fixed header */
+    .section {
+      scroll-margin-top: 120px;
+    }
+
+    /* ===== AGENT ARCHITECTURE STYLES ===== */
+    .architecture-flow {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px 30px 20px 60px;
+      position: relative;
+    }
+    .flow-title {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    .flow-title h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 5px;
+    }
+    .flow-title p {
+      font-size: 13px;
+      color: #64748b;
+    }
+    .level {
+      position: relative;
+      margin-bottom: 16px;
+    }
+    .level-title {
+      position: absolute;
+      left: -50px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 10px;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .level-content {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .box {
+      border-radius: 8px;
+      padding: 10px 14px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: all 0.3s ease;
+      cursor: default;
+    }
+    .box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+    }
+    .orchestrator { background: #8b5cf6; color: white; padding: 12px 30px; }
+    .agent { background: #ec4899; color: white; min-width: 120px; }
+    .sub-agent { background: #f472b6; color: white; min-width: 100px; font-size: 10px; padding: 8px 12px; }
+    .skill { background: #3b82f6; color: white; min-width: 95px; font-size: 11px; padding: 9px 12px; }
+    .tool { background: #10b981; color: white; min-width: 75px; font-size: 10px; padding: 8px 10px; }
+    .llm { background: #f59e0b; color: white; padding: 12px 40px; }
+    .box-title { font-weight: 600; margin-bottom: 2px; font-size: 11px; }
+    .box-desc { font-size: 9px; opacity: 0.9; }
+    .connector-vertical {
+      width: 2px;
+      height: 22px;
+      margin: 0 auto;
+      position: relative;
+      background: #cbd5e1;
+      overflow: hidden;
+    }
+    .connector-vertical::before {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to bottom, transparent, #64748b, transparent);
+      animation: flowDown 1.5s linear infinite;
+    }
+    .connector-vertical::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 6px solid #64748b;
+    }
+    @keyframes flowDown {
+      0% { top: -100%; }
+      100% { top: 100%; }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.88; }
+    }
+    .box.active { animation: pulse 2s ease-in-out infinite; }
+    .level:nth-child(3) .box { animation-delay: 0s; }
+    .level:nth-child(5) .box { animation-delay: 0.3s; }
+    .level:nth-child(7) .box { animation-delay: 0.6s; }
+    .level:nth-child(9) .box { animation-delay: 0.9s; }
+    .level:nth-child(11) .box { animation-delay: 1.2s; }
+    .tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 2px 5px;
+      border-radius: 6px;
+      font-size: 7px;
+      margin-top: 2px;
+    }
+    .example-section {
+      margin-top: 22px;
+      padding: 15px;
+      background: #f8fafc;
+      border-radius: 10px;
+      border-left: 4px solid #8b5cf6;
+    }
+    .example-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 10px;
+    }
+    .example-flow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      font-size: 10px;
+    }
+    .example-step {
+      background: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+      white-space: nowrap;
+    }
+    .example-arrow { color: #94a3b8; font-size: 11px; }
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #e2e8f0;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #64748b;
+    }
+    .legend-box {
+      width: 20px;
+      height: 14px;
+      border-radius: 3px;
+    }
+    .legend-orchestrator { background: #8b5cf6; }
+    .legend-agent { background: #ec4899; }
+    .legend-skill { background: #3b82f6; }
+    .legend-tool { background: #10b981; }
+    .legend-llm { background: #f59e0b; }
+    .category-pill {
+      display: inline-block;
+      background: rgba(0,0,0,0.05);
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-size: 7px;
+    }
+
+    /* ===== SKILLS FRAMEWORK STYLES ===== */
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .skill-category {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .skill-category-header {
+      padding: 12px 16px;
+      color: white;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .header-extraction { background: #2563eb; }
+    .header-validation { background: #22c55e; }
+    .header-generation { background: #f59e0b; }
+    .header-presentation { background: #8b5cf6; }
+    .header-chat { background: #ec4899; }
+    .skill-items {
+      padding: 12px 16px;
+    }
+    .skill-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .skill-item:last-child { border-bottom: none; }
+    .skill-name {
+      font-size: 11px;
+      color: #334155;
+      font-weight: 500;
+    }
+    .skill-tools {
+      font-size: 9px;
+      color: #94a3b8;
+    }
+
+    /* ===== SVG STYLES ===== */
+    .diagram-svg {
+      width: 100%;
+      height: auto;
+    }
+
+    /* ===== DATA FLOW STYLES ===== */
+    .dataflow-shell {
+      background:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(12, 18, 32, 1) 100%);
+      border: 1px solid #1e293b;
+      border-radius: 24px;
+      padding: 28px;
+      color: #e2e8f0;
+      box-shadow: 0 22px 60px rgba(15, 23, 42, 0.28);
+      position: relative;
+      overflow: hidden;
+    }
+    .dataflow-shell::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(148,163,184,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,0.05) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+    .dataflow-header,
+    .dataflow-band,
+    .dataflow-columns,
+    .dataflow-lane,
+    .dataflow-footer {
+      position: relative;
+      z-index: 1;
+    }
+    .dataflow-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      margin-bottom: 22px;
+    }
+    .dataflow-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+    .dataflow-heading {
+      font-size: 28px;
+      font-weight: 800;
+      color: #f8fafc;
+      margin-bottom: 6px;
+    }
+    .dataflow-subtitle {
+      font-size: 14px;
+      color: #94a3b8;
+      max-width: 760px;
+      line-height: 1.5;
+    }
+    .dataflow-key {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      min-width: 250px;
+    }
+    .dataflow-pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      border: 1px solid transparent;
+      background: rgba(15, 23, 42, 0.72);
+      white-space: nowrap;
+    }
+    .pill-write {
+      color: #bbf7d0;
+      border-color: rgba(34, 197, 94, 0.45);
+    }
+    .pill-read {
+      color: #cbd5e1;
+      border-color: rgba(148, 163, 184, 0.4);
+    }
+    .pill-llm {
+      color: #fde68a;
+      border-color: rgba(245, 158, 11, 0.45);
+    }
+    .dataflow-band {
+      display: grid;
+      grid-template-columns: 220px 48px minmax(0, 1fr);
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .band-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid #334155;
+      border-radius: 18px;
+      padding: 18px 20px;
+      min-height: 104px;
+    }
+    .band-card h3 {
+      font-size: 15px;
+      color: #f8fafc;
+      margin-bottom: 8px;
+    }
+    .band-card p {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.45;
+    }
+    .band-card-workspace {
+      border-color: rgba(59, 130, 246, 0.5);
+      background: linear-gradient(135deg, rgba(20, 44, 78, 0.95), rgba(21, 63, 103, 0.88));
+    }
+    .band-arrow {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #94a3b8;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .band-tags {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .band-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: #dbeafe;
+      background: rgba(255,255,255,0.12);
+      border-radius: 999px;
+      padding: 6px 10px;
+    }
+    .dataflow-columns {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 34px minmax(180px, 1.1fr) 34px minmax(180px, 1.1fr) 34px minmax(180px, 1fr) 34px minmax(180px, 1fr);
+      gap: 0;
+      margin-bottom: 10px;
+      padding: 0 6px;
+    }
+    .dataflow-columns div {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+    .dataflow-columns .arrow-spacer {
+      opacity: 0;
+    }
+    .dataflow-lanes {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .dataflow-lane {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 34px minmax(180px, 1.1fr) 34px minmax(180px, 1.1fr) 34px minmax(180px, 1fr) 34px minmax(180px, 1fr);
+      align-items: stretch;
+      gap: 0;
+      padding: 6px;
+      border-radius: 22px;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(51, 65, 85, 0.55);
+    }
+    .lane-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .df-card {
+      min-height: 132px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-left: 5px solid #334155;
+      border-radius: 18px;
+      padding: 16px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      margin: 0 2px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .df-card-kicker {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 10px;
+    }
+    .df-card h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 8px;
+      line-height: 1.25;
+    }
+    .df-card p {
+      font-size: 13px;
+      line-height: 1.45;
+      color: #94a3b8;
+    }
+    .df-card-metric {
+      margin-top: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #e2e8f0;
+    }
+    .df-card-request { border-left-color: #8b5cf6; }
+    .df-card-action { border-left-color: #38bdf8; }
+    .df-card-storage { border-left-color: #22c55e; }
+    .df-card-reason { border-left-color: #f59e0b; }
+    .df-card-result { border-left-color: #94a3b8; }
+    .dataflow-footer {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .footer-card {
+      background: rgba(15, 23, 42, 0.78);
+      border: 1px solid rgba(51, 65, 85, 0.55);
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .footer-card h4 {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #cbd5e1;
+      margin-bottom: 10px;
+    }
+    .footer-card p {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #94a3b8;
+    }
+    .footer-card strong {
+      color: #f8fafc;
+    }
+    .footer-write { border-left: 4px solid #22c55e; }
+    .footer-read { border-left: 4px solid #94a3b8; }
+    .footer-llm { border-left: 4px solid #f59e0b; }
+    .footer-time { border-left: 4px solid #38bdf8; }
+    @media (max-width: 1220px) {
+      .dataflow-columns {
+        display: none;
+      }
+      .dataflow-lane {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      .lane-arrow {
+        min-height: 22px;
+        font-size: 18px;
+        transform: rotate(90deg);
+      }
+      .dataflow-footer {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 900px) {
+      .dataflow-header,
+      .dataflow-band {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+      .band-arrow {
+        transform: rotate(90deg);
+        min-height: 18px;
+      }
+      .dataflow-shell {
+        padding: 20px;
+      }
+      .dataflow-heading {
+        font-size: 23px;
+      }
+      .dataflow-key {
+        justify-content: flex-start;
+      }
+      .dataflow-footer {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Multi-Agent Clinical Intelligence System v5</h1>
+      <p>Doctor Dashboard v5 • PDF + Uploaded Dictation + Live Conversation Architecture</p>
+    </div>
+
+    <div class="nav">
+      <a href="#agent-architecture" class="nav-btn">🔄 Agent Architecture</a>
+      <a href="#data-flow" class="nav-btn">📊 Data Flow</a>
+      <a href="#skills-framework" class="nav-btn">🛠️ Skills Framework</a>
+      <a href="#safety-security" class="nav-btn">🛡️ Safety &amp; Security</a>
+    </div>
+
+    <!-- ===== SECTION 1: AGENT ARCHITECTURE ===== -->
+    <div class="section" id="agent-architecture">
+      <h2 class="section-title">🔄 Agent Architecture Flow</h2>
+      <div class="architecture-flow">
+        <div class="flow-title">
+          <h2>Orchestrator → Agents → Skills → Tools → LLM</h2>
+        </div>
+        <div class="runtime-note">
+          Current runtime: the Express server supports <strong>three intake paths</strong>. PDFs go through <strong>DocumentTypeRouter</strong>, which classifies the document and routes it to a specialized extractor agent. Uploaded voice dictation goes through a <strong>swappable STT boundary</strong>, then <strong>VoiceExtractorAgent</strong>, shared dashboard mapping, and <strong>dashboard-readiness validation</strong> before a record can remain <code>processed</code>. Live conversation runs through a dedicated <strong>session resource + websocket transport</strong>, chunked transcription via <strong>LiveConversationSTTAgent</strong>, rolling draft-note extraction, and review-first finalization. The important current caveat is publication fidelity: live finalize currently creates a lightweight <code>voice-live-*</code> queue row and does <strong>not</strong> yet reuse the full validated dictation dashboard contract. Processing Insights are served separately from <code>analytics.sqlite</code> through <code>/api/analytics/overview</code>.
+        </div>
+
+        <div class="level">
+          <span class="level-title">Level 5</span>
+          <div class="level-content">
+            <div class="box orchestrator active">
+              <div class="box-title">🎯 Orchestrator</div>
+              <div class="box-desc">Upload Center • Queue sync • PDF/voice workflows</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector-vertical"></div>
+
+        <div class="level">
+          <span class="level-title">Level 4</span>
+          <div class="level-content">
+            <div class="box agent active">
+              <div class="box-title">📋 Document Type Router</div>
+              <div class="box-desc">Auto-detects doc type • Routes to specialist</div>
+              <span class="tag">Classifier</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">🎙️ Voice Dictation Extractor</div>
+              <div class="box-desc">STT boundary • review gating • dashboard map</div>
+              <span class="tag">Voice</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">📡 Live Conversation Runtime</div>
+              <div class="box-desc">REST + WebSocket • chunked STT • draft notes</div>
+              <span class="tag">Streaming</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">📄 Discharge Extractor</div>
+              <div class="box-desc">8 Skills • 30-45s</div>
+              <span class="tag">ReAct</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">🏥 Outpatient Extractor</div>
+              <div class="box-desc">OPD Records • Consultation data</div>
+              <span class="tag">ReAct</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">🧪 Lab Report Extractor</div>
+              <div class="box-desc">Lab results • Reference ranges</div>
+              <span class="tag">ReAct</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">📝 Chart Note Extractor</div>
+              <div class="box-desc">Progress notes • SOAP format</div>
+              <span class="tag">ReAct</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">💬 Doctor Assistant</div>
+              <div class="box-desc">7 Sub-agents • 3-8s</div>
+              <span class="tag">Multi-Agent</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">✍️ Chart Note Composer</div>
+              <div class="box-desc">1 Skill • 15-25s</div>
+              <span class="tag">ReAct</span>
+            </div>
+            <div class="box agent active">
+              <div class="box-title">🖥️ Dashboard Presenter</div>
+              <div class="box-desc">3 Skills • UI Components</div>
+              <span class="tag">Transform</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector-vertical"></div>
+
+        <!-- Doctor Assistant Sub-Agents -->
+        <div class="level">
+          <span class="level-title"></span>
+          <div class="level-content">
+            <div class="box sub-agent active">
+              <div class="box-title">🔍 Query Intent</div>
+            </div>
+            <div class="box sub-agent active">
+              <div class="box-title">📋 Record Context</div>
+            </div>
+            <div class="box sub-agent active">
+              <div class="box-title">🌐 External Knowledge</div>
+            </div>
+            <div class="box sub-agent active">
+              <div class="box-title">⚠️ Safety Guard</div>
+            </div>
+            <div class="box sub-agent active">
+              <div class="box-title">✍️ Answer Composer</div>
+            </div>
+            <div class="box sub-agent active">
+              <div class="box-title">🎯 Action Router</div>
+            </div>
+            <div class="box sub-agent active">
+              <div class="box-title">💾 Session Memory</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector-vertical"></div>
+
+        <div class="level">
+          <span class="level-title">Level 3</span>
+          <div class="level-content">
+            <div class="box skill active">
+              <div class="box-title">📊 Document Analyzer</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🔍 Doc Type Classifier</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">👤 Demographics</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🎤 Voice Demographics</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">💊 Voice Medications</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🩻 Voice Diagnosis</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">📝 Voice Clinical</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🩺 Vitals</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">⚠️ Risk Scores</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🏥 Clinical Data</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">♿ Functional Status</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">📋 Pending Items</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🧪 Lab Results</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">📅 Consultation Data</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">📝 Progress Notes</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">✅ Cross Validator</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">📋 Note Composer</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🎨 Dashboard Mapper</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">📝 Summary Card</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">💬 Note Suggester</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🔗 Abnormal Flag</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">📤 Chat Export</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">📜 Notes Rail</div>
+            </div>
+            <div class="box skill active">
+              <div class="box-title">🔍 Cross Validation</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector-vertical"></div>
+
+        <div class="level">
+          <span class="level-title">Level 2</span>
+          <div class="level-content">
+            <div class="box tool active">
+              <div class="box-title">📖 PDF Reader</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🎙️ STT Backend Layer</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🧠 Proprietary Inference Client</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🧠 Approved External Knowledge Adapter</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">📝 Prompt Builder</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🔗 Citation Tracker</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">📊 Provenance</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🩺 Vitals Interpreter</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🔍 Query Classifier</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">✓ Confidence Scorer</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">💬 Chat Builder</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🔧 Timer • Cache</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">📊 Card Selector</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">📜 Note Selector</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">⏱️ Timeline Formatter</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🏥 Section Status</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">💊 Med Comparison</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">📋 Vital Normality</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">🌐 Web Search</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">📋 Audit Logger</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">✅ Dashboard Validator</div>
+            </div>
+            <div class="box tool active">
+              <div class="box-title">⚡ Parallel Runner</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="connector-vertical"></div>
+
+        <div class="level">
+          <span class="level-title">Level 1</span>
+          <div class="level-content">
+            <div class="box llm active">
+              <div class="box-title">🧠 LLM Foundation</div>
+              <div class="box-desc">Proprietary on-prem inference • deployed dictation path • swappable STT boundary</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="example-section">
+          <div class="example-title">📌 Example: "Why is BP low?"</div>
+          <div class="example-flow">
+            <div class="example-step">User</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">Orchestrator</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">Doctor Assistant</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">Query Intent</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">Record Context</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">Answer Composer</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">Safety Guard</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">Response</div>
+          </div>
+        </div>
+
+        <div class="example-section">
+          <div class="example-title">🎙️ Voice Orchestration: Upload to Dashboard</div>
+          <div class="example-flow">
+            <div class="example-step">Upload Center</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">STT Backend</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">extract_medications</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">extract_demographics</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">extract_diagnosis</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">extract_clinical</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">merge_reconcile</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">map_dashboard</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">decide_review</div>
+            <span class="example-arrow">→</span>
+            <div class="example-step">documents.json</div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-box legend-orchestrator"></div>
+            <span>Orchestrator (1)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-box legend-agent"></div>
+            <span>Primary Agents • Sub-Agents</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-box legend-skill"></div>
+            <span>Skills</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-box legend-tool"></div>
+            <span>Tools</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-box legend-llm"></div>
+            <span>LLM</span>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 2: DATA FLOW ===== -->
+    <div class="section" id="data-flow">
+      <h2 class="section-title">📊 Data Flow Architecture</h2>
+      <p style="text-align: center; font-size: 14px; color: #64748b; margin-bottom: 20px;">Four operational flows, one storage boundary, and a single grounded path back to the clinician</p>
+
+      <div class="dataflow-shell">
+        <div class="dataflow-header">
+          <div>
+            <div class="dataflow-eyebrow">Operations View</div>
+            <div class="dataflow-heading">Clinical Request to Grounded Output</div>
+            <div class="dataflow-subtitle">Read this left to right. Each lane shows what the clinician starts, what the agents do, what gets persisted, how the output is validated, and what returns to the workspace.</div>
+          </div>
+          <div class="dataflow-key">
+            <span class="dataflow-pill pill-write">Write to Storage</span>
+            <span class="dataflow-pill pill-read">Read from Storage</span>
+            <span class="dataflow-pill pill-llm">LLM + Safety Check</span>
+          </div>
+        </div>
+
+        <div class="dataflow-band">
+          <div class="band-card">
+            <div class="dataflow-eyebrow">Origin</div>
+            <h3>Clinician</h3>
+            <p>Uploads PDFs or audio, asks chart questions, reviews voice extraction state, and drafts notes inside the workspace.</p>
+          </div>
+          <div class="band-arrow">→</div>
+          <div class="band-card band-card-workspace">
+            <div class="dataflow-eyebrow" style="color:#bfdbfe;">Interaction Surface</div>
+            <h3>Clinical Workspace</h3>
+            <p>One interface for upload intake, queue management, voice review, patient summary, doctor chat, chart-note editing, timeline review, and citation inspection.</p>
+            <div class="band-tags">
+              <span class="band-tag">Upload Center</span>
+              <span class="band-tag">Voice Review</span>
+              <span class="band-tag">Patient Summary</span>
+              <span class="band-tag">Doctor Chat</span>
+              <span class="band-tag">Chart Note Editor</span>
+              <span class="band-tag">Timeline</span>
+              <span class="band-tag">Citation Viewer</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dataflow-columns">
+          <div>Request</div>
+          <div class="arrow-spacer">.</div>
+          <div>Agent Action</div>
+          <div class="arrow-spacer">.</div>
+          <div>Storage Boundary</div>
+          <div class="arrow-spacer">.</div>
+          <div>Inference / Validation</div>
+          <div class="arrow-spacer">.</div>
+          <div>Workspace Result</div>
+        </div>
+
+        <div class="dataflow-lanes">
+          <div class="dataflow-lane">
+            <div class="df-card df-card-request">
+              <div>
+                <div class="df-card-kicker">Lane 1</div>
+                <h4>PDF Intake</h4>
+                <p>Clinician uploads discharge, prescription, outpatient, lab, or chart-note PDF source material through Upload Center.</p>
+              </div>
+              <div class="df-card-metric">Upload + route start</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-action">
+              <div>
+                <div class="df-card-kicker">Agent Action</div>
+                <h4>DocumentTypeRouter + Specialist Extraction</h4>
+                <p>Document type router selects the correct PDF extractor, then specialized agents normalize content into structured fields with citations.</p>
+              </div>
+              <div class="df-card-metric">Router &lt;1s • Extraction 30-45s</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-storage">
+              <div>
+                <div class="df-card-kicker">Write</div>
+                <h4>PDF Queue + Structured Store</h4>
+                <p>Uploaded files, normalized extraction output, citations, and audit metadata are persisted through <code>documents.json</code> and supporting storage artifacts.</p>
+              </div>
+              <div class="df-card-metric">Unified queue entry created</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-reason">
+              <div>
+                <div class="df-card-kicker">Validation</div>
+                <h4>Grounding + Completeness Check</h4>
+                <p>PDF outputs are checked for structured completeness, provenance, citations, and policy compliance before they can be shown.</p>
+              </div>
+              <div class="df-card-metric">No ungrounded extraction output</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-result">
+              <div>
+                <div class="df-card-kicker">Result</div>
+                <h4>Shared Dashboard Ready</h4>
+                <p>The workspace renders normalized PDF data into the shared dashboard, patient summary cards, timeline events, and evidence-linked views.</p>
+              </div>
+              <div class="df-card-metric">Dashboard route hydrated from storage</div>
+            </div>
+          </div>
+
+          <div class="dataflow-lane">
+            <div class="df-card df-card-request">
+              <div>
+                <div class="df-card-kicker">Lane 2</div>
+                <h4>Uploaded Voice Dictation</h4>
+                <p>Clinician uploads <code>.wav</code>, <code>.mp3</code>, or <code>.m4a</code> dictation audio in Upload Center. The current UI auto-starts processing after upload.</p>
+              </div>
+              <div class="df-card-metric">Upload + auto-process start</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-action">
+              <div>
+                <div class="df-card-kicker">Agent Action</div>
+                <h4>STT Backend + VoiceExtractorAgent</h4>
+                <p>Uploaded dictation transcription now uses the deployed proprietary transcription path. The normalized transcript then flows through voice extraction nodes for medications, demographics, diagnosis, clinical data, merge/reconcile, dashboard mapping, and review decision.</p>
+              </div>
+              <div class="df-card-metric">STT + extraction varies by audio length</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-storage">
+              <div>
+                <div class="df-card-kicker">Write</div>
+                <h4>Voice Session + Unified Queue</h4>
+                <p>Audio, transcript state, <code>sttBackend</code>, review items, extraction preview, and reusable voice extraction are persisted in <code>voice_sessions.json</code> while the shared queue row lives in <code>documents.json</code>.</p>
+              </div>
+              <div class="df-card-metric">Session and queue stay synchronized</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-reason">
+              <div>
+                <div class="df-card-kicker">Validation</div>
+                <h4>Review State + Dashboard Readiness</h4>
+                <p>Pending review items keep the record in <code>review_required</code>. Incomplete voice payloads are downgraded to <code>failed</code> instead of surfacing as a blank processed dashboard.</p>
+              </div>
+              <div class="df-card-metric">No false processed voice dashboard</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-result">
+              <div>
+                <div class="df-card-kicker">Result</div>
+                <h4>Shared Dashboard Route</h4>
+                <p>Validated uploaded-dictation records open through the same <code>/dashboard?documentId=</code> route as PDFs, with one queue and one dashboard presentation model.</p>
+              </div>
+              <div class="df-card-metric">One queue • one dashboard contract</div>
+            </div>
+          </div>
+
+          <div class="dataflow-lane">
+            <div class="df-card df-card-request">
+              <div>
+                <div class="df-card-kicker">Lane 3</div>
+                <h4>Live Conversation Session</h4>
+                <p>Clinician opens Voice → Live conversation, creates a session, grants microphone access, and streams audio from the live workspace.</p>
+              </div>
+              <div class="df-card-metric">Session start + mic capture</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-action">
+              <div>
+                <div class="df-card-kicker">Agent Action</div>
+                <h4>WebSocket Transport + LiveConversationSTTAgent</h4>
+                <p><code>MediaRecorder</code> sends chunks over websocket, the backend buffers and transcribes them, and the live STT agent can use a primary proprietary chunked transcription path, a secondary clinical shadow transcript, a proprietary reconciliation layer, and optional segmentation / speaker attribution. The current runtime keeps conservative defaults enabled.</p>
+              </div>
+              <div class="df-card-metric">Rolling transcript every few seconds</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-storage">
+              <div>
+                <div class="df-card-kicker">Write</div>
+                <h4>Live Session Store</h4>
+                <p>Session snapshot, transcript, draft note state, review items, and events are persisted in <code>live_conversation_sessions.json</code> and <code>live_conversation_events.jsonl</code> while the session remains separate from <code>documents.json</code> until finalize.</p>
+              </div>
+              <div class="df-card-metric">Session state survives refresh</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-reason">
+              <div>
+                <div class="df-card-kicker">Validation</div>
+                <h4>Review Queue + Publication Gate</h4>
+                <p>Session end transitions into <code>review_required</code>. Finalize can publish a <code>voice-live-*</code> queue row, but the full validated dashboard-contract handoff is still pending.</p>
+              </div>
+              <div class="df-card-metric">Review-first publish path</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-result">
+              <div>
+                <div class="df-card-kicker">Result</div>
+                <h4>Visit History + Pending Dashboard Upgrade</h4>
+                <p>Completed live sessions remain visible in the Voice workspace and can link to a published document, but live finalize is still lighter than uploaded dictation's validated dashboard output.</p>
+              </div>
+              <div class="df-card-metric">Live runtime implemented • dashboard upgrade pending</div>
+            </div>
+          </div>
+
+          <div class="dataflow-lane">
+            <div class="df-card df-card-request">
+              <div>
+                <div class="df-card-kicker">Lane 4</div>
+                <h4>Doctor Question</h4>
+                <p>Clinician asks a patient-specific question in chat from the active workspace session.</p>
+              </div>
+              <div class="df-card-metric">Conversation start</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-action">
+              <div>
+                <div class="df-card-kicker">Agent Action</div>
+                <h4>Doctor Assistant Mesh</h4>
+                <p>Intent, record context, safety, answer composition, and session memory collaborate to prepare a grounded response request.</p>
+              </div>
+              <div class="df-card-metric">Chat 3-8s</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-storage">
+              <div>
+                <div class="df-card-kicker">Read + Write</div>
+                <h4>Context, Session, Citations</h4>
+                <p>The assistant reads prior extractions and chat state, then writes response state, citations, and audit entries back to storage.</p>
+              </div>
+              <div class="df-card-metric">Session memory stays persisted</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-reason">
+              <div>
+                <div class="df-card-kicker">LLM Path</div>
+                <h4>Proprietary Inference + Safety Validation</h4>
+                <p>Self-hosted inference generates the answer, then refusal policy, confidence checks, and source grounding validate it before return.</p>
+              </div>
+              <div class="df-card-metric">PHI remains on-premise</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-result">
+              <div>
+                <div class="df-card-kicker">Result</div>
+                <h4>Cited Assistant Reply</h4>
+                <p>The workspace shows a grounded answer with source-backed citations instead of a free-floating LLM response.</p>
+              </div>
+              <div class="df-card-metric">Evidence visible to clinician</div>
+            </div>
+          </div>
+
+          <div class="dataflow-lane">
+            <div class="df-card df-card-request">
+              <div>
+                <div class="df-card-kicker">Lane 4</div>
+                <h4>Chart-Note Drafting</h4>
+                <p>Clinician opens a SOAP workflow to generate or refine a chart note from current patient context.</p>
+              </div>
+              <div class="df-card-metric">Draft + review start</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-action">
+              <div>
+                <div class="df-card-kicker">Agent Action</div>
+                <h4>Chart Note Composer</h4>
+                <p>The composer runs section-by-section drafting for subjective, objective, assessment, and plan with review checkpoints.</p>
+              </div>
+              <div class="df-card-metric">SOAP 15-25s</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-storage">
+              <div>
+                <div class="df-card-kicker">Write</div>
+                <h4>Drafts, Versions, Provenance</h4>
+                <p>Every note revision is versioned with supporting citations, timestamps, and actor attribution for downstream auditability.</p>
+              </div>
+              <div class="df-card-metric">Version history retained</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-reason">
+              <div>
+                <div class="df-card-kicker">Validation</div>
+                <h4>Review Before Finalization</h4>
+                <p>Generated note content is checked for grounding and safety before it is surfaced as a candidate clinical draft.</p>
+              </div>
+              <div class="df-card-metric">Human-in-the-loop required</div>
+            </div>
+            <div class="lane-arrow">→</div>
+            <div class="df-card df-card-result">
+              <div>
+                <div class="df-card-kicker">Result</div>
+                <h4>Final Note in Workspace</h4>
+                <p>The clinician receives a reviewable draft with lineage intact, rather than an opaque final document.</p>
+              </div>
+              <div class="df-card-metric">Review, edit, approve</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dataflow-footer">
+          <div class="footer-card footer-write">
+            <h4>Storage Discipline</h4>
+            <p><strong>All writes</strong> pass through the same storage boundary. PDF queue rows, uploaded-dictation sessions, live-conversation sessions, transcripts, extraction output, chat state, note drafts, citations, and audit events are persisted as stored system state.</p>
+          </div>
+          <div class="footer-card footer-read">
+            <h4>Read Discipline</h4>
+            <p><strong>The UI does not bypass storage.</strong> Queue rows, dashboards, chat context, and timelines are all hydrated from stored read models rather than ad hoc client state.</p>
+          </div>
+          <div class="footer-card footer-llm">
+            <h4>Inference Guardrail</h4>
+            <p><strong>Primary extraction runs on proprietary on-prem inference.</strong> Uploaded dictation uses the implemented proprietary transcription path, while live conversation runs through a dedicated chunked transcription agent with conservative defaults and explicit review before publication.</p>
+          </div>
+          <div class="footer-card footer-time">
+            <h4>Operational Envelope</h4>
+            <p><strong>Router &lt;1s</strong> • <strong>Chat 3-8s</strong> • <strong>SOAP 15-25s</strong> • <strong>PDF extraction 30-45s</strong> • <strong>Voice varies by audio length</strong></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 3: SKILLS FRAMEWORK ===== -->
+    <div class="section" id="skills-framework">
+      <h2 class="section-title">🛠️ Skills Framework</h2>
+      <p style="text-align: center; font-size: 14px; color: #64748b; margin-bottom: 20px;">Current reusable skills and runtime capability groups for PDF intake, uploaded dictation, and live conversation</p>
+
+      <div class="skills-grid">
+        <!-- Intake + Routing -->
+        <div class="skill-category">
+          <div class="skill-category-header header-extraction">
+            📥 Intake + Routing
+          </div>
+          <div class="skill-items">
+            <div class="skill-item">
+              <span class="skill-name">Document Type Classifier</span>
+              <span class="skill-tools">PDF route selection</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Handwriting Threshold Detector</span>
+              <span class="skill-tools">Escalate hard prescriptions</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PDF + Prescription Extraction -->
+        <div class="skill-category">
+          <div class="skill-category-header header-extraction">
+            📄 PDF + Prescription Extraction
+          </div>
+          <div class="skill-items">
+            <div class="skill-item">
+              <span class="skill-name">Document Analyzer</span>
+              <span class="skill-tools">PDF • Structure</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Demographics Extractor</span>
+              <span class="skill-tools">Patient • Provider • Visit</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Clinical Data Extractor</span>
+              <span class="skill-tools">Dx • Meds • Labs</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Vitals Extractor</span>
+              <span class="skill-tools">BP • Pulse • SpO2</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Functional Status Extractor</span>
+              <span class="skill-tools">Mobility • Assistance</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Risk Scores Extractor</span>
+              <span class="skill-tools">Fall • DVT • EWS</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Pending Items Extractor</span>
+              <span class="skill-tools">Labs • Radiology • Follow-up</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Prescription Medications Extractor</span>
+              <span class="skill-tools">Printed + structured Rx fields</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Prescription Diagnosis Extractor</span>
+              <span class="skill-tools">Assessment • findings</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Prescription Patient Extractor</span>
+              <span class="skill-tools">Patient • visit metadata</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Prescription Doctor Extractor</span>
+              <span class="skill-tools">Provider • facility</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Uploaded Dictation Skills -->
+        <div class="skill-category">
+          <div class="skill-category-header header-generation">
+            🎙️ Uploaded Dictation Skills
+          </div>
+          <div class="skill-items">
+            <div class="skill-item">
+              <span class="skill-name">Voice Medications Extractor</span>
+              <span class="skill-tools">Transcript • Dose • Frequency</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Voice Diagnosis Extractor</span>
+              <span class="skill-tools">Principal • Secondary • Rule out</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Voice Clinical Extractor</span>
+              <span class="skill-tools">Vitals • Labs • Follow-up</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Dashboard Mapper</span>
+              <span class="skill-tools">Shared validated voice contract</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Conversation Runtime -->
+        <div class="skill-category">
+          <div class="skill-category-header header-chat">
+            📡 Live Conversation Runtime
+          </div>
+          <div class="skill-items">
+            <div class="skill-item">
+              <span class="skill-name">Conversation Transcript Validation</span>
+              <span class="skill-tools">Low-confidence live spans</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Transcript Reconciler</span>
+              <span class="skill-tools">Primary + clinical shadow merge</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">VAD Segmentation</span>
+              <span class="skill-tools">Optional chunk boundaries</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Speaker Attribution</span>
+              <span class="skill-tools">Optional doctor/patient split</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Note Update Suggester</span>
+              <span class="skill-tools">Draft note refresh</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Validation + Publication -->
+        <div class="skill-category">
+          <div class="skill-category-header header-validation">
+            ✅ Validation + Publication
+          </div>
+          <div class="skill-items">
+            <div class="skill-item">
+              <span class="skill-name">Cross Validator</span>
+              <span class="skill-tools">Source-backed verification</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Cross Validation Agent</span>
+              <span class="skill-tools">Confidence • scoring</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Voice Dashboard Readiness Validation</span>
+              <span class="skill-tools">Processed means renderable</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Prescription Cross Validator</span>
+              <span class="skill-tools">Handwritten field checks</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drafting + Presentation -->
+        <div class="skill-category">
+          <div class="skill-category-header header-presentation">
+            📝 Drafting + Presentation
+          </div>
+          <div class="skill-items">
+            <div class="skill-item">
+              <span class="skill-name">Chart Note Composer</span>
+              <span class="skill-tools">SOAP assembly</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Summary Card Builder</span>
+              <span class="skill-tools">Card format</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Notes Rail Builder</span>
+              <span class="skill-tools">Timeline notes</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Prescription Summary Generator</span>
+              <span class="skill-tools">Rx summary</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Chat Export Builder</span>
+              <span class="skill-tools">PDF appendix</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions + Follow-up -->
+        <div class="skill-category">
+          <div class="skill-category-header header-generation">
+            💬 Actions + Follow-up
+          </div>
+          <div class="skill-items">
+            <div class="skill-item">
+              <span class="skill-name">Abnormal Flag Action</span>
+              <span class="skill-tools">Decision support</span>
+            </div>
+            <div class="skill-item">
+              <span class="skill-name">Pharmacy Alert Sender</span>
+              <span class="skill-tools">Medication escalation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="example-section" style="margin-top: 24px;">
+        <div class="example-title">🔧 Current Runtime Notes</div>
+        <div style="font-size: 11px; line-height: 1.7; color: #475569;">
+          <strong>Lane 2 uploaded dictation:</strong> deployed self-hosted proprietary transcription → <code>VoiceExtractorAgent</code> → extraction skills → <code>DashboardMapper</code> → dashboard-readiness validation.
+          <br/>
+          <strong>Lane 3 live conversation:</strong> websocket session stream → chunk transcription + reconciliation → persisted transcript → inline draft extraction → <code>review_required</code> → finalize.
+          <br/>
+          <strong>Important nuance:</strong> live draft extraction is still owned by the websocket runtime rather than a reusable standalone skill.
+          <br/>
+          <strong>Publication contract:</strong> PDFs and uploaded dictation publish the full validated dashboard contract and open through <code>/dashboard?documentId=</code>. Live finalize still publishes a lighter <code>voice-live-*</code> row and needs one more integration step to match that contract.
+        </div>
+      </div>
+
+      <!-- Tools Layer -->
+      <div style="margin-top: 30px;">
+        <div style="background: #1e293b; border-radius: 10px; padding: 25px; color: white;">
+          <h3 style="font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 20px;">Tools Layer (current low-level adapters for PDF, uploaded dictation, live sessions, chat, and presentation)</h3>
+
+          <!-- PDF / Image Tools -->
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">PDF / Image</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📖 PDF Reader</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🖼️ PDF to Image Converter</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🛡️ PHI Masker</div>
+            </div>
+          </div>
+
+          <!-- Uploaded Dictation Runtime -->
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Uploaded Dictation Runtime</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <div style="background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🎙️ Self-Hosted Dictation Transcription</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧾 Transcript Normalization</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">✅ Transcript Validation</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">✅ Voice Dashboard Validation</div>
+            </div>
+          </div>
+
+          <!-- Live Conversation Runtime -->
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Live Conversation Runtime</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <div style="background: rgba(245,158,11,0.18); border: 1px solid rgba(245,158,11,0.38); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📡 Live Conversation WebSocket</div>
+              <div style="background: rgba(245,158,11,0.18); border: 1px solid rgba(245,158,11,0.38); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🔊 Audio Chunk Decoder</div>
+              <div style="background: rgba(245,158,11,0.18); border: 1px solid rgba(245,158,11,0.38); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🎤 Chunked Live Transcription</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🩺 Secondary Clinical Transcript</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🔀 Transcript Reconciliation</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🎚️ VAD / Speaker Attribution (optional)</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📨 Session Event Stream</div>
+            </div>
+          </div>
+
+          <!-- Inference Tools -->
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Inference / Prompting</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧠 Proprietary Inference Client</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧠 Approved External Knowledge Adapter</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📝 Prompt Builder</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🔗 Citation Tracker</div>
+            </div>
+          </div>
+
+          <!-- Clinical + Validation Tools -->
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Clinical + Validation</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🩺 Vitals Interpreter</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📊 Provenance Builder</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">💊 Medication Brand Verifier</div>
+            </div>
+          </div>
+
+          <!-- Presentation Tools -->
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Presentation</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📊 Card Metric Selector</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🏥 Section Status Resolver</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📜 Note Selector</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">⏱️ Timeline Formatter</div>
+            </div>
+          </div>
+
+          <!-- Chat + Knowledge Tools -->
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Chat + Knowledge</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🔍 Query Classifier</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">❓ Section Hint Resolver</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🔗 Citation Assembler</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🌐 Medical Web Search</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📊 Confidence Scorer</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">💬 Chat Prompt Builder</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📋 Vital Normality</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">💊 Medication Comparison</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🏥 Section Context Fetch</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧪 Record Context Search</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">⚠️ Refusal Policy</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🔒 Provenance Gate</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📋 Source Policy</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🔀 Source Router</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">⭐ Source Health</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📊 External Source Ranker</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📝 External Citation Normalizer</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧭 External Query Planner</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">💊 Drug Entity Resolver</div>
+              <div style="background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">💊 Drug Fact Extractor</div>
+            </div>
+          </div>
+
+          <!-- Orchestration Tools -->
+          <div style="margin-bottom: 18px;">
+            <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Orchestration + Audit</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <div style="background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📋 Audit Logger</div>
+              <div style="background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">⚡ Parallel Runner</div>
+            </div>
+          </div>
+
+          <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: #cbd5e1; font-style: italic;">
+            Tools are low-level runtime adapters and utilities used by skills and agents. Lane 2 already runs through the deployed self-hosted transcription path; live-session draft extraction still remains inline runtime logic.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SECTION 4: SAFETY & SECURITY ===== -->
+    <div class="section" id="safety-security">
+      <h2 class="section-title">🛡️ Safety & Security Architecture</h2>
+      <p style="text-align: center; font-size: 14px; color: #64748b; margin-bottom: 20px;">Multi-layer protection for clinical AI systems</p>
+      <svg class="diagram-svg" viewBox="0 0 1250 920" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="#f8fafc"/>
+
+        <!-- Hallucination Detection -->
+        <g transform="translate(40, 90)">
+          <rect x="0" y="0" width="570" height="175" rx="10" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+          <rect x="0" y="0" width="570" height="36" rx="10" fill="#ef4444"/>
+          <rect x="0" y="20" width="570" height="16" fill="#ef4444"/>
+          <text x="285" y="23" text-anchor="middle" font-size="13" font-weight="700" fill="white">🔍 Hallucination Detection</text>
+
+          <g transform="translate(18, 50)">
+            <text x="0" y="0" font-size="11" font-weight="600" fill="#1e293b">Multi-Layer Validation:</text>
+
+            <rect x="0" y="12" width="240" height="26" rx="4" fill="#fee2e2" stroke="#ef4444"/>
+            <text x="120" y="29" text-anchor="middle" font-size="9" font-weight="600" fill="#dc2626">1. Source Verification</text>
+
+            <rect x="0" y="44" width="240" height="26" rx="4" fill="#fee2e2" stroke="#ef4444"/>
+            <text x="120" y="61" text-anchor="middle" font-size="9" font-weight="600" fill="#dc2626">2. Citation Requirements</text>
+
+            <rect x="0" y="76" width="240" height="26" rx="4" fill="#fee2e2" stroke="#ef4444"/>
+            <text x="120" y="93" text-anchor="middle" font-size="9" font-weight="600" fill="#dc2626">3. Confidence Scoring</text>
+
+            <rect x="0" y="108" width="240" height="26" rx="4" fill="#fee2e2" stroke="#ef4444"/>
+            <text x="120" y="125" text-anchor="middle" font-size="9" font-weight="600" fill="#dc2626">4. Refusal Policy</text>
+
+            <g transform="translate(255, 12)">
+              <text x="0" y="17" font-size="8" fill="#64748b">Every fact checked</text>
+              <text x="0" y="28" font-size="8" fill="#64748b">against source material</text>
+
+              <text x="0" y="49" font-size="8" fill="#64748b">Character-level</text>
+              <text x="0" y="60" font-size="8" fill="#64748b">citations mandatory</text>
+
+              <text x="0" y="81" font-size="8" fill="#64748b">Low confidence =</text>
+              <text x="0" y="92" font-size="8" fill="#64748b">blocked output</text>
+
+              <text x="0" y="113" font-size="8" fill="#64748b">Unsafe responses</text>
+              <text x="0" y="124" font-size="8" fill="#64748b">automatically refused</text>
+            </g>
+          </g>
+        </g>
+
+        <!-- Data Privacy -->
+        <g transform="translate(640, 90)">
+          <rect x="0" y="0" width="570" height="175" rx="10" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+          <rect x="0" y="0" width="570" height="36" rx="10" fill="#22c55e"/>
+          <rect x="0" y="20" width="570" height="16" fill="#22c55e"/>
+          <text x="285" y="23" text-anchor="middle" font-size="13" font-weight="700" fill="white">🔒 Data Privacy & PHI Protection</text>
+
+          <g transform="translate(18, 50)">
+            <text x="0" y="0" font-size="11" font-weight="600" fill="#1e293b">PHI Protection Measures:</text>
+
+            <g transform="translate(0, 20)">
+              <circle cx="8" cy="5" r="4" fill="#22c55e"/>
+              <text x="18" y="8" font-size="9" fill="#475569">Primary extraction stays on-premises</text>
+              <text x="18" y="20" font-size="8" fill="#64748b">(proprietary on-prem processing path)</text>
+
+              <circle cx="8" cy="40" r="4" fill="#22c55e"/>
+              <text x="18" y="43" font-size="9" fill="#475569">PHI encrypted at rest</text>
+
+              <circle cx="200" cy="40" r="4" fill="#22c55e"/>
+              <text x="210" y="43" font-size="9" fill="#475569">Session isolation per document</text>
+
+              <circle cx="8" cy="70" r="4" fill="#22c55e"/>
+              <text x="18" y="73" font-size="9" fill="#475569">Audit trail for all data access</text>
+
+              <circle cx="240" cy="70" r="4" fill="#22c55e"/>
+              <text x="250" y="73" font-size="9" fill="#475569">External search requires consent</text>
+
+              <circle cx="200" cy="5" r="4" fill="#22c55e"/>
+              <text x="210" y="8" font-size="9" fill="#475569">Voice / live backend logged per session</text>
+              <text x="210" y="20" font-size="8" fill="#64748b">(dictation: deployed proprietary path • live: chunked transcription hardening path)</text>
+            </g>
+          </g>
+        </g>
+
+        <!-- Safety Guard Agent -->
+        <g transform="translate(40, 285)">
+          <rect x="0" y="0" width="570" height="160" rx="10" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+          <rect x="0" y="0" width="570" height="36" rx="10" fill="#f59e0b"/>
+          <rect x="0" y="20" width="570" height="16" fill="#f59e0b"/>
+          <text x="285" y="23" text-anchor="middle" font-size="13" font-weight="700" fill="white">🛡️ Safety Guard Agent</text>
+
+          <g transform="translate(18, 52)">
+            <text x="0" y="0" font-size="10" font-weight="600" fill="#1e293b">Validates all outputs before returning to user:</text>
+
+            <g transform="translate(0, 12)">
+              <rect x="0" y="0" width="120" height="24" rx="4" fill="#fff7ed" stroke="#f59e0b"/>
+              <text x="60" y="16" text-anchor="middle" font-size="8" font-weight="600" fill="#92400e">Factual Accuracy</text>
+              <text x="128" y="16" font-size="8" fill="#64748b">Cross-check with sources</text>
+
+              <rect x="270" y="0" width="120" height="24" rx="4" fill="#fff7ed" stroke="#f59e0b"/>
+              <text x="330" y="16" text-anchor="middle" font-size="8" font-weight="600" fill="#92400e">Confidence Level</text>
+              <text x="398" y="16" font-size="8" fill="#64748b">Score threshold check</text>
+
+              <rect x="0" y="30" width="120" height="24" rx="4" fill="#fff7ed" stroke="#f59e0b"/>
+              <text x="60" y="46" text-anchor="middle" font-size="8" font-weight="600" fill="#92400e">Clinical Safety</text>
+              <text x="128" y="46" font-size="8" fill="#64748b">No harmful advice</text>
+
+              <rect x="270" y="30" width="120" height="24" rx="4" fill="#fff7ed" stroke="#f59e0b"/>
+              <text x="330" y="46" text-anchor="middle" font-size="8" font-weight="600" fill="#92400e">Source Attribution</text>
+              <text x="398" y="46" font-size="8" fill="#64748b">Citations attached</text>
+            </g>
+
+            <rect x="0" y="64" width="530" height="26" rx="4" fill="#fef3c7"/>
+            <text x="265" y="81" text-anchor="middle" font-size="9" fill="#92400e">⚠️ Low confidence or hallucination detected = Output blocked, user notified</text>
+          </g>
+        </g>
+
+        <!-- Consent Flow -->
+        <g transform="translate(640, 285)">
+          <rect x="0" y="0" width="570" height="160" rx="10" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+          <rect x="0" y="0" width="570" height="36" rx="10" fill="#8b5cf6"/>
+          <rect x="0" y="20" width="570" height="16" fill="#8b5cf6"/>
+          <text x="285" y="23" text-anchor="middle" font-size="13" font-weight="700" fill="white">🔐 External Search Consent Flow</text>
+
+          <g transform="translate(18, 52)">
+            <text x="0" y="0" font-size="10" font-weight="600" fill="#1e293b">User asks question requiring external medical knowledge:</text>
+
+            <g transform="translate(0, 12)">
+              <rect x="0" y="0" width="90" height="22" rx="4" fill="#ede9fe" stroke="#8b5cf6"/>
+              <text x="45" y="14" text-anchor="middle" font-size="8" font-weight="600" fill="#6d28d9">1. Classify</text>
+
+              <text x="100" y="14" font-size="12" fill="#8b5cf6">→</text>
+
+              <rect x="120" y="0" width="90" height="22" rx="4" fill="#ede9fe" stroke="#8b5cf6"/>
+              <text x="165" y="14" text-anchor="middle" font-size="8" font-weight="600" fill="#6d28d9">2. Prompt</text>
+
+              <text x="220" y="14" font-size="12" fill="#8b5cf6">→</text>
+
+              <rect x="240" y="0" width="90" height="22" rx="4" fill="#ede9fe" stroke="#8b5cf6"/>
+              <text x="285" y="14" text-anchor="middle" font-size="8" font-weight="600" fill="#6d28d9">3. Execute</text>
+
+              <text x="340" y="14" font-size="12" fill="#8b5cf6">→</text>
+
+              <rect x="360" y="0" width="90" height="22" rx="4" fill="#ede9fe" stroke="#8b5cf6"/>
+              <text x="405" y="14" text-anchor="middle" font-size="8" font-weight="600" fill="#6d28d9">4. Response</text>
+            </g>
+
+            <g transform="translate(0, 40)">
+              <rect x="0" y="0" width="530" height="24" rx="4" fill="#f3e8ff"/>
+              <text x="265" y="16" text-anchor="middle" font-size="8" fill="#6d28d9">Explicit consent required before any external medical source search</text>
+
+              <text x="0" y="40" font-size="8" fill="#64748b">Approved sources only • Patient data never sent externally</text>
+            </g>
+          </g>
+        </g>
+
+        <!-- Error Handling -->
+        <g transform="translate(40, 465)">
+          <rect x="0" y="0" width="570" height="145" rx="10" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+          <rect x="0" y="0" width="570" height="36" rx="10" fill="#64748b"/>
+          <rect x="0" y="20" width="570" height="16" fill="#64748b"/>
+          <text x="285" y="23" text-anchor="middle" font-size="13" font-weight="700" fill="white">⚠️ Error Handling & Fallbacks</text>
+
+          <g transform="translate(18, 52)">
+            <g transform="translate(0, 0)">
+              <rect x="0" y="0" width="140" height="26" rx="4" fill="#f1f5f9" stroke="#64748b"/>
+              <text x="70" y="17" text-anchor="middle" font-size="9" font-weight="600" fill="#334155">LLM Errors</text>
+              <text x="148" y="17" font-size="8" fill="#64748b">→ Retry with fallback</text>
+
+              <rect x="280" y="0" width="140" height="26" rx="4" fill="#f1f5f9" stroke="#64748b"/>
+              <text x="350" y="17" text-anchor="middle" font-size="9" font-weight="600" fill="#334155">Validation Failures</text>
+              <text x="428" y="17" font-size="8" fill="#64748b">→ Return safe message</text>
+
+              <rect x="0" y="34" width="140" height="26" rx="4" fill="#f1f5f9" stroke="#64748b"/>
+              <text x="70" y="51" text-anchor="middle" font-size="9" font-weight="600" fill="#334155">Search Down</text>
+              <text x="148" y="51" font-size="8" fill="#64748b">→ Use internal only</text>
+
+              <rect x="280" y="34" width="140" height="26" rx="4" fill="#f1f5f9" stroke="#64748b"/>
+              <text x="350" y="51" text-anchor="middle" font-size="9" font-weight="600" fill="#334155">Timeout</text>
+              <text x="428" y="51" font-size="8" fill="#64748b">→ Graceful degradation</text>
+            </g>
+
+            <rect x="0" y="68" width="530" height="24" rx="4" fill="#e2e8f0"/>
+            <text x="265" y="84" text-anchor="middle" font-size="8" fill="#64748b">All errors logged • Critical errors trigger alerts • Helpful messages to users</text>
+          </g>
+        </g>
+
+        <!-- Audit Trail -->
+        <g transform="translate(640, 465)">
+          <rect x="0" y="0" width="570" height="145" rx="10" fill="white" stroke="#e2e8f0" stroke-width="1.5"/>
+          <rect x="0" y="0" width="570" height="36" rx="10" fill="#0ea5e9"/>
+          <rect x="0" y="20" width="570" height="16" fill="#0ea5e9"/>
+          <text x="285" y="23" text-anchor="middle" font-size="13" font-weight="700" fill="white">📋 Audit Trail & Provenance</text>
+
+          <g transform="translate(18, 52)">
+            <text x="0" y="0" font-size="10" font-weight="600" fill="#1e293b">Every action is tracked:</text>
+
+            <g transform="translate(0, 12)">
+              <circle cx="8" cy="5" r="4" fill="#0ea5e9"/>
+              <text x="18" y="8" font-size="9" fill="#475569">User queries with timestamps</text>
+
+              <circle cx="240" cy="5" r="4" fill="#0ea5e9"/>
+              <text x="250" y="8" font-size="9" fill="#475569">Agent decisions + reasoning</text>
+
+              <circle cx="8" cy="28" r="4" fill="#0ea5e9"/>
+              <text x="18" y="31" font-size="9" fill="#475569">LLM prompts + responses</text>
+
+              <circle cx="240" cy="28" r="4" fill="#0ea5e9"/>
+              <text x="250" y="31" font-size="9" fill="#475569">Data reads/writes provenance</text>
+
+              <circle cx="8" cy="51" r="4" fill="#0ea5e9"/>
+              <text x="18" y="54" font-size="9" fill="#475569">Safety checks + refusals</text>
+
+              <circle cx="240" cy="51" r="4" fill="#0ea5e9"/>
+              <text x="250" y="54" font-size="9" fill="#475569">External consent events</text>
+            </g>
+          </g>
+        </g>
+
+        <!-- Key Security Principles -->
+        <g transform="translate(40, 630)">
+          <rect x="0" y="0" width="1170" height="95" rx="10" fill="#1e293b"/>
+          <text x="585" y="24" text-anchor="middle" font-size="14" font-weight="700" fill="white">🔐 Security Principles</text>
+
+          <g transform="translate(30, 42)">
+            <text x="0" y="0" font-size="10" fill="#cbd5e1">• Never trust LLM output blindly • Always verify against source • Patient safety first •</text>
+            <text x="0" y="18" font-size="10" fill="#cbd5e1">• PHI stays on-premises • External search requires consent • All actions auditable • Human-in-the-loop for clinical decisions</text>
+            <text x="0" y="36" font-size="10" fill="#cbd5e1">• Fail-safe defaults • Graceful degradation • Clear error messages • No raw exceptions to users</text>
+          </g>
+        </g>
+
+        <!-- Statistics -->
+        <g transform="translate(40, 760)">
+          <text x="0" y="0" font-size="13" font-weight="600" fill="#1e293b">Safety Statistics</text>
+
+          <g transform="translate(0, 20)">
+            <rect x="0" y="0" width="175" height="50" rx="6" fill="#dcfce7" stroke="#22c55e"/>
+            <text x="87" y="20" text-anchor="middle" font-size="18" font-weight="700" fill="#166534">100%</text>
+            <text x="87" y="38" text-anchor="middle" font-size="10" fill="#64748b">Outputs Validated</text>
+
+            <rect x="190" y="0" width="175" height="50" rx="6" fill="#fef3c7" stroke="#f59e0b"/>
+            <text x="277" y="20" text-anchor="middle" font-size="16" font-weight="700" fill="#92400e">Char-level</text>
+            <text x="277" y="38" text-anchor="middle" font-size="10" fill="#64748b">Citation Precision</text>
+
+            <rect x="380" y="0" width="175" height="50" rx="6" fill="#fee2e2" stroke="#ef4444"/>
+            <text x="467" y="20" text-anchor="middle" font-size="18" font-weight="700" fill="#dc2626">0</text>
+            <text x="467" y="38" text-anchor="middle" font-size="10" fill="#64748b">External API Leaks</text>
+
+            <rect x="570" y="0" width="175" height="50" rx="6" fill="#e0f2fe" stroke="#0ea5e9"/>
+            <text x="657" y="20" text-anchor="middle" font-size="18" font-weight="700" fill="#0369a1">Always</text>
+            <text x="657" y="38" text-anchor="middle" font-size="10" fill="#64748b">Consent Required</text>
+
+            <rect x="760" y="0" width="175" height="50" rx="6" fill="#f1f5f9" stroke="#64748b"/>
+            <text x="847" y="20" text-anchor="middle" font-size="18" font-weight="700" fill="#334155">24/7</text>
+            <text x="847" y="38" text-anchor="middle" font-size="10" fill="#64748b">Audit Trail Active</text>
+
+            <rect x="950" y="0" width="175" height="50" rx="6" fill="#ede9fe" stroke="#8b5cf6"/>
+            <text x="1037" y="20" text-anchor="middle" font-size="16" font-weight="700" fill="#6d28d9">On-Prem</text>
+            <text x="1037" y="38" text-anchor="middle" font-size="10" fill="#64748b">LLM Deployment</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+</body>
+</html>

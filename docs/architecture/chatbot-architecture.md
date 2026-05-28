@@ -7,7 +7,7 @@
 ---
 
 > Historical Document
-> This file is a concept architecture draft, not an exact description of the current repository. The current implementation is a React frontend with an Express backend in `server/index.cjs`, multi-agent chat logic under `agents/`, reusable skills under `skills/`, self-hosted Gemma for primary inference, and optional Gemini-backed external knowledge lookup.
+> This file is a concept architecture draft, not an exact description of the current repository. The current implementation is a React frontend with an Express backend in `server/index.cjs`, multi-agent chat logic under `agents/`, reusable skills under `skills/`, proprietary on-prem inference for primary reasoning, and optional provider-backed external knowledge lookup.
 
 ## Table of Contents
 
@@ -394,8 +394,8 @@ React 18+ (already in use)
 ```
 Node.js / Express (current repo)
 ├─ Multi-agent orchestration in `agents/`
-├─ Self-hosted Gemma inference client
-├─ Optional Gemini external knowledge mode
+├─ Proprietary on-prem inference client
+├─ Optional external-provider knowledge mode
 ├─ JSON/file-backed persistence in `server/storage/`
 └─ Audit logging in `server/audit_logger.cjs`
 ```

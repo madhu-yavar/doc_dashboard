@@ -6,7 +6,16 @@ const API_ROOT = normalizeApiRoot(import.meta.env.VITE_API_URL || "");
 export const ANALYTICS_API_BASE = `${API_ROOT}/api`;
 
 export type DocumentAnalyticsPoint = {
-  documentType: "prescription" | "discharge_summary" | "outpatient_record" | "lab_report" | "chart_note" | "unknown";
+  documentType:
+    | "prescription"
+    | "discharge_summary"
+    | "outpatient_record"
+    | "lab_report"
+    | "chart_note"
+    | "voice_dictation"
+    | "live_conversation"
+    | "voice"
+    | "unknown";
   count: number;
 };
 

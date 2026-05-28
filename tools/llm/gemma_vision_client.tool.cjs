@@ -9,7 +9,7 @@ class GemmaVisionClientTool {
     this.name = "Gemma Vision Client";
     this.version = "1.0.0";
     this.baseUrl = config.baseUrl || process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions";
-    this.model = config.model || process.env.GEMMA_MODEL || "google/gemma-4-31B-it";
+    this.model = config.model || process.env.GEMMA_MODEL || "google/gemma-4-26B-A4B-it";
     this.timeout = config.timeout || 180000;
     // Gemma 4-31B has a max context of 16384 tokens
     // For vision requests with images, use a lower default since images consume many tokens

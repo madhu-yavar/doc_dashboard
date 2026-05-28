@@ -12,7 +12,7 @@
 > This document reflects the current agent design, but some path references below used an older `doctor_dashboard/` folder prefix. The current repository paths are rooted directly at `agents/`, `skills/`, `tools/`, and `server/`.
 
 > Current runtime note
-> Voice dictation is now a first-class intake path, but it does **not** go through `DocumentTypeRouter`. Voice documents use a parallel STT boundary plus `agents/voice_extractor_agent.cjs`, then map into the same shared dashboard contract. The current workspace uses Gemini STT; the target voice architecture keeps STT pluggable so Whisper can be primary and Gemini can remain fallback.
+> Voice dictation is now a first-class intake path, but it does **not** go through `DocumentTypeRouter`. Voice documents use a parallel STT boundary plus `agents/voice_extractor_agent.cjs`, then map into the same shared dashboard contract. Uploaded dictation already runs through the deployed proprietary transcription path, while the voice boundary remains swappable for future tuning.
 
 ## Overview
 
@@ -29,7 +29,7 @@ Voice is a specialized runtime path layered beside the PDF router flow.
 
 ```text
 Audio upload
-  -> STT backend (Whisper primary target / Gemini current-fallback path)
+  -> proprietary STT backend boundary
   -> normalized transcript segments
   -> VoiceExtractorAgent
   -> dashboard mapping
@@ -645,14 +645,14 @@ class Agent {
 
 ### Runtime Configuration
 
-The current root server directly reads:
+Provider-specific environment variable names are intentionally abstracted in this document. The current runtime depends on these configuration classes:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `GEMMA_URL` | Gemma LLM API endpoint | Required |
-| `GEMMA_MODEL` | Model identifier | `google/gemma-4-26B-A4B-it` |
-| `USE_GEMINI_FOR_EXTERNAL` | Enable Gemini-backed external lookup | `true` |
-| `GEMINI_MODEL` | Gemini model for external lookup | `gemini-2.5-flash` |
+| `PRIMARY_INFERENCE_URL` | Proprietary on-prem inference endpoint | Required |
+| `PRIMARY_INFERENCE_PROFILE` | Deployment profile or model identifier | Deployment-specific |
+| `ENABLE_EXTERNAL_PROVIDER_LOOKUP` | Enable provider-backed external lookup | `true` |
+| `EXTERNAL_PROVIDER_PROFILE` | External provider profile | Deployment default |
 
 Some individual agents and workflows also read optional extractor-specific settings such as `EXTRACTION_PER_DOCUMENT_CONCURRENCY`, `ENABLE_PENDING_ITEMS_EXTRACTION`, and `ENABLE_DOCUMENT_ANALYZER`.
 

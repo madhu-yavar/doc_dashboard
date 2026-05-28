@@ -2,7 +2,7 @@
 
 **Project:** Doctor Dashboard - Clinical Intelligence System
 **Version:** 3.1.0
-**Last Updated:** 2026-05-21
+**Last Updated:** 2026-05-26
 **Status:** Production
 
 ---
@@ -27,7 +27,7 @@
 ### Prerequisites
 
 - Node.js 18+
-- Access to Gemma LLM API or Gemini API
+- Access to approved proprietary AI services
 
 ### Quick Start
 
@@ -48,7 +48,7 @@ For detailed setup instructions, see [Getting Started Guide](./guides/getting-st
 
 ### What is Doctor Dashboard?
 
-The Doctor Dashboard is an **AI-powered clinical intelligence system** that transforms unstructured clinical PDFs and physician dictation audio into interactive, clinically-actionable dashboards. It uses a document router for PDFs, a dedicated voice extraction path for audio dictation, and shared dashboard presentation logic in the UI.
+The Doctor Dashboard is an **AI-powered clinical intelligence system** that transforms unstructured clinical PDFs, uploaded physician dictation audio, and live doctor-patient conversations into interactive clinical workflows. It uses a document router for PDFs, a validated voice extraction path for uploaded dictation, a live session runtime for streaming capture, and shared dashboard presentation logic in the UI.
 
 ### Key Capabilities
 
@@ -56,6 +56,7 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 |------------|-------------|
 | **PDF Understanding** | Extract structured data from unstructured clinical PDFs |
 | **Voice Dictation Intake** | Upload audio dictation, transcribe it, extract structured clinical content, and open the same dashboard route |
+| **Live Conversation Streaming** | Capture microphone audio, persist rolling transcript and draft note state, and review/finalize a live visit session |
 | **Agentic Document Classification** | ReAct-based classification with 95%+ confidence |
 | **Dynamic Skill Selection** | Agents decide which extraction skills to run based on content |
 | **Scalable Architecture** | Add new document types via configuration, not code |
@@ -75,7 +76,7 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 
 - **Frontend:** React + TypeScript + Tailwind CSS + Vite
 - **Backend:** Express.js + Node.js
-- **AI/LLM:** Google Gemma 4-31B-it (primary default), Gemini 2.5 Flash (external and STT)
+- **AI/LLM:** Proprietary on-prem inference plus approved external/provider-backed AI services
 - **PDF Processing:** Custom PDF extraction tools
 - **Architecture:** Multi-agent ReAct pattern with parallel execution
 
@@ -89,14 +90,20 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 |----------|-------------|------|
 | AI Architecture | Complete AI/LLM system architecture | [View](./architecture/ai-architecture.md) |
 | Agent System | Multi-agent orchestration details (v3.0 ReAct) | [View](./architecture/agent-system.md) |
-| **ReAct Architecture Diagrams** | **NEW: Visual diagrams for ReAct system** | [View](./architecture/diagrams/react-architecture.md) |
+| **ReAct Architecture Diagrams** | **Current visual diagrams for PDF + voice runtime architecture** | [View](./architecture/diagrams/react-architecture.md) |
+| Full Architecture HTML v5 | Presentation-ready HTML architecture overview with live conversation updates | [View](./architecture/manipal_coe_full_architecture_v5.html) |
+| Client Review Deployment Architecture | Production deployment diagram for client review and approval | [View](./architecture/manipal_coe_deployment_architecture_client_review_v2.html) |
 | Skills Framework | Reusable AI skills documentation | [View](./architecture/skills-framework.md) |
 | Chatbot Architecture | Doctor Assistant chat system | [View](./architecture/chatbot-architecture.md) |
 | Chart Note React Agent | Chart note generation architecture | [View](./architecture/CHART_NOTE_REACT_AGENT.md) |
-| Voice Intake Phase 2 Implementation Summary | Current-state voice runtime architecture and lifecycle | [View](./architecture/voice-intake-phase2-implementation-summary.md) |
+| Voice Intake Current Implementation Summary | Current-state uploaded dictation + live conversation runtime architecture | [View](./architecture/voice-intake-phase2-implementation-summary.md) |
+| Live Conversation UI + Backend Fit Plan | Current live workspace fit, implementation status, and remaining gaps | [View](./architecture/live-conversation-ui-backend-plan.md) |
+| Live Conversation STT Testing Plan | Hardening plan for chunked live transcription, VAD, reconciliation, and diarization | [View](./architecture/live-conversation-stt-testing-plan.md) |
 | Voice Intake LangGraph Plan | Architecture plan for dictation/conversation-to-dashboard flow | [View](./architecture/voice-intake-langgraph-plan.md) |
 | Voice Intake Phase 0 Baseline | Historical baseline document for initial voice decisions | [View](./architecture/voice-intake-phase0-baseline.md) |
 | Voice Intake Implementation Checklist | Historical execution tracker; use the Phase 2 summary for current runtime behavior | [View](./architecture/voice-intake-implementation-checklist.md) |
+| **Prescription Generation Plan** | **Implementation plan for generating prescriptions from live conversations** | [View](./architecture/prescription-generation-plan.md) |
+| **Prescription Generation Architecture** | **Architecture diagrams and data flow for prescription generation** | [View](./architecture/prescription-generation-architecture.md) |
 
 ### 2. Project Planning & Research
 
@@ -127,7 +134,7 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 |----------|-------------|------|
 | Deployment Guide | Production deployment instructions | [View](./operations/deployment.md) |
 | Security & Compliance | HIPAA and security documentation | [View](./operations/security.md) |
-| Gemini API Key Deployment | Gemini API key deployment guide | [View](./operations/deployment-gemini-api-key.md) |
+| External Provider API Key Deployment | External provider API key deployment guide | [View](./operations/deployment-external-provider-api-key.md) |
 
 ---
 
@@ -189,10 +196,7 @@ manipal-coe/
 ├── tools/                    # Utility tools
 │   ├── pdf/
 │   │   └── pdf_reader.tool.cjs                    # PDF text extraction
-│   ├── llm/
-│   │   ├── gemma_client.tool.cjs                  # Gemma LLM client
-│   │   ├── prompt_builder.tool.cjs                # Prompt templates
-│   │   └── citation_tracker.tool.cjs              # Citation tracking
+│   ├── llm/                              # Proprietary inference and prompt tooling
 │   ├── clinical/
 │   │   └── provenance_builder.tool.cjs            # Provenance data
 │   └── presentation/
@@ -243,7 +247,7 @@ Current behavior:
 1. Upload audio through `POST /api/voice/upload`.
 2. Create a voice session record and a matching queue document row immediately.
 3. Auto-start `POST /api/voice/process` from the frontend upload flow.
-4. Transcribe audio with Gemini and normalize transcript segments.
+4. Transcribe audio with the deployed proprietary transcription service and normalize transcript segments.
 5. Extract structured data with `VoiceExtractorAgent`.
 6. Validate the mapped dashboard payload before exposing the item as `processed`.
 7. Open the result through the same `/dashboard?documentId=<id>` route used by PDFs.
@@ -278,7 +282,7 @@ Complete audit logging for compliance and debugging:
 
 The system features a pure LLM-based extraction approach for pending items:
 
-- **No Regex Patterns** - Semantic understanding via Gemma LLM
+- **No Regex Patterns** - Semantic understanding via proprietary reasoning models
 - **7-Step Process** - Structured thinking for clinical items
 - **Provenance Tracking** - Source sections and excerpts included
 - **Priority Classification** - Clinical judgment (high/medium/low)

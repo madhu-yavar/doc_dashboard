@@ -14,10 +14,11 @@ describe("UploadCenter", () => {
   let documents: ProcessedDocument[];
   let processingStarted: boolean;
   let role: "admin" | "doctor";
+  let liveSessions: any[];
 
-  const renderPage = () =>
+  const renderPage = (initialEntry = "/upload") =>
     render(
-      <MemoryRouter initialEntries={["/upload"]}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <AuthProvider>
           <UploadCenter />
         </AuthProvider>
@@ -28,6 +29,7 @@ describe("UploadCenter", () => {
     documents = [];
     processingStarted = false;
     role = "admin";
+    liveSessions = [];
 
     class MockEventSource {
       onmessage: ((event: MessageEvent) => void) | null = null;
@@ -76,6 +78,61 @@ describe("UploadCenter", () => {
             ];
           }
           return new Response(JSON.stringify({ documents }), { status: 200 });
+        }
+
+        if (url.endsWith("/api/voice/live/sessions") && method === "GET") {
+          return new Response(JSON.stringify({ sessions: liveSessions }), { status: 200 });
+        }
+
+        if (url.endsWith("/api/voice/live/sessions") && method === "POST") {
+          const requestBody = init?.body ? JSON.parse(String(init.body)) : {};
+          const session = {
+            id: "live-session-1",
+            status: "draft",
+            linkedPatient: requestBody.linkedPatient || "",
+            encounterLabel: requestBody.encounterLabel || "",
+            createdBy: {
+              id: "user-1",
+              username: role === "admin" ? "admin.user" : "doctor.user",
+              role,
+            },
+            startedAt: null,
+            updatedAt: "2026-05-27T07:30:00Z",
+            endedAt: null,
+            durationMs: 0,
+            documentId: null,
+            audio: {
+              mimeType: "audio/webm;codecs=opus",
+              chunkCount: 0,
+            },
+            transcript: {
+              segments: [],
+              rawText: "",
+              normalizedText: "",
+              speakers: [],
+              quality: {
+                overallConfidence: null,
+                lowConfidenceSegmentCount: 0,
+                speakerAmbiguityCount: 0,
+                overlappingSpeechSuspected: false,
+              },
+              hasGap: false,
+              interimText: "",
+            },
+            draftExtraction: {
+              extractedData: null,
+              reviewItems: [],
+              lastStableSegmentId: null,
+            },
+            error: null,
+            transport: {
+              connectionState: "idle",
+              lastError: null,
+              lastEventAt: null,
+            },
+          };
+          liveSessions = [session];
+          return new Response(JSON.stringify(session), { status: 201 });
         }
 
         if (url.endsWith("/voice") && method === "GET") {
@@ -268,17 +325,211 @@ describe("UploadCenter", () => {
   }, 15000);
 
   it("renders the live conversation UI shell without disturbing the dictation workspace", async () => {
+    const firstView = renderPage("/upload?workspace=voice");
+    expect(await screen.findByText(/dictation review queue/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /switch voice mode/i })).toBeInTheDocument();
+
+    firstView.unmount();
+
+    renderPage("/upload?workspace=voice&mode=live");
+    expect(await screen.findByText(/no session selected/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /new session/i }));
+
+    expect(await screen.findByRole("heading", { name: /^live conversation$/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^start$/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /transcript/i })).toBeInTheDocument();
+  }, 15000);
+
+  it("loads saved live sessions even when transcript segments are missing optional fields", async () => {
+    liveSessions = [
+      {
+        id: "live-poc-test-001",
+        status: "review_required",
+        linkedPatient: "Rajesh Kumar",
+        encounterLabel: "Fever and Body Ache",
+        createdBy: {
+          id: "doctor_001",
+          username: "dr_sharma",
+          role: "doctor",
+        },
+        startedAt: "2026-05-27T10:15:00Z",
+        updatedAt: "2026-05-27T10:30:00Z",
+        endedAt: "2026-05-27T10:30:00Z",
+        durationMs: 900000,
+        transcript: {
+          segments: [
+            {
+              id: "seg-1",
+              speakerRole: "doctor",
+              speakerLabel: "Doctor",
+              text: "Hello, what brings you in today?",
+            },
+            {
+              id: "seg-2",
+              speakerRole: "patient",
+              speakerLabel: "Patient",
+              text: "I've had fever for three days, along with body ache and headache.",
+            },
+          ],
+          rawText: "Hello, what brings you in today? I've had fever for three days, along with body ache and headache.",
+          normalizedText: "Doctor: Hello, what brings you in today? Patient: I've had fever for three days, along with body ache and headache.",
+        },
+        draftExtraction: {
+          extractedData: {
+            diagnosis: "Viral febrile illness",
+            symptoms: ["Fever for 3 days", "Body ache", "Headache"],
+            medications: [],
+            labs: ["CBC"],
+            radiology: [],
+            procedures: [],
+            followUp: ["After 3 days if symptoms persist"],
+            plan: ["Hydration advised"],
+          },
+          reviewItems: [],
+          lastStableSegmentId: "seg-2",
+        },
+        audio: {
+          mimeType: "audio/webm",
+          chunkCount: 45,
+        },
+        transport: {
+          connectionState: "disconnected",
+          lastError: null,
+          lastEventAt: "2026-05-27T10:30:00Z",
+        },
+        error: null,
+      },
+    ];
+
+    renderPage("/upload?workspace=voice&mode=live");
+
+    expect(await screen.findByRole("heading", { name: /^live conversation$/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /rajesh kumar/i })).toBeInTheDocument();
+    expect(screen.getByText(/hello, what brings you in today\\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/^viral febrile illness$/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /create new visit/i }));
+
+    expect(await screen.findByRole("button", { name: /^start$/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /new conversation/i })).toBeInTheDocument();
+  }, 15000);
+
+  it("shows finalized live conversations as processed live records with the encounter label in the queue", async () => {
+    documents = [
+      {
+        id: "voice-live-live-1779875406515-a35c20bd",
+        name: "Madhu - EN001",
+        fileName: "Madhu - EN001",
+        size: 1669865,
+        uploadedAt: "2026-05-27T10:50:26.816Z",
+        processedAt: "2026-05-27T10:50:26.816Z",
+        status: "processed",
+        department: "Live Conversation",
+        documentType: "voice",
+        mimeType: "audio/webm",
+        durationLabel: "01:24",
+        linkedPatient: "Madhu",
+        encounterLabel: "EN001",
+        result: {
+          meta: {
+            source_type: "voice",
+            sessionType: "live_conversation",
+            sessionId: "live-1779875406515-a35c20bd",
+            patientName: "Madhu",
+            encounterLabel: "EN001",
+          },
+          dashboard_cards: {
+            diagnosis_card: {
+              principal_diagnosis: "Chest pain under evaluation",
+            },
+            medications_card: {
+              active_count: 0,
+              medication_list: [],
+            },
+            labs_card: {
+              total_tests: 0,
+              investigations_list: [],
+            },
+            radiology_card: {
+              studies_completed: 0,
+              radiology_list: [],
+            },
+            treatment_card: {
+              procedures_performed: 0,
+              management_items: [],
+            },
+            clinical_notes_card: {
+              total_notes: 1,
+              notes: [],
+            },
+            follow_up_card: {
+              appointment_count: 0,
+              appointments: [],
+            },
+          },
+          sample_patient_data: {
+            name: "Madhu",
+            mrn: "EN001",
+            age: null,
+            gender: "",
+            admission_date: "",
+            discharge_date: "",
+            los_days: null,
+            summary: "Processed via Agent System v2.0.0.",
+            vitals: {
+              latest: {
+                bloodPressure: { systolic: null, diastolic: null },
+                heartRate: { value: null },
+                spo2: { value: null },
+                temperature: { value: null },
+                weight: { value: null, unit: "" },
+                respiratoryRate: { value: null },
+                painScore: { value: null },
+                grbs: { value: null },
+              },
+              status: "stable",
+              trend: "stable",
+              alerts: [],
+            },
+          },
+          extracted_data: {
+            patient: {
+              name: "Madhu",
+              mrn: "EN001",
+            },
+            diagnosis: {
+              principal: { name: "Chest pain under evaluation" },
+              secondary: [],
+              symptoms: ["Chest pain"],
+            },
+            medications: [],
+            investigations: [],
+            radiology: [],
+            procedures: [],
+            follow_up: { items: [] },
+            treatment: {
+              current_approach: "",
+              management_items: [],
+              procedures: [],
+            },
+            clinical_notes: [
+              {
+                type: "Live Conversation Summary",
+                date: "2026-05-27T10:50:26.816Z",
+                summary: "Chest pain under evaluation",
+              },
+            ],
+          },
+        },
+        error: null,
+      } as ProcessedDocument,
+    ];
+
     renderPage();
 
-    fireEvent.click(await screen.findByRole("tab", { name: /voice dictation/i }));
-    expect(await screen.findByText(/conversation and dictation workspace/i)).toBeInTheDocument();
-    expect(await screen.findByText(/dictation review queue/i)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("tab", { name: /live conversation/i }));
-
-    expect(await screen.findByText(/live doctor-patient conversation/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start new session/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start session/i })).toBeInTheDocument();
-    expect(screen.getByText(/mock events active/i)).toBeInTheDocument();
+    expect(await screen.findByText("Madhu - EN001")).toBeInTheDocument();
+    expect(screen.getByText(/^processed$/i)).toBeInTheDocument();
+    expect(screen.getByText(/^live$/i)).toBeInTheDocument();
+    expect(screen.getByText(/madhu · en001/i)).toBeInTheDocument();
   }, 15000);
 });

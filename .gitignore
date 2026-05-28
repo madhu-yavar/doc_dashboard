@@ -26,3 +26,12 @@ server/storage/
 tests/fixtures/audio/
 models/
 tmp/
+tests/results/
+.cache/
+.venv-pyannote/
+template/
+prescription_template_dev/
+*.wav
+*.mp3
+cookie.txt
+*.png

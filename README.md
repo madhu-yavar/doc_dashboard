@@ -39,7 +39,7 @@ The backend reads these variables at runtime:
 NODE_ENV=production
 PORT=8001
 GEMMA_URL=http://127.0.0.1:8000/v1/chat/completions
-GEMMA_MODEL=google/gemma-4-31B-it
+GEMMA_MODEL=google/gemma-4-26B-A4B-it
 EXTRACTION_GEMMA_TIMEOUT_MS=240000
 USE_GEMINI_FOR_EXTERNAL=true
 GEMINI_MODEL=gemini-2.5-flash
@@ -49,7 +49,7 @@ GEMINI_API_KEY=
 Notes:
 
 - `GEMMA_URL` must point to a Gemma-compatible OpenAI-style chat-completions endpoint.
-- `GEMMA_MODEL` currently defaults to `google/gemma-4-31B-it` in the live server.
+- `GEMMA_MODEL` currently defaults to `google/gemma-4-26B-A4B-it` in the live server.
 - `EXTRACTION_GEMMA_TIMEOUT_MS` controls extraction-step timeout for the router-backed processing path.
 - If Gemma runs on the same VM as this app but outside Docker, use `host.docker.internal` from inside the container.
 - `USE_GEMINI_FOR_EXTERNAL` can be set to `false` if you do not want external web-answer fallback behavior.
@@ -144,7 +144,7 @@ docker run -d \
   -e NODE_ENV=production \
   -e PORT=8001 \
   -e GEMMA_URL=http://host.docker.internal:8000/v1/chat/completions \
-  -e GEMMA_MODEL=google/gemma-4-31B-it \
+  -e GEMMA_MODEL=google/gemma-4-26B-A4B-it \
   -e EXTRACTION_GEMMA_TIMEOUT_MS=240000 \
   --add-host=host.docker.internal:host-gateway \
   -v "$(pwd)/server/storage:/app/server/storage" \

@@ -222,7 +222,7 @@ function createSession(overrides: Partial<LiveConversationSession> = {}): LiveCo
   const device = MOCK_DEVICES[0];
   return {
     id: `live-session-${Math.random().toString(36).slice(2, 10)}`,
-    title: "Live conversation draft",
+    title: "New conversation",
     status: "draft",
     linkedPatient: "",
     encounterLabel: "",
@@ -341,7 +341,7 @@ function updateSelected(
 function sessionTitle(linkedPatient: string, encounterLabel: string) {
   if (linkedPatient.trim()) return linkedPatient.trim();
   if (encounterLabel.trim()) return encounterLabel.trim();
-  return "Live conversation draft";
+  return "New conversation";
 }
 
 function reducer(state: LiveConversationState, action: Action): LiveConversationState {

@@ -153,14 +153,38 @@ class STTResultReconcilerSkill {
         scores: { transcript1: score1, transcript2: score2 },
       };
     } else {
-      // Tie - prefer Whisper (self-hosted, no API cost)
-      const prefer1 = transcript1?.metadata?.backend === "whisper";
-      return {
-        winner: prefer1 ? transcript1 : transcript2,
-        loser: prefer1 ? transcript2 : transcript1,
-        reason: `Tie score (${score1.score}), preferring ${prefer1 ? "Whisper" : "Gemini"}`,
-        scores: { transcript1: score1, transcript2: score2 },
-      };
+      // Tie - prefer medASR > Whisper > Gemini for medical content
+      const backend1 = transcript1?.metadata?.backend || "unknown";
+      const backend2 = transcript2?.metadata?.backend || "unknown";
+
+      // Backend priority for medical content
+      const backendPriority = { medasr: 3, whisper: 2, gemini: 1 };
+      const priority1 = backendPriority[backend1] || 0;
+      const priority2 = backendPriority[backend2] || 0;
+
+      if (priority1 > priority2) {
+        return {
+          winner: transcript1,
+          loser: transcript2,
+          reason: `Tie score (${score1.score}), preferring ${backend1.toUpperCase()} for medical content`,
+          scores: { transcript1: score1, transcript2: score2 },
+        };
+      } else if (priority2 > priority1) {
+        return {
+          winner: transcript2,
+          loser: transcript1,
+          reason: `Tie score (${score1.score}), preferring ${backend2.toUpperCase()} for medical content`,
+          scores: { transcript1: score1, transcript2: score2 },
+        };
+      } else {
+        // Same priority, prefer first
+        return {
+          winner: transcript1,
+          loser: transcript2,
+          reason: `Tie score (${score1.score}), same backend priority`,
+          scores: { transcript1: score1, transcript2: score2 },
+        };
+      }
     }
   }
 
@@ -292,11 +316,15 @@ class STTResultReconcilerSkill {
    * Main execution method
    */
   async execute(context) {
-    const { whisperResult, geminiResult, primaryBackend } = context;
+    const { medasrResult, whisperResult, geminiResult, primaryBackend } = context;
 
-    this.log("execute", { primaryBackend, hasWhisper: !!whisperResult, hasGemini: !!geminiResult });
+    this.log("execute", { primaryBackend, hasMedASR: !!medasrResult, hasWhisper: !!whisperResult, hasGemini: !!geminiResult });
 
     const results = [];
+
+    if (medasrResult?.success) {
+      results.push({ ...medasrResult, backend: "medasr" });
+    }
 
     if (whisperResult?.success) {
       results.push({ ...whisperResult, backend: "whisper" });
@@ -306,27 +334,74 @@ class STTResultReconcilerSkill {
       results.push({ ...geminiResult, backend: "gemini" });
     }
 
-    // If primary backend failed, just return the other one
-    if (primaryBackend === "whisper" && !whisperResult?.success && geminiResult?.success) {
-      this.log("primary_failed", { primary: "whisper", using: "gemini" });
-      return {
-        success: true,
-        selected: geminiResult.data,
-        source: "gemini",
-        reason: "Primary backend (Whisper) failed, using Gemini",
-        fallback: true,
-      };
+    // If primary backend failed, just return the first successful fallback
+    if (primaryBackend === "medasr" && !medasrResult?.success) {
+      if (whisperResult?.success) {
+        this.log("primary_failed", { primary: "medasr", using: "whisper" });
+        return {
+          success: true,
+          selected: whisperResult.data,
+          source: "whisper",
+          reason: "Primary backend (medASR) failed, using Whisper",
+          fallback: true,
+        };
+      }
+      if (geminiResult?.success) {
+        this.log("primary_failed", { primary: "medasr", using: "gemini" });
+        return {
+          success: true,
+          selected: geminiResult.data,
+          source: "gemini",
+          reason: "Primary backend (medASR) failed, using Gemini",
+          fallback: true,
+        };
+      }
     }
 
-    if (primaryBackend === "gemini" && !geminiResult?.success && whisperResult?.success) {
-      log("primary_failed", { primary: "gemini", using: "whisper" });
-      return {
-        success: true,
-        selected: whisperResult.data,
-        source: "whisper",
-        reason: "Primary backend (Gemini) failed, using Whisper",
-        fallback: true,
-      };
+    if (primaryBackend === "whisper" && !whisperResult?.success) {
+      if (medasrResult?.success) {
+        this.log("primary_failed", { primary: "whisper", using: "medasr" });
+        return {
+          success: true,
+          selected: medasrResult.data,
+          source: "medasr",
+          reason: "Primary backend (Whisper) failed, using medASR",
+          fallback: true,
+        };
+      }
+      if (geminiResult?.success) {
+        this.log("primary_failed", { primary: "whisper", using: "gemini" });
+        return {
+          success: true,
+          selected: geminiResult.data,
+          source: "gemini",
+          reason: "Primary backend (Whisper) failed, using Gemini",
+          fallback: true,
+        };
+      }
+    }
+
+    if (primaryBackend === "gemini" && !geminiResult?.success) {
+      if (medasrResult?.success) {
+        this.log("primary_failed", { primary: "gemini", using: "medasr" });
+        return {
+          success: true,
+          selected: medasrResult.data,
+          source: "medasr",
+          reason: "Primary backend (Gemini) failed, using medASR",
+          fallback: true,
+        };
+      }
+      if (whisperResult?.success) {
+        console.log("primary_failed", { primary: "gemini", using: "whisper" });
+        return {
+          success: true,
+          selected: whisperResult.data,
+          source: "whisper",
+          reason: "Primary backend (Gemini) failed, using Whisper",
+          fallback: true,
+        };
+      }
     }
 
     // Select best from available results

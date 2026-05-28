@@ -30,6 +30,8 @@ const analytics: LandingAnalyticsOverview = {
   documentsByType: [
     { documentType: "prescription", count: 3 },
     { documentType: "discharge_summary", count: 2 },
+    { documentType: "voice_dictation", count: 2 },
+    { documentType: "live_conversation", count: 1 },
     { documentType: "outpatient_record", count: 1 },
     { documentType: "lab_report", count: 0 },
     { documentType: "chart_note", count: 0 },
@@ -43,6 +45,8 @@ const analytics: LandingAnalyticsOverview = {
   medicationsByDocumentType: [
     { documentType: "prescription", count: 7 },
     { documentType: "discharge_summary", count: 2 },
+    { documentType: "voice_dictation", count: 3 },
+    { documentType: "live_conversation", count: 2 },
     { documentType: "outpatient_record", count: 1 },
     { documentType: "lab_report", count: 0 },
     { documentType: "chart_note", count: 0 },
@@ -51,13 +55,15 @@ const analytics: LandingAnalyticsOverview = {
   testsByDocumentType: [
     { documentType: "prescription", lab: 5, radiology: 2, nuclearMedicine: 1, procedures: 3 },
     { documentType: "discharge_summary", lab: 0, radiology: 0, nuclearMedicine: 0, procedures: 0 },
+    { documentType: "voice_dictation", lab: 0, radiology: 0, nuclearMedicine: 0, procedures: 0 },
+    { documentType: "live_conversation", lab: 1, radiology: 1, nuclearMedicine: 0, procedures: 1 },
     { documentType: "outpatient_record", lab: 1, radiology: 0, nuclearMedicine: 0, procedures: 0 },
     { documentType: "lab_report", lab: 0, radiology: 0, nuclearMedicine: 0, procedures: 0 },
     { documentType: "chart_note", lab: 0, radiology: 0, nuclearMedicine: 0, procedures: 0 },
     { documentType: "unknown", lab: 0, radiology: 0, nuclearMedicine: 0, procedures: 0 },
   ],
   summary: {
-    includedDocuments: 6,
+    includedDocuments: 9,
     refreshedAt: "2026-05-04T08:00:00Z",
   },
 };
@@ -103,6 +109,8 @@ describe("ProcessingInsights", () => {
 
     const chartPayloads = screen.getAllByTestId("bar-chart").map((chart) => chart.getAttribute("data-chart") || "");
     expect(chartPayloads.some((payload) => payload.includes("\"label\":\"Prescription\"") && payload.includes("\"count\":3"))).toBe(true);
+    expect(chartPayloads.some((payload) => payload.includes("\"label\":\"Dictation\"") && payload.includes("\"count\":2"))).toBe(true);
+    expect(chartPayloads.some((payload) => payload.includes("\"label\":\"Live\"") && payload.includes("\"count\":1"))).toBe(true);
     expect(chartPayloads.some((payload) => payload.includes("\"label\":\"Prescription\"") && payload.includes("\"count\":7"))).toBe(true);
     expect(
       chartPayloads.some(

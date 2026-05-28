@@ -1,12 +1,15 @@
 # Voice Intake LangGraph Plan
 
+> Historical planning document
+> This file captures the original rollout strategy before live streaming was implemented in the repository. The current codebase now supports uploaded dictation plus a separate live conversation session runtime. For current behavior, use [voice-intake-phase2-implementation-summary.md](./voice-intake-phase2-implementation-summary.md) and [live-conversation-ui-backend-plan.md](./live-conversation-ui-backend-plan.md).
+
 ## Purpose
 This document defines the architecture plan for a new **voice intake module** that converts physician dictation or clinical conversation audio into the same structured dashboard data model already used by the Doctor Dashboard.
 
 The target outcome is:
 - doctors can upload dictated audio and process it into the dashboard
 - the extracted output can reuse the current chart note, chat, alerting, and presentation flows
-- the system remains modular enough to switch between **Gemini-based transcription** and the existing **self-hosted Whisper STT service**
+- the system remains modular enough to switch between a **provider-backed transcription path** and the existing **self-hosted STT service**
 
 This plan is intentionally focused on architecture, workflow, and rollout sequencing. It does not assume the module should be implemented in one release.
 
@@ -40,11 +43,11 @@ The existing system already has:
 The voice module should feed that system, not duplicate it.
 
 ### Reason 2: keep STT replaceable
-You already have a self-hosted Whisper service. That means the correct architecture is:
+You already have a self-hosted STT service. That means the correct architecture is:
 - **STT as a tool**
 - **clinical extraction as a graph**
 
-If transcription and extraction are fused into one opaque model call, migration from Gemini to Whisper later becomes expensive and hard to evaluate.
+If transcription and extraction are fused into one opaque model call, migration between provider-backed and self-hosted transcription later becomes expensive and hard to evaluate.
 
 ### Reason 3: separate transcription quality from extraction quality
 Audio workflows fail in two different ways:
@@ -79,7 +82,7 @@ The lowest-friction implementation path is therefore **LangGraph.js inside the e
 
 ### In scope for v1
 - uploaded physician dictation audio
-- Gemini-based transcription experiment
+- provider-backed transcription experiment
 - transcript normalization
 - transcript-to-structured extraction
 - dashboard population using the existing schema
@@ -88,7 +91,7 @@ The lowest-friction implementation path is therefore **LangGraph.js inside the e
 
 ### Explicitly out of scope for v1
 - real-time live streaming
-- production switch to Whisper
+- production switch to the self-hosted STT path
 - bi-directional voice assistant
 - voice playback UI
 - automatic note signing
@@ -238,7 +241,7 @@ The graph should preserve this distinction from the start.
 ## Experimental STT Strategy
 
 ### Phase 1 transcription engine
-Use **Gemini** as the initial transcription engine for the experiment.
+Use the **provider-backed transcription path** as the initial experiment engine.
 
 The purpose is to learn:
 - transcript quality
@@ -248,16 +251,16 @@ The purpose is to learn:
 
 ### Production-ready abstraction
 Wrap STT behind a tool interface so it can later route to:
-- `GeminiAudioTranscriptionTool`
-- `WhisperTranscriptionTool`
+- `PrimaryAudioTranscriptionTool`
+- `SelfHostedAudioTranscriptionTool`
 
 The extraction graph should not care which STT engine produced the transcript.
 
 ## Tools
 
 ### New tools
-- `GeminiAudioTranscriptionTool`
-- `WhisperTranscriptionTool`
+- `PrimaryAudioTranscriptionTool`
+- `SelfHostedAudioTranscriptionTool`
 - `TranscriptNormalizerTool`
 - `TranscriptQualityGateTool`
 - `SpeakerRoleResolverTool`
@@ -265,14 +268,14 @@ The extraction graph should not care which STT engine produced the transcript.
 
 ### Likely tool responsibilities
 
-#### `GeminiAudioTranscriptionTool`
-- upload audio to Gemini or pass inline audio when small
+#### `PrimaryAudioTranscriptionTool`
+- upload audio to the approved provider or pass inline audio when small
 - request transcript with timestamps
 - request speaker labeling when supported
 - return structured transcript JSON
 
-#### `WhisperTranscriptionTool`
-- call the self-hosted Whisper service
+#### `SelfHostedAudioTranscriptionTool`
+- call the self-hosted STT service
 - normalize response shape into the same transcript contract
 
 #### `TranscriptNormalizerTool`
@@ -408,7 +411,7 @@ The final structured voice output should be transformed into the same high-level
 
 #### `POST /api/voice/process`
 - trigger LangGraph voice pipeline
-- optionally choose STT backend: `gemini` or `whisper`
+- optionally choose STT backend: `provider` or `self_hosted`
 
 #### `GET /api/voice/process/progress`
 - SSE progress stream mirroring document processing style
@@ -432,14 +435,14 @@ The graph checkpoint store should be explicit from the start so long-running rev
 Audio contains PHI and should be treated more strictly than masked prescription images.
 
 ### Key policy decisions
-- Gemini should be used only as an **experiment path** initially
-- the architecture must assume future migration to self-hosted Whisper
+- the provider-backed path should be used only as an **experiment path** initially
+- the architecture must assume future migration to the self-hosted STT service
 - raw audio should stay local
 - transcript sharing with external services should be governed by explicit configuration
 - patient identity should preferably come from session or encounter context, not only from transcript inference
 
 ### Practical rule
-For the pilot, the system may send uploaded audio to Gemini only when that path is explicitly selected.
+For the pilot, the system may send uploaded audio to the provider-backed path only when that path is explicitly selected.
 
 Production posture should favor the self-hosted STT tool once the experiment phase is complete.
 
@@ -479,9 +482,9 @@ Create a curated set of:
 - define review contract
 - define benchmark dataset
 
-### Phase 1: uploaded dictation with Gemini
+### Phase 1: uploaded dictation with provider-backed transcription
 - audio upload flow
-- Gemini transcription
+- provider-backed transcription
 - transcript viewer
 - extraction graph
 - dashboard mapping
@@ -493,10 +496,10 @@ Create a curated set of:
 - resumable execution
 - audit enrichment
 
-### Phase 3: Whisper backend integration
+### Phase 3: self-hosted STT backend integration
 - implement self-hosted STT tool
 - normalize transcript contract
-- compare Gemini vs Whisper on benchmark set
+- compare provider-backed vs self-hosted transcription on benchmark set
 
 ### Phase 4: live streaming
 - websocket audio ingest
@@ -507,7 +510,7 @@ Create a curated set of:
 ## Recommended First Slice
 The first build should be:
 - upload audio
-- transcribe with Gemini
+- transcribe with the provider-backed path
 - show transcript with timestamps
 - extract into the current dashboard schema
 - review low-confidence medication/order fields
@@ -523,6 +526,4 @@ That is the smallest slice that proves the module’s value without prematurely 
 - What is the acceptable human review rate for medication-bearing dictations?
 
 ## References
-- Gemini audio understanding docs: https://ai.google.dev/gemini-api/docs/audio
-- Gemini Live API docs: https://ai.google.dev/gemini-api/docs/live
 - LangGraph.js docs: https://langchain-ai.github.io/langgraphjs/reference/modules/langgraph.html

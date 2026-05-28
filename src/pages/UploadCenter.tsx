@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { AudioLines, ClipboardList, Eye, FileText, FileStack, RefreshCw, Search, Sparkles, Trash2, Upload, Key } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  AudioLines,
+  ClipboardList,
+  Eye,
+  FileText,
+  FileStack,
+  Key,
+  RefreshCw,
+  Search,
+  Sparkles,
+  Trash2,
+  Upload,
+} from "lucide-react";
 
 import AppShellHeader from "@/components/auth/AppShellHeader";
 import AuditTrailSheet from "@/components/dashboard/AuditTrailSheet";
@@ -14,14 +26,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { apiFetch, createAuthenticatedEventSource, parseApiPayload } from "@/lib/apiClient";
 import { useAuth } from "@/lib/auth";
 import {
   API_BASE,
+  getProcessedDocumentEncounterLabel,
   getProcessedDocumentMrn,
   getProcessedDocumentPatientName,
   getVoiceDocumentDashboardError,
+  getVoiceDocumentMode,
   isVoiceDocumentDashboardReady,
   matchesProcessedDocumentQuery,
   type ProcessedDocument,
@@ -33,6 +47,7 @@ import { toast } from "sonner";
 
 type QueueTab = "all" | "queued" | "processed" | "failed" | "partial";
 type IntakeWorkspace = "documents" | "voice";
+type VoiceWorkspaceMode = "dictation" | "live";
 
 const statusClasses: Record<QueueStatus, string> = {
   queued: "border-transparent bg-emerald-50 text-emerald-700",
@@ -62,18 +77,16 @@ const SECONDARY_TEAL_BUTTON =
   "border-teal-200 bg-teal-50 text-teal-800 hover:border-teal-300 hover:bg-teal-100";
 const ICON_TEAL_BUTTON =
   "border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 hover:text-teal-800";
-const TEAL_TABS_TRIGGER =
-  "rounded-lg text-teal-800 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-none";
 
 const UploadCenter = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const isAdmin = user?.role === "admin";
 
   const [documents, setDocuments] = useState<ProcessedDocument[]>([]);
   const [activeTab, setActiveTab] = useState<QueueTab>("all");
-  const [workspace, setWorkspace] = useState<IntakeWorkspace>("documents");
   const [searchValue, setSearchValue] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
@@ -89,6 +102,9 @@ const UploadCenter = () => {
     stepName: string;
   }>>({});
   const [geminiApiKey, setGeminiApiKey] = useState("");
+  const voiceMode: VoiceWorkspaceMode = searchParams.get("mode") === "live" ? "live" : "dictation";
+  const workspace: IntakeWorkspace =
+    searchParams.get("workspace") === "voice" || searchParams.get("mode") ? "voice" : "documents";
 
   // Handwriting completion dialog state
   const [handwritingDialog, setHandwritingDialog] = useState<{
@@ -235,6 +251,24 @@ const UploadCenter = () => {
       return;
     }
     input.click();
+  };
+
+  const showDocumentsWorkspace = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("workspace");
+    next.delete("mode");
+    setSearchParams(next, { replace: true });
+  };
+
+  const showVoiceWorkspace = (nextMode: VoiceWorkspaceMode) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("workspace", "voice");
+    if (nextMode === "live") {
+      next.set("mode", "live");
+    } else {
+      next.delete("mode");
+    }
+    setSearchParams(next, { replace: true });
   };
 
   const handleFiles = async (fileList: FileList | null) => {
@@ -759,169 +793,164 @@ const UploadCenter = () => {
       <AppShellHeader />
 
       <main className="mx-auto max-w-7xl px-5 py-6">
-        <Tabs value={workspace} onValueChange={(value) => setWorkspace(value as IntakeWorkspace)} className="grid gap-6">
+        <div className="grid gap-6">
           {isAdmin ? <ProcessingInsights analytics={analyticsOverview} isLoading={isLoadingAnalytics} /> : null}
 
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="space-y-1">
-              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500">Clinical Operations</p>
-              <h1 className="text-xl font-semibold tracking-tight text-slate-900">Intake Workspace</h1>
-            </div>
-            <TabsList className="grid h-auto w-full max-w-[420px] grid-cols-2 rounded-xl border border-teal-200 bg-teal-50/80 p-1">
-              <TabsTrigger value="documents" className={TEAL_TABS_TRIGGER}>
-                <FileStack className="mr-2 h-4 w-4" />
-                Documents
-              </TabsTrigger>
-              <TabsTrigger value="voice" className={TEAL_TABS_TRIGGER}>
-                <AudioLines className="mr-2 h-4 w-4" />
-                Voice Dictation
-              </TabsTrigger>
-            </TabsList>
+          <div className="space-y-1">
+            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500">Clinical Operations</p>
+            <h1 className="text-xl font-semibold tracking-tight text-slate-900">Intake Workspace</h1>
           </div>
 
-          <TabsContent value="documents" className="mt-0 grid gap-6">
-            <Card className="overflow-hidden border-slate-200 shadow-sm">
-              <CardContent className="space-y-4 p-5">
-                <div className="space-y-1">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500">Document Intake</p>
-                  <h2 className="text-xl font-semibold tracking-tight text-slate-900">Clinical document queue</h2>
-                </div>
-                <div>
-                  <input ref={inputRef} type="file" multiple accept=".pdf,application/pdf" className="hidden" onChange={handleInputChange} />
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    className={`rounded-2xl border border-dashed p-4 transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
-                      dragActive
-                        ? "border-primary bg-primary/5"
-                        : "border-slate-300 bg-slate-50/70 hover:border-slate-400 hover:bg-white"
-                    }`}
-                    onClick={openFilePicker}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        openFilePicker();
-                      }
-                    }}
-                    onDragEnter={(event) => {
-                      event.preventDefault();
-                      setDragActive(true);
-                    }}
-                    onDragOver={(event) => {
-                      event.preventDefault();
-                      setDragActive(true);
-                    }}
-                    onDragLeave={(event) => {
-                      event.preventDefault();
-                      setDragActive(false);
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      setDragActive(false);
-                      handleFiles(event.dataTransfer.files);
-                    }}
-                  >
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                      <div className="flex items-start gap-4 text-left">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700">
-                          <Upload className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-slate-900">Add PDF documents to the intake queue</p>
-                          <p className="mt-1 text-sm text-slate-600">Drag files here or select PDFs.</p>
+          <div className="grid gap-6 xl:grid-cols-[250px_minmax(0,1fr)] xl:items-start">
+            <WorkspaceSidebar
+              workspace={workspace}
+              onShowDocuments={showDocumentsWorkspace}
+              onShowVoice={() => showVoiceWorkspace(voiceMode)}
+              documentCount={stats.total}
+              activeDocumentCount={stats.processing + stats.transcribing}
+            />
+
+            <div className="min-w-0">
+              {workspace === "documents" ? (
+                <div className="grid gap-6">
+                  <Card className="overflow-hidden border-slate-200 shadow-sm">
+                    <CardContent className="space-y-4 p-5">
+                      <h2 className="text-xl font-semibold tracking-tight text-slate-900">Clinical document queue</h2>
+                      <div>
+                        <input ref={inputRef} type="file" multiple accept=".pdf,application/pdf" className="hidden" onChange={handleInputChange} />
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          className={`rounded-2xl border border-dashed p-4 transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
+                            dragActive
+                              ? "border-primary bg-primary/5"
+                              : "border-slate-300 bg-slate-50/70 hover:border-slate-400 hover:bg-white"
+                          }`}
+                          onClick={openFilePicker}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              openFilePicker();
+                            }
+                          }}
+                          onDragEnter={(event) => {
+                            event.preventDefault();
+                            setDragActive(true);
+                          }}
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            setDragActive(true);
+                          }}
+                          onDragLeave={(event) => {
+                            event.preventDefault();
+                            setDragActive(false);
+                          }}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            setDragActive(false);
+                            handleFiles(event.dataTransfer.files);
+                          }}
+                        >
+                          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                            <div className="flex items-start gap-4 text-left">
+                              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700">
+                                <Upload className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-slate-900">Add PDF documents to the intake queue</p>
+                                <p className="mt-1 text-sm text-slate-600">Drag files here or select PDFs.</p>
+                              </div>
+                            </div>
+                            <Button type="button" className={`self-start md:self-center ${PRIMARY_TEAL_BUTTON}`}>
+                              Select PDFs
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                      <Button type="button" className={`self-start md:self-center ${PRIMARY_TEAL_BUTTON}`}>
-                        Select PDFs
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-teal-200/80 bg-teal-50/70 px-4 py-3">
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                    <WorkspaceMetric label="Total records" value={stats.total} />
-                    <WorkspaceMetric label="Queued" value={stats.queued} />
-                    <WorkspaceMetric label="Active" value={stats.processing + stats.transcribing} />
-                    <WorkspaceMetric label="Completed" value={stats.processed} />
-                    {stats.transcribing > 0 ? <WorkspaceMetric label="Transcribing" value={stats.transcribing} tone="text-indigo-700" /> : null}
-                    {stats.review_required > 0 ? <WorkspaceMetric label="Approval Required" value={stats.review_required} tone="text-orange-700" /> : null}
-                    {stats.failed > 0 ? <WorkspaceMetric label="Failed" value={stats.failed} tone="text-rose-700" /> : null}
-                    {stats.partial > 0 ? <WorkspaceMetric label="Partial" value={stats.partial} tone="text-amber-700" /> : null}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                      <div className="rounded-xl border border-teal-200/80 bg-teal-50/70 px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                          <WorkspaceMetric label="Total records" value={stats.total} />
+                          <WorkspaceMetric label="Queued" value={stats.queued} />
+                          <WorkspaceMetric label="Active" value={stats.processing + stats.transcribing} />
+                          <WorkspaceMetric label="Completed" value={stats.processed} />
+                          {stats.transcribing > 0 ? <WorkspaceMetric label="Transcribing" value={stats.transcribing} tone="text-indigo-700" /> : null}
+                          {stats.review_required > 0 ? <WorkspaceMetric label="Approval Required" value={stats.review_required} tone="text-orange-700" /> : null}
+                          {stats.failed > 0 ? <WorkspaceMetric label="Failed" value={stats.failed} tone="text-rose-700" /> : null}
+                          {stats.partial > 0 ? <WorkspaceMetric label="Partial" value={stats.partial} tone="text-amber-700" /> : null}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-            <Card className="overflow-hidden border-slate-200 shadow-sm">
-              <CardHeader className="border-b border-slate-200/80 pb-3">
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                  <div className="space-y-3">
-                    <CardTitle className="text-base text-slate-900">Documents queue</CardTitle>
-                    <div className="flex flex-wrap gap-2">
-                      {["all", "queued", "processed", "failed", "partial"].map((tab) => (
-                        <button
-                          key={tab}
-                          onClick={() => setActiveTab(tab as QueueTab)}
-                          className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                            activeTab === tab
-                              ? "border-teal-700 bg-teal-600 text-white"
-                              : "border-teal-200 bg-teal-50 text-teal-800 hover:bg-teal-100"
-                          }`}
-                        >
-                          {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs text-slate-500">
-                        {selectedIds.length > 0 ? `${selectedIds.length} selected` : "Select rows for batch actions"}
-                      </span>
-                      <Button
-                        size="sm"
-                        className={PRIMARY_TEAL_BUTTON}
-                        onClick={handleProcessSelected}
-                        disabled={!canProcessSelected}
-                      >
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Process selected
-                      </Button>
-                      {isAdmin ? (
-                        <Button
-                          size="sm"
-                          className={PRIMARY_TEAL_BUTTON}
-                          onClick={handleDeleteSelected}
-                          disabled={!canDeleteSelected}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete selected
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="grid gap-3 sm:w-full sm:max-w-sm">
-                    <div className="relative">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        value={searchValue}
-                        onChange={(event) => setSearchValue(event.target.value)}
-                        placeholder="Search by PDF, patient, or MRN"
-                        className="h-10 border-slate-200 bg-white pl-9"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                      <Key className="h-4 w-4 text-slate-500" />
-                      <Input
-                        type="password"
-                        placeholder="Stage 3 API key"
-                        value={geminiApiKey}
-                        onChange={(e) => setGeminiApiKey(e.target.value)}
-                        className="h-7 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-
+                  <Card className="overflow-hidden border-slate-200 shadow-sm">
+                    <CardHeader className="border-b border-slate-200/80 pb-3">
+                      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                        <div className="space-y-3">
+                          <CardTitle className="text-base text-slate-900">Documents queue</CardTitle>
+                          <div className="flex flex-wrap gap-2">
+                            {["all", "queued", "processed", "failed", "partial"].map((tab) => (
+                              <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab as QueueTab)}
+                                className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
+                                  activeTab === tab
+                                    ? "border-teal-700 bg-teal-600 text-white"
+                                    : "border-teal-200 bg-teal-50 text-teal-800 hover:bg-teal-100"
+                                }`}
+                              >
+                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-slate-500">
+                              {selectedIds.length > 0 ? `${selectedIds.length} selected` : "Select rows for batch actions"}
+                            </span>
+                            <Button
+                              size="sm"
+                              className={PRIMARY_TEAL_BUTTON}
+                              onClick={handleProcessSelected}
+                              disabled={!canProcessSelected}
+                            >
+                              <Sparkles className="mr-2 h-4 w-4" />
+                              Process selected
+                            </Button>
+                            {isAdmin ? (
+                              <Button
+                                size="sm"
+                                className={PRIMARY_TEAL_BUTTON}
+                                onClick={handleDeleteSelected}
+                                disabled={!canDeleteSelected}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete selected
+                              </Button>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div className="grid gap-3 sm:w-full sm:max-w-sm">
+                          <div className="relative">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              value={searchValue}
+                              onChange={(event) => setSearchValue(event.target.value)}
+                              placeholder="Search by PDF, patient, or MRN"
+                              className="h-10 border-slate-200 bg-white pl-9"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                            <Key className="h-4 w-4 text-slate-500" />
+                            <Input
+                              type="password"
+                              placeholder="Stage 3 API key"
+                              value={geminiApiKey}
+                              onChange={(e) => setGeminiApiKey(e.target.value)}
+                              className="h-7 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -958,6 +987,13 @@ const UploadCenter = () => {
                       filteredDocuments.map((document) => {
                         const patientName = getProcessedDocumentPatientName(document);
                         const mrn = getProcessedDocumentMrn(document);
+                        const encounterLabel = getProcessedDocumentEncounterLabel(document);
+                        const voiceSummaryLabel = patientName
+                          ? `${patientName}${encounterLabel ? ` · ${encounterLabel}` : ""}`
+                          : (encounterLabel ? `Encounter ${encounterLabel}` : "");
+                        const voiceModeLabel = document.documentType === "voice"
+                          ? (getVoiceDocumentMode(document) === "live" ? "Live" : "Dictation")
+                          : "";
                         const voiceDashboardError = getVoiceDocumentDashboardError(document);
                         const canOpenDashboard =
                           (document.status === "processed" || document.status === "partial" || document.status === "review_required") &&
@@ -981,11 +1017,11 @@ const UploadCenter = () => {
                                   <FileText className="h-5 w-5 text-muted-foreground" />
                                 )}
                                 <div className="min-w-0">
-                                  <p className="truncate font-medium text-slate-900">{document.name}</p>
+                                  <p className="truncate font-medium text-slate-900">{document.name || document.fileName || "Untitled document"}</p>
                                   <div className="flex items-center gap-2">
-                                    {document.documentType === 'voice' && document.linkedPatient && (
+                                    {document.documentType === 'voice' && voiceSummaryLabel && (
                                       <p className="text-xs text-muted-foreground">
-                                        {document.linkedPatient}{document.encounterLabel ? ` · ${document.encounterLabel}` : ""}
+                                        {voiceSummaryLabel}
                                       </p>
                                     )}
                                     {patientName && !document.documentType && (
@@ -1001,7 +1037,7 @@ const UploadCenter = () => {
                                         <DepartmentAlertBadge departmentAlerts={document.result?.departmentAlerts || document.result?.department_alerts} compact />
                                       )}
                                       {document.documentType === 'voice' && (
-                                        <Badge variant="outline" className="text-xs border-indigo-200 text-indigo-700">Dictation</Badge>
+                                        <Badge variant="outline" className="text-xs border-indigo-200 text-indigo-700">{voiceModeLabel}</Badge>
                                       )}
                                     </div>
                                   </div>
@@ -1128,13 +1164,14 @@ const UploadCenter = () => {
                   </TableBody>
                 </Table>
               </div>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="voice" className="mt-0">
-            <VoiceWorkspace onDocumentsChanged={loadDocuments} />
-          </TabsContent>
-        </Tabs>
+                  </Card>
+                </div>
+              ) : (
+                <VoiceWorkspace mode={voiceMode} onModeChange={showVoiceWorkspace} onDocumentsChanged={loadDocuments} />
+              )}
+            </div>
+          </div>
+        </div>
       </main>
 
       {/* Handwriting Completion Dialog */}
@@ -1157,7 +1194,93 @@ const UploadCenter = () => {
   );
 };
 
+function WorkspaceSidebar({
+  workspace,
+  onShowDocuments,
+  onShowVoice,
+  documentCount,
+  activeDocumentCount,
+}: {
+  workspace: IntakeWorkspace;
+  onShowDocuments: () => void;
+  onShowVoice: () => void;
+  documentCount: number;
+  activeDocumentCount: number;
+}) {
+  const isDocumentsSelected = workspace === "documents";
+  const isVoiceSelected = workspace === "voice";
+  const documentActivity = documentCount > 0 ? Math.min(100, Math.round((activeDocumentCount / documentCount) * 100)) : 0;
+
+  return (
+    <Card className="overflow-hidden border-slate-200/80 bg-white shadow-sm xl:sticky xl:top-6 xl:self-start">
+      <CardHeader className="border-b border-slate-200/80 pb-3">
+        <CardTitle className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Workspace</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 p-4">
+        <button
+          type="button"
+          onClick={onShowDocuments}
+          className={`w-full rounded-2xl border px-4 py-4 text-left transition-colors ${
+            isDocumentsSelected
+              ? "border-teal-300 bg-teal-50/70 shadow-sm"
+              : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70"
+          }`}
+          aria-pressed={isDocumentsSelected}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-slate-100 p-2 text-slate-700">
+                <FileStack className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium text-slate-900">Documents</p>
+                  <Badge variant="outline">{documentCount}</Badge>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-slate-500">
+                <span>Activity</span>
+                <span>{activeDocumentCount}</span>
+              </div>
+              <Progress value={documentActivity} className="h-1.5 bg-slate-200 [&>div]:bg-teal-600" />
+            </div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={onShowVoice}
+          className={`w-full rounded-2xl border px-4 py-4 text-left transition-colors ${
+            isVoiceSelected
+              ? "border-teal-300 bg-teal-50/70 shadow-sm"
+              : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70"
+          }`}
+          aria-pressed={isVoiceSelected}
+          aria-label="Voice Workspace"
+        >
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-slate-100 p-2 text-slate-700">
+              <AudioLines className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-slate-900">Voice</p>
+                {isVoiceSelected ? <div className="h-2 w-2 rounded-full bg-teal-600" /> : null}
+              </div>
+            </div>
+          </div>
+        </button>
+      </CardContent>
+    </Card>
+  );
+}
+
 const formatFileSize = (size: number) => {
+  if (!Number.isFinite(size) || size <= 0) {
+    return "-";
+  }
   if (size < 1024 * 1024) {
     return `${(size / 1024).toFixed(1)} KB`;
   }

@@ -44,7 +44,7 @@ Suitable for small-scale deployments (<50 concurrent users).
 └─────────────────────────────────────────────────────────────────────────────┘
                                     ↓ (network)
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                      Gemma LLM Service (Separate)                          │
+│                Proprietary Inference Service (Separate)                    │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -70,7 +70,7 @@ Recommended for production (>50 concurrent users).
 └─────────────────────────────────────────────────────────────────────────────┘
                                     ↓
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    Gemma LLM Service Cluster                               │
+│                Proprietary Inference Service Cluster                       │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -160,17 +160,17 @@ Create `/var/www/doctor-dashboard/.env`:
 NODE_ENV=production
 PORT=8001
 
-# Gemma LLM
-GEMMA_URL=http://your-gemma-service:8000
-GEMMA_MODEL=google/gemma-4-31B-it
+# Primary on-prem inference
+PRIMARY_INFERENCE_URL=http://your-inference-service:8000
+PRIMARY_INFERENCE_PROFILE=proprietary-clinical
 
-# Optional Gemini external-knowledge mode
-USE_GEMINI_FOR_EXTERNAL=true
-GEMINI_MODEL=gemini-2.5-flash
-GEMINI_API_KEY=your-gemini-api-key
+# Optional external-provider lookup mode
+ENABLE_EXTERNAL_PROVIDER_LOOKUP=true
+EXTERNAL_PROVIDER_PROFILE=default
+EXTERNAL_PROVIDER_API_KEY=your-external-provider-api-key
 
 # Optional extractor tuning
-EXTRACTION_GEMMA_TIMEOUT_MS=240000
+PRIMARY_INFERENCE_TIMEOUT_MS=240000
 ```
 
 ### 3. Create Storage Directory
@@ -509,7 +509,7 @@ Add to crontab for every 5 minutes:
 - **Solution:** Reduce PM2 instances or increase server memory
 
 **Issue:** Slow API responses
-- **Solution:** Check Gemma LLM service, optimize prompts
+- **Solution:** Check the proprietary inference service, optimize prompts
 
 **Issue:** File upload failures
 - **Solution:** Check nginx client_max_body_size, disk space

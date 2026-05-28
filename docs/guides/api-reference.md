@@ -4,16 +4,18 @@
 
 **Version:** 3.1.0
 **Base URL:** `http://localhost:8001/api`
-**Last Updated:** 2026-05-21
+**Last Updated:** 2026-05-26
 
 ---
 
 ## Overview
 
-The Doctor Dashboard provides a REST API for PDF processing, voice dictation intake, audit logging, chat interactions, and chart note generation. All endpoints return JSON responses unless otherwise specified.
+The Doctor Dashboard provides a REST API for PDF processing, uploaded voice dictation, live conversation sessions, audit logging, chat interactions, and chart note generation. All endpoints return JSON responses unless otherwise specified.
 
 > Note
 > This reference documents the current Express server in `server/index.cjs`. Some older architecture docs in this repository describe historical or planned systems and may not match these endpoint shapes.
+>
+> Response examples below intentionally normalize provider-specific field names and identifiers into generic proprietary terminology.
 
 Voice-specific status semantics:
 
@@ -35,7 +37,7 @@ Check API health and server identity.
   "status": "ok",
   "server": "root",
   "version": "2.0.0",
-  "model": "google/gemma-4-31B-it",
+  "runtimeProfile": "proprietary-on-prem",
   "audit": {
     "enabled": true
   },
@@ -57,9 +59,9 @@ Get AI agent system status.
     "skillsCount": 7,
     "toolsCount": 4
   },
-  "gemma": {
-    "url": "http://gemma-api:8000",
-    "model": "google/gemma-4-31B-it"
+  "primaryInference": {
+    "endpoint": "http://inference-service:8000",
+    "profile": "proprietary-clinical"
   },
   "dashboardMapper": {
     "name": "Dashboard Mapper",
@@ -222,6 +224,8 @@ For voice documents, the SSE route still uses `/documents/process/progress`, but
 
 ## Voice Intake
 
+This section describes the **uploaded dictation** APIs under `/api/voice/*`.
+
 ### GET /voice
 
 List persisted voice sessions ordered by `uploadedAt` descending.
@@ -279,7 +283,7 @@ Run transcription plus structured extraction for one or more uploaded voice sess
 ```
 
 **Behavior:**
-- transcribes audio with Gemini
+- transcribes audio with the deployed proprietary transcription service
 - normalizes transcript segments and transcript quality
 - runs `VoiceExtractorAgent`
 - merges transcript review items with extraction review items
@@ -325,6 +329,151 @@ Notes:
 
 Delete a voice session plus its stored audio/transcript artifacts.
 
+---
+
+## Live Conversation
+
+This section describes the **live session** APIs under `/api/voice/live/*`.
+
+### Session object shape
+
+Typical response payloads for live session routes return a session object with fields such as:
+
+```json
+{
+  "id": "live-uuid",
+  "status": "draft",
+  "linkedPatient": "Jane Doe",
+  "encounterLabel": "OP follow-up",
+  "startedAt": null,
+  "endedAt": null,
+  "durationMs": 0,
+  "documentId": null,
+  "audio": {
+    "mimeType": "audio/webm",
+    "chunkCount": 0
+  },
+  "transcript": {
+    "segments": [],
+    "rawText": "",
+    "normalizedText": "",
+    "speakers": [],
+    "quality": {
+      "overallConfidence": null,
+      "lowConfidenceSegmentCount": 0,
+      "speakerAmbiguityCount": 0,
+      "overlappingSpeechSuspected": false
+    }
+  },
+  "draftExtraction": {
+    "extractedData": null,
+    "reviewItems": [],
+    "lastStableSegmentId": null
+  },
+  "transport": {
+    "connectionState": "idle",
+    "lastError": null,
+    "lastEventAt": null
+  }
+}
+```
+
+### GET /voice/live/sessions
+
+List live conversation sessions visible to the authenticated user.
+
+**Query Parameters:**
+- `status` (optional): comma-separated status filter
+
+### POST /voice/live/sessions
+
+Create a draft live session.
+
+**Request Body:**
+```json
+{
+  "linkedPatient": "Jane Doe",
+  "encounterLabel": "OP follow-up"
+}
+```
+
+### GET /voice/live/sessions/:sessionId
+
+Get one live session snapshot.
+
+### PATCH /voice/live/sessions/:sessionId
+
+Update live session metadata.
+
+**Request Body:**
+```json
+{
+  "linkedPatient": "Jane Doe",
+  "encounterLabel": "Room 4 review"
+}
+```
+
+### POST /voice/live/sessions/:sessionId/pause
+
+Pause an active live session.
+
+### POST /voice/live/sessions/:sessionId/resume
+
+Resume a paused live session.
+
+### POST /voice/live/sessions/:sessionId/review
+
+Resolve one live-session review item.
+
+**Request Body:**
+```json
+{
+  "reviewItemId": "review-uuid",
+  "resolution": "approved",
+  "editedValue": "optional replacement text"
+}
+```
+
+Valid `resolution` values:
+- `pending`
+- `approved`
+- `edited`
+- `rejected`
+
+### POST /voice/live/sessions/:sessionId/finalize
+
+Finalize a reviewed live session.
+
+Behavior:
+- requires session status `review_required`
+- rejects finalize if pending review items remain
+- creates a document row with id `voice-live-${session.id}`
+- returns the updated live session including `documentId`
+
+Current caveat:
+- this published live document is currently lighter than the uploaded-dictation voice contract
+- it contains transcript/extracted data, but it is not yet mapped through the full validated `dashboard_cards` voice payload used by `/api/voice/process`
+
+### DELETE /voice/live/sessions/:sessionId
+
+Delete a live session.
+
+### GET /voice/live/sessions/:sessionId/events
+
+Get event history for a live session.
+
+**Query Parameters:**
+- `limit` (optional): max events, default `100`
+
+### WS /voice/live/sessions/:sessionId/stream
+
+Open the live audio websocket.
+
+Transport behavior:
+- browser sends binary audio chunks from `MediaRecorder`
+- server emits session/transcript/draft events
+- current live runtime uses chunked micro-batch transcription rather than a vendor-native streaming STT API
+
 ### GET /analytics/overview
 
 Load aggregated Processing Insights metrics.
@@ -337,8 +486,8 @@ Load aggregated Processing Insights metrics.
     { "documentType": "discharge_summary", "count": 2 }
   ],
   "tokensByProvider": {
-    "gemma": 120000,
-    "gemini": 4000,
+    "internal": 120000,
+    "external": 4000,
     "total": 124000
   },
   "medicationsByDocumentType": [
@@ -371,7 +520,7 @@ Delete a document and its file.
 Run prescription Stage 3 handwriting extraction as an SSE stream.
 
 **Query Parameters:**
-- `apiKey`: Gemini API key
+- `apiKey`: external provider API key
 
 **Notes:**
 - only valid for prescription documents
@@ -384,7 +533,7 @@ Complete prescription handwriting extraction with a JSON request.
 **Request Body:**
 ```json
 {
-  "geminiApiKey": "AIza..."
+  "externalProviderApiKey": "<provider-api-key>"
 }
 ```
 
@@ -514,7 +663,7 @@ Submit a chat query.
   "message": "What is the patient's blood pressure?",
   "sectionContext": ["vitals"],
   "chatId": "optional-chat-uuid",
-  "geminiApiKey": "optional-gemini-key"
+  "externalProviderApiKey": "optional-provider-key"
 }
 ```
 
@@ -573,7 +722,7 @@ Check external knowledge source health.
 {
   "sources": [
     {
-      "name": "gemini",
+      "name": "external_provider",
       "status": "available",
       "latency": 150
     }

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manipal CoE Deployment Diagram - Client Review</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f3f6f9;
+      --surface: #ffffff;
+      --surface-soft: #fafcff;
+      --ink: #1f2d3d;
+      --muted: #617489;
+      --line: #d5e0ea;
+      --line-strong: #afc0d1;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --teal: #0f766e;
+      --teal-soft: #ecfeff;
+      --amber: #b45309;
+      --amber-soft: #fff7ed;
+      --violet: #7c3aed;
+      --violet-soft: #f5f3ff;
+      --slate-soft: #f8fafc;
+      --shadow: 0 22px 48px rgba(31, 45, 61, 0.08);
+    }
+    body {
+      font-family: Aptos, "Segoe UI", Tahoma, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(37,99,235,0.06), transparent 24%),
+        radial-gradient(circle at top right, rgba(15,118,110,0.05), transparent 24%),
+        var(--bg);
+      color: var(--ink);
+      padding: 24px;
+    }
+    .page {
+      max-width: 1760px;
+      margin: 0 auto;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    h1 {
+      font-size: 30px;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+    }
+    .subhead {
+      margin-top: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--muted);
+      max-width: 760px;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .pill {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.92);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+    .legend {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-line {
+      width: 28px;
+      height: 0;
+      border-top: 2px solid #8297ab;
+    }
+    .legend-line.dashed {
+      border-top-style: dashed;
+    }
+    .canvas {
+      padding: 18px;
+      background: linear-gradient(180deg, #fbfdff 0%, #f7fafc 100%);
+    }
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    @media (max-width: 980px) {
+      body { padding: 12px; }
+      .header {
+        flex-direction: column;
+      }
+      .meta, .legend {
+        justify-content: flex-start;
+      }
+      h1 {
+        font-size: 26px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div>
+        <div class="eyebrow">Client Review Deployment Diagram</div>
+        <h1>Manipal CoE Production Deployment</h1>
+        <div class="subhead">Deployment diagram for the production environment showing hosting nodes, network boundaries, protected data zones, and recovery topology.</div>
+      </div>
+      <div class="meta">
+        <div class="pill">Deployment Diagram</div>
+        <div class="pill">Production</div>
+        <div class="pill">2026-05-27</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Production Deployment Diagram</div>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-line"></span><span>Hosted connectivity</span></div>
+          <div class="legend-item"><span class="legend-line dashed"></span><span>Recovery / control linkage</span></div>
+        </div>
+      </div>
+
+      <div class="canvas">
+        <svg viewBox="0 0 1800 1120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Manipal CoE production deployment diagram">
+          <defs>
+            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#1f2d3d" flood-opacity="0.08"/>
+            </filter>
+            <symbol id="icon-user" viewBox="0 0 24 24">
+              <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <path d="M5 20c2.2-4 4.8-6 7-6s4.8 2 7 6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </symbol>
+            <symbol id="icon-server" viewBox="0 0 24 24">
+              <rect x="5" y="5" width="14" height="5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <rect x="5" y="14" width="14" height="5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <path d="M8 7.5h1M8 16.5h1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </symbol>
+            <symbol id="icon-shield" viewBox="0 0 24 24">
+              <path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+              <path d="M9 11l2 2 4-4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+            </symbol>
+            <symbol id="icon-app" viewBox="0 0 24 24">
+              <rect x="3.5" y="5" width="17" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <path d="M7 10h10M7 14h6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </symbol>
+            <symbol id="icon-api" viewBox="0 0 24 24">
+              <circle cx="7" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <circle cx="17" cy="7" r="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <circle cx="17" cy="17" r="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <path d="M9.5 12h5M15.1 8.7l-3.2 2M15.1 15.3l-3.2-2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </symbol>
+            <symbol id="icon-stream" viewBox="0 0 24 24">
+              <path d="M4 9c2.2-2 4.2-3 6-3s3.8 1 6 3 3.8 3 6 3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+              <path d="M4 15c2.2-2 4.2-3 6-3s3.8 1 6 3 3.8 3 6 3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </symbol>
+            <symbol id="icon-worker" viewBox="0 0 24 24">
+              <path d="M12 4v16M4 12h16M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </symbol>
+            <symbol id="icon-db" viewBox="0 0 24 24">
+              <ellipse cx="12" cy="6" rx="6" ry="3" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <path d="M6 6v8c0 1.7 2.7 3 6 3s6-1.3 6-3V6" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <path d="M6 10c0 1.7 2.7 3 6 3s6-1.3 6-3" fill="none" stroke="currentColor" stroke-width="1.9"/>
+            </symbol>
+            <symbol id="icon-storage" viewBox="0 0 24 24">
+              <rect x="5" y="6" width="14" height="4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <rect x="5" y="11" width="14" height="4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <rect x="5" y="16" width="14" height="3" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+            </symbol>
+            <symbol id="icon-cache" viewBox="0 0 24 24">
+              <rect x="5" y="7" width="14" height="4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <rect x="5" y="13" width="14" height="4" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+            </symbol>
+            <symbol id="icon-spark" viewBox="0 0 24 24">
+              <path d="M12 3l2.5 5.4 5.9.8-4.3 4 1.2 5.8-5.3-3-5.3 3 1.2-5.8-4.3-4 5.9-.8z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+            </symbol>
+            <symbol id="icon-check" viewBox="0 0 24 24">
+              <rect x="4" y="5" width="16" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <path d="M8 12l2.5 2.5L16 9" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+            </symbol>
+            <symbol id="icon-lock" viewBox="0 0 24 24">
+              <rect x="6" y="11" width="12" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="1.9"/>
+              <path d="M9 11V8.8A3 3 0 0112 6a3 3 0 013 2.8V11" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </symbol>
+            <symbol id="icon-monitor" viewBox="0 0 24 24">
+              <path d="M5 16l4-4 3 2 5-6 2 3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5 19h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </symbol>
+            <symbol id="icon-backup" viewBox="0 0 24 24">
+              <path d="M7 9a6 6 0 111 8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+              <path d="M8 13l-3 .5L6 10.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+            </symbol>
+          </defs>
+
+          <rect x="20" y="20" width="1760" height="1040" rx="24" fill="#ffffff" stroke="#d5e0ea"/>
+
+          <text x="82" y="122" font-size="12" font-weight="800" fill="#617489" letter-spacing="2">ACCESS</text>
+          <g filter="url(#shadow)">
+            <rect x="60" y="158" width="240" height="92" rx="18" fill="#ffffff" stroke="#d5e0ea"/>
+            <rect x="60" y="286" width="240" height="92" rx="18" fill="#ffffff" stroke="#d5e0ea"/>
+          </g>
+          <circle cx="96" cy="204" r="16" fill="#fff7ed" stroke="#fed7aa"/>
+          <use href="#icon-user" x="85" y="193" width="22" height="22" style="color:#b45309"/>
+          <text x="126" y="211" font-size="16" font-weight="800" fill="#1f2d3d">Clinicians</text>
+
+          <circle cx="96" cy="332" r="16" fill="#f8fafc" stroke="#d5e0ea"/>
+          <use href="#icon-server" x="85" y="321" width="22" height="22" style="color:#617489"/>
+          <text x="126" y="339" font-size="16" font-weight="800" fill="#1f2d3d">Operations</text>
+
+          <rect x="350" y="110" width="1040" height="850" rx="28" fill="#fbfdff" stroke="#cfd9e2" stroke-width="1.5"/>
+          <text x="384" y="150" font-size="16" font-weight="800" fill="#1f2d3d">Primary Production Region</text>
+          <text x="384" y="173" font-size="12" fill="#617489">Perimeter security, private application network, isolated AI network, managed data services, and operational controls</text>
+
+          <rect x="1430" y="110" width="310" height="850" rx="28" fill="#fbfcfe" stroke="#cfd9e2" stroke-width="1.5"/>
+          <text x="1462" y="150" font-size="16" font-weight="800" fill="#1f2d3d">Recovery Region</text>
+          <text x="1462" y="173" font-size="12" fill="#617489">Warm standby runtime, replicated state, and retained backups</text>
+
+          <rect x="410" y="230" width="250" height="170" rx="24" fill="#fff7ed" stroke="#fdba74"/>
+          <text x="442" y="267" font-size="13" font-weight="800" fill="#b45309" letter-spacing="1.6">PERIMETER NETWORK</text>
+          <g filter="url(#shadow)">
+            <rect x="448" y="300" width="174" height="72" rx="16" fill="#ffffff" stroke="#d5e0ea"/>
+          </g>
+          <circle cx="478" cy="336" r="14" fill="#eff6ff" stroke="#bfdbfe"/>
+          <use href="#icon-shield" x="468" y="326" width="20" height="20" style="color:#2563eb"/>
+          <text x="502" y="342" font-size="14" font-weight="800" fill="#1f2d3d">Ingress Gateway</text>
+
+          <rect x="710" y="230" width="520" height="420" rx="24" fill="#eff6ff" stroke="#bfdbfe"/>
+          <text x="742" y="267" font-size="13" font-weight="800" fill="#2563eb" letter-spacing="1.6">PRIVATE APPLICATION NETWORK</text>
+
+          <g filter="url(#shadow)">
+            <rect x="748" y="310" width="190" height="80" rx="16" fill="#ffffff" stroke="#d5e0ea"/>
+            <rect x="1000" y="310" width="190" height="80" rx="16" fill="#ffffff" stroke="#d5e0ea"/>
+            <rect x="748" y="430" width="190" height="80" rx="16" fill="#ffffff" stroke="#d5e0ea"/>
+            <rect x="1000" y="430" width="190" height="80" rx="16" fill="#ffffff" stroke="#d5e0ea"/>
+          </g>
+
+          <circle cx="782" cy="350" r="14" fill="#eff6ff" stroke="#bfdbfe"/>
+          <use href="#icon-app" x="772" y="340" width="20" height="20" style="color:#2563eb"/>
+          <text x="807" y="356" font-size="14" font-weight="800" fill="#1f2d3d">Web Application</text>
+
+          <circle cx="1034" cy="350" r="14" fill="#eff6ff" stroke="#bfdbfe"/>
+          <use href="#icon-api" x="1024" y="340" width="20" height="20" style="color:#2563eb"/>
+          <text x="1059" y="356" font-size="14" font-weight="800" fill="#1f2d3d">API Services</text>
+
+          <circle cx="782" cy="470" r="14" fill="#eff6ff" stroke="#bfdbfe"/>
+          <use href="#icon-stream" x="772" y="460" width="20" height="20" style="color:#2563eb"/>
+          <text x="807" y="476" font-size="14" font-weight="800" fill="#1f2d3d">Session Runtime</text>
+
+          <circle cx="1034" cy="470" r="14" fill="#eff6ff" stroke="#bfdbfe"/>
+          <use href="#icon-worker" x="1024" y="460" width="20" height="20" style="color:#2563eb"/>
+          <text x="1059" y="476" font-size="14" font-weight="800" fill="#1f2d3d">Worker Services</text>
+
+          <rect x="1260" y="230" width="100" height="420" rx="24" fill="none" stroke="#afc0d1" stroke-dasharray="10 8"/>
+          <rect x="1260" y="230" width="100" height="220" rx="24" fill="#f5f3ff" stroke="#ddd6fe"/>
+          <text x="1287" y="267" font-size="13" font-weight="800" fill="#7c3aed" letter-spacing="1.4">AI</text>
+          <g filter="url(#shadow)">
+            <rect x="1278" y="300" width="164" height="70" rx="16" fill="#ffffff" stroke="#d5e0ea"/>
+            <rect x="1278" y="392" width="164" height="70" rx="16" fill="#ffffff" stroke="#d5e0ea"/>
+          </g>
+          <circle cx="1308" cy="335" r="13" fill="#f5f3ff" stroke="#ddd6fe"/>
+          <use href="#icon-spark" x="1299" y="326" width="18" height="18" style="color:#7c3aed"/>
+          <text x="1331" y="340" font-size="14" font-weight="800" fill="#1f2d3d">Inference</text>
+
+          <circle cx="1308" cy="427" r="13" fill="#ecfeff" stroke="#99f6e4"/>
+          <use href="#icon-check" x="1299" y="418" width="18" height="18" style="color:#0f766e"/>
+          <text x="1331" y="432" font-size="14" font-weight="800" fill="#1f2d3d">Validation</text>
+
+          <rect x="710" y="690" width="650" height="120" rx="24" fill="#ecfeff" stroke="#99f6e4"/>
+          <text x="742" y="727" font-size="13" font-weight="800" fill="#0f766e" letter-spacing="1.6">DATA NETWORK</text>
+          <g filter="url(#shadow)">
+            <rect x="748" y="750" width="184" height="46" rx="14" fill="#ffffff" stroke="#d5e0ea"/>
+            <rect x="944" y="750" width="184" height="46" rx="14" fill="#ffffff" stroke="#d5e0ea"/>
+            <rect x="1140" y="750" width="170" height="46" rx="14" fill="#ffffff" stroke="#d5e0ea"/>
+          </g>
+          <circle cx="779" cy="773" r="11" fill="#ecfeff" stroke="#99f6e4"/>
+          <use href="#icon-db" x="771" y="765" width="16" height="16" style="color:#0f766e"/>
+          <text x="801" y="778" font-size="13" font-weight="800" fill="#1f2d3d">Relational Store</text>
+
+          <circle cx="975" cy="773" r="11" fill="#ecfeff" stroke="#99f6e4"/>
+          <use href="#icon-storage" x="967" y="765" width="16" height="16" style="color:#0f766e"/>
+          <text x="997" y="778" font-size="13" font-weight="800" fill="#1f2d3d">Object Store</text>
+
+          <circle cx="1171" cy="773" r="11" fill="#ecfeff" stroke="#99f6e4"/>
+          <use href="#icon-cache" x="1163" y="765" width="16" height="16" style="color:#0f766e"/>
+          <text x="1193" y="778" font-size="13" font-weight="800" fill="#1f2d3d">Cache</text>
+
+          <rect x="410" y="850" width="950" height="72" rx="22" fill="#f8fafc" stroke="#d5e0ea"/>
+          <text x="442" y="878" font-size="13" font-weight="800" fill="#617489" letter-spacing="1.4">SECURITY AND OPERATIONS</text>
+          <g filter="url(#shadow)">
+            <rect x="454" y="885" width="170" height="34" rx="12" fill="#ffffff" stroke="#d5e0ea"/>
+            <rect x="648" y="885" width="170" height="34" rx="12" fill="#ffffff" stroke="#d5e0ea"/>
+            <rect x="842" y="885" width="190" height="34" rx="12" fill="#ffffff" stroke="#d5e0ea"/>
+            <rect x="1056" y="885" width="210" height="34" rx="12" fill="#ffffff" stroke="#d5e0ea"/>
+          </g>
+          <circle cx="479" cy="902" r="10" fill="#f8fafc" stroke="#d5e0ea"/>
+          <use href="#icon-user" x="472" y="895" width="14" height="14" style="color:#617489"/>
+          <text x="499" y="907" font-size="12.5" font-weight="800" fill="#1f2d3d">Identity</text>
+
+          <circle cx="673" cy="902" r="10" fill="#ecfeff" stroke="#99f6e4"/>
+          <use href="#icon-lock" x="666" y="895" width="14" height="14" style="color:#0f766e"/>
+          <text x="693" y="907" font-size="12.5" font-weight="800" fill="#1f2d3d">Secrets</text>
+
+          <circle cx="867" cy="902" r="10" fill="#eff6ff" stroke="#bfdbfe"/>
+          <use href="#icon-monitor" x="860" y="895" width="14" height="14" style="color:#2563eb"/>
+          <text x="887" y="907" font-size="12.5" font-weight="800" fill="#1f2d3d">Observability</text>
+
+          <circle cx="1081" cy="902" r="10" fill="#f5f3ff" stroke="#ddd6fe"/>
+          <use href="#icon-backup" x="1074" y="895" width="14" height="14" style="color:#7c3aed"/>
+          <text x="1101" y="907" font-size="12.5" font-weight="800" fill="#1f2d3d">Backup Control</text>
+
+          <g filter="url(#shadow)">
+            <rect x="1480" y="300" width="210" height="82" rx="18" fill="#ffffff" stroke="#d5e0ea"/>
+            <rect x="1480" y="450" width="210" height="82" rx="18" fill="#ffffff" stroke="#d5e0ea"/>
+            <rect x="1480" y="600" width="210" height="82" rx="18" fill="#ffffff" stroke="#d5e0ea"/>
+          </g>
+
+          <circle cx="1512" cy="341" r="14" fill="#eff6ff" stroke="#bfdbfe"/>
+          <use href="#icon-server" x="1502" y="331" width="20" height="20" style="color:#2563eb"/>
+          <text x="1544" y="347" font-size="14" font-weight="800" fill="#1f2d3d">Warm Standby Runtime</text>
+
+          <circle cx="1512" cy="491" r="14" fill="#ecfeff" stroke="#99f6e4"/>
+          <use href="#icon-db" x="1502" y="481" width="20" height="20" style="color:#0f766e"/>
+          <text x="1544" y="497" font-size="14" font-weight="800" fill="#1f2d3d">Replicated State</text>
+
+          <circle cx="1512" cy="641" r="14" fill="#f5f3ff" stroke="#ddd6fe"/>
+          <use href="#icon-backup" x="1502" y="631" width="20" height="20" style="color:#7c3aed"/>
+          <text x="1544" y="647" font-size="14" font-weight="800" fill="#1f2d3d">Backup Vault</text>
+
+          <path d="M300 204H410" fill="none" stroke="#8297ab" stroke-width="4" stroke-linecap="round"/>
+          <path d="M300 332H410V902H454" fill="none" stroke="#8297ab" stroke-width="3.5" stroke-dasharray="8 8" stroke-linecap="round"/>
+          <path d="M622 336H710" fill="none" stroke="#8297ab" stroke-width="4" stroke-linecap="round"/>
+          <path d="M1230 440H1278" fill="none" stroke="#8297ab" stroke-width="4" stroke-linecap="round"/>
+          <path d="M970 650V690" fill="none" stroke="#8297ab" stroke-width="4" stroke-linecap="round"/>
+          <path d="M1360 341H1480" fill="none" stroke="#8297ab" stroke-width="3.5" stroke-dasharray="8 8" stroke-linecap="round"/>
+          <path d="M1360 491H1480" fill="none" stroke="#8297ab" stroke-width="3.5" stroke-dasharray="8 8" stroke-linecap="round"/>
+          <path d="M1266 902H1420V641H1480" fill="none" stroke="#8297ab" stroke-width="3.5" stroke-dasharray="8 8" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

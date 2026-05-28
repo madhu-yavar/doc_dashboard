@@ -27,6 +27,20 @@ class GeminiAudioTranscriptionTool {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  formatError(error) {
+    const base = String(error?.message || error || "Unknown Gemini audio transcription error");
+    const causeCode = error?.cause?.code;
+    const causeMessage = error?.cause?.message;
+
+    if (causeCode) {
+      return `${base} (${causeCode})`;
+    }
+    if (causeMessage && causeMessage !== base) {
+      return `${base} (${causeMessage})`;
+    }
+    return base;
+  }
+
   isRetryableStatus(status) {
     return [408, 429, 500, 502, 503, 504].includes(Number(status));
   }
@@ -456,17 +470,18 @@ class GeminiAudioTranscriptionTool {
           clearTimeout(timeoutId);
 
           const isRetryable = this.isRetryableError(error) || this.isRetryableStatus(error?.status);
+          const formattedError = this.formatError(error);
 
           if (!isRetryable || attempt >= maxRetries) {
             if (keyIndex < availableKeys.length - 1 && error?.name !== "AbortError") {
-              console.warn(`[GeminiAudio] API key ${keyIndex + 1} failed: ${error.message}. Trying fallback key...`);
+              console.warn(`[GeminiAudio] API key ${keyIndex + 1} failed: ${formattedError}. Trying fallback key...`);
               break;
             }
             return {
               success: false,
               error: error?.name === "AbortError"
                 ? `Gemini audio transcription timeout after ${this.timeout}ms`
-                : String(error?.message || error || "Unknown Gemini audio transcription error"),
+                : formattedError,
             };
           }
 

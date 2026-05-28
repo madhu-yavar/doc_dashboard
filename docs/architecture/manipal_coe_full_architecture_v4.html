@@ -655,7 +655,7 @@
           <h2>Orchestrator → Agents → Skills → Tools → LLM</h2>
         </div>
         <div class="runtime-note">
-          Current runtime: the Express server supports <strong>two intake paths</strong>. PDFs go through <strong>DocumentTypeRouter</strong>, which classifies the document and routes it to a specialized extractor agent. Voice dictations go through a <strong>swappable STT boundary</strong>, then <strong>VoiceExtractorAgent</strong>, shared dashboard mapping, and <strong>dashboard-readiness validation</strong> before a record can remain <code>processed</code>. In the current workspace, Gemini STT is the active path; the voice architecture is intentionally modular so <strong>Whisper can become the primary STT backend</strong> with Gemini as fallback. <strong>ReActExtractionAgent</strong> exists in the repository but is optional rather than the default document-processing path. Processing Insights are served separately from <code>analytics.sqlite</code> through <code>/api/analytics/overview</code>.
+          Current runtime: the Express server supports <strong>two intake paths</strong>. PDFs go through <strong>DocumentTypeRouter</strong>, which classifies the document and routes it to a specialized extractor agent. Voice dictations go through a <strong>swappable STT boundary</strong>, then <strong>VoiceExtractorAgent</strong>, shared dashboard mapping, and <strong>dashboard-readiness validation</strong> before a record can remain <code>processed</code>. Uploaded dictation uses the deployed proprietary transcription path, while the voice boundary remains modular for future tuning. <strong>ReActExtractionAgent</strong> exists in the repository but is optional rather than the default document-processing path. Processing Insights are served separately from <code>analytics.sqlite</code> through <code>/api/analytics/overview</code>.
         </div>
 
         <div class="level">
@@ -843,7 +843,7 @@
               <div class="box-title">🎙️ STT Backend Layer</div>
             </div>
             <div class="box tool active">
-              <div class="box-title">🧠 Gemma Client</div>
+              <div class="box-title">🧠 Proprietary Inference Client</div>
             </div>
             <div class="box tool active">
               <div class="box-title">🧠 External LLM Client</div>
@@ -912,7 +912,7 @@
           <div class="level-content">
             <div class="box llm active">
               <div class="box-title">🧠 LLM Foundation</div>
-              <div class="box-desc">Gemma default inference • STT backend remains pluggable</div>
+              <div class="box-desc">Proprietary on-prem inference • deployed dictation path • swappable STT boundary</div>
             </div>
           </div>
         </div>
@@ -1105,7 +1105,7 @@
               <div>
                 <div class="df-card-kicker">Agent Action</div>
                 <h4>STT Backend + VoiceExtractorAgent</h4>
-                <p>Voice transcription is kept behind a swappable backend boundary. The target operating mode is <strong>Whisper primary</strong> with <strong>Gemini fallback</strong>. The normalized transcript then flows through voice extraction nodes for medications, demographics, diagnosis, clinical data, merge/reconcile, dashboard mapping, and review decision.</p>
+                <p>Voice transcription uses the deployed proprietary path behind a swappable backend boundary. The normalized transcript then flows through voice extraction nodes for medications, demographics, diagnosis, clinical data, merge/reconcile, dashboard mapping, and review decision.</p>
               </div>
               <div class="df-card-metric">STT + extraction varies by audio length</div>
             </div>
@@ -1169,7 +1169,7 @@
             <div class="df-card df-card-reason">
               <div>
                 <div class="df-card-kicker">LLM Path</div>
-                <h4>Gemma + Safety Validation</h4>
+                <h4>Proprietary Inference + Safety Validation</h4>
                 <p>Self-hosted inference generates the answer, then refusal policy, confidence checks, and source grounding validate it before return.</p>
               </div>
               <div class="df-card-metric">PHI remains on-premise</div>
@@ -1244,7 +1244,7 @@
           </div>
           <div class="footer-card footer-llm">
             <h4>Inference Guardrail</h4>
-            <p><strong>Primary extraction runs on self-hosted Gemma.</strong> The current voice STT path uses Gemini, and every response or extraction path is expected to meet grounding, readiness, and policy checks before display.</p>
+            <p><strong>Primary extraction runs on proprietary on-prem inference.</strong> The current voice STT path uses the deployed proprietary transcription service, and every response or extraction path is expected to meet grounding, readiness, and policy checks before display.</p>
           </div>
           <div class="footer-card footer-time">
             <h4>Operational Envelope</h4>
@@ -1426,7 +1426,7 @@
           <br/>
           <strong>Shared output contract:</strong> both PDF and voice end in the same dashboard contract and the same <code>/dashboard?documentId=</code> route.
           <br/>
-          <strong>STT architecture direction:</strong> keep STT pluggable so Whisper can be primary and Gemini can serve as fallback without changing downstream voice extraction skills.
+          <strong>STT architecture direction:</strong> keep STT swappable without changing downstream voice extraction skills.
         </div>
       </div>
 
@@ -1455,8 +1455,8 @@
           <div style="margin-bottom: 18px;">
             <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Voice / Audio</div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-              <div style="background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🎙️ Whisper STT Service (target primary)</div>
-              <div style="background: rgba(245,158,11,0.18); border: 1px solid rgba(245,158,11,0.38); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🎤 Gemini Audio Transcription (current / fallback)</div>
+              <div style="background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🎙️ Proprietary Dictation STT Service</div>
+              <div style="background: rgba(245,158,11,0.18); border: 1px solid rgba(245,158,11,0.38); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🎤 Live Transcription Pipeline</div>
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧾 Transcript Normalization</div>
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">✅ Voice Dashboard Validation</div>
             </div>
@@ -1466,7 +1466,7 @@
           <div style="margin-bottom: 18px;">
             <div style="font-size: 10px; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">LLM</div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧠 Gemma Client</div>
+              <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧠 Proprietary Inference Client</div>
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🧠 External LLM Client</div>
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">📝 Prompt Builder</div>
               <div style="background: rgba(255,255,255,0.1); border-radius: 6px; padding: 8px 14px; font-size: 11px;">🔗 Citation Tracker</div>
@@ -1594,7 +1594,7 @@
             <g transform="translate(0, 20)">
               <circle cx="8" cy="5" r="4" fill="#22c55e"/>
               <text x="18" y="8" font-size="9" fill="#475569">Primary extraction stays on-premises</text>
-              <text x="18" y="20" font-size="8" fill="#64748b">(Gemma default processing path)</text>
+              <text x="18" y="20" font-size="8" fill="#64748b">(proprietary on-prem processing path)</text>
 
               <circle cx="8" cy="40" r="4" fill="#22c55e"/>
               <text x="18" y="43" font-size="9" fill="#475569">PHI encrypted at rest</text>
@@ -1610,7 +1610,7 @@
 
               <circle cx="200" cy="5" r="4" fill="#22c55e"/>
               <text x="210" y="8" font-size="9" fill="#475569">Voice STT backend logged per session</text>
-              <text x="210" y="20" font-size="8" fill="#64748b">(target: Whisper primary, Gemini fallback)</text>
+              <text x="210" y="20" font-size="8" fill="#64748b">(deployed dictation path • swappable live boundary)</text>
             </g>
           </g>
         </g>

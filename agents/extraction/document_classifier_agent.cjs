@@ -25,7 +25,7 @@ class DocumentClassifierAgent extends BaseAgent {
     this.registerTools();
     this.visionClient = new GemmaVisionClient({
       baseUrl: config.gemmaUrl || process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions",
-      model: config.gemmaModel || process.env.GEMMA_MODEL || "google/gemma-4-31B-it"
+      model: config.gemmaModel || process.env.GEMMA_MODEL || "google/gemma-4-26B-A4B-it"
     });
   }
 

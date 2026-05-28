@@ -325,6 +325,11 @@ class AuthService {
     if (!sessionId) return null;
     return this.getSession(sessionId, options);
   }
+
+  async authenticateFromRequest(req, options = {}) {
+    const session = await this.getSessionFromRequest(req, options);
+    return session?.user || null;
+  }
 }
 
 module.exports = {

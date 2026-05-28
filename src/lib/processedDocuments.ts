@@ -632,6 +632,7 @@ export type GemmaDashboardResult = {
 export type ProcessedDocument = {
   id: string;
   name: string;
+  fileName?: string;
   size: number;
   uploadedAt: string;
   status: QueueStatus;
@@ -810,6 +811,8 @@ export const getProcessedDocumentPatientName = (document: ProcessedDocument) => 
     if (linkedPatient && linkedPatient !== 'Encounter link pending') {
       return linkedPatient;
     }
+    const livePatientName = document.result?.meta?.patientName?.trim() || document.result?.extracted_data?.patient?.name?.trim() || document.result?.extracted_data?.patient_info?.name?.trim();
+    if (livePatientName) return livePatientName;
     // Fallback to file name without extension for voice docs
     return document.name?.replace(/\.[^.]+$/, '') || "Voice Dictation";
   }
@@ -819,22 +822,81 @@ export const getProcessedDocumentPatientName = (document: ProcessedDocument) => 
 export const getProcessedDocumentMrn = (document: ProcessedDocument) =>
   document.result?.sample_patient_data?.mrn?.trim() || "";
 
+export const getProcessedDocumentEncounterLabel = (document: ProcessedDocument) => {
+  if (document.documentType !== "voice") return "";
+  return (
+    document.encounterLabel?.trim() ||
+    document.result?.meta?.encounterLabel?.trim() ||
+    document.result?.sample_patient_data?.mrn?.trim() ||
+    document.result?.extracted_data?.patient?.mrn?.trim() ||
+    document.result?.extracted_data?.patient_info?.mrn?.trim() ||
+    ""
+  );
+};
+
+export const getVoiceDocumentMode = (document: ProcessedDocument) => {
+  if (document.documentType !== "voice") return "dictation" as const;
+  return document.result?.meta?.sessionType === "live_conversation" ? "live" as const : "dictation" as const;
+};
+
 const hasVoiceText = (value: unknown) => typeof value === "string" && value.trim().length > 0;
 const hasVoicePositiveNumber = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value > 0;
 const hasVoiceArrayItems = (value: unknown) => Array.isArray(value) && value.length > 0;
 
-const extractVoicePrincipalDiagnosis = (value: unknown) => {
-  if (typeof value === "string") return value.trim();
+const getVoicePrincipalEntries = (value: unknown): Array<string | Record<string, unknown>> => {
+  if (typeof value === "string") {
+    return value.trim() ? [value] : [];
+  }
+
   if (Array.isArray(value)) {
-    return value
-      .map((item) => typeof item === "string" ? item.trim() : String(item?.name || item?.description || "").trim())
-      .find(Boolean) || "";
+    return value.filter((item) => item !== null && item !== undefined) as Array<string | Record<string, unknown>>;
   }
+
   if (value && typeof value === "object") {
-    return String((value as { name?: string; description?: string; value?: string }).name || (value as { description?: string }).description || (value as { value?: string }).value || "").trim();
+    const record = value as Record<string, unknown>;
+    const hasDirectPrincipalFields = ["name", "description", "value", "icd_code"].some((key) => {
+      const entry = record[key];
+      return typeof entry === "string" && entry.trim().length > 0;
+    });
+
+    if (hasDirectPrincipalFields) {
+      return [record];
+    }
+
+    return Object.keys(record)
+      .filter((key) => key !== "provenance")
+      .sort((left, right) => {
+        const leftIndex = Number(left);
+        const rightIndex = Number(right);
+        const leftIsIndex = Number.isFinite(leftIndex);
+        const rightIsIndex = Number.isFinite(rightIndex);
+
+        if (leftIsIndex && rightIsIndex) return leftIndex - rightIndex;
+        if (leftIsIndex) return -1;
+        if (rightIsIndex) return 1;
+        return left.localeCompare(right);
+      })
+      .map((key) => record[key])
+      .filter((entry): entry is Record<string, unknown> => Boolean(entry) && typeof entry === "object");
   }
-  return "";
+
+  return [];
 };
+
+const extractVoicePrincipalDiagnosis = (value: unknown) => {
+  return getVoicePrincipalEntries(value)
+    .map((item) =>
+      typeof item === "string"
+        ? item.trim()
+        : String(item.name || item.description || item.value || "").trim()
+    )
+    .find(Boolean) || "";
+};
+
+const extractVoicePrincipalIcdCode = (value: unknown) =>
+  getVoicePrincipalEntries(value)
+    .map((item) => typeof item === "string" ? "" : String(item.icd_code || "").trim())
+    .find(Boolean) || "";
 
 export const getVoiceDocumentDashboardError = (document: ProcessedDocument | null | undefined) => {
   if (!document || document.documentType !== "voice") return null;
@@ -904,6 +966,7 @@ export const matchesProcessedDocumentQuery = (document: ProcessedDocument, query
     document.department,
     getProcessedDocumentPatientName(document),
     getProcessedDocumentMrn(document),
+    getProcessedDocumentEncounterLabel(document),
   ]
     .filter(Boolean)
     .some((value) => value.toLowerCase().includes(normalized));
@@ -1707,9 +1770,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   const normalizedExtracted = isVoiceDocument ? {
     ...extracted,
     diagnosis: {
-      principal: Array.isArray(extracted.diagnosis?.principal)
-        ? extracted.diagnosis.principal[0]?.name || extracted.diagnosis.principal.map((d: any) => d.name).join(', ')
-        : extracted.diagnosis?.principal || '',
+      principal: extractVoicePrincipalDiagnosis(extracted.diagnosis?.principal),
       secondary: Array.isArray(extracted.diagnosis?.secondary)
         ? extracted.diagnosis.secondary.map((d: any) => d.name || d)
         : extracted.diagnosis?.secondary || [],
@@ -1719,9 +1780,7 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
       symptoms: Array.isArray(extracted.diagnosis?.symptoms)
         ? extracted.diagnosis.symptoms.map((item: any) => typeof item === 'string' ? item : item.name || item.finding || item.value || '')
         : [],
-      icd_code: Array.isArray(extracted.diagnosis?.principal)
-        ? extracted.diagnosis.principal[0]?.icd_code || ''
-        : extracted.diagnosis?.icd_code || '',
+      icd_code: extractVoicePrincipalIcdCode(extracted.diagnosis?.principal) || extracted.diagnosis?.icd_code || '',
     },
     medications: Array.isArray(extracted.medications)
       ? extracted.medications.map((m: any) => ({
@@ -1771,8 +1830,10 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
   const sampleAge = typeof sample.age === "number" && sample.age > 0 ? sample.age : (Number(normalizedExtracted?.patient?.age || normalizedExtracted?.stage1?.patient?.age) || 0);
   const sampleLosDays = typeof sample.los_days === "number" && sample.los_days > 0 ? sample.los_days : 0;
   const extractedProvenance = result.provenance || normalizedExtracted.provenance || {};
-  const extractedDiagnosis = result.diagnosis || normalizedExtracted.diagnosis || {};
-  const extractedTreatment = result.treatment || normalizedExtracted.treatment || {};
+  // For voice documents, normalizedExtracted has the correct structure (principal as string, not array)
+  // Prioritize normalizedExtracted to ensure consistent data structure
+  const extractedDiagnosis = normalizedExtracted.diagnosis || result.diagnosis || {};
+  const extractedTreatment = normalizedExtracted.treatment || result.treatment || {};
 
   console.log('[transformProcessedDocument] Debug: cards type', typeof cards, 'Array.isArray?', Array.isArray(cards));
   console.log('[transformProcessedDocument] Debug: cards keys', Object.keys(cards));

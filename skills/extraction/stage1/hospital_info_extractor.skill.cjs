@@ -17,7 +17,7 @@ class HospitalInfoExtractorSkill {
       const GemmaVisionClientTool = require("../../../tools/llm/gemma_vision_client.tool.cjs");
       this.gemmaVisionClient = new GemmaVisionClientTool({
         baseUrl: this.config.gemmaBaseUrl || process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions",
-        model: this.config.gemmaModel || "google/gemma-4-31B-it",
+        model: this.config.gemmaModel || "google/gemma-4-26B-A4B-it",
         timeout: this.config.timeout || 120000
       });
     }

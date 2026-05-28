@@ -8,7 +8,7 @@ const path = require("path");
 const { PDFParse } = require("pdf-parse");
 
 const GEMMA_URL = process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions";
-const MODEL = process.env.GEMMA_MODEL || "google/gemma-4-31B-it";
+const MODEL = process.env.GEMMA_MODEL || "google/gemma-4-26B-A4B-it";
 
 async function extractTextFromPdf(filePath) {
   const buffer = await fs.readFile(filePath);

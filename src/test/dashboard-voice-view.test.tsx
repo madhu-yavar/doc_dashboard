@@ -101,6 +101,73 @@ const validVoiceDocument = {
   },
 };
 
+const indexedPrincipalVoiceDocument = {
+  id: "voice-indexed-principal-1",
+  name: "esl-pain-sample.wav",
+  size: 1024,
+  uploadedAt: "2026-05-21T03:00:00Z",
+  processedAt: "2026-05-21T03:01:00Z",
+  status: "processed",
+  department: "Voice Dictation",
+  documentType: "voice",
+  result: {
+    meta: {
+      source_type: "voice",
+      voice_session_id: "voice-indexed-principal-1",
+    },
+    dashboard_cards: {
+      diagnosis_card: {
+        principal_diagnosis: "",
+        secondary_diagnoses: ["Lumbar disc herniation"],
+      },
+      clinical_notes_card: {
+        total_notes: 1,
+        notes: [
+          {
+            type: "Voice Dictation",
+            author: "Physician",
+            date: "2026-05-20",
+            summary: "Lumbar foraminal stenosis documented.",
+          },
+        ],
+      },
+    },
+    sample_patient_data: {
+      name: "",
+      age: 55,
+      mrn: "",
+      admission_date: "",
+      discharge_date: "",
+    },
+    extracted_data: {
+      patient: {
+        name: "",
+        mrn: "",
+        age: 55,
+        gender: "female",
+      },
+      diagnosis: {
+        principal: {
+          0: {
+            name: "Lumbar foraminal stenosis at L4-5",
+            icd_code: "M48.068",
+          },
+          provenance: {},
+        },
+        secondary: [{ name: "Lumbar disc herniation" }],
+      },
+      clinical_notes: [
+        {
+          type: "Voice Dictation",
+          author: "Physician",
+          date: "2026-05-20",
+          summary: "Lumbar foraminal stenosis documented.",
+        },
+      ],
+    },
+  },
+};
+
 const invalidVoiceDocument = {
   id: "voice-invalid-1",
   name: "empty-dictation.wav",
@@ -173,6 +240,44 @@ describe("Index voice dashboard", () => {
 
     expect(screen.getByText(/showing processed output for esl-cardio-sample\.wav/i)).toBeInTheDocument();
     expect(screen.getAllByText(/coronary artery disease/i).length).toBeGreaterThan(0);
+  });
+
+  it("renders indexed voice principal diagnosis objects without crashing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+
+        if (url.endsWith("/documents")) {
+          return new Response(JSON.stringify({ documents: [indexedPrincipalVoiceDocument] }), { status: 200 });
+        }
+
+        if (url.includes("/documents/voice-indexed-principal-1")) {
+          return new Response(JSON.stringify({ document: indexedPrincipalVoiceDocument }), { status: 200 });
+        }
+
+        if (url.includes("/chat/history/")) {
+          return new Response(JSON.stringify({ session: null }), { status: 200 });
+        }
+
+        return new Response(JSON.stringify({ error: `Unhandled request: ${url}` }), { status: 500 });
+      }),
+    );
+
+    render(
+      <MemoryRouter initialEntries={["/dashboard?documentId=voice-indexed-principal-1"]}>
+        <Routes>
+          <Route path="/dashboard" element={<Index />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/clinical chartboard/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/showing processed output for esl-pain-sample\.wav/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/lumbar foraminal stenosis at l4-5/i).length).toBeGreaterThan(0);
   });
 
   it("shows an explicit unavailable state for invalid processed voice payloads", async () => {

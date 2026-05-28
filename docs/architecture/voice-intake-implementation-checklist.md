@@ -17,8 +17,8 @@ Use this file to track delivery status separately from the architectural plan.
 ## Phase 0: Design Baseline
 - [x] Confirm the v1 scope is **uploaded dictation only**
 - [x] Confirm live streaming is deferred beyond v1
-- [x] Confirm Gemini is the experimental STT path
-- [x] Confirm self-hosted Whisper remains the target pluggable backend
+- [x] Confirm the initial provider-backed STT path
+- [x] Confirm the self-hosted STT path remains the target pluggable backend
 - [x] Finalize transcript JSON schema
 - [x] Finalize audio provenance JSON schema
 - [x] Finalize confidence and review-item schema
@@ -44,11 +44,11 @@ Use this file to track delivery status separately from the architectural plan.
 - [x] Add role checks for voice APIs
 
 ## Backend: STT Tools
-- [x] Implement `GeminiAudioTranscriptionTool`
-- [x] Support file upload or file reference flow for Gemini
-- [x] Normalize Gemini transcript output into internal schema
-- [ ] Implement `WhisperTranscriptionTool`
-- [ ] Normalize Whisper output into the same internal schema
+- [x] Implement `PrimaryAudioTranscriptionTool`
+- [x] Support file upload or file reference flow for the primary provider path
+- [x] Normalize primary-provider transcript output into internal schema
+- [ ] Implement `SelfHostedAudioTranscriptionTool`
+- [ ] Normalize self-hosted transcript output into the same internal schema
 - [ ] Add STT backend selection by config or request option
 - [x] Add retry / timeout handling for STT calls
 - [ ] Add transcript quality-gate tool
@@ -138,8 +138,8 @@ Use this file to track delivery status separately from the architectural plan.
 - [ ] Add end-to-end test for dictation upload to dashboard
 
 ## Evaluation
-- [ ] Run Gemini on the benchmark dataset
-- [ ] Run Whisper on the same benchmark dataset
+- [ ] Run the provider-backed path on the benchmark dataset
+- [ ] Run the self-hosted path on the same benchmark dataset
 - [ ] Compare transcript quality
 - [ ] Compare extraction quality
 - [ ] Compare review burden
@@ -147,8 +147,8 @@ Use this file to track delivery status separately from the architectural plan.
 - [ ] Recommend production STT choice based on results
 
 ## Phase-Gate Decisions
-- [ ] Decide whether Gemini experiment is good enough to continue
-- [ ] Decide whether Whisper becomes default STT backend
+- [ ] Decide whether the provider-backed experiment is good enough to continue
+- [ ] Decide whether the self-hosted path becomes the default STT backend
 - [ ] Decide whether conversation mode enters scope
 - [ ] Decide whether live streaming enters scope
 

@@ -552,6 +552,64 @@ describe("transformProcessedDocument", () => {
     ]);
   });
 
+  it("normalizes indexed voice principal diagnosis objects into renderable text", () => {
+    const document = createProcessedDocument({
+      documentType: "voice",
+      result: {
+        meta: {
+          source_type: "voice",
+          voice_session_id: "voice-indexed-principal",
+        },
+        dashboard_cards: {
+          diagnosis_card: {
+            principal_diagnosis: "",
+            secondary_diagnoses: ["Lumbar disc herniation"],
+          },
+          clinical_notes_card: {
+            total_notes: 1,
+            notes: [{ summary: "Lumbar foraminal stenosis documented." }],
+          },
+        },
+        sample_patient_data: {
+          name: "",
+          age: 55,
+          mrn: "",
+        },
+        extracted_data: {
+          patient: {
+            name: "",
+            mrn: "",
+            age: 55,
+            gender: "female",
+          },
+          diagnosis: {
+            principal: {
+              0: {
+                name: "Lumbar foraminal stenosis at L4-5",
+                icd_code: "M48.068",
+              },
+              provenance: {},
+            },
+            secondary: [{ name: "Lumbar disc herniation" }],
+          },
+          clinical_notes: [
+            {
+              type: "Voice Dictation",
+              summary: "Lumbar foraminal stenosis documented.",
+            },
+          ],
+        },
+      },
+    });
+
+    const transformed = transformProcessedDocument(document);
+
+    expect(transformed.diagnosis.principal.description).toBe("Lumbar foraminal stenosis at L4-5");
+    expect(transformed.diagnosis.principal.code).toBe("M48.068");
+    expect(getVoiceDocumentDashboardError(document)).toBeNull();
+    expect(isVoiceDocumentDashboardReady(document)).toBe(true);
+  });
+
   it("treats valid processed voice documents as dashboard-ready", () => {
     const document = createProcessedDocument({
       documentType: "voice",

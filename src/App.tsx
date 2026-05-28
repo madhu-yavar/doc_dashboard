@@ -8,6 +8,7 @@ import Index from "./pages/Index.tsx";
 import Login from "./pages/Login.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import UploadCenter from "./pages/UploadCenter.tsx";
+import Prescription from "./pages/Prescription.tsx";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
             <Route element={<ProtectedRoute roles={["admin", "doctor"]} />}>
               <Route path="/dashboard" element={<Index />} />
               <Route path="/upload" element={<UploadCenter />} />
+              <Route path="/prescription/:documentId" element={<Prescription />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

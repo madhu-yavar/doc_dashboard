@@ -91,6 +91,108 @@ describe("landing analytics backend", () => {
     expect(metrics.proceduresCount).toBe(1);
   });
 
+  it("separates live conversations from dictation in analytics buckets", async () => {
+    const { buildDocumentMetrics } = await analyticsModulePromise;
+    const liveMetrics = buildDocumentMetrics(createDocument({
+      id: "live-1",
+      documentType: "voice",
+      result: {
+        meta: {
+          sessionType: "live_conversation",
+          patientName: "Madhu",
+          encounterLabel: "EN001",
+        },
+        extracted_data: {
+          diagnosis: {
+            principal: { name: "Chest pain under evaluation" },
+            secondary: [],
+            symptoms: ["Chest pain"],
+          },
+          medications: [{ name: "Dolo 650", status: "active" }],
+          investigations: [{ test_name: "CBC", status: "ordered" }],
+          radiology: [{ study_name: "Chest X-ray", status: "ordered" }],
+          procedures: [{ name: "ECG", status: "mentioned" }],
+        },
+        dashboard_cards: {
+          diagnosis_card: { principal_diagnosis: "Chest pain under evaluation" },
+          medications_card: { active_count: 1 },
+          labs_card: { total_tests: 1 },
+          radiology_card: { studies_completed: 1 },
+          treatment_card: { procedures_performed: 1 },
+        },
+      },
+    }));
+    const dictationMetrics = buildDocumentMetrics(createDocument({
+      id: "dictation-1",
+      documentType: "voice",
+      result: {
+        meta: {
+          source_type: "voice",
+          document_type: "voice_dictation",
+        },
+        extracted_data: {
+          medications: [{ name: "Telma 40mg", status: "active" }],
+          investigations: [],
+          radiology: [],
+          procedures: [],
+        },
+        dashboard_cards: {
+          medications_card: { active_count: 1 },
+        },
+      },
+    }));
+
+    expect(liveMetrics.documentType).toBe("live_conversation");
+    expect(dictationMetrics.documentType).toBe("voice_dictation");
+
+    const { store } = await makeStore();
+    await store.backfillDocuments([
+      createDocument({
+        id: "live-1",
+        documentType: "voice",
+        result: {
+          meta: {
+            sessionType: "live_conversation",
+            patientName: "Madhu",
+            encounterLabel: "EN001",
+          },
+          extracted_data: {
+            medications: [{ name: "Dolo 650", status: "active" }],
+            investigations: [{ test_name: "CBC", status: "ordered" }],
+            radiology: [],
+            procedures: [],
+          },
+          dashboard_cards: {
+            medications_card: { active_count: 1 },
+          },
+        },
+      }),
+      createDocument({
+        id: "dictation-1",
+        documentType: "voice",
+        result: {
+          meta: {
+            source_type: "voice",
+            document_type: "voice_dictation",
+          },
+          extracted_data: {
+            medications: [{ name: "Telma 40mg", status: "active" }],
+            investigations: [],
+            radiology: [],
+            procedures: [],
+          },
+          dashboard_cards: {
+            medications_card: { active_count: 1 },
+          },
+        },
+      }),
+    ]);
+
+    const overview = await store.getOverview();
+    expect(overview.documentsByType.find((entry: { documentType: string }) => entry.documentType === "live_conversation")?.count).toBe(1);
+    expect(overview.documentsByType.find((entry: { documentType: string }) => entry.documentType === "voice_dictation")?.count).toBe(1);
+  });
+
   it("falls back to gemma-only tokens, supports backfill, and updates rows after handwriting completion", async () => {
     const { store } = await makeStore();
     const prescription = createDocument();

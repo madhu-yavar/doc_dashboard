@@ -29,7 +29,7 @@ class Skill {
   }
 
   async execute(context) {
-    // context: { pdfText, gemmaClient, promptBuilder, ... }
+    // context: { pdfText, inferenceClient, promptBuilder, ... }
     return {
       success: boolean,
       data: object,
@@ -442,7 +442,7 @@ const skills = [
 ];
 
 // Execute sequentially
-let context = { pdfText, gemmaClient };
+let context = { pdfText, inferenceClient };
 const results = {};
 
 for (const skill of skills) {
@@ -458,7 +458,7 @@ for (const skill of skills) {
 
 ### Runtime Configuration
 
-There is no central skill-specific environment variable contract in the current repository. Skills inherit runtime configuration from the agents and route handlers that instantiate them, most commonly through Gemma client settings and extractor workflow options.
+There is no central skill-specific environment variable contract in the current repository. Skills inherit runtime configuration from the agents and route handlers that instantiate them, most commonly through proprietary inference-client settings and extractor workflow options.
 
 ### Skill Wiring
 

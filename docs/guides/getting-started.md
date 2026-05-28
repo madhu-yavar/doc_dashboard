@@ -23,8 +23,8 @@
 
 | Service | Purpose | How to Get |
 |---------|---------|------------|
-| Gemma-compatible LLM API | Internal extraction and validation | Contact infrastructure team |
-| Gemini API | External lookups and prescription Stage 3 handwriting extraction | Google Cloud Console |
+| Proprietary on-prem inference service | Internal extraction and validation | Contact infrastructure team |
+| Approved external provider API | External lookups and optional prescription handwriting extraction | Follow your approved provider onboarding path |
 
 ---
 
@@ -41,15 +41,15 @@ npm install
 Create a `.env` file in the root directory:
 
 ```env
-# Internal LLM configuration
-GEMMA_URL=http://206.1.62.28:8000/v1/chat/completions
-GEMMA_MODEL=google/gemma-4-31B-it
-EXTRACTION_GEMMA_TIMEOUT_MS=240000
+# Primary on-prem inference configuration
+PRIMARY_INFERENCE_URL=http://your-inference-service:8000/v1/chat/completions
+PRIMARY_INFERENCE_PROFILE=proprietary-clinical
+PRIMARY_INFERENCE_TIMEOUT_MS=240000
 
-# External LLM configuration
-GEMINI_API_KEY=your-gemini-api-key
-USE_GEMINI_FOR_EXTERNAL=true
-GEMINI_MODEL=gemini-2.5-flash
+# Optional external-provider configuration
+EXTERNAL_PROVIDER_API_KEY=your-external-provider-api-key
+ENABLE_EXTERNAL_PROVIDER_LOOKUP=true
+EXTERNAL_PROVIDER_PROFILE=default
 
 # Server Configuration
 PORT=8001
@@ -58,6 +58,8 @@ NODE_ENV=development
 # Optional router / extractor tuning
 USE_AGENTIC_EXTRACTION=false
 ```
+
+These are representative configuration classes. Map them to the exact environment variable names used by your deployment profile.
 
 ### 3. Start the Development Server
 
@@ -236,12 +238,12 @@ http://localhost:5173/dashboard?documentId=<document-id>
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `GEMMA_URL` | LLM API endpoint | Required |
-| `GEMMA_MODEL` | Model identifier | `google/gemma-4-31B-it` |
-| `EXTRACTION_GEMMA_TIMEOUT_MS` | Extraction timeout for router-backed processing | `240000` |
-| `USE_GEMINI_FOR_EXTERNAL` | Enable Gemini-backed external knowledge lookups | `true` |
-| `GEMINI_MODEL` | Gemini model for external knowledge mode | `gemini-2.5-flash` |
-| `GEMINI_API_KEY` | Gemini API key for external lookups | Optional |
+| `PRIMARY_INFERENCE_URL` | Proprietary on-prem inference endpoint | Required |
+| `PRIMARY_INFERENCE_PROFILE` | Deployment profile or model identifier | Deployment-specific |
+| `PRIMARY_INFERENCE_TIMEOUT_MS` | Extraction timeout for router-backed processing | `240000` |
+| `ENABLE_EXTERNAL_PROVIDER_LOOKUP` | Enable provider-backed external knowledge lookups | `true` |
+| `EXTERNAL_PROVIDER_PROFILE` | External provider profile | Deployment default |
+| `EXTERNAL_PROVIDER_API_KEY` | External provider API key for optional lookups | Optional |
 
 ### Optional Extraction Settings
 
@@ -256,7 +258,7 @@ http://localhost:5173/dashboard?documentId=<document-id>
 3. The Express server uses `DocumentTypeRouter` to classify and route the file.
 4. Specialized extractor agents produce structured output and write the result to `documents.json`.
 5. `AnalyticsStore` backfills and serves summary metrics through `/api/analytics/overview`.
-6. Prescription documents can optionally run Stage 3 handwriting extraction with a user-supplied Gemini API key.
+6. Prescription documents can optionally run Stage 3 handwriting extraction with a user-supplied external-provider API key.
 
 ---
 
@@ -274,7 +276,7 @@ http://localhost:5173/dashboard?documentId=<document-id>
 - **Solution:** Check `/api/analytics/overview`; the server backfills `analytics.sqlite` from `documents.json`
 
 **Issue:** "Inpatient/discharge extraction times out"
-- **Solution:** Increase `EXTRACTION_GEMMA_TIMEOUT_MS` and avoid high parallel load on the `31B` model
+- **Solution:** Increase `PRIMARY_INFERENCE_TIMEOUT_MS` and avoid high parallel load on the on-prem inference service
 
 ---
 

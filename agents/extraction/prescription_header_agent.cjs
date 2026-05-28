@@ -39,7 +39,7 @@ class PrescriptionHeaderAgent {
     // Gemma configuration
     this.gemmaConfig = {
       gemmaBaseUrl: config.gemmaBaseUrl || process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions",
-      gemmaModel: config.gemmaModel || "google/gemma-4-31B-it",
+      gemmaModel: config.gemmaModel || "google/gemma-4-26B-A4B-it",
       timeout: config.timeout || 120000,
       handwritingThreshold: config.handwritingThreshold || 15
     };

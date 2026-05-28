@@ -21,7 +21,9 @@ const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   outpatient_record: "Outpatient",
   lab_report: "Lab report",
   chart_note: "Chart note",
-  voice: "Voice",
+  voice_dictation: "Dictation",
+  live_conversation: "Live",
+  voice: "Dictation",
   unknown: "Unknown",
 };
 

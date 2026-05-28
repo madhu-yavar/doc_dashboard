@@ -151,7 +151,7 @@ The [archive/doctor_dashboard/](archive/doctor_dashboard/) directory contains du
 The [.env](.env) file contains **plaintext sensitive credentials**:
 
 ```bash
-GEMINI_API_KEY=AIzaSyB7id4gzU0DUBq0xba-y-1U_9oOjLHHTRI
+EXTERNAL_PROVIDER_API_KEY=<redacted>
 SMTP_PASS=vzfzglzwqyyqthgj
 AUTH_BOOTSTRAP_ADMIN_PASSWORD_HASH=$2b$10$FxnesBTE8PhN...
 AUTH_BOOTSTRAP_DOCTOR_PASSWORD_HASH=$2b$10$Cf.V36V7AVjzen9tb0cR7u...

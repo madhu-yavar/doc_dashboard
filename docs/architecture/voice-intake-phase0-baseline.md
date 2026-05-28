@@ -23,8 +23,8 @@ This is the decision document the team should build from before writing tools, s
 ### Scope decisions
 - v1 supports **uploaded physician dictation audio only**
 - live streaming is explicitly deferred beyond v1
-- Gemini is the first STT backend for the experiment path
-- self-hosted Whisper remains the intended pluggable replacement backend
+- the first STT backend is the provider-backed experiment path
+- the self-hosted STT service remains the intended pluggable replacement backend
 
 ### Product-shape decisions
 - voice does **not** launch as a separate standalone product area
@@ -73,7 +73,7 @@ Contents:
 - supported file types note: `.wav`, `.mp3`, `.m4a`
 - optional patient/encounter link field
 - processing engine display:
-  - `Gemini Experiment`
+  - `Provider-Backed Transcription`
 - short privacy note
 - `Upload and Process` action
 
@@ -290,7 +290,7 @@ type VoiceSessionRecord = {
   uploadedAt: string;
   linkedPatientId: string | null;
   linkedEncounterId: string | null;
-  sttBackend: "gemini" | "whisper";
+  sttBackend: "provider" | "self_hosted";
   status: "queued" | "transcribing" | "extracting" | "review_required" | "processed" | "failed";
   transcriptPath: string | null;
   reviewState: "not_required" | "pending" | "completed";
@@ -334,7 +334,7 @@ Required top-level sections:
 If a section is absent, store an empty or null-safe structure rather than inventing content.
 
 ## Acceptance Metrics
-Phase 0 also needs a concrete definition of success for the Gemini experiment.
+Phase 0 also needs a concrete definition of success for the initial provider-backed experiment.
 
 ### Transcript metrics
 - overall transcript usability
@@ -369,7 +369,7 @@ This is the required implementation sequence for v1.
 - finalize storage model
 
 ### Step 2: tools
-- build `GeminiAudioTranscriptionTool`
+- build `PrimaryAudioTranscriptionTool`
 - build transcript normalizer
 - build transcript quality gate
 - build speaker role resolver
@@ -392,7 +392,7 @@ This is the required implementation sequence for v1.
 
 ### Step 7: evaluation
 - run benchmark set
-- compare Gemini and Whisper later using the same contracts
+- compare provider-backed and self-hosted transcription later using the same contracts
 
 ## What Should Be Created Before Skills
 Before implementing the actual extraction skills, the following must exist:
