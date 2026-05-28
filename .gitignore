@@ -35,3 +35,5 @@ prescription_template_dev/
 *.mp3
 cookie.txt
 *.png
+scripts/test_*.cjs
+**/__pycache__/
