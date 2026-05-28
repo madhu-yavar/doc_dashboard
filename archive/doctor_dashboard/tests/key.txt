@@ -1,1 +1,0 @@
-gemini_key="AIzaSyBnL9xJ2CYgpVYjQwQWWmKo0FY8bl3BLug"
