@@ -1,6 +1,15 @@
 const LiveConversationStore = require("./live_conversation_store.cjs");
+const express = require("express");
 const fs = require("fs/promises");
+const path = require("path");
 const { buildLiveConversationDocument } = require("./live_conversation_document.cjs");
+const {
+  buildRequiredReviewItems,
+  listMissingRequiredFields,
+  mergeRequiredReviewItems,
+  normalizeLiveDraft,
+  parseRequiredFieldPatch,
+} = require("./live_conversation_draft.cjs");
 
 class LiveConversationRoutes {
   constructor(config = {}) {
@@ -11,6 +20,38 @@ class LiveConversationRoutes {
 
   log(message, data = {}) {
     console.log(`[LiveConversationRoutes] ${message}`, data);
+  }
+
+  getAudioExtension(mimeType = "audio/webm") {
+    const normalized = String(mimeType || "").toLowerCase();
+    if (normalized.includes("mp4") || normalized.includes("m4a")) return ".mp4";
+    if (normalized.includes("mpeg") || normalized.includes("mp3")) return ".mp3";
+    if (normalized.includes("ogg")) return ".ogg";
+    return ".webm";
+  }
+
+  async syncStructuredReviewItems(sessionId) {
+    const currentSession = await this.store.get(sessionId);
+    if (!currentSession) return null;
+    if (
+      typeof this.store.updateDraftExtraction !== "function"
+      || typeof this.store.replaceReviewItems !== "function"
+    ) {
+      return currentSession;
+    }
+
+    const normalizedDraft = normalizeLiveDraft(currentSession.draftExtraction?.extractedData || {});
+    if (JSON.stringify(currentSession.draftExtraction?.extractedData || {}) !== JSON.stringify(normalizedDraft)) {
+      await this.store.updateDraftExtraction(sessionId, normalizedDraft);
+    }
+
+    const requiredItems = buildRequiredReviewItems(currentSession, normalizedDraft);
+    const mergedItems = mergeRequiredReviewItems(
+      currentSession.draftExtraction?.reviewItems || [],
+      requiredItems,
+    );
+    await this.store.replaceReviewItems(sessionId, mergedItems);
+    return this.store.get(sessionId);
   }
 
   isEmptySessionCapture(session) {
@@ -104,7 +145,8 @@ class LiveConversationRoutes {
     }
 
     const normalizedSession = await this.normalizeRecoverableSession(session);
-    return { session: normalizedSession, user };
+    const syncedSession = await this.syncStructuredReviewItems(normalizedSession.id);
+    return { session: syncedSession || normalizedSession, user };
   }
 
   registerRoutes(app, authService) {
@@ -150,7 +192,11 @@ class LiveConversationRoutes {
 
         const sessions = await this.store.list(filters);
         const normalizedSessions = await Promise.all(
-          sessions.map((session) => this.normalizeRecoverableSession(session)),
+          sessions.map(async (session) => {
+            const normalized = await this.normalizeRecoverableSession(session);
+            const synced = await this.syncStructuredReviewItems(normalized.id);
+            return synced || normalized;
+          }),
         );
         const publicSessions = normalizedSessions.map((s) => this.store.toPublicSession(s));
 
@@ -201,6 +247,58 @@ class LiveConversationRoutes {
       }
     });
 
+    app.post(
+      "/api/voice/live/sessions/:sessionId/audio/final",
+      express.raw({ type: () => true, limit: "100mb" }),
+      async (req, res) => {
+        const result = await this.loadSession(req, res, authService);
+        if (!result) return;
+
+        try {
+          const { session, user } = result;
+          if (session.createdBy?.id !== user.id && user.role !== "admin") {
+            res.status(403).json({ error: "Forbidden" });
+            return;
+          }
+
+          const body = req.body;
+          const buffer = Buffer.isBuffer(body) ? body : Buffer.from(body || []);
+          if (!buffer || buffer.length === 0) {
+            res.status(400).json({ error: "Final audio payload is empty" });
+            return;
+          }
+
+          const mimeTypeHeader = String(req.headers["content-type"] || "").trim();
+          const mimeType = mimeTypeHeader || session.audio?.mimeType || "audio/webm";
+          const extension = this.getAudioExtension(mimeType);
+          const audioDir = path.join(this.storageDir, "live_conversation_audio");
+          await fs.mkdir(audioDir, { recursive: true });
+
+          const audioPath = path.join(audioDir, `${session.id}${extension}`);
+          await fs.writeFile(audioPath, buffer);
+
+          await this.store.update(session.id, {
+            audio: {
+              ...(session.audio || {}),
+              mimeType,
+              combinedPath: audioPath,
+              totalBytes: buffer.length,
+            },
+          });
+
+          await this.store.logEvent(session.id, "final_audio_uploaded", {
+            mimeType,
+            bytes: buffer.length,
+          });
+
+          res.status(204).end();
+        } catch (error) {
+          this.log("Upload final audio error", { error: error.message });
+          res.status(500).json({ error: error.message });
+        }
+      },
+    );
+
     app.patch("/api/voice/live/sessions/:sessionId", async (req, res) => {
       const result = await this.loadSession(req, res, authService);
       if (!result) return;
@@ -216,7 +314,13 @@ class LiveConversationRoutes {
         if (req.body.linkedPatient !== undefined) updates.linkedPatient = req.body.linkedPatient;
         if (req.body.encounterLabel !== undefined) updates.encounterLabel = req.body.encounterLabel;
 
-        const updated = await this.store.update(session.id, updates);
+        if (Object.keys(updates).length > 0) {
+          await this.store.update(session.id, updates);
+        }
+        if (req.body.draftPatch && typeof req.body.draftPatch === "object") {
+          await this.store.updateDraftExtraction(session.id, req.body.draftPatch);
+        }
+        const updated = await this.syncStructuredReviewItems(session.id);
         res.json(this.store.toPublicSession(updated));
       } catch (error) {
         this.log("Update session error", { error: error.message });
@@ -273,6 +377,7 @@ class LiveConversationRoutes {
       try {
         const { session } = result;
         const { reviewItemId, resolution, editedValue } = req.body;
+        const reviewItem = session.draftExtraction?.reviewItems?.find((item) => item.id === reviewItemId);
 
         if (!reviewItemId || !resolution) {
           res.status(400).json({ error: "reviewItemId and resolution are required" });
@@ -284,12 +389,44 @@ class LiveConversationRoutes {
           return;
         }
 
-        const updated = await this.store.resolveReviewItem(
+        if (!reviewItem) {
+          res.status(404).json({ error: "Review item not found" });
+          return;
+        }
+
+        if (reviewItem.required && resolution !== "edited") {
+          res.status(400).json({ error: "This field must be entered before finalizing." });
+          return;
+        }
+
+        if (reviewItem.fieldPath && resolution === "edited") {
+          let sessionPatch;
+          let draftPatch;
+          try {
+            ({ sessionPatch, draftPatch } = parseRequiredFieldPatch(
+              reviewItem.fieldPath,
+              editedValue,
+              session.draftExtraction?.extractedData || {},
+            ));
+          } catch (parseError) {
+            res.status(400).json({ error: parseError.message });
+            return;
+          }
+          if (Object.keys(sessionPatch).length > 0) {
+            await this.store.update(session.id, sessionPatch);
+          }
+          if (Object.keys(draftPatch).length > 0) {
+            await this.store.updateDraftExtraction(session.id, draftPatch);
+          }
+        }
+
+        await this.store.resolveReviewItem(
           session.id,
           reviewItemId,
           resolution,
           editedValue,
         );
+        const updated = await this.syncStructuredReviewItems(session.id);
 
         await this.store.logEvent(session.id, "review_item_resolved", {
           reviewItemId,
@@ -308,7 +445,8 @@ class LiveConversationRoutes {
       if (!result) return;
 
       try {
-        const { session } = result;
+        let { session } = result;
+        session = await this.syncStructuredReviewItems(session.id) || session;
         if (session.status !== "review_required") {
           res.status(400).json({ error: "Session is not ready for finalization" });
           return;
@@ -321,6 +459,18 @@ class LiveConversationRoutes {
           res.status(400).json({
             error: "Cannot finalize with pending review items",
             pendingReview: pendingReview.length,
+          });
+          return;
+        }
+
+        const missingFields = listMissingRequiredFields(
+          session,
+          normalizeLiveDraft(session.draftExtraction?.extractedData || {}),
+        );
+        if (missingFields.length > 0) {
+          res.status(400).json({
+            error: "Cannot finalize until required demographics are completed",
+            missingFields: missingFields.map((field) => field.title),
           });
           return;
         }

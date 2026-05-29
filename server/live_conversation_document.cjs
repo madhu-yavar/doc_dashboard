@@ -1,4 +1,5 @@
 const DashboardMapperSkill = require("../skills/clinical/dashboard_mapper.skill.cjs");
+const { normalizeLiveDraft } = require("./live_conversation_draft.cjs");
 
 const dashboardMapper = new DashboardMapperSkill();
 
@@ -42,6 +43,16 @@ function getDisplayName(linkedPatient, encounterLabel) {
   if (patientName) return patientName;
   if (encounter) return `Encounter ${encounter}`;
   return "Conversation - Live";
+}
+
+function deriveEncounterNumber(sessionId) {
+  const digits = String(sessionId || "").replace(/\D/g, "");
+  if (!digits) return "EN000001";
+  return `EN${digits.slice(-6).padStart(6, "0")}`;
+}
+
+function deriveEncounterLabel({ encounterLabel, sessionId }) {
+  return deriveEncounterNumber(sessionId);
 }
 
 function isLiveConversationDocument(document) {
@@ -164,18 +175,24 @@ function buildClinicalNotes({
 }
 
 function buildVoiceSourceData({ draft, linkedPatient, encounterLabel, createdAt, transcriptText, sessionId }) {
-  const diagnosisText = asText(draft?.diagnosis);
-  const symptoms = normalizeTextList(draft?.symptoms);
-  const planItems = normalizeTextList(draft?.plan);
-  const followUpItems = normalizeTextList(draft?.followUp || draft?.follow_up);
-  const medications = asArray(draft?.medications).map(normalizeMedicationEntry).filter(Boolean);
-  const investigations = asArray(draft?.labs).map(normalizeInvestigationEntry).filter(Boolean);
-  const radiology = asArray(draft?.radiology).map(normalizeRadiologyEntry).filter(Boolean);
-  const procedures = asArray(draft?.procedures).map(normalizeProcedureEntry).filter(Boolean);
+  const normalizedDraft = normalizeLiveDraft(draft || {});
+  const chiefComplaint = asText(normalizedDraft.chiefComplaint);
+  const hpi = asText(normalizedDraft.hpi);
+  const ros = normalizeTextList(normalizedDraft.ros);
+  const diagnosisText = asText(normalizedDraft.diagnosis);
+  const symptoms = normalizeTextList(normalizedDraft.symptoms);
+  const planItems = normalizeTextList(normalizedDraft.plan);
+  const followUpItems = normalizeTextList(normalizedDraft.followUp || normalizedDraft.follow_up);
+  const medications = asArray(normalizedDraft.medications).map(normalizeMedicationEntry).filter(Boolean);
+  const investigations = asArray(normalizedDraft.labs).map(normalizeInvestigationEntry).filter(Boolean);
+  const radiology = asArray(normalizedDraft.radiology).map(normalizeRadiologyEntry).filter(Boolean);
+  const procedures = asArray(normalizedDraft.procedures).map(normalizeProcedureEntry).filter(Boolean);
 
   return {
     patient: {
-      name: asText(linkedPatient),
+      name: firstText(linkedPatient, normalizedDraft.patient.name),
+      age: normalizedDraft.patient.age,
+      gender: asText(normalizedDraft.patient.gender),
       mrn: asText(encounterLabel),
       hospital_no: asText(encounterLabel),
     },
@@ -191,6 +208,9 @@ function buildVoiceSourceData({ draft, linkedPatient, encounterLabel, createdAt,
       symptoms,
       icd_code: "",
     },
+    chief_complaint: chiefComplaint,
+    hpi,
+    ros,
     medications,
     investigations,
     radiology,
@@ -211,14 +231,14 @@ function buildVoiceSourceData({ draft, linkedPatient, encounterLabel, createdAt,
       transcriptText,
       createdAt,
     }),
-    vitals: {},
+    vitals: normalizedDraft.vitals,
     transcript: transcriptText,
     meta: {
       source_type: "voice",
       document_type: "live_conversation",
       sessionType: "live_conversation",
       sessionId,
-      patientName: asText(linkedPatient),
+      patientName: firstText(linkedPatient, normalizedDraft.patient.name),
       encounterLabel: asText(encounterLabel),
       department_type: "Live Conversation",
       processed_at: asText(createdAt) || new Date().toISOString(),
@@ -281,10 +301,14 @@ function buildLiveConversationDocument(session, options = {}) {
   const documentId = asText(options.documentId) || getDocumentIdForSession(sessionId);
   const linkedPatient = firstText(
     session?.linkedPatient,
+    session?.draftExtraction?.extractedData?.patient?.name,
     session?.draftExtraction?.extractedData?.patientName,
     session?.transcript?.patientName,
   );
-  const encounterLabel = firstText(session?.encounterLabel);
+  const encounterLabel = deriveEncounterLabel({
+    encounterLabel: session?.encounterLabel,
+    sessionId,
+  });
   const name = getDisplayName(linkedPatient, encounterLabel);
   const result = buildLiveConversationResult({
     documentId,
@@ -368,4 +392,5 @@ module.exports = {
   getDocumentIdForSession,
   hydrateLiveConversationDocument,
   isLiveConversationDocument,
+  deriveEncounterNumber,
 };

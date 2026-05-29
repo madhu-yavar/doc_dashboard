@@ -378,6 +378,50 @@ class LiveConversationSTTAgent {
     });
   }
 
+  normalizeBrowserTranscriptChunks(segments = []) {
+    return segments.map((seg, idx) => {
+      const startSeconds = Number.isFinite(seg?.startSeconds)
+        ? Number(seg.startSeconds)
+        : (this.parseTimeLabel(seg?.startLabel) ?? 0);
+      const endSeconds = Number.isFinite(seg?.endSeconds)
+        ? Number(seg.endSeconds)
+        : (this.parseTimeLabel(seg?.endLabel) ?? startSeconds);
+
+      return {
+        chunkIndex: idx,
+        startSeconds,
+        endSeconds,
+        startLabel: seg?.startLabel || "00:00",
+        endLabel: seg?.endLabel || "00:00",
+        transcript: seg?.text || seg?.normalizedText || "",
+        normalizedText: seg?.normalizedText || seg?.text || "",
+        success: true,
+        error: null,
+      };
+    });
+  }
+
+  applyBrowserDiarizationToSegments(segments = [], annotatedChunks = []) {
+    return segments.map((segment, idx) => {
+      const annotatedChunk = annotatedChunks[idx] || {};
+      const speakerRole = annotatedChunk.speakerRole || segment?.speakerRole || "unknown";
+      const flags = Array.isArray(segment?.flags) ? segment.flags.filter(Boolean) : [];
+      if (speakerRole === "unknown" && !flags.includes("speaker_unknown")) {
+        flags.push("speaker_unknown");
+      }
+
+      return {
+        ...segment,
+        speakerId: annotatedChunk.speakerId || segment?.speakerId || `spk_${idx + 1}`,
+        speakerRole,
+        speakerLabel: annotatedChunk.speakerLabel || segment?.speakerLabel || "Unknown",
+        startSeconds: Number.isFinite(annotatedChunk.startSeconds) ? annotatedChunk.startSeconds : segment?.startSeconds,
+        endSeconds: Number.isFinite(annotatedChunk.endSeconds) ? annotatedChunk.endSeconds : segment?.endSeconds,
+        flags,
+      };
+    });
+  }
+
   buildChunkTranscriptResult(chunks = [], meta = {}, options = {}) {
     const successfulChunks = chunks.filter((chunk) => chunk.success && chunk.transcript);
     const cumulativeTranscript = successfulChunks.map((chunk) => chunk.transcript).join("\n");
@@ -739,23 +783,39 @@ class LiveConversationSTTAgent {
         });
 
         if (result.success && result.data) {
-          // Transform Whisper result into the expected format
-          const segments = (result.data.segments || []).map((seg, idx) => ({
-            chunkIndex: idx,
-            startSeconds: parseFloat(seg.startLabel?.replace(":", ".") || "0") || 0,
-            endSeconds: parseFloat(seg.endLabel?.replace(":", ".") || "0") || 0,
-            startLabel: seg.startLabel || "00:00",
-            endLabel: seg.endLabel || "00:00",
-            transcript: seg.text || seg.normalizedText || "",
-            success: true,
-            error: null,
-          }));
+          const browserSegments = Array.isArray(result.data.segments) ? result.data.segments : [];
+          const browserChunks = this.normalizeBrowserTranscriptChunks(browserSegments);
+          const diarization = options.enableSpeakerDiarization
+            ? await this.runSpeakerDiarization(absoluteAudioPath, mimeType, {
+                ...options,
+                transcriptHint: result.data.normalizedText || result.data.rawText || "",
+              })
+            : null;
+          const annotatedChunks = diarization?.segments
+            ? this.annotateChunksWithDiarization(browserChunks, diarization)
+            : browserChunks;
+          const diarizedSegments = this.applyBrowserDiarizationToSegments(browserSegments, annotatedChunks);
+          const diarizedSpeakers = Array.isArray(diarization?.speakers)
+            ? diarization.speakers.map((speaker, idx) => ({
+                id: speaker?.id || speaker?.speaker || `spk_${idx + 1}`,
+                label: speaker?.label || `Speaker ${idx + 1}`,
+                role: speaker?.role || "unknown",
+                confidence: typeof speaker?.confidence === "number" ? speaker.confidence : null,
+              }))
+            : (Array.isArray(result.data.speakers) ? result.data.speakers : []);
+          const quality = {
+            ...(result.data.quality || {}),
+            speakerAmbiguityCount: diarizedSegments.filter((segment) => segment?.speakerRole === "unknown").length,
+          };
 
           return {
             success: true,
             data: {
               ...result.data,
-              chunks: segments,
+              segments: diarizedSegments,
+              chunks: annotatedChunks,
+              speakers: diarizedSpeakers,
+              quality,
             },
             backend: "whisper_direct",
             model: "whisper-self-hosted",

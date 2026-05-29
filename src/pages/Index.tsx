@@ -1209,7 +1209,7 @@ const Index = () => {
 const PageWrapper = ({ children }: { children: React.ReactNode }) => (
   <div className="min-h-screen bg-background">
     <AppShellHeader />
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="app-shell py-4">
       {children}
     </div>
   </div>

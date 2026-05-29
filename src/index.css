@@ -113,6 +113,10 @@
 }
 
 @layer components {
+  .app-shell {
+    @apply mx-auto w-full max-w-[1680px] px-4 sm:px-6 xl:px-8 2xl:px-10;
+  }
+
   .status-badge-normal {
     @apply bg-[hsl(var(--status-normal)/0.1)] text-[hsl(var(--status-normal))];
   }

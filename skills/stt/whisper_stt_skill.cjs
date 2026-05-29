@@ -16,16 +16,35 @@ const crypto = require("crypto");
 class WhisperSTTSkill {
   constructor(config = {}) {
     this.name = "Whisper STT Skill";
-    this.version = "1.0.0";
+    this.version = "1.0.0-multilingual";
     this.type = "stt_skill";
 
     // Configuration
     this.url = config.url || process.env.WHISPER_STT_URL || "http://202.88.209.11/whisper/transcribe";
-    this.language = config.language || process.env.WHISPER_LANGUAGE || "auto";
+    this.language = config.language || process.env.WHISPER_LANGUAGE || "auto"; // auto-detect language
     this.temperature = config.temperature || process.env.WHISPER_TEMPERATURE || "0";
     this.timeout = config.timeout || 60000;
     this.maxRetries = config.maxRetries || 2;
     this.debug = config.debug || false;
+
+    // Multilingual support
+    this.supportedLanguages = [
+      "ta", // Tamil
+      "hi", // Hindi
+      "te", // Telugu
+      "mr", // Marathi
+      "bn", // Bengali
+      "kn", // Kannada
+      "ml", // Malayalam
+      "pa", // Punjabi
+      "gu", // Gujarati
+      "en", // English
+      "es", // Spanish
+      "fr", // French
+      "de", // German
+      "zh", // Chinese
+      "ar", // Arabic
+    ];
   }
 
   log(message, data = {}) {

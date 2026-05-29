@@ -26,16 +26,23 @@ export type LiveTranscriptSegment = {
 
 export type LiveReviewItem = {
   id: string;
-  category: "transcript" | "medication" | "follow_up";
+  category: "transcript" | "medication" | "follow_up" | "demographics" | "vitals";
   severity: "low" | "medium" | "high";
   title: string;
   extractedValue: string;
   suggestedValue: string;
   resolution: LiveReviewResolution;
   editedValue?: string;
+  required?: boolean;
+  fieldPath?: string;
+  placeholder?: string;
+  inputType?: "text" | "number";
 };
 
 export type LiveDraftExtraction = {
+  chiefComplaint: string;
+  hpi: string;
+  ros: string[];
   diagnosis: string;
   symptoms: string[];
   medications: Array<{ name: string; instruction: string; status: "draft" | "needs_review" }>;
@@ -44,12 +51,44 @@ export type LiveDraftExtraction = {
   procedures: string[];
   followUp: string[];
   plan: string[];
+  patient: {
+    name: string;
+    age: number | null;
+    gender: string;
+  };
+  vitals: {
+    latest: {
+      bp: {
+        systolic: number | null;
+        diastolic: number | null;
+      };
+      pulse: {
+        value: number | null;
+        unit: string;
+      };
+      temperature: {
+        value: number | null;
+        unit: string;
+      };
+      spo2: {
+        value: number | null;
+        unit: string;
+      };
+      weight: {
+        value: number | null;
+        unit: string;
+      };
+    };
+  };
 };
 
 /**
  * Empty draft object to prevent null dereference crashes
  */
 const EMPTY_DRAFT: LiveDraftExtraction = {
+  chiefComplaint: "",
+  hpi: "",
+  ros: [],
   diagnosis: "",
   symptoms: [],
   medications: [],
@@ -58,6 +97,35 @@ const EMPTY_DRAFT: LiveDraftExtraction = {
   procedures: [],
   followUp: [],
   plan: [],
+  patient: {
+    name: "",
+    age: null,
+    gender: "",
+  },
+  vitals: {
+    latest: {
+      bp: {
+        systolic: null,
+        diastolic: null,
+      },
+      pulse: {
+        value: null,
+        unit: "bpm",
+      },
+      temperature: {
+        value: null,
+        unit: "F",
+      },
+      spo2: {
+        value: null,
+        unit: "%",
+      },
+      weight: {
+        value: null,
+        unit: "kg",
+      },
+    },
+  },
 };
 
 function normalizeTranscriptSegment(segment: any): LiveTranscriptSegment {
@@ -71,6 +139,38 @@ function normalizeTranscriptSegment(segment: any): LiveTranscriptSegment {
     confidence: typeof segment?.confidence === "number" ? segment.confidence : null,
     flags: Array.isArray(segment?.flags) ? segment.flags.filter((flag: unknown) => typeof flag === "string") : [],
     status: segment?.status === "interim" ? "interim" : "final",
+  };
+}
+
+function deriveEncounterNumber(sessionId: string): string {
+  const digits = String(sessionId || "").replace(/\D/g, "");
+  if (!digits) return "EN000001";
+  return `EN${digits.slice(-6).padStart(6, "0")}`;
+}
+
+function deriveEncounterLabel(sessionId: string, _encounterLabel: string): string {
+  return deriveEncounterNumber(sessionId);
+}
+
+function normalizeTranscriptState(rawTranscript: any) {
+  const normalizedSegments = Array.isArray(rawTranscript?.segments)
+    ? rawTranscript.segments.map(normalizeTranscriptSegment)
+    : [];
+
+  return {
+    ...rawTranscript,
+    segments: normalizedSegments,
+    rawText: String(rawTranscript?.rawText || ""),
+    normalizedText: String(rawTranscript?.normalizedText || rawTranscript?.rawText || ""),
+    speakers: Array.isArray(rawTranscript?.speakers) ? rawTranscript.speakers : [],
+    quality: {
+      overallConfidence: typeof rawTranscript?.quality?.overallConfidence === "number" ? rawTranscript.quality.overallConfidence : null,
+      lowConfidenceSegmentCount: Number(rawTranscript?.quality?.lowConfidenceSegmentCount || 0),
+      speakerAmbiguityCount: Number(rawTranscript?.quality?.speakerAmbiguityCount || 0),
+      overlappingSpeechSuspected: Boolean(rawTranscript?.quality?.overlappingSpeechSuspected),
+    },
+    hasGap: Boolean(rawTranscript?.hasGap),
+    interimText: String(rawTranscript?.interimText || ""),
   };
 }
 
@@ -137,35 +237,59 @@ const API_BASE = "/api/voice/live";
 function normalizeSession(session: any): LiveConversationSession {
   const baseSession = { ...session };
   const rawTranscript = baseSession.transcript || {};
-  const normalizedSegments = Array.isArray(rawTranscript.segments)
-    ? rawTranscript.segments.map(normalizeTranscriptSegment)
-    : [];
+  const normalizedDraftExtraction = baseSession.draftExtraction?.extractedData || {};
+  const transcript = normalizeTranscriptState(rawTranscript);
+  const encounterLabel = deriveEncounterLabel(baseSession.id || "", baseSession.encounterLabel || "");
 
   return {
     ...baseSession,
     // Computed title from patient and encounter
     get title() {
-      return sessionTitle(baseSession.linkedPatient || "", baseSession.encounterLabel || "");
+      return sessionTitle(
+        baseSession.linkedPatient || normalizedDraftExtraction?.patient?.name || "",
+        encounterLabel,
+      );
     },
     // Normalize transcript to add missing UI fields
-    transcript: {
-      ...rawTranscript,
-      segments: normalizedSegments,
-      rawText: String(rawTranscript.rawText || ""),
-      normalizedText: String(rawTranscript.normalizedText || rawTranscript.rawText || ""),
-      speakers: Array.isArray(rawTranscript.speakers) ? rawTranscript.speakers : [],
-      quality: {
-        overallConfidence: typeof rawTranscript.quality?.overallConfidence === "number" ? rawTranscript.quality.overallConfidence : null,
-        lowConfidenceSegmentCount: Number(rawTranscript.quality?.lowConfidenceSegmentCount || 0),
-        speakerAmbiguityCount: Number(rawTranscript.quality?.speakerAmbiguityCount || 0),
-        overlappingSpeechSuspected: Boolean(rawTranscript.quality?.overlappingSpeechSuspected),
-      },
-      hasGap: false, // Could be computed from segments if needed
-      interimText: "", // Could be populated from websocket events
-    },
+    transcript,
     // Normalize draftExtraction to draft for UI - use empty draft to prevent null crashes
     draft: {
-      extractedData: baseSession.draftExtraction?.extractedData || { ...EMPTY_DRAFT },
+      extractedData: {
+        ...EMPTY_DRAFT,
+        ...(baseSession.draftExtraction?.extractedData || {}),
+        patient: {
+          ...EMPTY_DRAFT.patient,
+          ...(baseSession.draftExtraction?.extractedData?.patient || {}),
+        },
+        vitals: {
+          ...EMPTY_DRAFT.vitals,
+          ...(baseSession.draftExtraction?.extractedData?.vitals || {}),
+          latest: {
+            ...EMPTY_DRAFT.vitals.latest,
+            ...(baseSession.draftExtraction?.extractedData?.vitals?.latest || {}),
+            bp: {
+              ...EMPTY_DRAFT.vitals.latest.bp,
+              ...(baseSession.draftExtraction?.extractedData?.vitals?.latest?.bp || {}),
+            },
+            pulse: {
+              ...EMPTY_DRAFT.vitals.latest.pulse,
+              ...(baseSession.draftExtraction?.extractedData?.vitals?.latest?.pulse || {}),
+            },
+            temperature: {
+              ...EMPTY_DRAFT.vitals.latest.temperature,
+              ...(baseSession.draftExtraction?.extractedData?.vitals?.latest?.temperature || {}),
+            },
+            spo2: {
+              ...EMPTY_DRAFT.vitals.latest.spo2,
+              ...(baseSession.draftExtraction?.extractedData?.vitals?.latest?.spo2 || {}),
+            },
+            weight: {
+              ...EMPTY_DRAFT.vitals.latest.weight,
+              ...(baseSession.draftExtraction?.extractedData?.vitals?.latest?.weight || {}),
+            },
+          },
+        },
+      },
       reviewItems: baseSession.draftExtraction?.reviewItems || [],
     },
     // Normalize audio/transport to recorder for UI - will be synced via effect
@@ -232,6 +356,19 @@ export function useLiveConversationAPI() {
 
   const audio = useLiveConversationAudio({
     enableDebugLogs: process.env.NODE_ENV === "development",
+    onTranscriptPartial: (transcript) => {
+      setSessions((prevSessions) =>
+        prevSessions.map((s) => {
+          if (s.id === selectedSessionId) {
+            return {
+              ...s,
+              transcript: normalizeTranscriptState(transcript),
+            };
+          }
+          return s;
+        }),
+      );
+    },
     onTranscriptFinal: (segment) => {
       // Merge realtime transcript into the session state
       setSessions((prevSessions) =>
@@ -263,7 +400,42 @@ export function useLiveConversationAPI() {
               ...s,
               draft: {
                 ...s.draft,
-                extractedData: { ...draft },
+                extractedData: {
+                  ...s.draft.extractedData,
+                  ...draft,
+                  patient: {
+                    ...s.draft.extractedData.patient,
+                    ...(draft?.patient || {}),
+                  },
+                  vitals: {
+                    ...s.draft.extractedData.vitals,
+                    ...(draft?.vitals || {}),
+                    latest: {
+                      ...s.draft.extractedData.vitals.latest,
+                      ...(draft?.vitals?.latest || {}),
+                      bp: {
+                        ...s.draft.extractedData.vitals.latest.bp,
+                        ...(draft?.vitals?.latest?.bp || {}),
+                      },
+                      pulse: {
+                        ...s.draft.extractedData.vitals.latest.pulse,
+                        ...(draft?.vitals?.latest?.pulse || {}),
+                      },
+                      temperature: {
+                        ...s.draft.extractedData.vitals.latest.temperature,
+                        ...(draft?.vitals?.latest?.temperature || {}),
+                      },
+                      spo2: {
+                        ...s.draft.extractedData.vitals.latest.spo2,
+                        ...(draft?.vitals?.latest?.spo2 || {}),
+                      },
+                      weight: {
+                        ...s.draft.extractedData.vitals.latest.weight,
+                        ...(draft?.vitals?.latest?.weight || {}),
+                      },
+                    },
+                  },
+                },
               },
             };
           }
@@ -369,7 +541,7 @@ export function useLiveConversationAPI() {
     }
   }, []);
 
-  const updateSession = useCallback(async (sessionId: string, updates: { linkedPatient?: string; encounterLabel?: string }) => {
+  const updateSession = useCallback(async (sessionId: string, updates: { linkedPatient?: string; encounterLabel?: string; draftPatch?: Partial<LiveDraftExtraction> }) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -555,16 +727,24 @@ export function useLiveConversationAPI() {
         createSession();
       }
     },
-    updateSelectedSession: (patch: { linkedPatient?: string; encounterLabel?: string; deviceId?: string }) => {
+    updateSelectedSession: async (patch: { linkedPatient?: string; encounterLabel?: string; deviceId?: string; draftPatch?: Partial<LiveDraftExtraction> }) => {
       // Wire device selection to audio hook
       if (patch.deviceId !== undefined) {
         audio.selectDevice(patch.deviceId);
       }
-      // Only update server metadata for patient/encounter fields
-      if (selectedSessionId && (patch.linkedPatient !== undefined || patch.encounterLabel !== undefined)) {
-        updateSession(selectedSessionId, {
+      // Update server metadata or draft fields when needed.
+      if (
+        selectedSessionId
+        && (
+          patch.linkedPatient !== undefined
+          || patch.encounterLabel !== undefined
+          || patch.draftPatch !== undefined
+        )
+      ) {
+        await updateSession(selectedSessionId, {
           linkedPatient: patch.linkedPatient,
           encounterLabel: patch.encounterLabel,
+          draftPatch: patch.draftPatch,
         });
       }
     },

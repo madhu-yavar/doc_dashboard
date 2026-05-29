@@ -5,6 +5,15 @@ const { WebSocketServer } = require("ws");
 
 const LiveConversationSTTAgent = require("../agents/live_conversation_stt_agent.cjs");
 const LiveConversationStore = require("./live_conversation_store.cjs");
+const GemmaClientTool = require("../tools/llm/gemma_client.tool.cjs");
+const GeminiClientTool = require("../tools/llm/gemini_client.tool.cjs");
+const {
+  buildRequiredReviewItems,
+  mergeLiveDraft,
+  mergeRequiredReviewItems,
+  normalizeGender,
+  normalizeLiveDraft,
+} = require("./live_conversation_draft.cjs");
 
 class LiveConversationWebSocket {
   constructor(config = {}) {
@@ -17,6 +26,14 @@ class LiveConversationWebSocket {
     this.sttAgent = new LiveConversationSTTAgent({
       debug: config.debug || false,
     });
+    this.gemmaClient = new GemmaClientTool({
+      ...(config.gemma || {}),
+      timeout: Number(config.gemma?.timeout || process.env.GEMMA_TIMEOUT_MS || 180000),
+    });
+    this.geminiClient = new GeminiClientTool({
+      ...(config.gemini || {}),
+      timeout: Number(config.gemini?.timeout || process.env.GEMMA_TIMEOUT_MS || 180000),
+    });
 
     this.sessions = new Map();
     this.chunkBuffer = new Map();
@@ -24,12 +41,14 @@ class LiveConversationWebSocket {
     this.draftBuffer = new Map();
     this.chunkFlushTimers = new Map();
     this.sessionChunkFiles = new Map(); // Track chunk files for each session
+    this.transcriptionQueues = new Map();
     this.upgradeHandler = null;
     this.attachedServer = null;
 
     this.config = {
       pingInterval: Number(config.pingInterval || 30000),
       chunkFlushMs: Number(config.chunkFlushMs || 3000),
+      liveTranscriptWindowChunks: Number(config.liveTranscriptWindowChunks || 8),
       maxBufferSize: Number(config.maxBufferSize || 5 * 1024 * 1024),
       enableDraftExtraction: config.enableDraftExtraction ?? true,
       draftExtractionInterval: Number(config.draftExtractionInterval || 15000),
@@ -38,6 +57,7 @@ class LiveConversationWebSocket {
     };
 
     this.draftTimers = new Map();
+    this.draftInFlight = new Set();
   }
 
   log(message, data = {}) {
@@ -100,26 +120,33 @@ class LiveConversationWebSocket {
 
   hasMeaningfulDraft(draft = null) {
     if (!draft || typeof draft !== "object") return false;
+    const normalizedDraft = normalizeLiveDraft(draft);
     return Boolean(
-      String(draft.diagnosis || "").trim()
-      || (Array.isArray(draft.symptoms) && draft.symptoms.length > 0)
-      || (Array.isArray(draft.medications) && draft.medications.length > 0)
-      || (Array.isArray(draft.labs) && draft.labs.length > 0)
-      || (Array.isArray(draft.radiology) && draft.radiology.length > 0)
-      || (Array.isArray(draft.procedures) && draft.procedures.length > 0)
-      || (Array.isArray(draft.followUp) && draft.followUp.length > 0)
-      || (Array.isArray(draft.plan) && draft.plan.length > 0)
+      String(normalizedDraft.chiefComplaint || "").trim()
+      || String(normalizedDraft.hpi || "").trim()
+      || normalizedDraft.ros.length > 0
+      || String(normalizedDraft.diagnosis || "").trim()
+      || normalizedDraft.symptoms.length > 0
+      || normalizedDraft.medications.length > 0
+      || normalizedDraft.labs.length > 0
+      || normalizedDraft.radiology.length > 0
+      || normalizedDraft.procedures.length > 0
+      || normalizedDraft.followUp.length > 0
+      || normalizedDraft.plan.length > 0
+      || String(normalizedDraft.patient.name || "").trim()
+      || Number.isFinite(normalizedDraft.patient.age)
+      || String(normalizedDraft.patient.gender || "").trim()
+      || Number.isFinite(normalizedDraft.vitals.latest.bp.systolic)
+      || Number.isFinite(normalizedDraft.vitals.latest.bp.diastolic)
+      || Number.isFinite(normalizedDraft.vitals.latest.pulse.value)
+      || Number.isFinite(normalizedDraft.vitals.latest.temperature.value)
+      || Number.isFinite(normalizedDraft.vitals.latest.spo2.value)
+      || Number.isFinite(normalizedDraft.vitals.latest.weight.value)
     );
   }
 
   shouldBackfillTranscript(session) {
-    const transcriptText = String(
-      session?.transcript?.normalizedText
-      || session?.transcript?.rawText
-      || "",
-    ).trim();
-    const segmentCount = session?.transcript?.segments?.length || 0;
-    return segmentCount === 0 || transcriptText.length < 40;
+    return Boolean(session);
   }
 
   normalizeDraftText(value) {
@@ -165,6 +192,7 @@ class LiveConversationWebSocket {
     };
 
     const keywordPatterns = [
+      [/palpitations/gi, "Palpitations"],
       [/chest pain/gi, "Chest pain"],
       [/pain in (?:my|your) chest|pain in chest/gi, "Chest pain"],
       [/sharp pain/gi, "Sharp pain"],
@@ -180,7 +208,6 @@ class LiveConversationWebSocket {
       [/dizziness|lightheaded(?:ness)?/gi, "Dizziness"],
       [/abdominal pain|stomach pain/gi, "Abdominal pain"],
       [/diarrhea|loose stools/gi, "Diarrhea"],
-      [/palpitations/gi, "Palpitations"],
     ];
 
     for (const [pattern, label] of keywordPatterns) {
@@ -223,6 +250,7 @@ class LiveConversationWebSocket {
 
     const lowerSymptoms = symptoms.map((item) => item.toLowerCase());
     if (lowerSymptoms.some((item) => item.includes("fever"))) return "Fever";
+    if (lowerSymptoms.some((item) => item.includes("palpitations"))) return "Palpitations under evaluation";
     if (lowerSymptoms.some((item) => item.includes("chest pain"))) return "Chest pain under evaluation";
     if (lowerSymptoms.some((item) => item.includes("cough"))) return "Upper respiratory symptoms";
     return "";
@@ -286,6 +314,98 @@ class LiveConversationWebSocket {
     return this.dedupeDraftStrings(followUp);
   }
 
+  extractPatientFromTranscript(transcript) {
+    const normalized = this.normalizeDraftText(transcript);
+    const patient = {
+      name: "",
+      age: null,
+      gender: "",
+    };
+
+    const explicitNamePatterns = [
+      /\bmy name is ([a-z][a-z\s.'-]{1,40}?)(?=\s+\b(?:and|with|for|because|since|doctor|bp|blood pressure)\b|[.?!,]|$)/i,
+      /\bpatient(?:'s)? name is ([a-z][a-z\s.'-]{1,40}?)(?=\s+\b(?:and|with|for|because|since|doctor|bp|blood pressure)\b|[.?!,]|$)/i,
+      /\bthis is ([a-z][a-z\s.'-]{1,40}?)(?=\s+\b(?:and|with|for|because|since|doctor|bp|blood pressure)\b|[.?!,]|$)/i,
+    ];
+    for (const pattern of explicitNamePatterns) {
+      const match = normalized.match(pattern);
+      if (!match?.[1]) continue;
+      const candidate = this.cleanDraftPhrase(match[1])
+        .split(/\b(?:and|with|for|because|since|doctor)\b/i)[0]
+        .trim();
+      if (candidate && candidate.split(/\s+/).length <= 4) {
+        patient.name = candidate
+          .split(/\s+/)
+          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(" ");
+        break;
+      }
+    }
+
+    const ageMatch = normalized.match(/\b(\d{1,3})\s*(?:years? old|year old|yrs? old)\b/i)
+      || normalized.match(/\bage(?: is|:)?\s*(\d{1,3})\b/i);
+    if (ageMatch?.[1]) {
+      const age = Number(ageMatch[1]);
+      if (Number.isFinite(age) && age > 0) {
+        patient.age = age;
+      }
+    }
+
+    const genderMatch = normalized.match(/\b(?:male|female|man|woman|boy|girl)\b/i)
+      || normalized.match(/\bgender(?: is|:)?\s*(male|female|other)\b/i)
+      || normalized.match(/\bsex(?: is|:)?\s*(male|female|other)\b/i);
+    if (genderMatch?.[0]) {
+      patient.gender = normalizeGender(genderMatch[1] || genderMatch[0]);
+    }
+
+    return patient;
+  }
+
+  extractVitalsFromTranscript(transcript) {
+    const normalized = this.normalizeDraftText(transcript);
+    const vitals = {
+      latest: {
+        bp: { systolic: null, diastolic: null },
+        pulse: { value: null, unit: "bpm" },
+        temperature: { value: null, unit: "F" },
+        spo2: { value: null, unit: "%" },
+        weight: { value: null, unit: "kg" },
+      },
+    };
+
+    const bpMatch = normalized.match(/\b(?:blood pressure|bp)(?: is| was| of|:)?\s*(\d{2,3})\s*(?:\/|over|bar)\s*(\d{2,3})\b/i);
+    if (bpMatch) {
+      vitals.latest.bp = {
+        systolic: Number(bpMatch[1]),
+        diastolic: Number(bpMatch[2]),
+      };
+    }
+
+    const pulseMatch = normalized.match(/\b(?:pulse|heart rate|hr)(?: is| was| of|:)?\s*(\d{2,3})(?:\s*(?:bpm|beats per minute))?\b/i);
+    if (pulseMatch) {
+      vitals.latest.pulse.value = Number(pulseMatch[1]);
+    }
+
+    const spo2Match = normalized.match(/\b(?:spo2|oxygen saturation|o2 saturation|saturation)(?: is| was| of|:)?\s*(\d{2,3})(?:\s*%| percent)?\b/i);
+    if (spo2Match) {
+      vitals.latest.spo2.value = Number(spo2Match[1]);
+    }
+
+    const temperatureMatch = normalized.match(/\b(?:temperature|temp)(?: is| was| of|:)?\s*(\d{2,3}(?:\.\d+)?)(?:\s*degrees?)?\s*([fc]|celsius|fahrenheit)?\b/i);
+    if (temperatureMatch) {
+      vitals.latest.temperature.value = Number(temperatureMatch[1]);
+      vitals.latest.temperature.unit = /c|celsius/i.test(temperatureMatch[2] || "") ? "C" : "F";
+    }
+
+    const weightMatch = normalized.match(/\b(?:weight|weighs?|wt)(?: is| was| of|:)?\s*(\d{2,3}(?:\.\d+)?)(?:\s*(kg|kgs|kilograms?|lb|lbs|pounds?))\b/i);
+    if (weightMatch) {
+      vitals.latest.weight.value = Number(weightMatch[1]);
+      vitals.latest.weight.unit = /lb|lbs|pounds?/i.test(weightMatch[2]) ? "lb" : "kg";
+    }
+
+    return vitals;
+  }
+
   buildFallbackPlan(draft) {
     const plan = [];
     for (const medication of draft.medications || []) {
@@ -298,25 +418,80 @@ class LiveConversationWebSocket {
     return this.dedupeDraftStrings(plan);
   }
 
-  buildFallbackDraftExtraction(transcript) {
-    const symptoms = this.extractSymptomsFromTranscript(transcript);
-    const medications = this.extractMedicationsFromTranscript(transcript);
-    const followUp = this.extractFollowUpFromTranscript(transcript);
-    const diagnosis = this.inferDiagnosisFromTranscript(transcript, symptoms);
+  buildFallbackHpi(transcript, symptoms = [], vitals = null) {
+    const normalized = this.normalizeDraftText(transcript);
+    const parts = [];
+    const lowerSymptoms = symptoms.map((item) => item.toLowerCase());
+    const numberWords = "(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)";
 
-    const draft = {
-      diagnosis,
-      symptoms,
-      medications,
-      labs: [],
-      radiology: [],
-      procedures: [],
-      followUp,
-      plan: [],
-    };
+    const durationMatch = normalized.match(new RegExp(`\\b((?:${numberWords}|\\d+)\\s+days?\\s+ago\\s+started)\\b`, "i"))
+      || normalized.match(new RegExp(`\\b(?:for|since)\\s+((?:${numberWords}|\\d+)\\s+days?)\\b`, "i"));
+    const duration = durationMatch?.[1]
+      ? this.cleanDraftPhrase(durationMatch[1]).replace(/\bago started\b/i, "").trim()
+      : "";
 
-    draft.plan = this.buildFallbackPlan(draft);
-    return draft;
+    if (lowerSymptoms.some((item) => item.includes("palpitations"))) {
+      let clause = "Reports palpitations";
+      if (duration) clause += ` for ${duration}`;
+      parts.push(clause);
+    } else if (lowerSymptoms.length > 0) {
+      parts.push(`Reports ${lowerSymptoms.join(", ")}`);
+    }
+
+    if (/\bcomes and goes\b/i.test(normalized)) {
+      parts.push("Symptoms are intermittent");
+    } else if (/\bconstant(?:ly)?\b/i.test(normalized)) {
+      parts.push("Symptoms are constant");
+    }
+
+    if (/\b(?:mostly|worse|more)\s+(?:at\s+)?night\b/i.test(normalized)) {
+      parts.push("Worse at night");
+    }
+
+    if (/\bstanding up\b/i.test(normalized) && lowerSymptoms.some((item) => item.includes("dizziness"))) {
+      parts.push("Associated dizziness on standing");
+    }
+
+    if (
+      vitals?.latest?.bp
+      && Number.isFinite(vitals.latest.bp.systolic)
+      && Number.isFinite(vitals.latest.bp.diastolic)
+    ) {
+      parts.push(`Blood pressure recorded at ${vitals.latest.bp.systolic}/${vitals.latest.bp.diastolic}`);
+    }
+
+    const hpi = this.dedupeDraftStrings(parts).join(". ").trim();
+    return hpi || this.normalizeDraftText(transcript).slice(0, 320);
+  }
+
+  async applyDraftAndReviewRequirements(sessionId, draft, session = null) {
+    let currentSession = session || await this.store.get(sessionId);
+    const normalizedDraft = mergeLiveDraft(
+      currentSession?.draftExtraction?.extractedData || {},
+      draft,
+    );
+
+    if (
+      currentSession
+      && !String(currentSession.linkedPatient || "").trim()
+      && String(normalizedDraft.patient.name || "").trim()
+    ) {
+      currentSession = await this.store.update(sessionId, {
+        linkedPatient: normalizedDraft.patient.name,
+      });
+    }
+
+    await this.store.updateDraftExtraction(sessionId, normalizedDraft);
+
+    if (!currentSession) return normalizedDraft;
+
+    const requiredItems = buildRequiredReviewItems(currentSession, normalizedDraft);
+    const mergedItems = mergeRequiredReviewItems(
+      currentSession.draftExtraction?.reviewItems || [],
+      requiredItems,
+    );
+    await this.store.replaceReviewItems(sessionId, mergedItems);
+    return normalizedDraft;
   }
 
   async backfillFinalTranscriptAndDraft(sessionId, combinedAudioPath) {
@@ -332,20 +507,30 @@ class LiveConversationWebSocket {
           options: {
             mode: "fixed_window_no_vad",
             windowSeconds: 15,
-            enableSpeakerDiarization: false,
+            enableSpeakerDiarization: true,
             skipValidation: true,
             mimeType: session.audio?.mimeType,
           },
         });
 
-        const transcriptData = result?.data && (
+        let transcriptData = result?.data && (
           String(result.data.normalizedText || result.data.rawText || "").trim()
         )
           ? result.data
           : null;
 
         if (transcriptData) {
-          await this.store.replaceTranscript(sessionId, transcriptData);
+          if (!this.hasUsefulSpeakerSegmentation(transcriptData)) {
+            const inferredTranscript = await this.inferSpeakerTurnsFromTranscript(transcriptData, session);
+            if (inferredTranscript) {
+              transcriptData = inferredTranscript;
+            }
+          }
+
+          await this.store.replaceTranscript(sessionId, {
+            ...transcriptData,
+            interimText: "",
+          });
           await this.store.logEvent(sessionId, "final_transcript_backfilled", {
             backend: result.backend || result?.data?.metadata?.backend || null,
             segmentCount: transcriptData.segments?.length || 0,
@@ -360,17 +545,18 @@ class LiveConversationWebSocket {
     const transcriptText = String(
       session?.transcript?.normalizedText
       || session?.transcript?.rawText
+      || session?.transcript?.interimText
       || "",
     ).trim();
 
-    if (transcriptText.length < 20 || this.hasMeaningfulDraft(session?.draftExtraction?.extractedData)) {
+    if (transcriptText.length < 20) {
       return;
     }
 
     try {
       const draft = await this.generateDraftExtraction(transcriptText, session);
       if (this.hasMeaningfulDraft(draft)) {
-        await this.store.updateDraftExtraction(sessionId, draft);
+        await this.applyDraftAndReviewRequirements(sessionId, draft, session);
         await this.store.logEvent(sessionId, "final_draft_backfilled", {
           diagnosis: draft.diagnosis || "",
         });
@@ -593,20 +779,460 @@ class LiveConversationWebSocket {
     return chunkPath;
   }
 
+  async createStreamingAudioSnapshot(sessionId, recentChunkLimit = 0) {
+    const chunkFiles = this.sessionChunkFiles.get(sessionId) || [];
+    if (chunkFiles.length === 0) return null;
+    const selectedChunkFiles = recentChunkLimit > 0
+      ? chunkFiles.slice(-recentChunkLimit)
+      : chunkFiles;
+
+    const chunks = await Promise.all(
+      selectedChunkFiles.map(async (chunkPath) => {
+        try {
+          return await fsp.readFile(chunkPath);
+        } catch {
+          return null;
+        }
+      }),
+    );
+
+    const validChunks = chunks.filter(Boolean);
+    if (validChunks.length === 0) return null;
+
+    const session = await this.store.get(sessionId);
+    const extension = this.getAudioExtension(session?.audio?.mimeType);
+    const tempDir = path.join(this.storageDir, "live_conversation_temp");
+    await fsp.mkdir(tempDir, { recursive: true });
+
+    const snapshotPath = path.join(tempDir, `${sessionId}-stream-${Date.now()}${extension}`);
+    await fsp.writeFile(snapshotPath, Buffer.concat(validChunks));
+    return snapshotPath;
+  }
+
+  normalizeComparableTranscript(value) {
+    return String(value || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  }
+
+  formatTimeLabel(totalSeconds = 0) {
+    const safeSeconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+    const minutes = String(Math.floor(safeSeconds / 60)).padStart(2, "0");
+    const seconds = String(safeSeconds % 60).padStart(2, "0");
+    return `${minutes}:${seconds}`;
+  }
+
+  hasUsefulSpeakerSegmentation(transcriptData = {}) {
+    const segments = Array.isArray(transcriptData?.segments) ? transcriptData.segments : [];
+    const attributedSegments = segments.filter((segment) => {
+      const text = String(segment?.text || segment?.normalizedText || "").trim();
+      return text && String(segment?.speakerRole || "").trim() && segment.speakerRole !== "unknown";
+    });
+    const distinctSpeakers = new Set(
+      attributedSegments
+        .map((segment) => String(segment?.speakerId || segment?.speakerLabel || "").trim())
+        .filter(Boolean),
+    );
+
+    return attributedSegments.length >= 2 && distinctSpeakers.size >= 2;
+  }
+
+  buildSpeakerAttributedTranscriptFromTurns(transcriptData = {}, turns = [], durationSeconds = null) {
+    const cleanedTurns = Array.isArray(turns)
+      ? turns
+        .map((turn) => ({
+          speakerRole: ["doctor", "patient", "unknown"].includes(String(turn?.speakerRole || "").trim().toLowerCase())
+            ? String(turn.speakerRole).trim().toLowerCase()
+            : "unknown",
+          text: String(turn?.text || "").replace(/\s+/g, " ").trim(),
+        }))
+        .filter((turn) => turn.text)
+      : [];
+
+    if (cleanedTurns.length < 2) {
+      return null;
+    }
+
+    const totalWords = cleanedTurns.reduce((sum, turn) => sum + Math.max(1, turn.text.split(/\s+/).filter(Boolean).length), 0);
+    const speakerCounters = new Map();
+    const speakers = new Map();
+    const segments = [];
+    let cursorSeconds = 0;
+
+    cleanedTurns.forEach((turn, index) => {
+      const count = (speakerCounters.get(turn.speakerRole) || 0) + 1;
+      speakerCounters.set(turn.speakerRole, count);
+
+      const speakerId = turn.speakerRole === "doctor"
+        ? "doctor_1"
+        : turn.speakerRole === "patient"
+          ? "patient_1"
+          : `unknown_${count}`;
+      const speakerLabel = turn.speakerRole === "doctor"
+        ? "Doctor"
+        : turn.speakerRole === "patient"
+          ? "Patient"
+          : `Speaker ${count}`;
+
+      if (!speakers.has(speakerId)) {
+        speakers.set(speakerId, {
+          id: speakerId,
+          label: speakerLabel,
+          role: turn.speakerRole,
+        });
+      }
+
+      const words = Math.max(1, turn.text.split(/\s+/).filter(Boolean).length);
+      const allocatedSeconds = Number.isFinite(durationSeconds) && durationSeconds > 0
+        ? Math.max(1, Math.round((durationSeconds * words) / Math.max(1, totalWords)))
+        : null;
+      const startSeconds = Number.isFinite(durationSeconds) ? cursorSeconds : null;
+      const endSeconds = Number.isFinite(durationSeconds)
+        ? (index === cleanedTurns.length - 1 ? durationSeconds : Math.min(durationSeconds, cursorSeconds + allocatedSeconds))
+        : null;
+
+      if (Number.isFinite(endSeconds)) {
+        cursorSeconds = endSeconds;
+      }
+
+      segments.push({
+        id: `seg-speaker-fallback-${index + 1}`,
+        speakerId,
+        speakerRole: turn.speakerRole,
+        speakerLabel,
+        startLabel: Number.isFinite(startSeconds) ? this.formatTimeLabel(startSeconds) : "00:00",
+        endLabel: Number.isFinite(endSeconds) ? this.formatTimeLabel(endSeconds) : "00:00",
+        startSeconds: Number.isFinite(startSeconds) ? startSeconds : undefined,
+        endSeconds: Number.isFinite(endSeconds) ? endSeconds : undefined,
+        text: turn.text,
+        normalizedText: turn.text,
+        confidence: null,
+        flags: ["speaker_inferred_from_transcript"],
+        status: "final",
+      });
+    });
+
+    return {
+      ...transcriptData,
+      segments,
+      speakers: Array.from(speakers.values()),
+      quality: {
+        ...(transcriptData?.quality || {}),
+        speakerAmbiguityCount: segments.filter((segment) => segment.speakerRole === "unknown").length,
+      },
+    };
+  }
+
+  async inferSpeakerTurnsFromTranscript(transcriptData = {}, session = null) {
+    const transcriptText = String(
+      transcriptData?.normalizedText
+      || transcriptData?.rawText
+      || "",
+    ).trim();
+
+    if (transcriptText.length < 60) {
+      return null;
+    }
+
+    const existingSegments = Array.isArray(transcriptData?.segments) ? transcriptData.segments : [];
+    const lastEndSeconds = existingSegments.reduce((maxValue, segment) => {
+      const endSeconds = Number(segment?.endSeconds);
+      return Number.isFinite(endSeconds) ? Math.max(maxValue, endSeconds) : maxValue;
+    }, 0);
+    const durationSeconds = lastEndSeconds > 0
+      ? lastEndSeconds
+      : Number.isFinite(Number(session?.durationMs)) && Number(session.durationMs) > 0
+        ? Math.max(1, Math.round(Number(session.durationMs) / 1000))
+        : null;
+
+    const prompt = `Split this doctor-patient transcript into ordered speaker turns.
+
+Return JSON only in this shape:
+{"turns":[{"speakerRole":"doctor","text":"utterance text"}]}
+
+Rules:
+- speakerRole must be only "doctor", "patient", or "unknown"
+- preserve the transcript wording as much as possible while splitting it into turns
+- do not add facts or commentary
+- create at least 2 turns when the transcript contains a back-and-forth conversation
+
+TRANSCRIPT:
+${transcriptText}`;
+
+    const attempts = [
+      {
+        responseMimeType: "application/json",
+        thinkingBudget: 128,
+        systemInstruction: "You are a medical transcript formatter. Return exactly one compact JSON object and nothing else.",
+      },
+      {
+        thinkingBudget: 128,
+        systemInstruction: "Return only valid JSON. Do not use markdown fences. Do not explain your answer.",
+      },
+    ];
+
+    for (const attempt of attempts) {
+      try {
+        const result = await this.geminiClient.execute(prompt, {
+          temperature: 0.1,
+          maxTokens: 1600,
+          ...attempt,
+        });
+
+        if (!result.success) {
+          this.log("Speaker turn inference failed", {
+            sessionId: session?.id,
+            error: result.error,
+          });
+          continue;
+        }
+
+        const jsonMatch = String(result.content || "").match(/\{[\s\S]*\}/);
+        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
+        const inferredTranscript = this.buildSpeakerAttributedTranscriptFromTurns(
+          transcriptData,
+          parsed.turns,
+          durationSeconds,
+        );
+
+        if (inferredTranscript) {
+          return inferredTranscript;
+        }
+      } catch (error) {
+        this.log("Speaker turn inference error", {
+          sessionId: session?.id,
+          error: error.message,
+        });
+      }
+    }
+
+    return null;
+  }
+
+  normalizeRealtimeTranscript(result, sessionId) {
+    const transcriptData = result?.data || {};
+    const rawSegments = Array.isArray(transcriptData.segments) && transcriptData.segments.length > 0
+      ? transcriptData.segments
+      : Array.isArray(transcriptData.chunks)
+        ? transcriptData.chunks
+          .filter((chunk) => chunk?.success && String(chunk?.transcript || "").trim())
+          .map((chunk, index) => ({
+            id: `seg-${sessionId}-${Math.round((chunk.startSeconds || 0) * 10)}-${Math.round((chunk.endSeconds || 0) * 10)}-${index}`,
+            speakerId: "spk_0",
+            speakerRole: "unknown",
+            speakerLabel: "Unknown",
+            startLabel: chunk.startLabel,
+            endLabel: chunk.endLabel,
+            startSeconds: chunk.startSeconds,
+            endSeconds: chunk.endSeconds,
+            text: chunk.transcript,
+            normalizedText: chunk.transcript,
+            confidence: 0.85,
+            flags: ["live_stream", "speaker_unknown"],
+            status: "final",
+          }))
+        : [];
+
+    const segments = rawSegments
+      .map((segment, index) => {
+        const text = String(segment?.text || segment?.normalizedText || "").trim();
+        if (!text) return null;
+
+        return {
+          id: String(
+            segment?.id
+            || segment?.segmentId
+            || `seg-${sessionId}-${Math.round((Number(segment?.startSeconds) || index) * 10)}-${Math.round((Number(segment?.endSeconds) || index + 1) * 10)}`,
+          ),
+          speakerId: segment?.speakerId || `spk_${index + 1}`,
+          speakerRole: segment?.speakerRole || "unknown",
+          speakerLabel: segment?.speakerLabel || "Unknown",
+          startLabel: segment?.startLabel || "00:00",
+          endLabel: segment?.endLabel || "00:00",
+          startSeconds: Number.isFinite(segment?.startSeconds) ? segment.startSeconds : undefined,
+          endSeconds: Number.isFinite(segment?.endSeconds) ? segment.endSeconds : undefined,
+          text,
+          normalizedText: String(segment?.normalizedText || text),
+          confidence: typeof segment?.confidence === "number" ? segment.confidence : 0.85,
+          flags: Array.isArray(segment?.flags) && segment.flags.length > 0
+            ? segment.flags
+            : ["live_stream", "speaker_unknown"],
+          status: segment?.status === "interim" ? "interim" : "final",
+        };
+      })
+      .filter(Boolean);
+
+    const rawText = String(
+      transcriptData.rawText
+      || transcriptData.normalizedText
+      || segments.map((segment) => segment.text).join(" ").trim(),
+    );
+    const normalizedText = String(
+      transcriptData.normalizedText
+      || transcriptData.rawText
+      || rawText,
+    );
+
+    if (!rawText.trim() && segments.length === 0) return null;
+
+    return {
+      segments,
+      rawText,
+      normalizedText,
+      speakers: Array.isArray(transcriptData.speakers) ? transcriptData.speakers : [],
+      quality: {
+        overallConfidence: typeof transcriptData.quality?.overallConfidence === "number"
+          ? transcriptData.quality.overallConfidence
+          : null,
+        lowConfidenceSegmentCount: Number(
+          transcriptData.quality?.lowConfidenceSegmentCount
+          || segments.filter((segment) => typeof segment.confidence === "number" && segment.confidence < 0.7).length
+          || 0,
+        ),
+        speakerAmbiguityCount: Number(
+          transcriptData.quality?.speakerAmbiguityCount
+          || segments.filter((segment) => segment.speakerRole === "unknown").length
+          || 0,
+        ),
+        overlappingSpeechSuspected: Boolean(transcriptData.quality?.overlappingSpeechSuspected),
+      },
+    };
+  }
+
+  extractNovelTranscriptSuffix(previousWindowText = "", currentWindowText = "") {
+    const previousComparable = this.normalizeComparableTranscript(previousWindowText);
+    const currentComparable = this.normalizeComparableTranscript(currentWindowText);
+    const currentOriginal = String(currentWindowText || "").replace(/\s+/g, " ").trim();
+
+    if (!currentComparable) return "";
+    if (!previousComparable) return currentOriginal;
+    if (previousComparable === currentComparable || previousComparable.includes(currentComparable)) return "";
+
+    const previousWords = previousComparable.split(/\s+/).filter(Boolean);
+    const currentWords = currentComparable.split(/\s+/).filter(Boolean);
+    const currentOriginalWords = currentOriginal.split(/\s+/).filter(Boolean);
+
+    for (let overlap = Math.min(previousWords.length, currentWords.length); overlap >= 2; overlap -= 1) {
+      if (previousWords.slice(-overlap).join(" ") === currentWords.slice(0, overlap).join(" ")) {
+        return currentOriginalWords.slice(overlap).join(" ").trim();
+      }
+    }
+
+    return currentOriginal;
+  }
+
+  appendTranscriptDelta(existingTranscript = {}, deltaText = "", sessionId, nextTranscript = {}) {
+    const cleanedDelta = String(deltaText || "").replace(/\s+/g, " ").trim();
+    if (!cleanedDelta) return existingTranscript;
+
+    const existingSegments = Array.isArray(existingTranscript?.segments)
+      ? existingTranscript.segments.filter(Boolean)
+      : [];
+    const existingEndSeconds = existingSegments.reduce((maxValue, segment) => {
+      const endSeconds = Number(segment?.endSeconds);
+      return Number.isFinite(endSeconds) ? Math.max(maxValue, endSeconds) : maxValue;
+    }, 0);
+    const durationSeconds = Math.max(1, Math.ceil(cleanedDelta.split(/\s+/).filter(Boolean).length / 3));
+    const startSeconds = existingEndSeconds;
+    const endSeconds = startSeconds + durationSeconds;
+    const segment = {
+      id: `seg-${sessionId}-${Date.now()}-${existingSegments.length + 1}`,
+      speakerId: "spk_0",
+      speakerRole: "unknown",
+      speakerLabel: "Unknown",
+      startLabel: this.formatTimeLabel(startSeconds),
+      endLabel: this.formatTimeLabel(endSeconds),
+      startSeconds,
+      endSeconds,
+      text: cleanedDelta,
+      normalizedText: cleanedDelta,
+      confidence: typeof nextTranscript?.quality?.overallConfidence === "number"
+        ? nextTranscript.quality.overallConfidence
+        : 0.85,
+      flags: ["live_stream", "speaker_unknown"],
+      status: "final",
+    };
+
+    const rawText = [existingTranscript?.rawText, cleanedDelta]
+      .filter((value) => String(value || "").trim().length > 0)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const normalizedText = [existingTranscript?.normalizedText, cleanedDelta]
+      .filter((value) => String(value || "").trim().length > 0)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    return {
+      segments: [...existingSegments, segment],
+      rawText,
+      normalizedText: normalizedText || rawText,
+      speakers: Array.isArray(existingTranscript?.speakers) && existingTranscript.speakers.length > 0
+        ? existingTranscript.speakers
+        : Array.isArray(nextTranscript?.speakers)
+          ? nextTranscript.speakers
+          : [],
+      quality: {
+        overallConfidence: typeof nextTranscript?.quality?.overallConfidence === "number"
+          ? nextTranscript.quality.overallConfidence
+          : existingTranscript?.quality?.overallConfidence ?? null,
+        lowConfidenceSegmentCount: Number(existingTranscript?.quality?.lowConfidenceSegmentCount || 0)
+          + Number(nextTranscript?.quality?.lowConfidenceSegmentCount || 0),
+        speakerAmbiguityCount: Number(existingTranscript?.quality?.speakerAmbiguityCount || 0)
+          + Number(nextTranscript?.quality?.speakerAmbiguityCount || 0),
+        overlappingSpeechSuspected: Boolean(
+          existingTranscript?.quality?.overlappingSpeechSuspected
+          || nextTranscript?.quality?.overlappingSpeechSuspected,
+        ),
+      },
+    };
+  }
+
+  enqueueTranscription(sessionId, chunkPath) {
+    const previousTask = this.transcriptionQueues.get(sessionId) || Promise.resolve();
+    const nextTask = previousTask
+      .catch(() => undefined)
+      .then(() => this.transcribeChunk(sessionId, chunkPath));
+
+    this.transcriptionQueues.set(sessionId, nextTask);
+    return nextTask.finally(() => {
+      if (this.transcriptionQueues.get(sessionId) === nextTask) {
+        this.transcriptionQueues.delete(sessionId);
+      }
+    });
+  }
+
   async transcribeChunk(sessionId, chunkPath) {
     const ws = this.sessions.get(sessionId);
-    if (!ws || ws.readyState !== ws.OPEN) return;
+    const session = await this.store.get(sessionId);
+    if (!ws || ws.readyState !== ws.OPEN || !session || session.status !== "live") return;
 
+    let snapshotPath = null;
     try {
-      console.log(`[LiveConversationWS] Starting transcription for session ${sessionId}`, { chunkPath });
-      this.log("Starting transcription", { sessionId, chunkPath });
+      snapshotPath = await this.createStreamingAudioSnapshot(sessionId, this.config.liveTranscriptWindowChunks);
+      if (!snapshotPath) return;
+
+      console.log(`[LiveConversationWS] Starting rolling-window transcription for session ${sessionId}`, {
+        chunkPath,
+        snapshotPath,
+        windowChunks: this.config.liveTranscriptWindowChunks,
+      });
+      this.log("Starting rolling-window transcription", {
+        sessionId,
+        chunkPath,
+        snapshotPath,
+        windowChunks: this.config.liveTranscriptWindowChunks,
+      });
       const result = await this.sttAgent.execute({
-        audioPath: chunkPath,
+        audioPath: snapshotPath,
         options: {
           mode: "fixed_window_no_vad",
-          windowSeconds: 10, // Increase window for better transcription
-          enableSpeakerDiarization: false,
+          windowSeconds: 15,
+          enableSpeakerDiarization: true,
           skipValidation: true,
+          mimeType: session?.audio?.mimeType,
         },
       });
 
@@ -618,47 +1244,45 @@ class LiveConversationWebSocket {
       });
       this.log("Transcription result", { sessionId, success: result.success, hasData: !!result.data });
 
-      if (result.success && result.data?.chunks) {
-        console.log(`[LiveConversationWS] Processing ${result.data.chunks.length} chunks for session ${sessionId}`);
-        for (const chunk of result.data.chunks) {
-          if (chunk.success && chunk.transcript) {
-            console.log(`[LiveConversationWS] Sending transcript segment for session ${sessionId}`, {
-              text: chunk.transcript.substring(0, 50),
-              startSeconds: chunk.startSeconds,
-              endSeconds: chunk.endSeconds
-            });
-            // When speaker diarization is disabled, mark as unknown instead of hardcoding as doctor
-            const segment = {
-              id: `seg-${sessionId}-${Date.now()}-${chunk.chunkIndex}`,
-              speakerId: "spk_0",
-              speakerRole: "unknown",
-              speakerLabel: "Unknown",
-              startLabel: chunk.startLabel,
-              endLabel: chunk.endLabel,
-              startSeconds: chunk.startSeconds,
-              endSeconds: chunk.endSeconds,
-              text: chunk.transcript,
-              normalizedText: chunk.transcript,
-              confidence: 0.85,
-              flags: ["live_stream", "speaker_unknown"],
-              status: "final",
-            };
+      const windowTranscript = result.success ? this.normalizeRealtimeTranscript(result, sessionId) : null;
+      if (windowTranscript) {
+        const currentWindowText = String(
+          windowTranscript.normalizedText
+          || windowTranscript.rawText
+          || "",
+        ).trim();
+        if (!currentWindowText) return;
 
-            await this.store.appendTranscriptSegment(sessionId, segment);
+        this.transcriptBuffer.set(sessionId, currentWindowText);
 
-            this.sendJson(ws, {
-              type: "transcript.final",
-              sessionId,
-              segment,
-              timestamp: new Date().toISOString(),
-            });
-          }
-        }
+        const livePreviewTranscript = {
+          segments: [],
+          rawText: currentWindowText,
+          normalizedText: currentWindowText,
+          interimText: currentWindowText,
+          speakers: Array.isArray(windowTranscript.speakers) ? windowTranscript.speakers : [],
+          quality: windowTranscript.quality,
+        };
+        console.log(`[LiveConversationWS] Updating transcript for session ${sessionId}`, {
+          mode: "live_preview",
+          textLength: currentWindowText.length,
+        });
+        await this.store.replaceTranscript(sessionId, livePreviewTranscript);
+        this.sendJson(ws, {
+          type: "transcript.partial",
+          sessionId,
+          transcript: livePreviewTranscript,
+          timestamp: new Date().toISOString(),
+        });
       } else if (result.error) {
         this.log("Transcription failed", { sessionId, error: result.error });
       }
     } catch (error) {
       this.log("Transcription error", { sessionId, error: error.message, stack: error.stack });
+    } finally {
+      if (snapshotPath && snapshotPath !== chunkPath) {
+        await fsp.unlink(snapshotPath).catch(() => undefined);
+      }
     }
 
     // Don't delete chunk files - they will be combined at the end for playback
@@ -666,9 +1290,26 @@ class LiveConversationWebSocket {
 
   async combineAudioChunks(sessionId) {
     const chunkFiles = this.sessionChunkFiles.get(sessionId) || [];
-    if (chunkFiles.length === 0) return null;
 
     try {
+      const session = await this.store.get(sessionId);
+      const uploadedFinalPath = session?.audio?.combinedPath;
+      if (uploadedFinalPath) {
+        const normalizedUploadedPath = path.resolve(uploadedFinalPath);
+        if (normalizedUploadedPath.startsWith(path.resolve(this.storageDir))) {
+          const exists = await fsp.access(normalizedUploadedPath).then(() => true).catch(() => false);
+          if (exists) {
+            for (const chunkPath of chunkFiles) {
+              await fsp.unlink(chunkPath).catch(() => undefined);
+            }
+            this.sessionChunkFiles.set(sessionId, []);
+            return normalizedUploadedPath;
+          }
+        }
+      }
+
+      if (chunkFiles.length === 0) return null;
+
       // Read all chunk files and combine them
       const chunks = await Promise.all(
         chunkFiles.map(async (chunkPath) => {
@@ -689,7 +1330,6 @@ class LiveConversationWebSocket {
       const audioDir = path.join(this.storageDir, "live_conversation_audio");
       await fsp.mkdir(audioDir, { recursive: true });
 
-      const session = await this.store.get(sessionId);
       const extension = this.getAudioExtension(session?.audio?.mimeType);
       const audioPath = path.join(audioDir, `${sessionId}${extension}`);
       await fsp.writeFile(audioPath, combined);
@@ -721,9 +1361,19 @@ class LiveConversationWebSocket {
       const ws = this.sessions.get(sessionId);
       const session = await this.store.get(sessionId);
 
-      // Stop if session closed, finalized, or failed
-      if (!ws || ws.readyState !== ws.OPEN || !session ||
-          ["finalized", "failed"].includes(session.status)) {
+      if (!ws || ws.readyState !== ws.OPEN) {
+        console.log(`[LiveConversationWS] Stopping chunk flush for session ${sessionId}`);
+        clearInterval(interval);
+        this.chunkFlushTimers.delete(sessionId);
+        return;
+      }
+
+      if (!session) {
+        this.log("Chunk flush skipped because session could not be loaded", { sessionId });
+        return;
+      }
+
+      if (["finalized", "failed"].includes(session.status)) {
         console.log(`[LiveConversationWS] Stopping chunk flush for session ${sessionId}`);
         clearInterval(interval);
         this.chunkFlushTimers.delete(sessionId);
@@ -735,7 +1385,7 @@ class LiveConversationWebSocket {
         console.log(`[LiveConversationWS] Session ${sessionId} is live, flushing buffer...`);
         const chunkPath = await this.flushAudioBuffer(sessionId);
         if (chunkPath) {
-          await this.transcribeChunk(sessionId, chunkPath);
+          await this.enqueueTranscription(sessionId, chunkPath);
         }
       } else {
         console.log(`[LiveConversationWS] Session ${sessionId} status is ${session.status}, skipping flush`);
@@ -829,14 +1479,20 @@ class LiveConversationWebSocket {
 
     const chunkPath = await this.flushAudioBuffer(sessionId);
     if (chunkPath) {
-      await this.transcribeChunk(sessionId, chunkPath);
+      await this.enqueueTranscription(sessionId, chunkPath);
     }
 
     // Combine all audio chunks into a single file for playback
     const combinedAudioPath = await this.combineAudioChunks(sessionId);
     await this.backfillFinalTranscriptAndDraft(sessionId, combinedAudioPath);
 
-    const currentSession = await this.store.get(sessionId);
+    let currentSession = await this.store.get(sessionId);
+    await this.applyDraftAndReviewRequirements(
+      sessionId,
+      currentSession?.draftExtraction?.extractedData || {},
+      currentSession,
+    );
+    currentSession = await this.store.get(sessionId);
 
     await this.store.update(sessionId, {
       status: "review_required",
@@ -867,6 +1523,8 @@ class LiveConversationWebSocket {
     this.sessions.delete(sessionId);
     this.chunkBuffer.delete(sessionId);
     this.transcriptBuffer.delete(sessionId);
+    this.transcriptionQueues.delete(sessionId);
+    this.draftInFlight.delete(sessionId);
 
     // Clear the chunk flush timer
     if (this.chunkFlushTimers.has(sessionId)) {
@@ -940,99 +1598,84 @@ class LiveConversationWebSocket {
     const ws = this.sessions.get(sessionId);
     const timer = setInterval(async () => {
       const currentSession = await this.store.get(sessionId);
-      if (!currentSession || currentSession.status !== "live") {
+      if (!currentSession) {
+        this.log("Draft extraction skipped because session could not be loaded", { sessionId });
+        return;
+      }
+
+      if (currentSession.status !== "live") {
         clearInterval(timer);
         this.draftTimers.delete(sessionId);
         return;
       }
 
+      const transcript = String(
+        currentSession.transcript?.interimText
+        || currentSession.transcript?.normalizedText
+        || currentSession.transcript?.rawText
+        || "",
+      ).trim();
+      if (!transcript) return;
+
       const segments = currentSession.transcript?.segments || [];
-      if (segments.length === 0) return;
+      const stableSegmentId = segments.length > 0 ? segments[segments.length - 1]?.id : null;
+      const draftSourceText = String(
+        currentSession.transcript?.normalizedText
+        || currentSession.transcript?.rawText
+        || transcript,
+      ).trim();
+      if ((draftSourceText || transcript).length < 50) return;
+      if (this.draftInFlight.has(sessionId)) return;
 
-      const lastStableId = currentSession.draftExtraction?.lastStableSegmentId;
-      const newSegments = lastStableId
-        ? segments.filter((s) => {
-            const lastIdx = segments.findIndex((seg) => seg.id === lastStableId);
-            const currentIdx = segments.findIndex((seg) => seg.id === s.id);
-            return currentIdx > lastIdx;
-          })
-        : segments;
-
-      if (newSegments.length === 0) return;
-
-      const transcript = newSegments.map((s) => s.text).join(" ");
-      if (transcript.length < 50) return;
-
+      this.draftInFlight.add(sessionId);
       try {
-        const draft = await this.generateDraftExtraction(transcript, currentSession);
+        const draft = await this.generateDraftExtraction(draftSourceText || transcript, currentSession);
+        if (!this.hasMeaningfulDraft(draft)) {
+          this.log("Skipping empty draft update", { sessionId });
+          return;
+        }
 
-        // Use atomic update to avoid race conditions
-        await this.store.updateDraftExtraction(sessionId, draft);
-        await this.store.updateDraftLastStableSegmentId(
-          sessionId,
-          segments[segments.length - 1]?.id,
-        );
+        const mergedDraft = await this.applyDraftAndReviewRequirements(sessionId, draft, currentSession);
+        await this.store.updateDraftLastStableSegmentId(sessionId, stableSegmentId);
 
         this.sendJson(ws, {
           type: "draft.updated",
           sessionId,
-          draft,
+          draft: mergedDraft,
           timestamp: new Date().toISOString(),
         });
 
         await this.store.logEvent(sessionId, "draft_updated", {
-          segmentCount: newSegments.length,
+          segmentCount: segments.length,
         });
       } catch (error) {
         this.log("Draft extraction error", { sessionId, error: error.message });
+      } finally {
+        this.draftInFlight.delete(sessionId);
       }
-    }, this.config.draftExtractionInterval);
+    }, Math.min(this.config.draftExtractionInterval, 5000));
 
     this.draftTimers.set(sessionId, timer);
   }
 
   async generateDraftExtraction(transcript, session) {
-    const prompt = `Extract clinical information from this transcript of a doctor-patient conversation:
+    const prompt = `Extract structured clinical data from this doctor-patient transcript.
 
-TRANSCRIPT:
-${transcript}
+Return one compact JSON object only. Do not echo the transcript. Use empty strings, nulls, or empty arrays when unknown.
 
-Extract and return JSON only (no markdown):
-{
-  "diagnosis": "brief assessment or empty string",
-  "symptoms": ["list of symptoms mentioned"],
-  "medications": [
-    { "name": "medication name", "instruction": "dosage and instructions", "status": "draft" }
-  ],
-  "labs": ["lab tests ordered"],
-  "radiology": ["imaging ordered"],
-  "procedures": ["procedures mentioned"],
-  "followUp": ["follow-up instructions"],
-  "plan": ["action items"]
-}`;
+Schema:
+{"chiefComplaint":"","hpi":"","ros":[],"diagnosis":"","symptoms":[],"patient":{"name":"","age":null,"gender":""},"vitals":{"latest":{"bp":{"systolic":null,"diastolic":null},"pulse":{"value":null,"unit":"bpm"},"temperature":{"value":null,"unit":"F"},"spo2":{"value":null,"unit":"%"},"weight":{"value":null,"unit":"kg"}}},"medications":[{"name":"","instruction":"","status":"draft"}],"labs":[],"radiology":[],"procedures":[],"followUp":[],"plan":[]}
 
-    try {
-      const response = await fetch(process.env.GEMMA_URL || "http://206.1.62.28:8000/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: process.env.GEMMA_MODEL || "google/gemma-4-26B-A4B-it",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.2,
-          max_tokens: 2048,
-        }),
-      });
+Transcript:
+${transcript}`;
 
-      if (!response.ok) {
-        throw new Error(`Draft extraction failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content || "{}";
-
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const parseDraft = (content = "") => {
+      const jsonMatch = String(content || "").match(/\{[\s\S]*\}/);
       const extracted = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
-      const draft = {
+      return normalizeLiveDraft({
+        chiefComplaint: extracted.chiefComplaint || extracted.chief_complaint || "",
+        hpi: extracted.hpi || extracted.history_of_present_illness || extracted.historyOfPresentIllness || "",
+        ros: Array.isArray(extracted.ros) ? extracted.ros : [],
         diagnosis: extracted.diagnosis || "",
         symptoms: Array.isArray(extracted.symptoms) ? extracted.symptoms : [],
         medications: Array.isArray(extracted.medications) ? extracted.medications : [],
@@ -1041,23 +1684,69 @@ Extract and return JSON only (no markdown):
         procedures: Array.isArray(extracted.procedures) ? extracted.procedures : [],
         followUp: Array.isArray(extracted.followUp) ? extracted.followUp : [],
         plan: Array.isArray(extracted.plan) ? extracted.plan : [],
-      };
-
-      if (this.hasMeaningfulDraft(draft)) {
-        return draft;
-      }
-
-      this.log("Draft extraction returned no structured content, using fallback", {
-        sessionId: session?.id,
+        patient: extracted.patient,
+        vitals: extracted.vitals,
       });
+    };
+
+    try {
+      const gemmaResult = await this.gemmaClient.execute(prompt, {
+        temperature: 0.2,
+        maxTokens: 2048,
+      });
+
+      if (gemmaResult.success) {
+        const draft = parseDraft(gemmaResult.content || "{}");
+        if (this.hasMeaningfulDraft(draft)) {
+          return draft;
+        }
+        this.log("Gemma draft extraction returned no structured content", {
+          sessionId: session?.id,
+        });
+      } else {
+        this.log("Gemma draft extraction failed", {
+          sessionId: session?.id,
+          error: gemmaResult.error,
+        });
+      }
     } catch (error) {
-      this.log("Draft extraction model request failed, using fallback", {
+      this.log("Gemma draft extraction error", {
         sessionId: session?.id,
         error: error.message,
       });
     }
 
-    return this.buildFallbackDraftExtraction(transcript);
+    try {
+      const geminiResult = await this.geminiClient.execute(prompt, {
+        temperature: 0.2,
+        maxTokens: 1200,
+        responseMimeType: "application/json",
+        thinkingBudget: 128,
+        systemInstruction: "You extract structured clinical data from medical transcripts. Return exactly one compact JSON object, do not echo the transcript, do not add markdown, and keep HPI under 45 words.",
+      });
+
+      if (geminiResult.success) {
+        const draft = parseDraft(geminiResult.content || "{}");
+        if (this.hasMeaningfulDraft(draft)) {
+          return draft;
+        }
+        this.log("Gemini draft extraction returned no structured content", {
+          sessionId: session?.id,
+        });
+      } else {
+        this.log("Gemini draft extraction failed", {
+          sessionId: session?.id,
+          error: geminiResult.error,
+        });
+      }
+    } catch (error) {
+      this.log("Gemini draft extraction error", {
+        sessionId: session?.id,
+        error: error.message,
+      });
+    }
+
+    return normalizeLiveDraft({});
   }
 
   attach(server, authService) {
@@ -1105,6 +1794,8 @@ Extract and return JSON only (no markdown):
       clearInterval(timer);
     }
     this.chunkFlushTimers.clear();
+    this.transcriptionQueues.clear();
+    this.draftInFlight.clear();
 
     this.wss?.close();
     this.log("WebSocket server shut down");

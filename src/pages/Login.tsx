@@ -35,8 +35,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.08),_transparent_30%),linear-gradient(180deg,_#f8fffc_0%,_#edf7f3_100%)] px-6 py-8">
-      <div className="mx-auto max-w-6xl">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(15,23,42,0.08),_transparent_30%),linear-gradient(180deg,_#f8fffc_0%,_#edf7f3_100%)] py-8">
+      <div className="app-shell">
         <div className="mb-8 flex items-center justify-between rounded-[28px] border border-white/70 bg-white/75 px-6 py-5 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur">
           <img src="/manipal-logo.png" alt="Manipal Hospitals" className="h-10 w-auto object-contain sm:h-12" />
           <img src="/yavar-logo.png" alt="Powered by Yavar.ai" className="h-10 w-auto object-contain sm:h-12" />

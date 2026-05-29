@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AudioLines,
   ClipboardList,
   Eye,
-  FileText,
   FileStack,
+  FileText,
   Key,
+  Mic,
+  RadioTower,
   RefreshCw,
   Search,
   Sparkles,
+  Stethoscope,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -20,13 +23,15 @@ import { HandwritingCompletionDialog } from "@/components/dashboard/HandwritingC
 import ProcessingInsights from "@/components/dashboard/ProcessingInsights";
 import PharmacyAlertBadge from "@/components/dashboard/PharmacyAlertBadge";
 import DepartmentAlertBadge from "@/components/dashboard/DepartmentAlertBadge";
-import VoiceWorkspace from "@/components/voice/VoiceWorkspace";
+import LiveConversationWorkspace from "@/components/voice/LiveConversationWorkspace";
+import { LiveConversationErrorBoundary } from "@/components/voice/LiveConversationErrorBoundary";
+import VoiceDictationWorkspace from "@/components/voice/VoiceDictationWorkspace";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiFetch, createAuthenticatedEventSource, parseApiPayload } from "@/lib/apiClient";
 import { useAuth } from "@/lib/auth";
 import {
@@ -43,11 +48,90 @@ import {
 } from "@/lib/processedDocuments";
 import { fetchLandingAnalyticsOverview, type LandingAnalyticsOverview } from "@/lib/landingAnalytics";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 type QueueTab = "all" | "queued" | "processed" | "failed" | "partial";
-type IntakeWorkspace = "documents" | "voice";
-type VoiceWorkspaceMode = "dictation" | "live";
+type IntakeWorkspaceTab = "dashboard" | "prescription" | "inpatient" | "outpatient" | "dictation" | "live";
+type PdfWorkspaceTab = "prescription" | "inpatient" | "outpatient";
+type DashboardTypeFilter = "all" | "prescription" | "inpatient" | "outpatient" | "lab_report" | "chart_note" | "voice";
+type DashboardDateFilter = "all" | "today" | "last7" | "last30";
+type DocumentBucket = PdfWorkspaceTab | "lab_report" | "chart_note" | "voice" | null;
+type QueueStats = {
+  total: number;
+  queued: number;
+  processing: number;
+  processed: number;
+  failed: number;
+  partial: number;
+  transcribing: number;
+  review_required: number;
+};
+
+const INTAKE_TABS: Array<{
+  value: IntakeWorkspaceTab;
+  label: string;
+  icon: typeof ClipboardList;
+}> = [
+  { value: "dashboard", label: "Dashboard", icon: ClipboardList },
+  { value: "prescription", label: "Prescription", icon: FileText },
+  { value: "inpatient", label: "Inpatient", icon: FileStack },
+  { value: "outpatient", label: "Outpatient", icon: Stethoscope },
+  { value: "dictation", label: "Dictation", icon: Mic },
+  { value: "live", label: "Live", icon: RadioTower },
+];
+
+const PDF_TAB_CONFIG: Record<
+  PdfWorkspaceTab,
+  {
+    headerTitle: string;
+    headerDescription: string;
+    uploadTitle: string;
+    uploadDescription: string;
+    queueTitle: string;
+    queueDescription: string;
+    emptyTitle: string;
+  }
+> = {
+  prescription: {
+    headerTitle: "Prescription intake",
+    headerDescription: "Handwritten OPD prescriptions and prescription pads flow through this lane.",
+    uploadTitle: "Upload handwritten prescriptions",
+    uploadDescription: "Use this intake lane for prescription pads and handwritten OPD forms. Final document placement still follows backend classification.",
+    queueTitle: "Prescription queue",
+    queueDescription: "Filtered to prescription records using the current document classifier and this session's upload hint.",
+    emptyTitle: "No prescription documents found",
+  },
+  inpatient: {
+    headerTitle: "Inpatient intake",
+    headerDescription: "Discharge summaries and inpatient records are grouped into one lane.",
+    uploadTitle: "Upload discharge summaries",
+    uploadDescription: "Use this intake lane for discharge summaries and inpatient packets. Final document placement still follows backend classification.",
+    queueTitle: "Inpatient queue",
+    queueDescription: "Filtered to discharge summaries and inpatient records using the current document classifier.",
+    emptyTitle: "No inpatient documents found",
+  },
+  outpatient: {
+    headerTitle: "Outpatient intake",
+    headerDescription: "Typed OPD records and consultation notes stay separate from handwritten prescriptions.",
+    uploadTitle: "Upload OPD records and consultation notes",
+    uploadDescription: "Use this intake lane for typed outpatient records. Final document placement still follows backend classification.",
+    queueTitle: "Outpatient queue",
+    queueDescription: "Filtered to outpatient records using the current document classifier.",
+    emptyTitle: "No outpatient documents found",
+  },
+};
+
+const EMPTY_QUEUE_STATS: QueueStats = {
+  total: 0,
+  queued: 0,
+  processing: 0,
+  processed: 0,
+  failed: 0,
+  partial: 0,
+  transcribing: 0,
+  review_required: 0,
+};
 
 const statusClasses: Record<QueueStatus, string> = {
   queued: "border-transparent bg-emerald-50 text-emerald-700",
@@ -73,20 +157,145 @@ const statusLabels: Record<QueueStatus, string> = {
 
 const PRIMARY_TEAL_BUTTON =
   "border-teal-600 bg-teal-600 text-white hover:border-teal-700 hover:bg-teal-700";
-const SECONDARY_TEAL_BUTTON =
-  "border-teal-200 bg-teal-50 text-teal-800 hover:border-teal-300 hover:bg-teal-100";
 const ICON_TEAL_BUTTON =
   "border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 hover:text-teal-800";
 
+const buildQueueStats = (items: ProcessedDocument[]): QueueStats => ({
+  total: items.length,
+  queued: items.filter((document) => document.status === "queued" || document.status === "queued_for_extraction").length,
+  processing: items.filter((document) => document.status === "processing").length,
+  processed: items.filter((document) => document.status === "processed").length,
+  failed: items.filter((document) => document.status === "failed").length,
+  partial: items.filter((document) => document.status === "partial").length,
+  transcribing: items.filter((document) => document.status === "transcribing").length,
+  review_required: items.filter((document) => document.status === "review_required").length,
+});
+
+const isPdfWorkspaceTab = (value: IntakeWorkspaceTab): value is PdfWorkspaceTab =>
+  value === "prescription" || value === "inpatient" || value === "outpatient";
+
+const resolveWorkspaceTab = (
+  tabParam: string | null,
+  workspaceParam: string | null,
+  modeParam: string | null,
+): IntakeWorkspaceTab => {
+  if (tabParam === "dashboard" || tabParam === "prescription" || tabParam === "inpatient" || tabParam === "outpatient" || tabParam === "dictation" || tabParam === "live") {
+    return tabParam;
+  }
+
+  if (workspaceParam === "voice") {
+    return modeParam === "live" ? "live" : "dictation";
+  }
+
+  if (modeParam === "live") {
+    return "live";
+  }
+
+  return "dashboard";
+};
+
+const matchesQueueTab = (document: ProcessedDocument, tab: QueueTab) =>
+  tab === "all"
+  || (tab === "queued" && (document.status === "queued" || document.status === "queued_for_extraction"))
+  || (tab === "processed" && document.status === "processed")
+  || (tab === "failed" && document.status === "failed")
+  || (tab === "partial" && document.status === "partial");
+
+const getDocumentClassifierType = (document: ProcessedDocument) => {
+  if (document.documentType === "voice") {
+    return getVoiceDocumentMode(document) === "live" ? "live_conversation" : "voice_dictation";
+  }
+
+  const classifiedType = document.result?.meta?.document_type || document.result?.meta?.router?.detected_type;
+  return typeof classifiedType === "string" ? classifiedType : null;
+};
+
+const getDocumentBucket = (
+  document: ProcessedDocument,
+  uploadHints: Record<string, PdfWorkspaceTab>,
+): DocumentBucket => {
+  if (document.documentType === "voice") {
+    return "voice";
+  }
+
+  const classifiedType = getDocumentClassifierType(document);
+  if (classifiedType === "prescription") return "prescription";
+  if (classifiedType === "discharge_summary" || classifiedType === "inpatient_record") return "inpatient";
+  if (classifiedType === "outpatient_record") return "outpatient";
+  if (classifiedType === "lab_report") return "lab_report";
+  if (classifiedType === "chart_note") return "chart_note";
+
+  return uploadHints[document.id] ?? null;
+};
+
+const matchesDashboardType = (
+  document: ProcessedDocument,
+  filter: DashboardTypeFilter,
+  uploadHints: Record<string, PdfWorkspaceTab>,
+) => {
+  if (filter === "all") return true;
+  if (filter === "voice") return document.documentType === "voice";
+
+  const bucket = getDocumentBucket(document, uploadHints);
+  return bucket === filter;
+};
+
+const matchesDashboardDate = (uploadedAt: string, filter: DashboardDateFilter) => {
+  if (filter === "all") return true;
+
+  const uploaded = new Date(uploadedAt);
+  if (Number.isNaN(uploaded.getTime())) return false;
+
+  const now = new Date();
+  if (filter === "today") {
+    return (
+      uploaded.getFullYear() === now.getFullYear()
+      && uploaded.getMonth() === now.getMonth()
+      && uploaded.getDate() === now.getDate()
+    );
+  }
+
+  const windowStart = new Date(now);
+  windowStart.setHours(0, 0, 0, 0);
+  windowStart.setDate(windowStart.getDate() - (filter === "last7" ? 6 : 29));
+  return uploaded >= windowStart;
+};
+
+const getQueueTypeBadgeLabel = (
+  document: ProcessedDocument,
+  uploadHints: Record<string, PdfWorkspaceTab>,
+) => {
+  if (document.documentType === "voice") {
+    return "Voice";
+  }
+
+  const bucket = getDocumentBucket(document, uploadHints);
+  if (bucket === "prescription") return "Prescription";
+  if (bucket === "inpatient") return "Inpatient";
+  if (bucket === "outpatient") return "Outpatient";
+  if (bucket === "lab_report") return "Lab Report";
+  if (bucket === "chart_note") return "Chart Note";
+  return "Unclassified";
+};
+
 const UploadCenter = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
+  const uploadTargetTabRef = useRef<PdfWorkspaceTab | null>(null);
   const isAdmin = user?.role === "admin";
+  const activeWorkspaceTab = resolveWorkspaceTab(
+    searchParams.get("tab"),
+    searchParams.get("workspace"),
+    searchParams.get("mode"),
+  );
 
   const [documents, setDocuments] = useState<ProcessedDocument[]>([]);
-  const [activeTab, setActiveTab] = useState<QueueTab>("all");
+  const [statusFilter, setStatusFilter] = useState<QueueTab>("all");
+  const [dashboardTypeFilter, setDashboardTypeFilter] = useState<DashboardTypeFilter>("all");
+  const [dashboardDateFilter, setDashboardDateFilter] = useState<DashboardDateFilter>("all");
   const [searchValue, setSearchValue] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
@@ -95,6 +304,7 @@ const UploadCenter = () => {
   const [isProcessingBatch, setIsProcessingBatch] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [analyticsOverview, setAnalyticsOverview] = useState<LandingAnalyticsOverview | null>(null);
+  const [documentUploadHints, setDocumentUploadHints] = useState<Record<string, PdfWorkspaceTab>>({});
   const [processingProgress, setProcessingProgress] = useState<Record<string, {
     stepNumber: number;
     totalSteps: number;
@@ -102,9 +312,7 @@ const UploadCenter = () => {
     stepName: string;
   }>>({});
   const [geminiApiKey, setGeminiApiKey] = useState("");
-  const voiceMode: VoiceWorkspaceMode = searchParams.get("mode") === "live" ? "live" : "dictation";
-  const workspace: IntakeWorkspace =
-    searchParams.get("workspace") === "voice" || searchParams.get("mode") ? "voice" : "documents";
+  const activePdfTab = isPdfWorkspaceTab(activeWorkspaceTab) ? activeWorkspaceTab : null;
 
   // Handwriting completion dialog state
   const [handwritingDialog, setHandwritingDialog] = useState<{
@@ -186,34 +394,93 @@ const UploadCenter = () => {
     setSelectedIds((current) => current.filter((id) => (documents || []).some((document) => document.id === id)));
   }, [documents]);
 
-  const filteredDocuments = useMemo(() => {
-    if (!documents || !Array.isArray(documents)) return [];
-    return documents.filter((document) => {
-      const matchesTab =
-        activeTab === "all" ||
-        (activeTab === "queued" && (document.status === "queued" || document.status === "queued_for_extraction")) ||
-        (activeTab === "processed" && document.status === "processed") ||
-        (activeTab === "failed" && document.status === "failed") ||
-        (activeTab === "partial" && document.status === "partial");
-      return matchesTab && matchesProcessedDocumentQuery(document, searchValue);
-    });
-  }, [activeTab, documents, searchValue]);
+  useEffect(() => {
+    const next = new URLSearchParams(location.search);
+    const hasLegacyParams = next.has("workspace") || next.has("mode");
+    const currentTabParam = next.get("tab");
 
-  const stats = useMemo(() => {
-    if (!documents || !Array.isArray(documents)) {
-      return { total: 0, queued: 0, processing: 0, processed: 0, failed: 0, partial: 0, transcribing: 0, review_required: 0 };
+    if (!hasLegacyParams && (currentTabParam === activeWorkspaceTab || (!currentTabParam && activeWorkspaceTab === "dashboard"))) {
+      return;
     }
-    return {
-      total: documents.length,
-      queued: documents.filter((document) => document.status === "queued" || document.status === "queued_for_extraction").length,
-      processing: documents.filter((document) => document.status === "processing" || document.status === "transcribing").length,
-      processed: documents.filter((document) => document.status === "processed").length,
-      failed: documents.filter((document) => document.status === "failed").length,
-      partial: documents.filter((document) => document.status === "partial").length,
-      transcribing: documents.filter((document) => document.status === "transcribing").length,
-      review_required: documents.filter((document) => document.status === "review_required").length,
-    };
+
+    if (activeWorkspaceTab === "dashboard") {
+      next.delete("tab");
+    } else {
+      next.set("tab", activeWorkspaceTab);
+    }
+    next.delete("workspace");
+    next.delete("mode");
+
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [activeWorkspaceTab, location.search, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [activeWorkspaceTab]);
+
+  useEffect(() => {
+    const existingIds = new Set((documents || []).map((document) => document.id));
+    setDocumentUploadHints((current) => {
+      const filteredEntries = Object.entries(current).filter(([id]) => existingIds.has(id));
+      if (filteredEntries.length === Object.keys(current).length) {
+        return current;
+      }
+      return Object.fromEntries(filteredEntries);
+    });
   }, [documents]);
+
+  const workspaceDocuments = useMemo(() => {
+    if (!documents || !Array.isArray(documents)) return [];
+    if (activeWorkspaceTab === "dashboard") return documents;
+    if (activeWorkspaceTab === "dictation") {
+      return documents.filter(
+        (document) => document.documentType === "voice" && getVoiceDocumentMode(document) !== "live",
+      );
+    }
+    if (activeWorkspaceTab === "live") {
+      return documents.filter(
+        (document) => document.documentType === "voice" && getVoiceDocumentMode(document) === "live",
+      );
+    }
+    return documents.filter((document) => getDocumentBucket(document, documentUploadHints) === activeWorkspaceTab);
+  }, [activeWorkspaceTab, documentUploadHints, documents]);
+
+  const filteredDocuments = useMemo(() => {
+    if (activeWorkspaceTab === "dictation" || activeWorkspaceTab === "live") {
+      return [];
+    }
+
+    return workspaceDocuments.filter((document) => {
+      const matchesStatus = matchesQueueTab(document, statusFilter);
+      const matchesSearch = matchesProcessedDocumentQuery(document, searchValue);
+      const matchesType = activeWorkspaceTab === "dashboard"
+        ? matchesDashboardType(document, dashboardTypeFilter, documentUploadHints)
+        : true;
+      const matchesDate = activeWorkspaceTab === "dashboard"
+        ? matchesDashboardDate(document.uploadedAt, dashboardDateFilter)
+        : true;
+      return matchesStatus && matchesSearch && matchesType && matchesDate;
+    });
+  }, [
+    activeWorkspaceTab,
+    dashboardDateFilter,
+    dashboardTypeFilter,
+    documentUploadHints,
+    searchValue,
+    statusFilter,
+    workspaceDocuments,
+  ]);
+
+  const stats = useMemo(
+    () => buildQueueStats(Array.isArray(documents) ? documents : []),
+    [documents],
+  );
+  const workspaceStats = useMemo(
+    () => buildQueueStats(Array.isArray(workspaceDocuments) ? workspaceDocuments : []),
+    [workspaceDocuments],
+  );
 
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const selectedDocuments = useMemo(
@@ -243,7 +510,8 @@ const UploadCenter = () => {
   const canProcessSelected = selectedQueuedDocuments.length > 0 && activeProcessingCount === 0 && !isProcessingBatch;
   const canDeleteSelected = selectedIds.length > 0 && selectedProcessingCount === 0 && !isProcessingBatch;
 
-  const openFilePicker = () => {
+  const openFilePicker = (targetTab: PdfWorkspaceTab) => {
+    uploadTargetTabRef.current = targetTab;
     const input = inputRef.current;
     if (!input) return;
     if ("showPicker" in input && typeof input.showPicker === "function") {
@@ -253,25 +521,20 @@ const UploadCenter = () => {
     input.click();
   };
 
-  const showDocumentsWorkspace = () => {
+  const handleWorkspaceTabChange = (nextTab: string) => {
+    const normalizedTab = resolveWorkspaceTab(nextTab, null, null);
     const next = new URLSearchParams(searchParams);
+    if (normalizedTab === "dashboard") {
+      next.delete("tab");
+    } else {
+      next.set("tab", normalizedTab);
+    }
     next.delete("workspace");
     next.delete("mode");
     setSearchParams(next, { replace: true });
   };
 
-  const showVoiceWorkspace = (nextMode: VoiceWorkspaceMode) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("workspace", "voice");
-    if (nextMode === "live") {
-      next.set("mode", "live");
-    } else {
-      next.delete("mode");
-    }
-    setSearchParams(next, { replace: true });
-  };
-
-  const handleFiles = async (fileList: FileList | null) => {
+  const handleFiles = async (fileList: FileList | null, uploadTab: PdfWorkspaceTab | null) => {
     if (!fileList || fileList.length === 0) return;
     const files = Array.from(fileList);
     const pdfFiles = files.filter((file) => file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"));
@@ -309,8 +572,18 @@ const UploadCenter = () => {
         duplicates,
       });
 
+      if (uploadTab && Array.isArray(uploaded) && uploaded.length > 0) {
+        setDocumentUploadHints((current) => {
+          const next = { ...current };
+          uploaded.forEach((document: ProcessedDocument) => {
+            next[document.id] = uploadTab;
+          });
+          return next;
+        });
+      }
+
       await loadDocuments();
-      setActiveTab("all");
+      setStatusFilter("all");
 
       // Show results
       if (uploaded.length > 0) {
@@ -326,11 +599,12 @@ const UploadCenter = () => {
       toast.error(error instanceof Error ? error.message : "Upload failed.");
     } finally {
       setIsUploading(false);
+      uploadTargetTabRef.current = null;
     }
   };
 
   const handleInputChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    await handleFiles(event.target.files);
+    await handleFiles(event.target.files, uploadTargetTabRef.current ?? activePdfTab);
     event.target.value = "";
   };
 
@@ -687,6 +961,12 @@ const UploadCenter = () => {
         throw new Error(await getApiErrorMessage(response, "Unable to delete document."));
       }
       setDocuments((current) => current.filter((document) => document.id !== id));
+      setDocumentUploadHints((current) => {
+        if (!(id in current)) return current;
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
       setSelectedIds((current) => current.filter((currentId) => currentId !== id));
       window.dispatchEvent(new Event("voice-sessions-refresh"));
       await loadAnalytics();
@@ -722,6 +1002,13 @@ const UploadCenter = () => {
 
     if (failedDeletes < selectedIds.length) {
       setDocuments((current) => current.filter((document) => !selectedIdSet.has(document.id)));
+      setDocumentUploadHints((current) => {
+        const next = { ...current };
+        selectedIds.forEach((id) => {
+          delete next[id];
+        });
+        return next;
+      });
       setSelectedIds([]);
       window.dispatchEvent(new Event("voice-sessions-refresh"));
       await loadAnalytics();
@@ -788,112 +1075,167 @@ const UploadCenter = () => {
     });
   };
 
+  const queueTitle = activeWorkspaceTab === "dashboard"
+    ? "Document queue"
+    : activePdfTab
+      ? PDF_TAB_CONFIG[activePdfTab].queueTitle
+      : "";
+  const queueDescription = activeWorkspaceTab === "dashboard"
+    ? "Review every intake record from one queue. Upload new PDFs from the document-specific tabs."
+    : activePdfTab
+      ? PDF_TAB_CONFIG[activePdfTab].queueDescription
+      : "";
+  const queueEmptyTitle = activeWorkspaceTab === "dashboard"
+    ? "No documents found"
+    : activePdfTab
+      ? PDF_TAB_CONFIG[activePdfTab].emptyTitle
+      : "No documents found";
+  const visibleStats = activeWorkspaceTab === "dashboard" ? stats : workspaceStats;
+  const visibleActiveCount = visibleStats.processing + visibleStats.transcribing;
+
   return (
     <div className="min-h-screen bg-background">
       <AppShellHeader />
 
-      <main className="mx-auto max-w-7xl px-5 py-6">
+      <main className="app-shell py-6">
         <div className="grid gap-6">
-          {isAdmin ? <ProcessingInsights analytics={analyticsOverview} isLoading={isLoadingAnalytics} /> : null}
-
           <div className="space-y-1">
             <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500">Clinical Operations</p>
             <h1 className="text-xl font-semibold tracking-tight text-slate-900">Intake Workspace</h1>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[250px_minmax(0,1fr)] xl:items-start">
-            <WorkspaceSidebar
-              workspace={workspace}
-              onShowDocuments={showDocumentsWorkspace}
-              onShowVoice={() => showVoiceWorkspace(voiceMode)}
-              documentCount={stats.total}
-              activeDocumentCount={stats.processing + stats.transcribing}
-            />
+          <IntakeTabBar activeTab={activeWorkspaceTab} onTabChange={handleWorkspaceTabChange} />
 
-            <div className="min-w-0">
-              {workspace === "documents" ? (
-                <div className="grid gap-6">
-                  <Card className="overflow-hidden border-slate-200 shadow-sm">
-                    <CardContent className="space-y-4 p-5">
-                      <h2 className="text-xl font-semibold tracking-tight text-slate-900">Clinical document queue</h2>
-                      <div>
-                        <input ref={inputRef} type="file" multiple accept=".pdf,application/pdf" className="hidden" onChange={handleInputChange} />
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          className={`rounded-2xl border border-dashed p-4 transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
-                            dragActive
-                              ? "border-primary bg-primary/5"
-                              : "border-slate-300 bg-slate-50/70 hover:border-slate-400 hover:bg-white"
-                          }`}
-                          onClick={openFilePicker}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              openFilePicker();
-                            }
-                          }}
-                          onDragEnter={(event) => {
+          <div className="min-w-0">
+            {activeWorkspaceTab === "dashboard" ? (
+              <div className="grid gap-6">
+                {isAdmin ? <ProcessingInsights analytics={analyticsOverview} isLoading={isLoadingAnalytics} /> : null}
+
+                <Card className="overflow-hidden border-slate-200 shadow-sm">
+                  <CardContent className="space-y-4 p-5">
+                    <div className="space-y-1">
+                      <h2 className="text-xl font-semibold tracking-tight text-slate-900">Dashboard overview</h2>
+                      <p className="text-sm text-slate-600">
+                        Use the document-specific tabs for uploads. Dashboard stays focused on analytics, filters, and the shared queue.
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-teal-200/80 bg-teal-50/70 px-4 py-3">
+                      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                        <WorkspaceMetric label="Total records" value={stats.total} />
+                        <WorkspaceMetric label="Queued" value={stats.queued} />
+                        <WorkspaceMetric label="Active" value={stats.processing + stats.transcribing} />
+                        <WorkspaceMetric label="Completed" value={stats.processed} />
+                        {stats.review_required > 0 ? <WorkspaceMetric label="Approval Required" value={stats.review_required} tone="text-orange-700" /> : null}
+                        {stats.failed > 0 ? <WorkspaceMetric label="Failed" value={stats.failed} tone="text-rose-700" /> : null}
+                        {stats.partial > 0 ? <WorkspaceMetric label="Partial" value={stats.partial} tone="text-amber-700" /> : null}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : null}
+
+            {activePdfTab ? (
+              <div className="grid gap-6">
+                <Card className="overflow-hidden border-slate-200 shadow-sm">
+                  <CardContent className="space-y-4 p-5">
+                    <div className="space-y-1">
+                      <h2 className="text-xl font-semibold tracking-tight text-slate-900">{PDF_TAB_CONFIG[activePdfTab].headerTitle}</h2>
+                      <p className="text-sm text-slate-600">{PDF_TAB_CONFIG[activePdfTab].headerDescription}</p>
+                    </div>
+
+                    <div>
+                      <input
+                        ref={inputRef}
+                        type="file"
+                        multiple
+                        accept=".pdf,application/pdf"
+                        className="hidden"
+                        onChange={handleInputChange}
+                      />
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        className={`rounded-2xl border border-dashed p-4 transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${
+                          dragActive
+                            ? "border-primary bg-primary/5"
+                            : "border-slate-300 bg-slate-50/70 hover:border-slate-400 hover:bg-white"
+                        }`}
+                        onClick={() => openFilePicker(activePdfTab)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault();
-                            setDragActive(true);
-                          }}
-                          onDragOver={(event) => {
-                            event.preventDefault();
-                            setDragActive(true);
-                          }}
-                          onDragLeave={(event) => {
-                            event.preventDefault();
-                            setDragActive(false);
-                          }}
-                          onDrop={(event) => {
-                            event.preventDefault();
-                            setDragActive(false);
-                            handleFiles(event.dataTransfer.files);
-                          }}
-                        >
-                          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                            <div className="flex items-start gap-4 text-left">
-                              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700">
-                                <Upload className="h-5 w-5" />
-                              </div>
-                              <div>
-                                <p className="font-medium text-slate-900">Add PDF documents to the intake queue</p>
-                                <p className="mt-1 text-sm text-slate-600">Drag files here or select PDFs.</p>
-                              </div>
+                            openFilePicker(activePdfTab);
+                          }
+                        }}
+                        onDragEnter={(event) => {
+                          event.preventDefault();
+                          setDragActive(true);
+                        }}
+                        onDragOver={(event) => {
+                          event.preventDefault();
+                          setDragActive(true);
+                        }}
+                        onDragLeave={(event) => {
+                          event.preventDefault();
+                          setDragActive(false);
+                        }}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          setDragActive(false);
+                          handleFiles(event.dataTransfer.files, activePdfTab);
+                        }}
+                      >
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                          <div className="flex items-start gap-4 text-left">
+                            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700">
+                              <Upload className="h-5 w-5" />
                             </div>
-                            <Button type="button" className={`self-start md:self-center ${PRIMARY_TEAL_BUTTON}`}>
-                              Select PDFs
-                            </Button>
+                            <div>
+                              <p className="font-medium text-slate-900">{PDF_TAB_CONFIG[activePdfTab].uploadTitle}</p>
+                              <p className="mt-1 text-sm text-slate-600">{PDF_TAB_CONFIG[activePdfTab].uploadDescription}</p>
+                            </div>
                           </div>
+                          <Button type="button" className={`self-start md:self-center ${PRIMARY_TEAL_BUTTON}`}>
+                            {isUploading ? "Uploading..." : "Select PDFs"}
+                          </Button>
                         </div>
                       </div>
-                      <div className="rounded-xl border border-teal-200/80 bg-teal-50/70 px-4 py-3">
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                          <WorkspaceMetric label="Total records" value={stats.total} />
-                          <WorkspaceMetric label="Queued" value={stats.queued} />
-                          <WorkspaceMetric label="Active" value={stats.processing + stats.transcribing} />
-                          <WorkspaceMetric label="Completed" value={stats.processed} />
-                          {stats.transcribing > 0 ? <WorkspaceMetric label="Transcribing" value={stats.transcribing} tone="text-indigo-700" /> : null}
-                          {stats.review_required > 0 ? <WorkspaceMetric label="Approval Required" value={stats.review_required} tone="text-orange-700" /> : null}
-                          {stats.failed > 0 ? <WorkspaceMetric label="Failed" value={stats.failed} tone="text-rose-700" /> : null}
-                          {stats.partial > 0 ? <WorkspaceMetric label="Partial" value={stats.partial} tone="text-amber-700" /> : null}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    </div>
 
+                    <div className="rounded-xl border border-teal-200/80 bg-teal-50/70 px-4 py-3">
+                      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                        <WorkspaceMetric label="In lane" value={visibleStats.total} />
+                        <WorkspaceMetric label="Queued" value={visibleStats.queued} />
+                        <WorkspaceMetric label="Active" value={visibleActiveCount} />
+                        <WorkspaceMetric label="Completed" value={visibleStats.processed} />
+                        {visibleStats.failed > 0 ? <WorkspaceMetric label="Failed" value={visibleStats.failed} tone="text-rose-700" /> : null}
+                        {visibleStats.partial > 0 ? <WorkspaceMetric label="Partial" value={visibleStats.partial} tone="text-amber-700" /> : null}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : null}
+
+            {(activeWorkspaceTab === "dashboard" || activePdfTab) ? (
+              <div className="mt-6 grid gap-6">
+                <div className="grid gap-6">
                   <Card className="overflow-hidden border-slate-200 shadow-sm">
                     <CardHeader className="border-b border-slate-200/80 pb-3">
                       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                         <div className="space-y-3">
-                          <CardTitle className="text-base text-slate-900">Documents queue</CardTitle>
+                          <div className="space-y-1">
+                            <CardTitle className="text-base text-slate-900">{queueTitle}</CardTitle>
+                            <p className="text-sm text-slate-600">{queueDescription}</p>
+                          </div>
                           <div className="flex flex-wrap gap-2">
                             {["all", "queued", "processed", "failed", "partial"].map((tab) => (
                               <button
                                 key={tab}
-                                onClick={() => setActiveTab(tab as QueueTab)}
+                                onClick={() => setStatusFilter(tab as QueueTab)}
                                 className={`rounded-lg border px-3 py-1.5 text-sm transition-colors ${
-                                  activeTab === tab
+                                  statusFilter === tab
                                     ? "border-teal-700 bg-teal-600 text-white"
                                     : "border-teal-200 bg-teal-50 text-teal-800 hover:bg-teal-100"
                                 }`}
@@ -902,6 +1244,36 @@ const UploadCenter = () => {
                               </button>
                             ))}
                           </div>
+                          {activeWorkspaceTab === "dashboard" ? (
+                            <div className="flex flex-wrap gap-2">
+                              <Select value={dashboardTypeFilter} onValueChange={(value) => setDashboardTypeFilter(value as DashboardTypeFilter)}>
+                                <SelectTrigger className="w-[180px] border-slate-200 bg-white">
+                                  <SelectValue placeholder="All Types" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All Types</SelectItem>
+                                  <SelectItem value="prescription">Prescription</SelectItem>
+                                  <SelectItem value="inpatient">Inpatient</SelectItem>
+                                  <SelectItem value="outpatient">Outpatient</SelectItem>
+                                  <SelectItem value="lab_report">Lab Report</SelectItem>
+                                  <SelectItem value="chart_note">Chart Note</SelectItem>
+                                  <SelectItem value="voice">Voice</SelectItem>
+                                </SelectContent>
+                              </Select>
+
+                              <Select value={dashboardDateFilter} onValueChange={(value) => setDashboardDateFilter(value as DashboardDateFilter)}>
+                                <SelectTrigger className="w-[170px] border-slate-200 bg-white">
+                                  <SelectValue placeholder="All Time" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="all">All Time</SelectItem>
+                                  <SelectItem value="today">Today</SelectItem>
+                                  <SelectItem value="last7">Last 7 Days</SelectItem>
+                                  <SelectItem value="last30">Last 30 Days</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ) : null}
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-xs text-slate-500">
                               {selectedIds.length > 0 ? `${selectedIds.length} selected` : "Select rows for batch actions"}
@@ -980,7 +1352,10 @@ const UploadCenter = () => {
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8">
                           <FileStack className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-                          <p className="text-muted-foreground">No documents found</p>
+                          <p className="font-medium text-slate-900">{queueEmptyTitle}</p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Adjust the filters or upload a file in the matching intake lane.
+                          </p>
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -1011,20 +1386,23 @@ const UploadCenter = () => {
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-3">
-                                {document.documentType === 'voice' ? (
+                                {document.documentType === "voice" ? (
                                   <AudioLines className="h-5 w-5 text-indigo-500" />
                                 ) : (
                                   <FileText className="h-5 w-5 text-muted-foreground" />
                                 )}
                                 <div className="min-w-0">
                                   <p className="truncate font-medium text-slate-900">{document.name || document.fileName || "Untitled document"}</p>
-                                  <div className="flex items-center gap-2">
-                                    {document.documentType === 'voice' && voiceSummaryLabel && (
+                                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                                    <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
+                                      {getQueueTypeBadgeLabel(document, documentUploadHints)}
+                                    </Badge>
+                                    {document.documentType === "voice" && voiceSummaryLabel && (
                                       <p className="text-xs text-muted-foreground">
                                         {voiceSummaryLabel}
                                       </p>
                                     )}
-                                    {patientName && !document.documentType && (
+                                    {patientName && document.documentType !== "voice" && (
                                       <p className="text-xs text-muted-foreground">
                                         {patientName}{mrn ? ` · MRN ${mrn}` : ""}
                                       </p>
@@ -1036,7 +1414,7 @@ const UploadCenter = () => {
                                       {(document.result?.departmentAlerts || document.result?.department_alerts) && (
                                         <DepartmentAlertBadge departmentAlerts={document.result?.departmentAlerts || document.result?.department_alerts} compact />
                                       )}
-                                      {document.documentType === 'voice' && (
+                                      {document.documentType === "voice" && (
                                         <Badge variant="outline" className="text-xs border-indigo-200 text-indigo-700">{voiceModeLabel}</Badge>
                                       )}
                                     </div>
@@ -1045,7 +1423,7 @@ const UploadCenter = () => {
                               </div>
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {document.documentType === 'voice' && document.durationLabel
+                              {document.documentType === "voice" && document.durationLabel
                                 ? document.durationLabel
                                 : formatFileSize(document.size)}
                             </TableCell>
@@ -1166,10 +1544,18 @@ const UploadCenter = () => {
               </div>
                   </Card>
                 </div>
-              ) : (
-                <VoiceWorkspace mode={voiceMode} onModeChange={showVoiceWorkspace} onDocumentsChanged={loadDocuments} />
-              )}
-            </div>
+              </div>
+            ) : null}
+
+            {activeWorkspaceTab === "dictation" ? (
+              <VoiceDictationWorkspace onDocumentsChanged={loadDocuments} />
+            ) : null}
+
+            {activeWorkspaceTab === "live" ? (
+              <LiveConversationErrorBoundary>
+                <LiveConversationWorkspace />
+              </LiveConversationErrorBoundary>
+            ) : null}
           </div>
         </div>
       </main>
@@ -1194,84 +1580,35 @@ const UploadCenter = () => {
   );
 };
 
-function WorkspaceSidebar({
-  workspace,
-  onShowDocuments,
-  onShowVoice,
-  documentCount,
-  activeDocumentCount,
+function IntakeTabBar({
+  activeTab,
+  onTabChange,
 }: {
-  workspace: IntakeWorkspace;
-  onShowDocuments: () => void;
-  onShowVoice: () => void;
-  documentCount: number;
-  activeDocumentCount: number;
+  activeTab: IntakeWorkspaceTab;
+  onTabChange: (tab: string) => void;
 }) {
-  const isDocumentsSelected = workspace === "documents";
-  const isVoiceSelected = workspace === "voice";
-  const documentActivity = documentCount > 0 ? Math.min(100, Math.round((activeDocumentCount / documentCount) * 100)) : 0;
-
   return (
-    <Card className="overflow-hidden border-slate-200/80 bg-white shadow-sm xl:sticky xl:top-6 xl:self-start">
-      <CardHeader className="border-b border-slate-200/80 pb-3">
-        <CardTitle className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Workspace</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 p-4">
-        <button
-          type="button"
-          onClick={onShowDocuments}
-          className={`w-full rounded-2xl border px-4 py-4 text-left transition-colors ${
-            isDocumentsSelected
-              ? "border-teal-300 bg-teal-50/70 shadow-sm"
-              : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70"
-          }`}
-          aria-pressed={isDocumentsSelected}
-        >
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="rounded-xl bg-slate-100 p-2 text-slate-700">
-                <FileStack className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-medium text-slate-900">Documents</p>
-                  <Badge variant="outline">{documentCount}</Badge>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-slate-500">
-                <span>Activity</span>
-                <span>{activeDocumentCount}</span>
-              </div>
-              <Progress value={documentActivity} className="h-1.5 bg-slate-200 [&>div]:bg-teal-600" />
-            </div>
+    <Card className="overflow-hidden border-slate-200 shadow-sm">
+      <CardContent className="p-2">
+        <Tabs value={activeTab} onValueChange={onTabChange}>
+          <div className="overflow-x-auto">
+            <TabsList className="h-auto min-w-max gap-2 rounded-2xl bg-slate-100/80 p-2">
+              {INTAKE_TABS.map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="rounded-xl border border-transparent px-4 py-2.5 text-slate-600 data-[state=active]:border-teal-600 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-none"
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    <span>{tab.label}</span>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
           </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={onShowVoice}
-          className={`w-full rounded-2xl border px-4 py-4 text-left transition-colors ${
-            isVoiceSelected
-              ? "border-teal-300 bg-teal-50/70 shadow-sm"
-              : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/70"
-          }`}
-          aria-pressed={isVoiceSelected}
-          aria-label="Voice Workspace"
-        >
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-slate-100 p-2 text-slate-700">
-              <AudioLines className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-slate-900">Voice</p>
-                {isVoiceSelected ? <div className="h-2 w-2 rounded-full bg-teal-600" /> : null}
-              </div>
-            </div>
-          </div>
-        </button>
+        </Tabs>
       </CardContent>
     </Card>
   );

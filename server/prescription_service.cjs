@@ -6,10 +6,16 @@
 const fs = require("fs/promises");
 const path = require("path");
 const { chromium } = require("playwright");
+const {
+  buildLiveConversationDocument,
+  hydrateLiveConversationDocument,
+  isLiveConversationDocument,
+} = require("./live_conversation_document.cjs");
 
 const TEMPLATE_DIR = path.join(__dirname, "..", "prescription_template_dev");
 const OUTPUT_DIR = path.join(__dirname, "storage", "prescriptions");
 const DOCS_FILE = path.join(__dirname, "storage", "documents.json");
+const LIVE_SESSIONS_FILE = path.join(__dirname, "storage", "live_conversation_sessions.json");
 
 // Default hospital configuration (fallback)
 const DEFAULT_HOSPITAL = {
@@ -38,7 +44,38 @@ class PrescriptionService {
   async loadDocument(docId) {
     const docsContent = await fs.readFile(DOCS_FILE, "utf8");
     const docs = JSON.parse(docsContent);
-    return docs.documents.find(d => d.id === docId);
+    const document = docs.documents.find((d) => d.id === docId);
+    if (document) {
+      if (isLiveConversationDocument(document)) {
+        hydrateLiveConversationDocument(document);
+      }
+      return document;
+    }
+
+    return this.loadLiveConversationDocument(docId);
+  }
+
+  async loadLiveConversationDocument(docId) {
+    try {
+      const sessionsContent = await fs.readFile(LIVE_SESSIONS_FILE, "utf8");
+      const parsed = JSON.parse(sessionsContent);
+      const sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
+      const session = sessions.find((item) => (
+        item?.documentId === docId
+        || item?.id === docId
+        || `voice-live-${item?.id || ""}` === docId
+      ));
+
+      if (!session) return null;
+
+      return buildLiveConversationDocument(session, {
+        documentId: session.documentId || docId,
+        createdAt: session.endedAt || session.updatedAt || new Date().toISOString(),
+        sttBackend: session.sttBackend,
+      });
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -444,15 +481,49 @@ renderPrescription(window.prescriptionData);
    * Handles the different data structure from voice dictation
    */
   mapVoiceToPrescription(document) {
-    const extracted = document.result.extracted_data || {};
-    const meta = document.result.meta || {};
-    const transcript = document.result.transcript || {};
+    const extracted = document.result?.extracted_data || {};
+    const meta = document.result?.meta || {};
+    const dashboardCards = document.result?.dashboard_cards || {};
 
     // Voice data has simpler structure - transform it
     const voiceMedications = extracted.medications || [];
-    const voiceLabs = extracted.labs || [];
+    const voiceLabs = extracted.labs || extracted.investigations || [];
     const voiceRadiology = extracted.radiology || [];
-    const patientInfo = extracted.patient_info || {};
+    const patientInfo = extracted.patient_info || extracted.patient || {};
+    const diagnosisText = typeof extracted.diagnosis === "string"
+      ? extracted.diagnosis
+      : extracted.diagnosis?.principal?.name
+        || extracted.diagnosis?.principal?.description
+        || dashboardCards.diagnosis_card?.principal_diagnosis
+        || "";
+    const symptoms = Array.isArray(extracted.symptoms)
+      ? extracted.symptoms
+      : Array.isArray(extracted.diagnosis?.symptoms)
+        ? extracted.diagnosis.symptoms
+        : [];
+    const chiefComplaint = extracted.chief_complaint || extracted.chiefComplaint || "";
+    const hpi = extracted.hpi || "";
+    const ros = Array.isArray(extracted.ros) ? extracted.ros : [];
+    const planItems = Array.isArray(extracted.plan)
+      ? extracted.plan
+      : Array.isArray(extracted.treatment?.management_items)
+        ? extracted.treatment.management_items
+        : [];
+    const followUpItemsRaw = Array.isArray(extracted.follow_up)
+      ? extracted.follow_up
+      : Array.isArray(extracted.follow_up?.items)
+        ? extracted.follow_up.items
+        : [];
+    const followUpItems = followUpItemsRaw
+      .map((item) => {
+        if (typeof item === "string") return item.trim();
+        if (!item || typeof item !== "object") return "";
+        return item.reason || item.timing || item.label || item.name || "";
+      })
+      .filter(Boolean);
+    const dashboardVitals = dashboardCards.vitals_card?.summary || {};
+    const extractedVitals = extracted.vitals?.latest || extracted.vitals || {};
+    const extractedBp = extractedVitals.bp || {};
 
     // Parse medications from voice instructions
     const medications = voiceMedications.map((med, idx) => {
@@ -515,12 +586,12 @@ renderPrescription(window.prescriptionData);
     const labs = { other: "" };
     Object.keys(labKeywords).forEach(key => {
       labs[key] = labList.some(lab =>
-        labKeywords[key].some(kw => lab.test_name.toLowerCase().includes(kw))
+        labKeywords[key].some((kw) => String(lab.test_name || "").toLowerCase().includes(kw))
       );
     });
 
     const otherLabs = labList.filter(lab =>
-      !Object.values(labKeywords).flat().some(kw => lab.test_name.toLowerCase().includes(kw))
+      !Object.values(labKeywords).flat().some((kw) => String(lab.test_name || "").toLowerCase().includes(kw))
     );
     labs.other = otherLabs.map(l => l.test_name).join(", ");
 
@@ -541,26 +612,42 @@ renderPrescription(window.prescriptionData);
     const radiology = { other: "" };
     Object.keys(radioKeywords).forEach(key => {
       radiology[key] = radioList.some(radio =>
-        radioKeywords[key].some(kw => radio.study_name.toLowerCase().includes(kw))
+        radioKeywords[key].some((kw) => String(radio.study_name || "").toLowerCase().includes(kw))
       );
     });
 
     const otherRadio = radioList.filter(radio =>
-      !Object.values(radioKeywords).flat().some(kw => radio.study_name.toLowerCase().includes(kw))
+      !Object.values(radioKeywords).flat().some((kw) => String(radio.study_name || "").toLowerCase().includes(kw))
     );
     radiology.other = otherRadio.map(r => r.study_name).join(", ");
 
     // Build doctor notes from voice data
     const notesParts = [];
-    if (extracted.diagnosis) {
-      notesParts.push(`Diagnosis: ${extracted.diagnosis}`);
+    if (chiefComplaint) {
+      notesParts.push(`Chief complaint: ${chiefComplaint}`);
     }
-    if (extracted.symptoms && extracted.symptoms.length > 0) {
-      notesParts.push(`Symptoms: ${extracted.symptoms.join(", ")}`);
+    if (hpi) {
+      notesParts.push(`HPI: ${hpi}`);
     }
-    if (extracted.plan && extracted.plan.length > 0) {
-      notesParts.push(`Plan: ${extracted.plan.join(", ")}`);
+    if (ros.length > 0) {
+      notesParts.push(`ROS: ${ros.join(", ")}`);
     }
+    if (diagnosisText) {
+      notesParts.push(`Diagnosis: ${diagnosisText}`);
+    }
+    if (symptoms.length > 0) {
+      notesParts.push(`Symptoms: ${symptoms.join(", ")}`);
+    }
+    if (planItems.length > 0) {
+      notesParts.push(`Plan: ${planItems.join(", ")}`);
+    }
+    if (followUpItems.length > 0) {
+      notesParts.push(`Follow-up: ${followUpItems.join(", ")}`);
+    }
+
+    const age = patientInfo.age ? `${patientInfo.age} Yrs` : "";
+    const gender = patientInfo.gender || "";
+    const ageSex = [age, gender].filter(Boolean).join(" / ");
 
     const doctorNotes = {
       freeText: notesParts.length > 0 ? notesParts.join("\n\n") : "Doctor's notes from voice dictation"
@@ -576,8 +663,8 @@ renderPrescription(window.prescriptionData);
       },
       patient: {
         name: patientInfo.name || meta.patientName || "Voice Patient",
-        ageSex: "N/A",  // Voice dictation may not have this
-        hospitalNo: `VOICE-${meta.sessionId?.substring(0, 8) || "TEMP"}`,
+        ageSex: ageSex || "N/A",
+        hospitalNo: patientInfo.mrn || patientInfo.hospital_no || patientInfo.hospitalNo || `VOICE-${meta.sessionId?.substring(0, 8) || "TEMP"}`,
         mobile: "",
         email: ""
       },
@@ -592,14 +679,19 @@ renderPrescription(window.prescriptionData);
       },
       vitals: {
         height: "",
-        bp: "",
-        weight: ""
+        bp: dashboardVitals.latest_bp
+          || (
+            Number.isFinite(extractedBp?.systolic) && Number.isFinite(extractedBp?.diastolic)
+              ? `${extractedBp.systolic}/${extractedBp.diastolic}`
+              : ""
+          ),
+        weight: extractedVitals.weight?.value ? `${extractedVitals.weight.value}` : dashboardVitals.weight ? `${dashboardVitals.weight}` : ""
       },
       clinical: {
         allergies: "No known drug allergy",
         diet: "Normal",
         vulnerable: false,
-        knownHealthConditions: extracted.diagnosis || ""
+        knownHealthConditions: diagnosisText || ""
       },
       doctorNotes: doctorNotes,
       procedures: {
@@ -619,7 +711,7 @@ renderPrescription(window.prescriptionData);
         medicines: medications
       },
       crossReference: "",
-      nextVisitDate: (extracted.follow_up || []).join(", "),
+      nextVisitDate: followUpItems.join(", "),
       doctor: {
         signatureText: "Voice"
       },

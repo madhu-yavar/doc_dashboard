@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import {
   AudioLines,
   CheckCheck,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Download,
   Edit3,
@@ -36,6 +38,7 @@ import {
   formatLiveDuration,
   sessionTitle,
   useLiveConversationAPI,
+  type LiveDraftExtraction,
   type LiveConversationSession,
   type LiveReviewItem,
   type LiveReviewResolution,
@@ -92,10 +95,24 @@ function speakerAccent(role: LiveTranscriptSegment["speakerRole"]) {
   return "bg-slate-300";
 }
 
+function autoPatientLabel(session: LiveConversationSession) {
+  return [session.linkedPatient, session.draft.extractedData.patient.name]
+    .map((value) => value.trim())
+    .find(Boolean)
+    || "";
+}
+
+function autoEncounterLabel(session: LiveConversationSession) {
+  const explicit = session.encounterLabel.trim();
+  if (explicit) return explicit;
+  const digits = String(session.id || "").replace(/\D/g, "");
+  return `EN${(digits.slice(-6) || "000001").padStart(6, "0")}`;
+}
+
 function countSetupFields(session: LiveConversationSession) {
   return [
-    session.linkedPatient.trim().length > 0,
-    session.encounterLabel.trim().length > 0,
+    autoPatientLabel(session).length > 0,
+    autoEncounterLabel(session).length > 0,
     session.recorder.permission === "granted",
   ].filter(Boolean).length;
 }
@@ -103,8 +120,13 @@ function countSetupFields(session: LiveConversationSession) {
 function countDraftSections(session: LiveConversationSession) {
   const draft = session.draft.extractedData;
   return [
+    draft.chiefComplaint,
+    draft.hpi,
+    draft.ros?.length || 0,
     draft.diagnosis,
     draft.symptoms.length,
+    draft.patient.name || draft.patient.age || draft.patient.gender,
+    draft.vitals.latest.bp.systolic || draft.vitals.latest.pulse.value || draft.vitals.latest.temperature.value || draft.vitals.latest.spo2.value || draft.vitals.latest.weight.value,
     draft.medications.length,
     draft.labs.length + draft.radiology.length + draft.procedures.length,
     draft.followUp.length,
@@ -120,6 +142,16 @@ function permissionLabel(permission: LiveConversationSession["recorder"]["permis
   if (permission === "granted") return "Mic ready";
   if (permission === "denied") return "Mic denied";
   return "Mic pending";
+}
+
+function formatVitalNumber(value: number | null, unit = "") {
+  if (typeof value !== "number" || Number.isNaN(value) || value <= 0) return "";
+  return `${value}${unit ? ` ${unit}` : ""}`;
+}
+
+function formatBloodPressure(systolic: number | null, diastolic: number | null) {
+  if (!systolic || !diastolic) return "";
+  return `${systolic}/${diastolic} mmHg`;
 }
 
 function liveCaptureCopy(captureState: MediaRecorderState, transportState: ConnectionState, audioLevel: number) {
@@ -147,7 +179,7 @@ function liveCaptureCopy(captureState: MediaRecorderState, transportState: Conne
   if (captureState === "recording" && transportState === "connected") {
     return {
       title: audioLevel > 0.06 ? "Listening. Voice detected." : "Listening to your microphone",
-      detail: "Speech is uploaded in chunks, so transcript and note updates appear after a few seconds.",
+      detail: "Transcript and note updates keep streaming while you speak.",
     };
   }
 
@@ -182,14 +214,24 @@ function transcriptEmptyCopy(captureState: MediaRecorderState, transportState: C
   if (captureState === "recording" && transportState === "connected") {
     return {
       title: audioLevel > 0.06 ? "Listening now" : "Waiting for speech",
-      detail: "Transcript appears here after the first processed audio chunk.",
+      detail: "Transcript keeps updating live every few seconds while you speak.",
     };
   }
 
   return {
     title: "Transcript will appear here",
-    detail: "Press Start and speak. The first update arrives after the first processed chunk.",
+    detail: "Press Start and speak. The live transcript begins after the first processed chunk.",
   };
+}
+
+function bloodPressureInputValue(systolic: number | null, diastolic: number | null) {
+  if (!systolic || !diastolic) return "";
+  return `${systolic}/${diastolic}`;
+}
+
+function vitalInputValue(value: number | null) {
+  if (typeof value !== "number" || Number.isNaN(value) || value <= 0) return "";
+  return String(value);
 }
 
 function AudioLevelMeter({
@@ -272,12 +314,12 @@ function RecordingIndicator({ isRecording, hasAudio }: { isRecording: boolean; h
 
 function AudioPlayer({ audioUrl }: { audioUrl: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1">
       <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-100 text-teal-600">
-          <PlayCircle className="h-4 w-4" />
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-600">
+          <PlayCircle className="h-3.5 w-3.5" />
         </div>
-        <audio key={audioUrl} controls className="h-10 flex-1 min-w-0" preload="metadata" src={audioUrl}>
+        <audio key={audioUrl} controls className="h-8 flex-1 min-w-0" preload="metadata" src={audioUrl}>
           Your browser does not support audio playback.
         </audio>
       </div>
@@ -320,7 +362,7 @@ function RecordingPanel({
 
   return (
     <Card className="border-slate-200/80 bg-white shadow-sm">
-      <CardContent className="grid gap-3 p-4">
+      <CardContent className="grid gap-1 px-3 py-0.5">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="text-sm font-medium text-slate-900">Saved Recording</CardTitle>
           <div className="flex items-center gap-1">
@@ -362,12 +404,16 @@ function SessionList({
   selectedSessionStatus,
   onSelectSession,
   onCreateDraftSession,
+  isCollapsed = false,
+  onToggleCollapse,
 }: {
   sessions: LiveConversationSession[];
   selectedSessionId: string | null;
   selectedSessionStatus: LiveConversationSession["status"];
   onSelectSession: (sessionId: string) => void;
   onCreateDraftSession: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   const activeSessions = sessions.filter((session) =>
     ["draft", "live", "paused", "review_required", "finalizing"].includes(session.status),
@@ -426,21 +472,33 @@ function SessionList({
       <CardHeader className="border-b border-slate-200/80 pb-4">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="text-base text-slate-900">Visits</CardTitle>
-          {["review_required", "finalizing", "finalized", "failed"].includes(selectedSessionStatus) ? (
+          <div className="flex items-center gap-2">
             <Button
+              variant="ghost"
               size="icon"
-              className={PRIMARY_TEAL_BUTTON}
-              onClick={() => onCreateDraftSession()}
-              aria-label="Create new visit"
-              title="Create new visit"
+              className="h-7 w-7 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              onClick={onToggleCollapse}
+              title={isCollapsed ? "Expand visits panel" : "Collapse visits panel"}
             >
-              <Plus className="h-4 w-4" />
+              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
             </Button>
-          ) : null}
+            {["review_required", "finalizing", "finalized", "failed"].includes(selectedSessionStatus) ? (
+              <Button
+                size="icon"
+                className={PRIMARY_TEAL_BUTTON}
+                onClick={() => onCreateDraftSession()}
+                aria-label="Create new visit"
+                title="Create new visit"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            ) : null}
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4 p-4">
-        <section className="space-y-2">
+      {!isCollapsed && (
+        <CardContent className="grid gap-4 p-4">
+          <section className="space-y-2">
           <div className="flex items-center justify-between gap-3">
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">In progress</p>
             <Badge variant="outline">{activeSessions.length}</Badge>
@@ -448,7 +506,7 @@ function SessionList({
           {activeSessions.length > 0 ? (
             <div className="space-y-2">
               {activeSessions.map((session) =>
-                renderRow(session, session.encounterLabel || statusLabel(session.status)),
+                renderRow(session, autoEncounterLabel(session) || statusLabel(session.status)),
               )}
             </div>
           ) : (
@@ -456,18 +514,19 @@ function SessionList({
               No session
             </div>
           )}
-        </section>
-        {renderDisclosure(
-          "Completed",
-          finalizedSessions,
-          (session) => [session.linkedPatient, session.encounterLabel].filter(Boolean).join(" · ") || "Dashboard ready",
-        )}
-        {renderDisclosure(
-          "Interrupted",
-          attentionSessions,
-          (session) => session.error || "Recovery required",
-        )}
-      </CardContent>
+          </section>
+          {renderDisclosure(
+            "Completed",
+            finalizedSessions,
+            (session) => [autoPatientLabel(session), autoEncounterLabel(session)].filter(Boolean).join(" · ") || "Dashboard ready",
+          )}
+          {renderDisclosure(
+            "Interrupted",
+            attentionSessions,
+            (session) => session.error || "Recovery required",
+          )}
+        </CardContent>
+      )}
     </Card>
   );
 }
@@ -497,14 +556,14 @@ function ControlBar({
 
   return (
     <Card className="overflow-hidden border-slate-200/80 bg-white shadow-sm">
-      <CardContent className="grid gap-3 p-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-2">
+      <CardContent className="grid gap-1 px-3 py-1">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-1.5">
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Encounter</p>
             <h3 className="truncate text-lg font-semibold text-slate-900">{session.title}</h3>
-            {[session.linkedPatient, session.encounterLabel].filter(Boolean).length > 0 ? (
+            {[autoPatientLabel(session), autoEncounterLabel(session)].filter(Boolean).length > 0 ? (
               <p className="text-sm text-slate-600">
-                {[session.linkedPatient, session.encounterLabel].filter(Boolean).join(" · ")}
+                {[autoPatientLabel(session), autoEncounterLabel(session)].filter(Boolean).join(" · ")}
               </p>
             ) : null}
             <div className="flex flex-wrap items-center gap-2">
@@ -554,7 +613,7 @@ function ControlBar({
 
         {/* Recording status with visual indicator */}
         <div className={cn(
-          "rounded-2xl border p-3 transition-colors",
+          "rounded-2xl border p-1 transition-colors",
           isRecording
             ? hasAudio
               ? "border-teal-200 bg-teal-50/80"
@@ -600,7 +659,7 @@ function TranscriptPanel({
 
   return (
     <Card className="overflow-hidden border-slate-200/80 bg-white shadow-sm">
-      <CardHeader className="border-b border-slate-200/80 pb-3">
+      <CardHeader className="border-b border-slate-200/80 pb-2.5">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="text-base text-slate-900">Transcript</CardTitle>
           <div className="flex items-center gap-2">
@@ -620,7 +679,7 @@ function TranscriptPanel({
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <ScrollArea className="h-[560px] xl:h-[620px]">
+        <ScrollArea className="h-[600px] xl:h-[680px]">
           <div className="space-y-3 bg-[linear-gradient(180deg,rgba(248,250,252,0.92),rgba(255,255,255,1))] p-4">
             {session.transcript.segments.length === 0 && !session.transcript.interimText ? (
               <div className={cn(
@@ -689,6 +748,7 @@ function TranscriptPanel({
               <article className="rounded-2xl border border-dashed border-sky-200 bg-sky-50/70 p-4 shadow-sm">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge className="border-transparent bg-sky-100 text-sky-800">Live</Badge>
+                  <Badge className="border-slate-200 bg-slate-100 text-slate-700">Speaker</Badge>
                   <AudioLines className="h-3.5 w-3.5 text-slate-500" />
                 </div>
                 <p className="mt-2 text-sm leading-relaxed text-slate-800">{session.transcript.interimText}</p>
@@ -707,12 +767,14 @@ function SetupPanel({
   availableDevices,
 }: {
   session: LiveConversationSession;
-  onUpdate: (patch: { linkedPatient?: string; encounterLabel?: string; deviceId?: string }) => void;
+  onUpdate: (patch: { linkedPatient?: string; encounterLabel?: string; deviceId?: string; draftPatch?: Partial<LiveDraftExtraction> }) => void | Promise<void>;
   availableDevices: Array<{ id: string; label: string }>;
 }) {
   const isLocked = session.status === "finalized";
   const deviceBadgeLabel = session.recorder.deviceLabel
     || (session.recorder.permission === "denied" ? "Microphone blocked" : "Browser default microphone");
+  const detectedPatient = autoPatientLabel(session);
+  const detectedEncounter = autoEncounterLabel(session);
   const microphoneHelpText = session.recorder.permission === "denied"
     ? "Microphone access is blocked in the browser. Allow microphone access for this site and refresh."
     : availableDevices.length === 0
@@ -722,24 +784,18 @@ function SetupPanel({
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <label className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Patient</label>
-          <Input
-            value={session.linkedPatient}
-            onChange={(event) => onUpdate({ linkedPatient: event.target.value })}
-            placeholder="Patient"
-            disabled={isLocked}
-          />
+        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Patient</p>
+          <p className="mt-1 text-sm text-slate-900">
+            {detectedPatient || "-"}
+          </p>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Encounter</label>
-          <Input
-            value={session.encounterLabel}
-            onChange={(event) => onUpdate({ encounterLabel: event.target.value })}
-            placeholder="Encounter"
-            disabled={isLocked}
-          />
+        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Encounter</p>
+          <p className="mt-1 text-sm text-slate-900">
+            {detectedEncounter}
+          </p>
         </div>
       </div>
 
@@ -754,7 +810,7 @@ function SetupPanel({
           >
             {availableDevices.map((device) => (
               <option key={device.id} value={device.id}>
-                {device.label}
+                {typeof device.label === 'string' ? device.label : JSON.stringify(device.label)}
               </option>
             ))}
           </select>
@@ -778,12 +834,143 @@ function SetupPanel({
   );
 }
 
-function DraftPanel({ session }: { session: LiveConversationSession }) {
+function DraftPanel({
+  session,
+  onSaveOptionalVitals,
+}: {
+  session: LiveConversationSession;
+  onSaveOptionalVitals: (draftPatch: Partial<LiveDraftExtraction>) => Promise<void> | void;
+}) {
   const draft = session.draft.extractedData;
   const pendingReview = countPendingReview(session);
-  const medications = draft.medications.map((item) => `${item.name} · ${item.instruction}`);
-  const workup = [...draft.labs, ...draft.radiology, ...draft.procedures];
-  const planItems = [...draft.plan, ...draft.followUp];
+  const medications = draft.medications.map((item) => {
+    const instruction = typeof item.instruction === 'string'
+      ? item.instruction
+      : typeof item.instruction === 'object' && item.instruction
+        ? JSON.stringify(item.instruction)
+        : String(item.instruction || '');
+    return `${item.name}${instruction ? ' · ' + instruction : ''}`;
+  });
+  const workup = [...draft.labs, ...draft.radiology, ...draft.procedures].map(item =>
+    typeof item === 'string' ? item : typeof item === 'object' ? JSON.stringify(item) : String(item)
+  );
+  const planItems = [...draft.plan, ...draft.followUp].map(item =>
+    typeof item === 'string' ? item : typeof item === 'object' ? JSON.stringify(item) : String(item)
+  );
+  const [optionalVitals, setOptionalVitals] = useState(() => ({
+    bp: bloodPressureInputValue(draft.vitals.latest.bp.systolic, draft.vitals.latest.bp.diastolic),
+    pulse: vitalInputValue(draft.vitals.latest.pulse.value),
+    temperature: vitalInputValue(draft.vitals.latest.temperature.value),
+    spo2: vitalInputValue(draft.vitals.latest.spo2.value),
+    weight: vitalInputValue(draft.vitals.latest.weight.value),
+  }));
+  const [isSavingVitals, setIsSavingVitals] = useState(false);
+  const demographics = [
+    session.linkedPatient || draft.patient.name,
+    draft.patient.age ? `Age: ${draft.patient.age}` : "",
+    draft.patient.gender ? `Sex: ${draft.patient.gender}` : "",
+  ].map(item => typeof item === 'string' ? item : String(item)).filter(Boolean);
+  const vitals = [
+    formatBloodPressure(draft.vitals.latest.bp.systolic, draft.vitals.latest.bp.diastolic)
+      ? `Blood pressure: ${formatBloodPressure(draft.vitals.latest.bp.systolic, draft.vitals.latest.bp.diastolic)}`
+      : "",
+    formatVitalNumber(draft.vitals.latest.pulse.value, draft.vitals.latest.pulse.unit)
+      ? `Pulse: ${formatVitalNumber(draft.vitals.latest.pulse.value, draft.vitals.latest.pulse.unit)}`
+      : "",
+    formatVitalNumber(draft.vitals.latest.temperature.value, draft.vitals.latest.temperature.unit)
+      ? `Temperature: ${formatVitalNumber(draft.vitals.latest.temperature.value, draft.vitals.latest.temperature.unit)}`
+      : "",
+    formatVitalNumber(draft.vitals.latest.spo2.value, draft.vitals.latest.spo2.unit)
+      ? `SpO2: ${formatVitalNumber(draft.vitals.latest.spo2.value, draft.vitals.latest.spo2.unit)}`
+      : "",
+    formatVitalNumber(draft.vitals.latest.weight.value, draft.vitals.latest.weight.unit)
+      ? `Weight: ${formatVitalNumber(draft.vitals.latest.weight.value, draft.vitals.latest.weight.unit)}`
+      : "",
+  ].filter(Boolean);
+  const vitalsLocked = session.status === "finalizing" || session.status === "finalized";
+
+  useEffect(() => {
+    setOptionalVitals({
+      bp: bloodPressureInputValue(draft.vitals.latest.bp.systolic, draft.vitals.latest.bp.diastolic),
+      pulse: vitalInputValue(draft.vitals.latest.pulse.value),
+      temperature: vitalInputValue(draft.vitals.latest.temperature.value),
+      spo2: vitalInputValue(draft.vitals.latest.spo2.value),
+      weight: vitalInputValue(draft.vitals.latest.weight.value),
+    });
+  }, [
+    session.id,
+    session.updatedAt,
+    draft.vitals.latest.bp.systolic,
+    draft.vitals.latest.bp.diastolic,
+    draft.vitals.latest.pulse.value,
+    draft.vitals.latest.temperature.value,
+    draft.vitals.latest.spo2.value,
+    draft.vitals.latest.weight.value,
+  ]);
+
+  const handleSaveVitals = async () => {
+    const latestPatch: Record<string, unknown> = {};
+    const draftPatch: Partial<LiveDraftExtraction> = {
+      vitals: {
+        latest: latestPatch as LiveDraftExtraction["vitals"]["latest"],
+      },
+    };
+
+    const bpMatch = optionalVitals.bp.trim().match(/(\d{2,3})\s*(?:\/|over)\s*(\d{2,3})/i);
+    if (bpMatch) {
+      latestPatch.bp = {
+        systolic: Number(bpMatch[1]),
+        diastolic: Number(bpMatch[2]),
+      };
+    }
+
+    const pulse = Number(optionalVitals.pulse);
+    if (Number.isFinite(pulse) && pulse > 0) {
+      latestPatch.pulse = {
+        value: pulse,
+        unit: draft.vitals.latest.pulse.unit || "bpm",
+      };
+    }
+
+    const temperature = Number(optionalVitals.temperature);
+    if (Number.isFinite(temperature) && temperature > 0) {
+      latestPatch.temperature = {
+        value: temperature,
+        unit: draft.vitals.latest.temperature.unit || "F",
+      };
+    }
+
+    const spo2 = Number(optionalVitals.spo2);
+    if (Number.isFinite(spo2) && spo2 > 0) {
+      latestPatch.spo2 = {
+        value: spo2,
+        unit: draft.vitals.latest.spo2.unit || "%",
+      };
+    }
+
+    const weight = Number(optionalVitals.weight);
+    if (Number.isFinite(weight) && weight > 0) {
+      latestPatch.weight = {
+        value: weight,
+        unit: draft.vitals.latest.weight.unit || "kg",
+      };
+    }
+
+    if (Object.keys(latestPatch).length === 0) {
+      toast.error("Enter at least one vital to save.");
+      return;
+    }
+
+    try {
+      setIsSavingVitals(true);
+      await onSaveOptionalVitals(draftPatch);
+      toast.success("Vitals saved.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save vitals.");
+    } finally {
+      setIsSavingVitals(false);
+    }
+  };
 
   const NoteSection = ({ title, items }: { title: string; items: string[] }) => (
     <div className="border-t border-slate-200/80 pt-3 first:border-t-0 first:pt-0">
@@ -821,10 +1008,64 @@ function DraftPanel({ session }: { session: LiveConversationSession }) {
         </div>
       </div>
       <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
-        <NoteSection title="History" items={draft.symptoms} />
+        <NoteSection title="Demographics" items={demographics} />
+        <NoteSection title="Chief Complaint" items={draft.chiefComplaint ? [draft.chiefComplaint] : []} />
+        <NoteSection title="HPI" items={draft.hpi ? [draft.hpi] : []} />
+        <NoteSection title="ROS" items={(draft.ros || []).map(item =>
+          typeof item === 'string' ? item : typeof item === 'object' ? JSON.stringify(item) : String(item)
+        )} />
+        <NoteSection title="Vitals" items={vitals} />
+        <NoteSection title="History" items={draft.symptoms.map(item =>
+          typeof item === 'string' ? item : typeof item === 'object' ? JSON.stringify(item) : String(item)
+        )} />
         <NoteSection title="Medications" items={medications} />
         <NoteSection title="Orders" items={workup} />
         <NoteSection title="Plan" items={planItems} />
+        <div className="border-t border-slate-200/80 pt-3">
+          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Optional vitals entry</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Vitals are captured from the conversation when available. Add or correct anything here only if needed.
+          </p>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            <Input
+              value={optionalVitals.bp}
+              onChange={(event) => setOptionalVitals((current) => ({ ...current, bp: event.target.value }))}
+              placeholder="Blood pressure 120/80"
+              disabled={vitalsLocked || isSavingVitals}
+            />
+            <Input
+              value={optionalVitals.pulse}
+              onChange={(event) => setOptionalVitals((current) => ({ ...current, pulse: event.target.value }))}
+              placeholder="Pulse"
+              disabled={vitalsLocked || isSavingVitals}
+            />
+            <Input
+              value={optionalVitals.temperature}
+              onChange={(event) => setOptionalVitals((current) => ({ ...current, temperature: event.target.value }))}
+              placeholder="Temperature"
+              disabled={vitalsLocked || isSavingVitals}
+            />
+            <Input
+              value={optionalVitals.spo2}
+              onChange={(event) => setOptionalVitals((current) => ({ ...current, spo2: event.target.value }))}
+              placeholder="SpO2"
+              disabled={vitalsLocked || isSavingVitals}
+            />
+            <Input
+              value={optionalVitals.weight}
+              onChange={(event) => setOptionalVitals((current) => ({ ...current, weight: event.target.value }))}
+              placeholder="Weight"
+              disabled={vitalsLocked || isSavingVitals}
+            />
+          </div>
+          {!vitalsLocked ? (
+            <div className="mt-3">
+              <Button className={SECONDARY_TEAL_BUTTON} onClick={() => void handleSaveVitals()} disabled={isSavingVitals}>
+                {isSavingVitals ? "Saving..." : "Save optional vitals"}
+              </Button>
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -845,6 +1086,7 @@ function ReviewPanel({
 }) {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
+  const [requiredEdits, setRequiredEdits] = useState<Record<string, string>>({});
 
   if (session.status === "finalized") {
     return (
@@ -910,17 +1152,50 @@ function ReviewPanel({
 
       {session.draft.reviewItems.map((item) => {
         const isEditing = editingItemId === item.id;
+        const requiredValue = requiredEdits[item.id] ?? item.editedValue ?? item.suggestedValue ?? "";
         return (
           <article key={item.id} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
             <div className="flex flex-wrap items-center gap-2">
               <Badge className={severityTone(item.severity)}>{item.severity}</Badge>
               <Badge variant="outline">{item.category.replace(/_/g, " ")}</Badge>
               <Badge variant="outline">{item.resolution}</Badge>
+              {item.required ? <Badge variant="outline">required</Badge> : null}
             </div>
             <p className="mt-3 text-sm font-medium text-slate-900">{item.title}</p>
-            <p className="mt-2 text-sm text-slate-600">{item.editedValue || item.suggestedValue}</p>
+            <p className="mt-2 text-sm text-slate-600">{item.editedValue || item.suggestedValue || "Enter manually"}</p>
 
-            {isEditing ? (
+            {item.required ? (
+              <div className="mt-3 space-y-3">
+                <Input
+                  type={item.inputType === "number" ? "number" : "text"}
+                  value={requiredValue}
+                  onChange={(event) => {
+                    setRequiredEdits((current) => ({
+                      ...current,
+                      [item.id]: event.target.value,
+                    }));
+                  }}
+                  placeholder={item.placeholder || "Enter value"}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    className={PRIMARY_TEAL_BUTTON}
+                    onClick={() => {
+                      onResolveReviewItem(item.id, "edited", requiredValue);
+                      setRequiredEdits((current) => {
+                        const next = { ...current };
+                        delete next[item.id];
+                        return next;
+                      });
+                    }}
+                    disabled={!requiredValue.trim()}
+                  >
+                    <CheckCheck className="mr-2 h-4 w-4" />
+                    Save
+                  </Button>
+                </div>
+              </div>
+            ) : isEditing ? (
               <div className="mt-3 space-y-3">
                 <Input
                   value={editingValue}
@@ -989,7 +1264,7 @@ function ContextPanel({
   availableDevices,
 }: {
   session: LiveConversationSession;
-  onUpdateSession: (patch: { linkedPatient?: string; encounterLabel?: string; deviceId?: string }) => void;
+  onUpdateSession: (patch: { linkedPatient?: string; encounterLabel?: string; deviceId?: string; draftPatch?: Partial<LiveDraftExtraction> }) => void | Promise<void>;
   hasPendingReview: boolean;
   onResolveReviewItem: (reviewItemId: string, resolution: LiveReviewResolution, editedValue?: string) => void;
   onFinalize: () => void;
@@ -1067,7 +1342,12 @@ function ContextPanel({
               />
             </AccordionTrigger>
             <AccordionContent className="pt-0">
-              <DraftPanel session={session} />
+              <DraftPanel
+                session={session}
+                onSaveOptionalVitals={async (draftPatch) => {
+                  await onUpdateSession({ draftPatch });
+                }}
+              />
             </AccordionContent>
           </AccordionItem>
 
@@ -1099,6 +1379,7 @@ function ContextPanel({
 }
 
 export default function LiveConversationWorkspace() {
+  const [isVisitsCollapsed, setIsVisitsCollapsed] = useState(false);
   const {
     sessions,
     selectedSession,
@@ -1156,16 +1437,18 @@ export default function LiveConversationWorkspace() {
         </div>
       )}
 
-      <div className="grid gap-5 xl:grid-cols-[248px_minmax(0,1fr)_360px]">
+      <div className={`grid gap-5 ${isVisitsCollapsed ? "xl:grid-cols-[0px_minmax(0,1fr)_360px]" : "xl:grid-cols-[248px_minmax(0,1fr)_360px]"}`}>
         <SessionList
           sessions={sessions}
           selectedSessionId={selectedSessionId}
           selectedSessionStatus={selectedSession.status}
           onSelectSession={selectSession}
           onCreateDraftSession={createDraftSession}
+          isCollapsed={isVisitsCollapsed}
+          onToggleCollapse={() => setIsVisitsCollapsed(!isVisitsCollapsed)}
         />
 
-        <div className="grid gap-4">
+        <div className="grid gap-0.5">
           <ControlBar
             session={selectedSession}
             onStart={startSelectedSession}

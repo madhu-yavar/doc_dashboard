@@ -8,16 +8,22 @@ export interface LiveAudioConfig {
   audioBitsPerSecond?: number;
   chunkIntervalMs?: number;
   enableDebugLogs?: boolean;
+  onTranscriptPartial?: (transcript: any) => void;
   onTranscriptFinal?: (segment: any) => void;
   onDraftUpdated?: (draft: any) => void;
   onSessionStateChange?: (status: string) => void;
 }
 
-const DEFAULT_CHUNK_INTERVAL = 5000; // 5 seconds for better transcription
+const DEFAULT_CHUNK_INTERVAL = 3000; // lower latency for live transcript updates
 const DEFAULT_MIME_TYPE = "audio/webm"; // Use WebM for better compatibility
 const DEFAULT_AUDIO_BITRATE = 128000; // 128 kbps for better quality
 const MICROPHONE_GAIN_BOOST = 2.0; // Not used - keeping for reference
 const WEBSOCKET_CONNECT_TIMEOUT_MS = 10000;
+
+function isSafariBrowser() {
+  const userAgent = window.navigator.userAgent || "";
+  return /Safari/i.test(userAgent) && !/Chrome|Chromium|CriOS|Edg|OPR/i.test(userAgent);
+}
 
 function resolveLiveConversationWebSocketUrl(sessionId: string) {
   const configuredApiRoot = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
@@ -53,6 +59,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     audioBitsPerSecond = DEFAULT_AUDIO_BITRATE,
     chunkIntervalMs = DEFAULT_CHUNK_INTERVAL,
     enableDebugLogs = false,
+    onTranscriptPartial,
     onTranscriptFinal,
     onDraftUpdated,
     onSessionStateChange,
@@ -74,6 +81,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
   const reconnectTimerRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const recorderMimeTypeRef = useRef<string>(mimeType);
+  const recordedChunksRef = useRef<Blob[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const levelAnimationFrameRef = useRef<number | null>(null);
@@ -280,6 +288,9 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
           case "transcript.final":
             onTranscriptFinal?.(message.segment);
             break;
+          case "transcript.partial":
+            onTranscriptPartial?.(message.transcript);
+            break;
           case "draft.updated":
             onDraftUpdated?.(message.draft);
             break;
@@ -323,7 +334,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     };
 
     return ws;
-  }, [clearPendingEnd, clearPendingStart, log, onDraftUpdated, onSessionStateChange, onTranscriptFinal]);
+  }, [clearPendingEnd, clearPendingStart, log, onDraftUpdated, onSessionStateChange, onTranscriptFinal, onTranscriptPartial]);
 
   const waitForWebSocketOpen = useCallback((websocket: WebSocket) => new Promise<void>((resolve, reject) => {
     if (websocket.readyState === WebSocket.OPEN) {
@@ -378,6 +389,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     try {
       setRecorderState("starting");
       setError(null);
+      recordedChunksRef.current = [];
 
       const constraints: MediaStreamConstraints = {
         audio: deviceId ? { deviceId: { exact: deviceId } } : true,
@@ -401,13 +413,21 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
 
       let supportedMimeType = mimeType;
       // Prioritize WebM/Opus which works best with both browsers and Whisper STT
-      const types = [
-        "audio/webm;codecs=opus",  // Chrome/Firefox - best quality
-        "audio/webm",
-        "audio/ogg;codecs=opus",   // Firefox
-        "audio/mp4",                // Safari fallback
-        "audio/mpeg",               // MP3 format
-      ];
+      const types = isSafariBrowser()
+        ? [
+            "audio/mp4",
+            "audio/webm;codecs=opus",
+            "audio/webm",
+            "audio/ogg;codecs=opus",
+            "audio/mpeg",
+          ]
+        : [
+            "audio/webm;codecs=opus",
+            "audio/webm",
+            "audio/ogg;codecs=opus",
+            "audio/mp4",
+            "audio/mpeg",
+          ];
 
       for (const type of types) {
         if (MediaRecorder.isTypeSupported(type)) {
@@ -427,10 +447,14 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
       recorderMimeTypeRef.current = recorder.mimeType || supportedMimeType || mimeType;
 
       recorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && websocketRef.current?.readyState === WebSocket.OPEN) {
-          log("Sending audio chunk", { size: event.data.size });
-          console.log("[LiveConversationAudio] Sending audio chunk", { size: event.data.size, type: event.data.type });
-          websocketRef.current.send(event.data);
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+
+          if (websocketRef.current?.readyState === WebSocket.OPEN) {
+            log("Sending audio chunk", { size: event.data.size });
+            console.log("[LiveConversationAudio] Sending audio chunk", { size: event.data.size, type: event.data.type });
+            websocketRef.current.send(event.data);
+          }
         }
       };
 
@@ -440,7 +464,16 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
         setRecorderState("failed");
       };
 
-      recorder.start(chunkIntervalMs);
+      recorder.start();
+      chunkTimerRef.current = window.setInterval(() => {
+        if (recorder.state === "recording") {
+          try {
+            recorder.requestData();
+          } catch (err) {
+            log("requestData failed", err);
+          }
+        }
+      }, chunkIntervalMs);
       setRecorderState("recording");
       log("Recording started", { interval: chunkIntervalMs });
 
@@ -457,6 +490,38 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
       throw err instanceof Error ? err : new Error(message);
     }
   }, [mimeType, audioBitsPerSecond, chunkIntervalMs, log, enumerateDevices, startLevelMonitoring]);
+
+  const uploadFinalRecording = useCallback(async (sessionId: string) => {
+    const recordedChunks = recordedChunksRef.current.filter((chunk) => chunk.size > 0);
+    if (recordedChunks.length === 0) return;
+
+    const finalMimeType = recorderMimeTypeRef.current || mimeType;
+    const finalBlob = new Blob(recordedChunks, { type: finalMimeType });
+    if (finalBlob.size === 0) return;
+
+    log("Uploading final recording", {
+      sessionId,
+      mimeType: finalMimeType,
+      size: finalBlob.size,
+      chunks: recordedChunks.length,
+    });
+
+    const response = await fetch(`/api/voice/live/sessions/${sessionId}/audio/final`, {
+      method: "POST",
+      headers: {
+        "Content-Type": finalMimeType,
+      },
+      body: finalBlob,
+      credentials: "same-origin",
+    });
+
+    if (!response.ok) {
+      const message = await response.text().catch(() => "");
+      throw new Error(message || "Failed to upload the final recording");
+    }
+
+    recordedChunksRef.current = [];
+  }, [log, mimeType]);
 
   const stopRecording = useCallback(() => {
     log("Stopping recording");
@@ -551,6 +616,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     stopRecording();
     clearPendingStart();
     clearPendingEnd();
+    recordedChunksRef.current = [];
     sessionIdRef.current = null;
     setConnectionState("idle");
     log("Disconnected");
@@ -635,7 +701,12 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     setRecorderState("stopping");
     setError(null);
 
+    const sessionId = sessionIdRef.current;
     await flushAndStopRecording();
+
+    if (sessionId) {
+      await uploadFinalRecording(sessionId);
+    }
 
     const websocket = websocketRef.current;
     if (!websocket || websocket.readyState !== WebSocket.OPEN) {
@@ -659,7 +730,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     });
 
     log("Session ended");
-  }, [flushAndStopRecording, log]);
+  }, [flushAndStopRecording, log, uploadFinalRecording]);
 
   const selectDevice = useCallback((deviceId: string) => {
     setSelectedDevice(deviceId);

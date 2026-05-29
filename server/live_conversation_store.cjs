@@ -1,6 +1,7 @@
 const fs = require("fs/promises");
 const path = require("path");
 const crypto = require("crypto");
+const { mergeLiveDraft, normalizeLiveDraft } = require("./live_conversation_draft.cjs");
 
 class LiveConversationStore {
   constructor(config = {}) {
@@ -35,19 +36,29 @@ class LiveConversationStore {
 
   async readSessions() {
     await this.ensureStorage();
-    try {
-      const raw = await fs.readFile(this.sessionsPath, "utf8");
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed.sessions) ? parsed.sessions : [];
-    } catch (error) {
-      this.log("Error reading sessions", { error: error.message });
-      return [];
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const raw = await fs.readFile(this.sessionsPath, "utf8");
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed.sessions) ? parsed.sessions : [];
+      } catch (error) {
+        const isRetryableParseError = error instanceof SyntaxError || /Unexpected end of JSON input/i.test(String(error?.message || ""));
+        if (attempt === 0 && isRetryableParseError) {
+          await new Promise((resolve) => setTimeout(resolve, 25));
+          continue;
+        }
+        this.log("Error reading sessions", { error: error.message });
+        return [];
+      }
     }
+    return [];
   }
 
   async writeSessions(sessions) {
     await this.ensureStorage();
-    await fs.writeFile(this.sessionsPath, JSON.stringify({ sessions }, null, 2), "utf8");
+    const tempPath = `${this.sessionsPath}.${process.pid}.${Date.now()}.${crypto.randomBytes(4).toString("hex")}.tmp`;
+    await fs.writeFile(tempPath, JSON.stringify({ sessions }, null, 2), "utf8");
+    await fs.rename(tempPath, this.sessionsPath);
   }
 
   async mutateSessions(mutator) {
@@ -257,6 +268,7 @@ class LiveConversationStore {
         segments,
         rawText,
         normalizedText,
+        interimText: String(transcriptData.interimText || ""),
         speakers: Array.isArray(transcriptData.speakers) ? transcriptData.speakers : [],
         quality: {
           overallConfidence: typeof transcriptData.quality?.overallConfidence === "number"
@@ -294,10 +306,10 @@ class LiveConversationStore {
         reviewItems: [],
         lastStableSegmentId: null,
       };
-      session.draftExtraction.extractedData = {
-        ...(session.draftExtraction.extractedData || {}),
-        ...draftData,
-      };
+      session.draftExtraction.extractedData = mergeLiveDraft(
+        session.draftExtraction.extractedData || {},
+        draftData && typeof draftData === "object" ? draftData : {},
+      );
       session.lastDraftEventAt = new Date().toISOString();
       session.updatedAt = new Date().toISOString();
 
@@ -336,6 +348,23 @@ class LiveConversationStore {
         session.draftExtraction.reviewItems.push(reviewItem);
       }
 
+      session.updatedAt = new Date().toISOString();
+      return { ...session };
+    });
+  }
+
+  async replaceReviewItems(sessionId, reviewItems = []) {
+    return this.mutateSessions((sessions) => {
+      const index = sessions.findIndex((s) => s.id === sessionId);
+      if (index === -1) return null;
+
+      const session = sessions[index];
+      session.draftExtraction = session.draftExtraction || {
+        extractedData: null,
+        reviewItems: [],
+        lastStableSegmentId: null,
+      };
+      session.draftExtraction.reviewItems = Array.isArray(reviewItems) ? reviewItems : [];
       session.updatedAt = new Date().toISOString();
       return { ...session };
     });

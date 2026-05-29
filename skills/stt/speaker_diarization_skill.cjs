@@ -1,4 +1,4 @@
-const PyannoteSpeakerDiarizationTool = require("../../tools/audio/pyannote_speaker_diarization.tool.cjs");
+const PyannoteSpeakerDiarizationTool = require("../../tools/audio/pyannote_speaker_diarization_gpu.tool.cjs");
 const GeminiSpeakerDiarizationTool = require("../../tools/llm/gemini_speaker_diarization.tool.cjs");
 
 class SpeakerDiarizationSkill {
