@@ -6,6 +6,7 @@ const EMPTY_LIVE_DRAFT = Object.freeze({
   chiefComplaint: "",
   hpi: "",
   ros: [],
+  pastHistory: [],
   diagnosis: "",
   symptoms: [],
   medications: [],
@@ -45,6 +46,8 @@ const EMPTY_LIVE_DRAFT = Object.freeze({
   },
 });
 
+const SUPPORTED_PATIENT_SEX_OPTIONS = Object.freeze(["Male", "Female", "Other"]);
+
 const REQUIRED_REVIEW_FIELDS = Object.freeze([
   {
     id: "required:linkedPatient",
@@ -70,8 +73,9 @@ const REQUIRED_REVIEW_FIELDS = Object.freeze([
     title: "Patient sex",
     category: "demographics",
     severity: "high",
-    placeholder: "Male or Female",
-    inputType: "text",
+    placeholder: "Select patient sex",
+    inputType: "select",
+    options: SUPPORTED_PATIENT_SEX_OPTIONS,
   },
 ]);
 
@@ -88,17 +92,92 @@ function toNumber(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function normalizeGender(value) {
+function normalizeGender(value, { strict = false } = {}) {
   const normalized = asText(value).toLowerCase();
   if (!normalized) return "";
   if (["m", "male", "man", "boy"].includes(normalized)) return "Male";
   if (["f", "female", "woman", "girl"].includes(normalized)) return "Female";
   if (["other", "non-binary", "nonbinary"].includes(normalized)) return "Other";
+  if (strict) return "";
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
 function withArray(value) {
   return Array.isArray(value) ? value : [];
+}
+
+function normalizeListItem(item) {
+  if (typeof item === "string") return item.trim();
+  if (typeof item === "number" || typeof item === "boolean") return String(item);
+  if (!item || typeof item !== "object") return "";
+
+  const directText = asText(
+    item.name
+    || item.label
+    || item.value
+    || item.text
+    || item.summary
+    || item.reason
+    || item.finding
+    || item.description
+  );
+  if (directText) return directText;
+
+  const system = asText(item.system || item.category || item.type);
+  const detail = asText(item.result || item.status || item.note);
+  if (system && detail) return `${system}: ${detail}`;
+  return system || detail;
+}
+
+function normalizeTextList(value, label = "") {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeListItem(item)).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const text = value.trim();
+    return text ? [text] : [];
+  }
+
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  const labeledGroups = [
+    ["positive", value.positive],
+    ["positives", value.positives],
+    ["negative", value.negative],
+    ["negatives", value.negatives],
+    ["items", value.items],
+    ["list", value.list],
+    ["history", value.history],
+  ];
+
+  const flattened = labeledGroups.flatMap(([groupLabel, groupValue]) =>
+    normalizeTextList(groupValue).map((item) =>
+      groupLabel === "positive" || groupLabel === "positives"
+        ? `Positive: ${item}`
+        : groupLabel === "negative" || groupLabel === "negatives"
+          ? `Negative: ${item}`
+          : item
+    )
+  );
+
+  if (flattened.length > 0) {
+    return flattened;
+  }
+
+  const collectedValues = Object.entries(value)
+    .filter(([key]) => !["positive", "positives", "negative", "negatives", "items", "list", "history"].includes(key))
+    .flatMap(([key, entryValue]) => {
+      const items = normalizeTextList(entryValue);
+      if (items.length === 0) return [];
+      const keyLabel = asText(key).replace(/_/g, " ");
+      if (!keyLabel || keyLabel === label) return items;
+      return items.map((item) => `${keyLabel}: ${item}`);
+    });
+
+  return collectedValues;
 }
 
 function normalizeLiveDraft(rawDraft = {}) {
@@ -107,15 +186,26 @@ function normalizeLiveDraft(rawDraft = {}) {
 
   base.chiefComplaint = asText(draft.chiefComplaint || draft.chief_complaint);
   base.hpi = asText(draft.hpi || draft.historyOfPresentIllness || draft.history_of_present_illness);
-  base.ros = withArray(draft.ros || draft.reviewOfSystems || draft.review_of_systems);
+  base.ros = normalizeTextList(draft.ros || draft.reviewOfSystems || draft.review_of_systems, "ros");
+  base.pastHistory = normalizeTextList(
+    draft.pastHistory
+    || draft.past_history
+    || draft.pastMedicalHistory
+    || draft.past_medical_history
+    || draft.medicalHistory
+    || draft.medical_history
+    || draft.pmh
+    || draft.comorbidities,
+    "past history",
+  );
   base.diagnosis = asText(draft.diagnosis);
-  base.symptoms = withArray(draft.symptoms);
+  base.symptoms = normalizeTextList(draft.symptoms, "symptoms");
   base.medications = withArray(draft.medications);
-  base.labs = withArray(draft.labs);
-  base.radiology = withArray(draft.radiology);
-  base.procedures = withArray(draft.procedures);
-  base.followUp = withArray(draft.followUp || draft.follow_up);
-  base.plan = withArray(draft.plan);
+  base.labs = normalizeTextList(draft.labs, "labs");
+  base.radiology = normalizeTextList(draft.radiology, "radiology");
+  base.procedures = normalizeTextList(draft.procedures, "procedures");
+  base.followUp = normalizeTextList(draft.followUp || draft.follow_up, "follow up");
+  base.plan = normalizeTextList(draft.plan, "plan");
 
   const patient = draft.patient && typeof draft.patient === "object" ? draft.patient : {};
   base.patient = {
@@ -191,6 +281,7 @@ function mergeLiveDraft(existingDraft = {}, incomingDraft = {}) {
     chiefComplaint: preferText(incoming.chiefComplaint, existing.chiefComplaint),
     hpi: preferText(incoming.hpi, existing.hpi),
     ros: preferArray(incoming.ros, existing.ros),
+    pastHistory: preferArray(incoming.pastHistory, existing.pastHistory),
     diagnosis: preferText(incoming.diagnosis, existing.diagnosis),
     symptoms: preferArray(incoming.symptoms, existing.symptoms),
     medications: preferArray(incoming.medications, existing.medications),
@@ -266,6 +357,9 @@ function hasFieldValue(session, draft, fieldPath) {
       && value.diastolic > 0
     );
   }
+  if (fieldPath === "patient.gender") {
+    return Boolean(normalizeGender(value, { strict: true }));
+  }
   if (typeof value === "number") return Number.isFinite(value) && value > 0;
   return Boolean(asText(value));
 }
@@ -287,6 +381,7 @@ function buildRequiredReviewItems(session, draft) {
     fieldPath: definition.fieldPath,
     placeholder: definition.placeholder,
     inputType: definition.inputType,
+    options: Array.isArray(definition.options) ? definition.options : undefined,
   }));
 }
 
@@ -316,8 +411,8 @@ function parseRequiredFieldPatch(fieldPath, rawValue, currentDraft = {}) {
       return { sessionPatch, draftPatch };
     }
     case "patient.gender": {
-      const gender = normalizeGender(value);
-      if (!gender) throw new Error("Enter a valid patient sex.");
+      const gender = normalizeGender(value, { strict: true });
+      if (!gender) throw new Error("Select a valid patient sex.");
       draftPatch.patient = { gender };
       return { sessionPatch, draftPatch };
     }
@@ -394,6 +489,7 @@ function parseRequiredFieldPatch(fieldPath, rawValue, currentDraft = {}) {
 module.exports = {
   EMPTY_LIVE_DRAFT,
   REQUIRED_REVIEW_FIELDS,
+  SUPPORTED_PATIENT_SEX_OPTIONS,
   buildRequiredReviewItems,
   listMissingRequiredFields,
   mergeLiveDraft,

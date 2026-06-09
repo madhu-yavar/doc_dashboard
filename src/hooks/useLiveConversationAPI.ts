@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLiveConversationAudio } from "./useLiveConversationAudio";
 
 export type LiveSpeakerRole = "doctor" | "patient" | "unknown";
-export type LiveConnectionState = "idle" | "connecting" | "connected" | "reconnecting" | "closed" | "error";
+export type LiveConnectionState = "idle" | "connecting" | "connected" | "reconnecting" | "paused" | "closed" | "error";
 export type LiveCaptureState = "idle" | "starting" | "recording" | "paused" | "stopping" | "failed";
 export type LiveSessionStatus = "draft" | "live" | "paused" | "review_required" | "finalizing" | "finalized" | "failed";
 export type LiveReviewResolution = "pending" | "approved" | "edited" | "rejected";
@@ -36,13 +36,15 @@ export type LiveReviewItem = {
   required?: boolean;
   fieldPath?: string;
   placeholder?: string;
-  inputType?: "text" | "number";
+  inputType?: "text" | "number" | "select";
+  options?: string[];
 };
 
 export type LiveDraftExtraction = {
   chiefComplaint: string;
   hpi: string;
   ros: string[];
+  pastHistory: string[];
   diagnosis: string;
   symptoms: string[];
   medications: Array<{ name: string; instruction: string; status: "draft" | "needs_review" }>;
@@ -89,6 +91,7 @@ const EMPTY_DRAFT: LiveDraftExtraction = {
   chiefComplaint: "",
   hpi: "",
   ros: [],
+  pastHistory: [],
   diagnosis: "",
   symptoms: [],
   medications: [],
@@ -127,6 +130,226 @@ const EMPTY_DRAFT: LiveDraftExtraction = {
     },
   },
 };
+
+function normalizeText(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return "";
+}
+
+function normalizeNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string") return null;
+  const match = value.match(/-?\d+(?:\.\d+)?/);
+  if (!match) return null;
+  const parsed = Number(match[0]);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeListItem(item: unknown): string {
+  if (typeof item === "string") return item.trim();
+  if (typeof item === "number" || typeof item === "boolean") return String(item);
+  if (!item || typeof item !== "object") return "";
+
+  const record = item as Record<string, unknown>;
+  const directText = normalizeText(
+    record.name
+    ?? record.label
+    ?? record.value
+    ?? record.text
+    ?? record.summary
+    ?? record.reason
+    ?? record.finding
+    ?? record.description,
+  ).trim();
+  if (directText) return directText;
+
+  const system = normalizeText(record.system ?? record.category ?? record.type).trim();
+  const detail = normalizeText(record.result ?? record.status ?? record.note).trim();
+  if (system && detail) return `${system}: ${detail}`;
+  return system || detail;
+}
+
+function normalizeStringList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeListItem(item)).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const text = value.trim();
+    return text ? [text] : [];
+  }
+
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  const record = value as Record<string, unknown>;
+  const groupedEntries: Array<[string, unknown]> = [
+    ["positive", record.positive],
+    ["positives", record.positives],
+    ["negative", record.negative],
+    ["negatives", record.negatives],
+    ["items", record.items],
+    ["list", record.list],
+    ["history", record.history],
+  ];
+
+  const groupedValues = groupedEntries.flatMap(([groupLabel, groupValue]) =>
+    normalizeStringList(groupValue).map((item) =>
+      groupLabel === "positive" || groupLabel === "positives"
+        ? `Positive: ${item}`
+        : groupLabel === "negative" || groupLabel === "negatives"
+          ? `Negative: ${item}`
+          : item,
+    ),
+  );
+
+  if (groupedValues.length > 0) {
+    return groupedValues;
+  }
+
+  return Object.entries(record)
+    .filter(([key]) => !["positive", "positives", "negative", "negatives", "items", "list", "history"].includes(key))
+    .flatMap(([key, entryValue]) => {
+      const items = normalizeStringList(entryValue);
+      if (items.length === 0) return [];
+      const keyLabel = key.replace(/_/g, " ").trim();
+      return keyLabel ? items.map((item) => `${keyLabel}: ${item}`) : items;
+    });
+}
+
+function normalizeMedications(value: unknown): LiveDraftExtraction["medications"] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item: any) => {
+      if (typeof item === "string") {
+        const name = item.trim();
+        return name ? { name, instruction: "", status: "draft" as const } : null;
+      }
+      if (!item || typeof item !== "object") return null;
+      return {
+        name: normalizeText(item?.name || item?.label || item?.medicine).trim(),
+        instruction: normalizeListItem(item?.instruction) || normalizeText(item?.frequency).trim(),
+        status: item?.status === "needs_review" ? "needs_review" : "draft",
+      };
+    })
+    .filter((item): item is LiveDraftExtraction["medications"][number] => Boolean(item?.name));
+}
+
+function normalizeDraftExtraction(rawDraft: unknown): LiveDraftExtraction {
+  const draft = rawDraft && typeof rawDraft === "object" ? rawDraft : {};
+  const patient = (draft as any).patient && typeof (draft as any).patient === "object"
+    ? (draft as any).patient
+    : {};
+  const vitals = (draft as any).vitals && typeof (draft as any).vitals === "object"
+    ? (draft as any).vitals
+    : {};
+  const latest = vitals.latest && typeof vitals.latest === "object" ? vitals.latest : {};
+  const bp = latest.bp && typeof latest.bp === "object" ? latest.bp : vitals.bp || {};
+  const pulse = latest.pulse && typeof latest.pulse === "object" ? latest.pulse : vitals.pulse || {};
+  const temperature = latest.temperature && typeof latest.temperature === "object" ? latest.temperature : vitals.temperature || {};
+  const spo2 = latest.spo2 && typeof latest.spo2 === "object" ? latest.spo2 : vitals.spo2 || {};
+  const weight = latest.weight && typeof latest.weight === "object" ? latest.weight : vitals.weight || {};
+
+  return {
+    chiefComplaint: normalizeText((draft as any).chiefComplaint ?? (draft as any).chief_complaint).trim(),
+    hpi: normalizeText((draft as any).hpi ?? (draft as any).historyOfPresentIllness ?? (draft as any).history_of_present_illness).trim(),
+    ros: normalizeStringList((draft as any).ros ?? (draft as any).reviewOfSystems ?? (draft as any).review_of_systems),
+    pastHistory: normalizeStringList(
+      (draft as any).pastHistory
+      ?? (draft as any).past_history
+      ?? (draft as any).pastMedicalHistory
+      ?? (draft as any).past_medical_history
+      ?? (draft as any).medicalHistory
+      ?? (draft as any).medical_history
+      ?? (draft as any).pmh
+      ?? (draft as any).comorbidities,
+    ),
+    diagnosis: normalizeText((draft as any).diagnosis).trim(),
+    symptoms: normalizeStringList((draft as any).symptoms),
+    medications: normalizeMedications((draft as any).medications),
+    labs: normalizeStringList((draft as any).labs),
+    radiology: normalizeStringList((draft as any).radiology),
+    procedures: normalizeStringList((draft as any).procedures),
+    followUp: normalizeStringList((draft as any).followUp ?? (draft as any).follow_up),
+    plan: normalizeStringList((draft as any).plan),
+    patient: {
+      name: normalizeText(patient.name ?? (draft as any).patientName).trim(),
+      age: normalizeNumber(patient.age),
+      gender: normalizeText(patient.gender ?? (draft as any).gender).trim(),
+    },
+    vitals: {
+      latest: {
+        bp: {
+          systolic: normalizeNumber(bp.systolic),
+          diastolic: normalizeNumber(bp.diastolic),
+        },
+        pulse: {
+          value: normalizeNumber((pulse as any).value ?? pulse),
+          unit: normalizeText(pulse.unit) || EMPTY_DRAFT.vitals.latest.pulse.unit,
+        },
+        temperature: {
+          value: normalizeNumber((temperature as any).value ?? temperature),
+          unit: normalizeText(temperature.unit) || EMPTY_DRAFT.vitals.latest.temperature.unit,
+        },
+        spo2: {
+          value: normalizeNumber((spo2 as any).value ?? spo2),
+          unit: normalizeText(spo2.unit) || EMPTY_DRAFT.vitals.latest.spo2.unit,
+        },
+        weight: {
+          value: normalizeNumber((weight as any).value ?? weight),
+          unit: normalizeText(weight.unit) || EMPTY_DRAFT.vitals.latest.weight.unit,
+        },
+      },
+    },
+  };
+}
+
+function mergeDraftExtraction(
+  currentDraft: LiveDraftExtraction | null | undefined,
+  draftPatch: Partial<LiveDraftExtraction> | null | undefined,
+): LiveDraftExtraction {
+  const baseDraft = currentDraft || EMPTY_DRAFT;
+  const patch = draftPatch || {};
+
+  return normalizeDraftExtraction({
+    ...baseDraft,
+    ...patch,
+    patient: {
+      ...baseDraft.patient,
+      ...(patch.patient || {}),
+    },
+    vitals: {
+      ...baseDraft.vitals,
+      ...(patch.vitals || {}),
+      latest: {
+        ...baseDraft.vitals.latest,
+        ...(patch.vitals?.latest || {}),
+        bp: {
+          ...baseDraft.vitals.latest.bp,
+          ...(patch.vitals?.latest?.bp || {}),
+        },
+        pulse: {
+          ...baseDraft.vitals.latest.pulse,
+          ...(patch.vitals?.latest?.pulse || {}),
+        },
+        temperature: {
+          ...baseDraft.vitals.latest.temperature,
+          ...(patch.vitals?.latest?.temperature || {}),
+        },
+        spo2: {
+          ...baseDraft.vitals.latest.spo2,
+          ...(patch.vitals?.latest?.spo2 || {}),
+        },
+        weight: {
+          ...baseDraft.vitals.latest.weight,
+          ...(patch.vitals?.latest?.weight || {}),
+        },
+      },
+    },
+  });
+}
 
 function normalizeTranscriptSegment(segment: any): LiveTranscriptSegment {
   return {
@@ -237,60 +460,38 @@ const API_BASE = "/api/voice/live";
 function normalizeSession(session: any): LiveConversationSession {
   const baseSession = { ...session };
   const rawTranscript = baseSession.transcript || {};
-  const normalizedDraftExtraction = baseSession.draftExtraction?.extractedData || {};
+  const linkedPatient = normalizeText(baseSession.linkedPatient);
+  const normalizedDraftExtraction = normalizeDraftExtraction(baseSession.draftExtraction?.extractedData);
   const transcript = normalizeTranscriptState(rawTranscript);
-  const encounterLabel = deriveEncounterLabel(baseSession.id || "", baseSession.encounterLabel || "");
+  const encounterLabel = deriveEncounterLabel(baseSession.id || "", normalizeText(baseSession.encounterLabel));
+  const reviewItems = Array.isArray(baseSession.draftExtraction?.reviewItems)
+    ? baseSession.draftExtraction.reviewItems
+    : [];
 
   return {
     ...baseSession,
+    linkedPatient,
+    encounterLabel,
+    draftExtraction: {
+      extractedData: normalizedDraftExtraction,
+      reviewItems,
+      lastStableSegmentId:
+        typeof baseSession.draftExtraction?.lastStableSegmentId === "string"
+          ? baseSession.draftExtraction.lastStableSegmentId
+          : null,
+    },
     // Computed title from patient and encounter
     get title() {
       return sessionTitle(
-        baseSession.linkedPatient || normalizedDraftExtraction?.patient?.name || "",
+        linkedPatient || normalizedDraftExtraction.patient.name,
         encounterLabel,
       );
     },
     // Normalize transcript to add missing UI fields
     transcript,
-    // Normalize draftExtraction to draft for UI - use empty draft to prevent null crashes
     draft: {
-      extractedData: {
-        ...EMPTY_DRAFT,
-        ...(baseSession.draftExtraction?.extractedData || {}),
-        patient: {
-          ...EMPTY_DRAFT.patient,
-          ...(baseSession.draftExtraction?.extractedData?.patient || {}),
-        },
-        vitals: {
-          ...EMPTY_DRAFT.vitals,
-          ...(baseSession.draftExtraction?.extractedData?.vitals || {}),
-          latest: {
-            ...EMPTY_DRAFT.vitals.latest,
-            ...(baseSession.draftExtraction?.extractedData?.vitals?.latest || {}),
-            bp: {
-              ...EMPTY_DRAFT.vitals.latest.bp,
-              ...(baseSession.draftExtraction?.extractedData?.vitals?.latest?.bp || {}),
-            },
-            pulse: {
-              ...EMPTY_DRAFT.vitals.latest.pulse,
-              ...(baseSession.draftExtraction?.extractedData?.vitals?.latest?.pulse || {}),
-            },
-            temperature: {
-              ...EMPTY_DRAFT.vitals.latest.temperature,
-              ...(baseSession.draftExtraction?.extractedData?.vitals?.latest?.temperature || {}),
-            },
-            spo2: {
-              ...EMPTY_DRAFT.vitals.latest.spo2,
-              ...(baseSession.draftExtraction?.extractedData?.vitals?.latest?.spo2 || {}),
-            },
-            weight: {
-              ...EMPTY_DRAFT.vitals.latest.weight,
-              ...(baseSession.draftExtraction?.extractedData?.vitals?.latest?.weight || {}),
-            },
-          },
-        },
-      },
-      reviewItems: baseSession.draftExtraction?.reviewItems || [],
+      extractedData: normalizedDraftExtraction,
+      reviewItems,
     },
     // Normalize audio/transport to recorder for UI - will be synced via effect
     recorder: {
@@ -323,7 +524,18 @@ async function apiFetch(endpoint: string, options?: RequestInit) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: response.statusText }));
-    throw new Error(error.error || error.message || "API request failed");
+    const baseMessage = error.error || error.message || "API request failed";
+    const detailParts: string[] = [];
+
+    if (Array.isArray(error.missingFields) && error.missingFields.length > 0) {
+      detailParts.push(`Missing: ${error.missingFields.join(", ")}`);
+    }
+
+    if (typeof error.pendingReview === "number" && error.pendingReview > 0) {
+      detailParts.push(`Pending review items: ${error.pendingReview}`);
+    }
+
+    throw new Error(detailParts.length > 0 ? `${baseMessage}. ${detailParts.join(". ")}` : baseMessage);
   }
 
   return response.json();
@@ -337,14 +549,22 @@ export function formatLiveDuration(durationMs: number): string {
 }
 
 export function sessionTitle(linkedPatient: string, encounterLabel: string): string {
-  if (linkedPatient.trim()) return linkedPatient.trim();
-  if (encounterLabel.trim()) return encounterLabel.trim();
+  const patientLabel = normalizeText(linkedPatient).trim();
+  const encounter = normalizeText(encounterLabel).trim();
+
+  if (patientLabel) return patientLabel;
+  if (encounter) return encounter;
   return "New conversation";
+}
+
+function isActiveCaptureState(captureState: LiveCaptureState): boolean {
+  return ["starting", "recording", "paused", "stopping"].includes(captureState);
 }
 
 export function useLiveConversationAPI() {
   const [sessions, setSessions] = useState<LiveConversationSession[]>([]);
   const sessionsRef = useRef<LiveConversationSession[]>([]);
+  const loadSessionsRequestSeq = useRef(0);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -354,99 +574,83 @@ export function useLiveConversationAPI() {
     sessionsRef.current = sessions;
   }, [sessions]);
 
+  const applyRealtimeSessionUpdate = useCallback(
+    (sessionId: string, updater: (session: LiveConversationSession) => LiveConversationSession) => {
+      if (!sessionId) return;
+      setSessions((prevSessions) =>
+        prevSessions.map((session) => (session.id === sessionId ? updater(session) : session)),
+      );
+    },
+    [],
+  );
+
   const audio = useLiveConversationAudio({
     enableDebugLogs: process.env.NODE_ENV === "development",
-    onTranscriptPartial: (transcript) => {
-      setSessions((prevSessions) =>
-        prevSessions.map((s) => {
-          if (s.id === selectedSessionId) {
-            return {
-              ...s,
-              transcript: normalizeTranscriptState(transcript),
-            };
-          }
-          return s;
-        }),
-      );
+    onTranscriptPartial: (sessionId, transcript) => {
+      applyRealtimeSessionUpdate(sessionId, (session) => ({
+        ...session,
+        transcript: normalizeTranscriptState(transcript),
+      }));
     },
-    onTranscriptFinal: (segment) => {
-      // Merge realtime transcript into the session state
-      setSessions((prevSessions) =>
-        prevSessions.map((s) => {
-          if (s.id === selectedSessionId) {
-            const existing = s.transcript.segments.find((seg) => seg.id === segment.id);
-            if (!existing) {
-              return {
-                ...s,
-                transcript: {
-                  ...s.transcript,
-                  segments: [...s.transcript.segments, segment],
-                  rawText: s.transcript.rawText + " " + segment.text,
-                  normalizedText: s.transcript.normalizedText + " " + segment.text,
-                },
-              };
-            }
-          }
-          return s;
-        })
-      );
+    onTranscriptFinal: (sessionId, segment) => {
+      applyRealtimeSessionUpdate(sessionId, (session) => {
+        const existing = session.transcript.segments.find((seg) => seg.id === segment.id);
+        if (existing) {
+          return session;
+        }
+        return {
+          ...session,
+          transcript: {
+            ...session.transcript,
+            segments: [...session.transcript.segments, normalizeTranscriptSegment(segment)],
+            rawText: [session.transcript.rawText, segment.text].filter(Boolean).join(" ").trim(),
+            normalizedText: [session.transcript.normalizedText, segment.text].filter(Boolean).join(" ").trim(),
+          },
+        };
+      });
     },
-    onDraftUpdated: (draft) => {
-      // Merge realtime draft into the session state
-      setSessions((prevSessions) =>
-        prevSessions.map((s) => {
-          if (s.id === selectedSessionId) {
-            return {
-              ...s,
-              draft: {
-                ...s.draft,
-                extractedData: {
-                  ...s.draft.extractedData,
-                  ...draft,
-                  patient: {
-                    ...s.draft.extractedData.patient,
-                    ...(draft?.patient || {}),
-                  },
-                  vitals: {
-                    ...s.draft.extractedData.vitals,
-                    ...(draft?.vitals || {}),
-                    latest: {
-                      ...s.draft.extractedData.vitals.latest,
-                      ...(draft?.vitals?.latest || {}),
-                      bp: {
-                        ...s.draft.extractedData.vitals.latest.bp,
-                        ...(draft?.vitals?.latest?.bp || {}),
-                      },
-                      pulse: {
-                        ...s.draft.extractedData.vitals.latest.pulse,
-                        ...(draft?.vitals?.latest?.pulse || {}),
-                      },
-                      temperature: {
-                        ...s.draft.extractedData.vitals.latest.temperature,
-                        ...(draft?.vitals?.latest?.temperature || {}),
-                      },
-                      spo2: {
-                        ...s.draft.extractedData.vitals.latest.spo2,
-                        ...(draft?.vitals?.latest?.spo2 || {}),
-                      },
-                      weight: {
-                        ...s.draft.extractedData.vitals.latest.weight,
-                        ...(draft?.vitals?.latest?.weight || {}),
-                      },
-                    },
-                  },
-                },
-              },
-            };
-          }
-          return s;
-        })
-      );
+    onDraftUpdated: (sessionId, draft) => {
+      applyRealtimeSessionUpdate(sessionId, (session) => {
+        const extractedData = mergeDraftExtraction(session.draft.extractedData, draft);
+        return {
+          ...session,
+          draftExtraction: {
+            ...session.draftExtraction,
+            extractedData,
+          },
+          draft: {
+            ...session.draft,
+            extractedData,
+          },
+        };
+      });
     },
-    onSessionStateChange: (status) => {
-      // Trigger a session refresh when state changes
-      if (selectedSessionId && ["live", "paused", "review_required"].includes(status)) {
-        loadSessions();
+    onSessionStateChange: (sessionId, status) => {
+      const now = new Date().toISOString();
+      applyRealtimeSessionUpdate(sessionId, (session) => ({
+        ...session,
+        status: (["draft", "live", "paused", "review_required", "finalizing", "finalized", "failed"].includes(status)
+          ? status
+          : session.status) as LiveSessionStatus,
+        startedAt: status === "live" ? (session.startedAt || now) : session.startedAt,
+        endedAt: status === "review_required" ? (session.endedAt || now) : session.endedAt,
+        transport: {
+          ...session.transport,
+          connectionState:
+            status === "live"
+              ? "connected"
+              : status === "paused"
+                ? "paused"
+                : status === "review_required"
+                  ? "closed"
+                  : session.transport.connectionState,
+          lastError: null,
+          lastEventAt: now,
+        },
+      }));
+
+      if (status === "review_required") {
+        void loadSessions();
       }
     },
   });
@@ -465,7 +669,41 @@ export function useLiveConversationAPI() {
     };
   }, [audio.devices, audio.permissionState, audio.selectedDevice]);
 
+  const applyOptimisticSessionPatch = useCallback((
+    sessionId: string,
+    patch: { linkedPatient?: string; encounterLabel?: string; draftPatch?: Partial<LiveDraftExtraction> },
+  ) => {
+    applyRealtimeSessionUpdate(sessionId, (session) => {
+      const mergedDraft = patch.draftPatch
+        ? mergeDraftExtraction(session.draft.extractedData, patch.draftPatch)
+        : session.draft.extractedData;
+      const nextLinkedPatient = patch.linkedPatient !== undefined ? patch.linkedPatient : session.linkedPatient;
+      const nextEncounterLabel = patch.encounterLabel !== undefined ? patch.encounterLabel : session.encounterLabel;
+      const derivedPatientName = mergedDraft?.patient?.name || "";
+
+      return {
+        ...session,
+        linkedPatient: nextLinkedPatient,
+        encounterLabel: nextEncounterLabel,
+        title: sessionTitle(nextLinkedPatient || derivedPatientName, nextEncounterLabel),
+        draftExtraction: patch.draftPatch
+          ? {
+            ...session.draftExtraction,
+            extractedData: mergedDraft,
+          }
+          : session.draftExtraction,
+        draft: patch.draftPatch
+          ? {
+            ...session.draft,
+            extractedData: mergedDraft,
+          }
+          : session.draft,
+      };
+    });
+  }, [applyRealtimeSessionUpdate]);
+
   const loadSessions = useCallback(async () => {
+    const requestSeq = ++loadSessionsRequestSeq.current;
     setIsLoading(true);
     setError(null);
     try {
@@ -490,6 +728,9 @@ export function useLiveConversationAPI() {
 
         return normalized;
       });
+      if (requestSeq !== loadSessionsRequestSeq.current) {
+        return;
+      }
       setSessions(normalizedSessions);
       setSelectedSessionId((currentSelectedSessionId) => {
         if (currentSelectedSessionId && normalizedSessions.some((session) => session.id === currentSelectedSessionId)) {
@@ -498,9 +739,13 @@ export function useLiveConversationAPI() {
         return normalizedSessions[0]?.id || null;
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load sessions");
+      if (requestSeq === loadSessionsRequestSeq.current) {
+        setError(err instanceof Error ? err.message : "Failed to load sessions");
+      }
     } finally {
-      setIsLoading(false);
+      if (requestSeq === loadSessionsRequestSeq.current) {
+        setIsLoading(false);
+      }
     }
   }, [resolveRecorderState, selectedSessionId]);
 
@@ -520,8 +765,17 @@ export function useLiveConversationAPI() {
         body: JSON.stringify(safeParams),
       });
       const normalized = normalizeSession(data);
+      const optimisticSession = {
+        ...normalized,
+        recorder: resolveRecorderState(undefined),
+      };
+
+      setSessions((prevSessions) => [
+        optimisticSession,
+        ...prevSessions.filter((session) => session.id !== optimisticSession.id),
+      ]);
+      setSelectedSessionId(optimisticSession.id);
       await loadSessions();
-      setSelectedSessionId(normalized.id);
       return normalized;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create session");
@@ -529,17 +783,7 @@ export function useLiveConversationAPI() {
     } finally {
       setIsLoading(false);
     }
-  }, [loadSessions]);
-
-  const getSession = useCallback(async (sessionId: string) => {
-    try {
-      const data = await apiFetch(`/sessions/${sessionId}`);
-      return normalizeSession(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to get session");
-      return null;
-    }
-  }, []);
+  }, [loadSessions, resolveRecorderState, applyRealtimeSessionUpdate]);
 
   const updateSession = useCallback(async (sessionId: string, updates: { linkedPatient?: string; encounterLabel?: string; draftPatch?: Partial<LiveDraftExtraction> }) => {
     setIsLoading(true);
@@ -632,6 +876,34 @@ export function useLiveConversationAPI() {
     }
   }, [loadSessions]);
 
+  const deleteRecording = useCallback(async (sessionId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await apiFetch(`/sessions/${sessionId}/audio`, { method: "DELETE" });
+      await loadSessions();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete recording");
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadSessions]);
+
+  const deleteFinalizedVisit = useCallback(async (sessionId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await apiFetch(`/sessions/${sessionId}/finalized-visit`, { method: "DELETE" });
+      await loadSessions();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete finalized visit");
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [loadSessions]);
+
   const startSession = useCallback(async (sessionId: string, deviceId?: string) => {
     setError(null);
     try {
@@ -669,14 +941,20 @@ export function useLiveConversationAPI() {
       if (selectedSessionId) {
         // Use ref to get fresh sessions state, avoiding stale closure
         const currentSession = sessionsRef.current.find(s => s.id === selectedSessionId);
-        if (currentSession && ["live", "paused", "review_required"].includes(currentSession.status)) {
+        if (
+          currentSession
+          && (
+            ["live", "paused", "review_required"].includes(currentSession.status)
+            || isActiveCaptureState(audio.recorderState)
+          )
+        ) {
           loadSessions();
         }
       }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [loadSessions, selectedSessionId]);
+  }, [audio.recorderState, loadSessions, selectedSessionId]);
 
   // Sync audio state to selected session's recorder field
   useEffect(() => {
@@ -687,9 +965,26 @@ export function useLiveConversationAPI() {
             const deviceLabel = audio.selectedDevice && audio.devices.length > 0
               ? (audio.devices.find(d => d.deviceId === audio.selectedDevice)?.label || audio.selectedDevice)
               : s.recorder.deviceLabel;
+            const shouldForceLive = audio.recorderState === "recording"
+              && !["review_required", "finalizing", "finalized"].includes(s.status);
+            const shouldForcePaused = audio.recorderState === "paused"
+              && !["review_required", "finalizing", "finalized"].includes(s.status);
+            const nextStatus = shouldForceLive
+              ? "live"
+              : shouldForcePaused
+                ? "paused"
+                : s.status;
+            const startedAt = shouldForceLive ? (s.startedAt || new Date().toISOString()) : s.startedAt;
+            const startedAtMs = startedAt ? new Date(startedAt).getTime() : NaN;
+            const durationMs = shouldForceLive && Number.isFinite(startedAtMs)
+              ? Math.max(Number(s.durationMs || 0), Math.max(0, Date.now() - startedAtMs))
+              : s.durationMs;
 
             return {
               ...s,
+              status: nextStatus,
+              startedAt,
+              durationMs,
               recorder: {
                 ...s.recorder,
                 permission: audio.permissionState,
@@ -698,7 +993,11 @@ export function useLiveConversationAPI() {
               },
               transport: {
                 ...s.transport,
-                connectionState: audio.connectionState,
+                connectionState: shouldForceLive
+                  ? "connected"
+                  : shouldForcePaused
+                    ? "paused"
+                    : audio.connectionState,
               },
             };
           }
@@ -706,7 +1005,40 @@ export function useLiveConversationAPI() {
         })
       );
     }
-  }, [selectedSessionId, audio.permissionState, audio.selectedDevice, audio.devices, audio.connectionState]);
+  }, [selectedSessionId, audio.permissionState, audio.selectedDevice, audio.devices, audio.connectionState, audio.recorderState]);
+
+  useEffect(() => {
+    if (!selectedSessionId || (!isActiveCaptureState(audio.recorderState) && selectedSession?.status !== "live")) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setSessions((prevSessions) =>
+        prevSessions.map((session) => {
+          if (session.id !== selectedSessionId || !session.startedAt) return session;
+
+          const startedAtMs = new Date(session.startedAt).getTime();
+          if (!Number.isFinite(startedAtMs)) return session;
+
+          if (
+            session.status !== "live"
+            && audio.recorderState !== "recording"
+            && audio.recorderState !== "starting"
+            && audio.recorderState !== "stopping"
+          ) {
+            return session;
+          }
+
+          return {
+            ...session,
+            durationMs: Math.max(Number(session.durationMs || 0), Math.max(0, Date.now() - startedAtMs)),
+          };
+        }),
+      );
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [audio.recorderState, selectedSession?.status, selectedSessionId]);
 
   return {
     isPreview: false,
@@ -741,6 +1073,7 @@ export function useLiveConversationAPI() {
           || patch.draftPatch !== undefined
         )
       ) {
+        applyOptimisticSessionPatch(selectedSessionId, patch);
         await updateSession(selectedSessionId, {
           linkedPatient: patch.linkedPatient,
           encounterLabel: patch.encounterLabel,
@@ -750,7 +1083,19 @@ export function useLiveConversationAPI() {
     },
     startSelectedSession: async () => {
       if (selectedSessionId) {
-        await getSession(selectedSessionId); // Refresh session data
+        const now = new Date().toISOString();
+        applyRealtimeSessionUpdate(selectedSessionId, (session) => ({
+          ...session,
+          status: "live",
+          startedAt: session.startedAt || now,
+          endedAt: null,
+          transport: {
+            ...session.transport,
+            connectionState: "connected",
+            lastError: null,
+            lastEventAt: now,
+          },
+        }));
         const deviceId = audio.selectedDevice || undefined;
         await startSession(selectedSessionId, deviceId);
         await loadSessions();
@@ -786,7 +1131,19 @@ export function useLiveConversationAPI() {
         await finalizeSession(selectedSessionId);
       }
     },
+    deleteSelectedRecording: async () => {
+      if (selectedSessionId) {
+        await deleteRecording(selectedSessionId);
+      }
+    },
+    deleteSelectedFinalizedVisit: async () => {
+      if (selectedSessionId) {
+        await deleteFinalizedVisit(selectedSessionId);
+      }
+    },
     deleteSession,
+    deleteRecording,
+    deleteFinalizedVisit,
     refreshSessions: loadSessions,
   };
 }

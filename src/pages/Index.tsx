@@ -29,7 +29,7 @@ import {
   isCardActive,
   type ProcessedDocument,
 } from "@/lib/processedDocuments";
-import { ArrowLeft, Bell, ChevronLeft, ChevronRight, Printer, Mail, FileDown, Search, Key, Shield, Eye } from "lucide-react";
+import { ArrowLeft, Bell, ChevronLeft, ChevronRight, Printer, Mail, FileDown, FileText, Search, Key, Shield, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -181,6 +181,10 @@ const Index = () => {
     ? (activeSectionParam as Exclude<Section, null>)
     : null;
   const providerTokens = processedDocument?.agentInfo?.providerTokens;
+  const missingProcessedDashboardData =
+    processedDocument?.documentType !== "voice"
+    && (processedDocument?.status === "processed" || processedDocument?.status === "partial" || processedDocument?.status === "review_required")
+    && !processedDocument?.result;
   const d: DashboardPatientData | null = useMemo(
     () => {
       if (voiceDashboardError) {
@@ -711,6 +715,17 @@ const Index = () => {
               </Button>
             </>
           )}
+          {documentId ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              onClick={() => navigate(`/soap/${documentId}`)}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              SOAP
+            </Button>
+          ) : null}
           <Popover open={recordSearchOpen} onOpenChange={setRecordSearchOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -810,7 +825,11 @@ const Index = () => {
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-6">
           <h2 className="text-base font-semibold text-rose-900">Processed document unavailable</h2>
           <p className="mt-2 text-sm text-rose-700">
-            {voiceDashboardError || loadError || "This processed record could not be loaded."}
+            {voiceDashboardError
+              || loadError
+              || (missingProcessedDashboardData
+                ? "This record was marked processed before extraction data was stored. Reprocess it once from the Upload Center."
+                : "This processed record could not be loaded.")}
           </p>
           <div className="mt-4">
             <Button onClick={() => navigate("/upload")} className="bg-rose-600 text-white hover:bg-rose-700">

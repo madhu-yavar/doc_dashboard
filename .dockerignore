@@ -1,53 +1,57 @@
-# Dependencies
-node_modules
+# Node modules
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-bun.lockb
 
-# Build output (will be rebuilt in container)
-dist
-build
+# Build outputs
+dist/
+.next/
+out/
 
-# Testing
-coverage
-.nyc_output
-test-results
-
-# Development files
+# Environment files
+.env
 .env.local
 .env.*.local
+
+# Storage directories (large files)
+server/storage/
+server/storage/uploads/
+server/storage/masked_images/
+server/storage/prescriptions/
+server/storage/documents.json
+server/storage/voice_*/
+server/storage/live_conversation_*/
+
+# Development files
+.vscode/
+.idea/
 *.log
-.vscode
-.idea
-*.swp
-*.swo
+.DS_Store
 
 # Git
-.git
+.git/
 .gitignore
 
-# Docker
-Dockerfile
-.dockerignore
-docker-compose*.yml
-
 # Documentation
+docs/
+*.md
+LICENSE
 README.md
-docs
+
+# Archives
+archive/
 
 # Test files
-test-*.cjs
-test-*.md
-playwright.config.ts
-playwright-fixture.ts
-
-# Storage (will be created in container or mounted as volume)
-server/storage
-*.pdf
-!public/*.pdf
+tests/
+test/
+*.test.*
+*.spec.*
 
 # Misc
-.DS_Store
-*.tsbuildinfo
+*.swp
+*.swo
+*~
+.cache/
+tmp/
+temp/

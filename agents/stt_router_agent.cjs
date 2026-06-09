@@ -66,7 +66,7 @@ class STTRouterAgent {
     this.hybridReconcilerSkill = new HybridSTTReconcilerSkill({
       gemmaUrl: config.gemmaUrl || process.env.GEMMA_URL,
       gemmaModel: config.gemmaModel || process.env.GEMMA_MODEL,
-      timeout: config.hybridTimeout || 60000,
+      timeout: config.hybridTimeout || 180000, // 3 minutes for LLM reconciliation
       debug: this.config.debug,
     });
 

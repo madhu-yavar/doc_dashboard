@@ -1,8 +1,7 @@
 import { normalizeRiskEntry, normalizeRiskLevel } from "@/lib/riskNormalization";
 import type { DashboardPatientData } from "@/data/patientData";
-
-const API_ROOT = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
-const BACKEND_ORIGIN = API_ROOT || (typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : "");
+import { API_BASE, BACKEND_ORIGIN } from "@/lib/backendConfig";
+export { API_BASE } from "@/lib/backendConfig";
 
 // Extend DashboardPatientData to include card activation and masked image info
 declare module "@/data/patientData" {
@@ -49,7 +48,6 @@ declare module "@/data/patientData" {
   }
 }
 
-export const API_BASE = `${API_ROOT}/api`;
 export const VOICE_DASHBOARD_INCOMPLETE_ERROR = "Voice extraction completed but dashboard payload was incomplete.";
 
 const resolveMaskedImageUrl = (

@@ -1,0 +1,799 @@
+{
+  "runs": [
+    {
+      "runId": "5431def0-bdb6-4d90-8c31-ff22249d2db2",
+      "workflow": "extraction",
+      "documentId": "87590ac4-7232-43e1-ad91-4d1416a5563d",
+      "chatId": null,
+      "requestId": "extract_4085679f-bc96-494f-8612-959b26eaffb8",
+      "title": "sample_simplified_dashboard_escalation_test_v2.pdf",
+      "actor": "system",
+      "status": "failed",
+      "startedAt": "2026-04-14T11:28:06.307Z",
+      "completedAt": "2026-04-14T11:28:06.308Z",
+      "durationMs": 1,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "status": "failed",
+        "mode": "interactive_sse"
+      },
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "runId": "98ec286f-9536-4e4e-93ed-5a4b61a9d5d8",
+      "workflow": "extraction",
+      "documentId": "9445a1a4-1f46-4727-aa2a-4b8aca770c1c",
+      "chatId": null,
+      "requestId": "extract_a165c681-50e2-4067-91bb-9edffc3f79d0",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf",
+      "actor": "system",
+      "status": "failed",
+      "startedAt": "2026-04-14T11:28:04.189Z",
+      "completedAt": "2026-04-14T11:28:04.194Z",
+      "durationMs": 5,
+      "metadata": {
+        "department": "Cardiology / Cath Lab",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "status": "failed",
+        "mode": "interactive_sse"
+      },
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "runId": "db0c25f3-c1e1-40b7-bd40-7885cb3e6868",
+      "workflow": "extraction",
+      "documentId": "a6b9ca38-d433-4662-8cf2-b7b6a012c8c3",
+      "chatId": null,
+      "requestId": "extract_d8a88499-14fc-4f99-83c2-9458561c5908",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary4.cls.pdf",
+      "actor": "system",
+      "status": "failed",
+      "startedAt": "2026-04-14T11:28:04.189Z",
+      "completedAt": "2026-04-14T11:28:04.191Z",
+      "durationMs": 2,
+      "metadata": {
+        "department": "Pediatrics / ENT",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "status": "failed",
+        "mode": "interactive_sse"
+      },
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "runId": "0ea78be1-0fa3-4e0f-899e-dc5220f73a08",
+      "workflow": "extraction",
+      "documentId": "3ff7ff03-7874-4772-848f-e93e28b09987",
+      "chatId": null,
+      "requestId": "extract_b05f6761-47a2-4ecd-81c8-d9fd06b16640",
+      "title": "sample_simplified_dashboard_escalation_test.pdf",
+      "actor": "system",
+      "status": "failed",
+      "startedAt": "2026-04-14T11:28:04.188Z",
+      "completedAt": "2026-04-14T11:28:04.190Z",
+      "durationMs": 2,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "status": "failed",
+        "mode": "interactive_sse"
+      },
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "runId": "45bea6cf-7639-41bd-9d7d-473e94f36474",
+      "workflow": "extraction",
+      "documentId": "3b0ffd7a-2150-4043-854c-d5e6e998c69c",
+      "chatId": null,
+      "requestId": "extract_db6c35ff-e5aa-4a36-b3ed-3c06bdbbf95f",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary2.cls.pdf",
+      "actor": "system",
+      "status": "failed",
+      "startedAt": "2026-04-14T11:28:02.058Z",
+      "completedAt": "2026-04-14T11:28:02.061Z",
+      "durationMs": 3,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "status": "failed",
+        "mode": "interactive_sse"
+      },
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "runId": "26dc4f3d-d3fc-4509-bd11-740f80903f6d",
+      "workflow": "extraction",
+      "documentId": "a3ed8dba-497f-4228-85e2-06f820c141b6",
+      "chatId": null,
+      "requestId": "extract_9d42c66a-d847-4de2-9ada-432201ff2376",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary1.cls.pdf",
+      "actor": "system",
+      "status": "failed",
+      "startedAt": "2026-04-14T11:28:02.057Z",
+      "completedAt": "2026-04-14T11:28:02.059Z",
+      "durationMs": 2,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "status": "failed",
+        "mode": "interactive_sse"
+      },
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "runId": "ee526085-0bab-4cf2-adf3-f9391299d584",
+      "workflow": "extraction",
+      "documentId": "d5a8c6ed-ad4d-44d4-afd2-49b9f5e53dfe",
+      "chatId": null,
+      "requestId": "extract_455cf08f-55e5-4887-98a2-99089aa3dadf",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary6.cls.pdf",
+      "actor": "system",
+      "status": "failed",
+      "startedAt": "2026-04-14T11:28:02.057Z",
+      "completedAt": "2026-04-14T11:28:02.058Z",
+      "durationMs": 1,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "status": "failed",
+        "mode": "interactive_sse"
+      },
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "runId": "feecd6b4-219e-4254-af42-2cdf9488dcda",
+      "workflow": "extraction",
+      "documentId": "35b772b7-3b87-42e0-962e-7f45aa3f85f4",
+      "chatId": null,
+      "requestId": "extract_8247d5e8-a287-4592-a7fe-2cfd9bbdc137",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary10.cls.pdf",
+      "actor": "system",
+      "status": "failed",
+      "startedAt": "2026-04-14T11:27:59.936Z",
+      "completedAt": "2026-04-14T11:27:59.941Z",
+      "durationMs": 5,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "status": "failed",
+        "mode": "interactive_sse"
+      },
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "runId": "59bab57d-1e65-4d56-9cf0-f4a9564739c7",
+      "workflow": "extraction",
+      "documentId": "c6682eb0-1386-477f-b98e-ff36a45e18bb",
+      "chatId": null,
+      "requestId": "extract_3e45d161-005d-47d7-8da5-2160dc1b3cc5",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary5.cls.pdf",
+      "actor": "system",
+      "status": "failed",
+      "startedAt": "2026-04-14T11:27:59.935Z",
+      "completedAt": "2026-04-14T11:27:59.940Z",
+      "durationMs": 5,
+      "metadata": {
+        "department": "Neonatal / Pediatrics",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "status": "failed",
+        "mode": "interactive_sse"
+      },
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "runId": "4fcaaf8d-6b82-48df-8ef9-a0a89e2eeb78",
+      "workflow": "extraction",
+      "documentId": "0aad2a22-df9f-47eb-924e-37da88b55795",
+      "chatId": null,
+      "requestId": "extract_4f29345a-b5fa-4fc3-8ad8-a73c9dd8ae4d",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary9.cls.pdf",
+      "actor": "system",
+      "status": "failed",
+      "startedAt": "2026-04-14T11:27:59.934Z",
+      "completedAt": "2026-04-14T11:27:59.939Z",
+      "durationMs": 5,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "status": "failed",
+        "mode": "interactive_sse"
+      },
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "runId": "1d9d2bdf-58f5-4f92-9c5b-848c89038353",
+      "workflow": "extraction",
+      "documentId": "cbd0f34e-1a1c-45c2-a2e1-40f8109a9e66",
+      "chatId": null,
+      "requestId": "extract_0b3d64b8-c9cf-4017-a2b2-8e0ca972c80d",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary8.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T12:28:57.168Z",
+      "completedAt": "2026-04-13T12:34:14.586Z",
+      "durationMs": 317418,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 317404,
+        "tokensUsed": 17312,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals",
+          "Diagnosis",
+          "Medications",
+          "Treatment",
+          "Clinical Notes"
+        ],
+        "escalationRequired": true,
+        "deviationPct": 71
+      },
+      "error": null
+    },
+    {
+      "runId": "37bd84be-b7ab-48d6-b89f-4a1d829bdcdd",
+      "workflow": "extraction",
+      "documentId": "02c8ad76-a881-4161-b16f-7f553daf582d",
+      "chatId": null,
+      "requestId": "extract_1e516abe-7135-40f5-add7-600d8dd39e0d",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary4.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:51:25.109Z",
+      "completedAt": "2026-04-13T11:54:20.167Z",
+      "durationMs": 175058,
+      "metadata": {
+        "department": "Pediatrics / ENT",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 175049,
+        "tokensUsed": 22897,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals",
+          "Medications"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 29
+      },
+      "error": null
+    },
+    {
+      "runId": "c38c4c7f-ce96-458a-8cf9-3343eea9dc8b",
+      "workflow": "extraction",
+      "documentId": "4ea67bb0-ec69-40cb-a38d-07b4927b9506",
+      "chatId": null,
+      "requestId": "extract_a98ba07e-0c37-445d-8fc2-35ba087db4da",
+      "title": "sample_simplified_dashboard_escalation_test_v2.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:51:25.100Z",
+      "completedAt": "2026-04-13T11:53:48.478Z",
+      "durationMs": 143378,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 143362,
+        "tokensUsed": 8870,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [],
+        "escalationRequired": false,
+        "deviationPct": 0
+      },
+      "error": null
+    },
+    {
+      "runId": "628a4513-8a25-4f28-86b9-fcd25abcbc6f",
+      "workflow": "extraction",
+      "documentId": "2c4588a8-4c7c-4908-b196-6b7ee29d176c",
+      "chatId": null,
+      "requestId": "extract_c76d562c-b21f-446d-beb3-86df07873f1f",
+      "title": "sample_simplified_dashboard_escalation_test.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:51:25.089Z",
+      "completedAt": "2026-04-13T11:53:52.744Z",
+      "durationMs": 147655,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 147639,
+        "tokensUsed": 9058,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [],
+        "escalationRequired": false,
+        "deviationPct": 0
+      },
+      "error": null
+    },
+    {
+      "runId": "aabf45d7-cf9b-4f4e-ad17-9dce14b8db56",
+      "workflow": "extraction",
+      "documentId": "64e24e22-0b8e-4dd2-a25c-72caf046637b",
+      "chatId": null,
+      "requestId": "extract_b633efbf-f1c9-4d5f-abd8-9ecfac3ff052",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:47:44.168Z",
+      "completedAt": "2026-04-13T11:51:23.813Z",
+      "durationMs": 219645,
+      "metadata": {
+        "department": "Cardiology / Cath Lab",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 219590,
+        "tokensUsed": 24207,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 14
+      },
+      "error": null
+    },
+    {
+      "runId": "12977445-c3bb-4075-ac11-ef372204f525",
+      "workflow": "extraction",
+      "documentId": "6c137c5c-ccbd-40db-892e-ed79d0a3b96f",
+      "chatId": null,
+      "requestId": "extract_759ae712-1691-4bdc-bae8-db531f8737ca",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary2.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:47:44.094Z",
+      "completedAt": "2026-04-13T11:51:23.332Z",
+      "durationMs": 219238,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 219152,
+        "tokensUsed": 24521,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 25
+      },
+      "error": null
+    },
+    {
+      "runId": "ccdd593c-7c12-44a2-ba9b-e4c272700d13",
+      "workflow": "extraction",
+      "documentId": "b3b9065e-3eaf-49a7-be08-ccd25ad6afb3",
+      "chatId": null,
+      "requestId": "extract_ed5f6347-cdf9-4a80-84e5-c129f5f3a828",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary1.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:47:44.089Z",
+      "completedAt": "2026-04-13T11:51:04.619Z",
+      "durationMs": 200530,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 200517,
+        "tokensUsed": 24588,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 14
+      },
+      "error": null
+    },
+    {
+      "runId": "bcc9dc6c-640a-4311-bfbd-3d2457fca1f9",
+      "workflow": "extraction",
+      "documentId": "5073dc36-eff6-4644-928a-2b27b76d1a2f",
+      "chatId": null,
+      "requestId": "extract_ac4dfba4-a4cc-4394-a8ba-ac9b226e28f8",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary6.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:43:19.166Z",
+      "completedAt": "2026-04-13T11:47:07.372Z",
+      "durationMs": 228206,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 228166,
+        "tokensUsed": 23615,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 14
+      },
+      "error": null
+    },
+    {
+      "runId": "c6afbf29-47fa-4464-96de-086629cd47d0",
+      "workflow": "extraction",
+      "documentId": "ff6ca66c-bcf1-4345-aa80-2067fb103c49",
+      "chatId": null,
+      "requestId": "extract_dc031d68-744e-49b5-8144-4796d2061566",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary10.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:43:19.091Z",
+      "completedAt": "2026-04-13T11:46:36.710Z",
+      "durationMs": 197619,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 197506,
+        "tokensUsed": 23155,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 14
+      },
+      "error": null
+    },
+    {
+      "runId": "2e6df08d-3943-4445-a049-39a2024bec9d",
+      "workflow": "extraction",
+      "documentId": "77645047-7279-4305-a8da-ae417d620611",
+      "chatId": null,
+      "requestId": "extract_c89b2e2c-2682-4bcd-8fb6-5b75c2031d7e",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary5.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:43:19.087Z",
+      "completedAt": "2026-04-13T11:46:26.216Z",
+      "durationMs": 187129,
+      "metadata": {
+        "department": "Neonatal / Pediatrics",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 187117,
+        "tokensUsed": 24381,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 14
+      },
+      "error": null
+    },
+    {
+      "runId": "cbe47345-2e27-4360-ba65-bf812879f64c",
+      "workflow": "extraction",
+      "documentId": "7f1651cf-e63c-44af-a927-2b6a3a8c3935",
+      "chatId": null,
+      "requestId": "extract_4e103854-be2f-4945-a726-4cdfeb55e998",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary8.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:38:17.227Z",
+      "completedAt": "2026-04-13T11:43:44.783Z",
+      "durationMs": 327556,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 327480,
+        "tokensUsed": 18413,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals",
+          "Diagnosis",
+          "Medications",
+          "Treatment",
+          "Clinical Notes"
+        ],
+        "escalationRequired": true,
+        "deviationPct": 71
+      },
+      "error": null
+    },
+    {
+      "runId": "96275380-947f-4344-9448-f20be178b13f",
+      "workflow": "extraction",
+      "documentId": "88814766-302a-4329-ae6f-e09397706759",
+      "chatId": null,
+      "requestId": "extract_9864572a-9899-430c-8770-4f108aa6b0a0",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary7.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:38:17.200Z",
+      "completedAt": "2026-04-13T11:42:22.475Z",
+      "durationMs": 245275,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 245238,
+        "tokensUsed": 26774,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 14
+      },
+      "error": null
+    },
+    {
+      "runId": "a633f641-eeed-4a77-a3f9-86f2da09f9ae",
+      "workflow": "extraction",
+      "documentId": "bb89606b-9a86-4a13-8b3d-aca2fb676f25",
+      "chatId": null,
+      "requestId": "extract_a858b9fb-d382-467d-8828-f57c3750d95b",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary9.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:38:17.197Z",
+      "completedAt": "2026-04-13T11:42:14.737Z",
+      "durationMs": 237540,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 237529,
+        "tokensUsed": 24360,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 14
+      },
+      "error": null
+    },
+    {
+      "runId": "ae6feb24-a229-450b-b76d-b96fa20cd051",
+      "workflow": "extraction",
+      "documentId": "94f0ed72-0860-41de-9622-d4bb06b2c34c",
+      "chatId": null,
+      "requestId": "extract_616dc180-35d5-435d-aabf-e555783a32e7",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary16.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:34:05.125Z",
+      "completedAt": "2026-04-13T11:38:11.331Z",
+      "durationMs": 246206,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 246177,
+        "tokensUsed": 20673,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 20
+      },
+      "error": null
+    },
+    {
+      "runId": "e8f9e23b-2527-4bcf-9fdf-e2d384bdb68b",
+      "workflow": "extraction",
+      "documentId": "da7fc154-86a3-4e94-be4e-e574ecedfa6b",
+      "chatId": null,
+      "requestId": "extract_4e4a2008-0664-4640-8278-315f1b5aa6f1",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary14.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:34:05.079Z",
+      "completedAt": "2026-04-13T11:37:50.146Z",
+      "durationMs": 225067,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 225011,
+        "tokensUsed": 24220,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 14
+      },
+      "error": null
+    },
+    {
+      "runId": "7ba006d8-20b0-4626-9a24-899d98815701",
+      "workflow": "extraction",
+      "documentId": "bc1cbbb2-7e67-4434-b86a-8ae14269403b",
+      "chatId": null,
+      "requestId": "extract_6be3befa-fc14-427a-82d8-e3b58eb8666f",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary15.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:34:05.076Z",
+      "completedAt": "2026-04-13T11:38:16.739Z",
+      "durationMs": 251663,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 251656,
+        "tokensUsed": 28095,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 14
+      },
+      "error": null
+    },
+    {
+      "runId": "85dfe5a4-ecfb-42d2-9386-5f0f6276be3c",
+      "workflow": "extraction",
+      "documentId": "f10adc4c-123a-4eb6-9e07-6f500237dd24",
+      "chatId": null,
+      "requestId": "extract_735e0a07-3a22-466b-8bf5-cacf72de3262",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:29:13.729Z",
+      "completedAt": "2026-04-13T11:34:02.463Z",
+      "durationMs": 288734,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 288543,
+        "tokensUsed": 27547,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 14
+      },
+      "error": null
+    },
+    {
+      "runId": "157aae83-651d-418a-9e57-8fab61f62796",
+      "workflow": "extraction",
+      "documentId": "67129d86-a071-4149-886c-29d66ca94007",
+      "chatId": null,
+      "requestId": "extract_4a873d78-d549-4169-b269-39b967cec051",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:29:13.728Z",
+      "completedAt": "2026-04-13T11:32:51.358Z",
+      "durationMs": 217630,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 217331,
+        "tokensUsed": 24137,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 14
+      },
+      "error": null
+    },
+    {
+      "runId": "7f182519-cfe1-4eca-ab99-6cadfc923928",
+      "workflow": "extraction",
+      "documentId": "3d6555e9-8113-4bb9-9f1c-e378272efeca",
+      "chatId": null,
+      "requestId": "extract_a74a22d6-51ef-43db-b62a-4b7304d6b155",
+      "title": "Custom.MEXX.Report.ZEN.DischargeSummary11.cls.pdf",
+      "actor": "system",
+      "status": "completed",
+      "startedAt": "2026-04-13T11:29:13.727Z",
+      "completedAt": "2026-04-13T11:32:25.062Z",
+      "durationMs": 191335,
+      "metadata": {
+        "department": "Inpatient nursing / medical",
+        "mode": "interactive_sse"
+      },
+      "summary": {
+        "success": true,
+        "latencyMs": 191278,
+        "tokensUsed": 25027,
+        "confidence": "high",
+        "stepsCompleted": 7,
+        "weakItems": [
+          "Vitals"
+        ],
+        "escalationRequired": false,
+        "deviationPct": 14
+      },
+      "error": null
+    }
+  ]
+}

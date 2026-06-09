@@ -1,0 +1,476 @@
+{
+  "summary": {
+    "total": 15,
+    "icd": {
+      "total": 5,
+      "passed": 3,
+      "failed": 2
+    },
+    "clinical": {
+      "total": 5,
+      "passed": 5,
+      "failed": 0
+    },
+    "drug": {
+      "total": 5,
+      "passed": 4,
+      "failed": 1
+    },
+    "with_external_citations": 8
+  },
+  "results": [
+    {
+      "category": "icd",
+      "label": "ICD-01 multiple myeloma",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary9.cls.pdf",
+      "documentId": "54aea3fc-f114-4635-9aec-53ec6073188f",
+      "passed": true,
+      "note": "code returned with 3 external citation(s)",
+      "turns": [
+        {
+          "user": "What is the ICD-10-CM code for multiple myeloma?",
+          "ok": true,
+          "answer": "External Reference: The ICD-10-CM code for Multiple myeloma in remission is C90.01.",
+          "source_class": "external",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "[NLM ICD-10-CM: C90.01]",
+              "source_class": "external",
+              "url": "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=multiple%20myeloma"
+            },
+            {
+              "label": "[NLM ICD-10-CM: C90.02]",
+              "source_class": "external",
+              "url": "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=multiple%20myeloma"
+            },
+            {
+              "label": "[NLM ICD-10-CM: C90.00]",
+              "source_class": "external",
+              "url": "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=multiple%20myeloma"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "icd",
+      "label": "ICD-02 ganglion cyst",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "passed": false,
+      "note": "expected ICD code + external citation, got: I searched approved external medical sources but did not find a reliable answer for that question. The uploaded record documents: Ganglionic cyst left hand Middle finger DIP joint.",
+      "turns": [
+        {
+          "user": "What is the ICD-10-CM code for ganglion cyst?",
+          "ok": true,
+          "answer": "I searched approved external medical sources but did not find a reliable answer for that question. The uploaded record documents: Ganglionic cyst left hand Middle finger DIP joint.",
+          "source_class": "mixed",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Ganglionic cyst left hand Middle finger DIP joint",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "icd",
+      "label": "ICD-03 newborn",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary5.cls.pdf",
+      "documentId": "91f4defb-4903-42fe-a5ff-2a2b22f986ce",
+      "passed": false,
+      "note": "expected ICD code + external citation, got: I tried approved external medical sources, but the external search is unavailable right now. The uploaded record documents: Newborn.",
+      "turns": [
+        {
+          "user": "What is the ICD-10-CM code for newborn?",
+          "ok": true,
+          "answer": "I tried approved external medical sources, but the external search is unavailable right now. The uploaded record documents: Newborn.",
+          "source_class": "mixed",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Newborn",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "icd",
+      "label": "ICD-04 intracerebral hemorrhage",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "passed": true,
+      "note": "code returned with 3 external citation(s)",
+      "turns": [
+        {
+          "user": "What is the ICD-10-CM code for intracerebral hemorrhage?",
+          "ok": true,
+          "answer": "External Reference: The ICD-10-CM code for Nontraumatic intracerebral hemorrhage, intraventricular is I61.5.",
+          "source_class": "external",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "[NLM ICD-10-CM: I61.5]",
+              "source_class": "external",
+              "url": "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=intracerebral%20hemorrhage"
+            },
+            {
+              "label": "[NLM ICD-10-CM: I61.8]",
+              "source_class": "external",
+              "url": "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=intracerebral%20hemorrhage"
+            },
+            {
+              "label": "[NLM ICD-10-CM: I61.9]",
+              "source_class": "external",
+              "url": "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=intracerebral%20hemorrhage"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "icd",
+      "label": "ICD-05 hypertension",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "passed": true,
+      "note": "code returned with 3 external citation(s)",
+      "turns": [
+        {
+          "user": "What is the ICD-10-CM code for hypertension?",
+          "ok": true,
+          "answer": "External Reference: The ICD-10-CM code for Renovascular hypertension is I15.0.",
+          "source_class": "external",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "[NLM ICD-10-CM: I15.0]",
+              "source_class": "external",
+              "url": "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=hypertension"
+            },
+            {
+              "label": "[NLM ICD-10-CM: I1A.0]",
+              "source_class": "external",
+              "url": "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=hypertension"
+            },
+            {
+              "label": "[NLM ICD-10-CM: I97.3]",
+              "source_class": "external",
+              "url": "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=hypertension"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "clinical",
+      "label": "CLIN-01 low BP contradiction",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "passed": true,
+      "note": "clinical explanation returned; external citations=0",
+      "turns": [
+        {
+          "user": "Why is the patient's blood pressure low?",
+          "ok": true,
+          "answer": "I tried approved external medical sources, but the external search is unavailable right now. The uploaded record documents: Systolic BP 160 mmHg.",
+          "source_class": "mixed",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Systolic BP 160 mmHg",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "clinical",
+      "label": "CLIN-02 high BP explanation",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "passed": true,
+      "note": "clinical explanation returned; external citations=0",
+      "turns": [
+        {
+          "user": "Why is the patient's blood pressure high?",
+          "ok": true,
+          "answer": "I tried approved external medical sources, but the external search is unavailable right now. The uploaded record documents: Systolic BP 160 mmHg.",
+          "source_class": "mixed",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Systolic BP 160 mmHg",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "clinical",
+      "label": "CLIN-03 multiple myeloma fatigue",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary9.cls.pdf",
+      "documentId": "54aea3fc-f114-4635-9aec-53ec6073188f",
+      "passed": true,
+      "note": "clinical explanation returned; external citations=3",
+      "turns": [
+        {
+          "user": "Why do patients with multiple myeloma get tired?",
+          "ok": true,
+          "answer": "Patient Record: Multiple myeloma.\n\nExternal Reference: Risk of adverse events in elotuzumab-treated patients with multiple myeloma: a systematic review and meta-analysis.",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Multiple myeloma",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[PubMed: 41820200]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41820200/"
+            },
+            {
+              "label": "[PubMed: 37670301]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/37670301/"
+            },
+            {
+              "label": "[PubMed: 41280707]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41280707/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "clinical",
+      "label": "CLIN-04 ganglion cyst swelling",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "passed": true,
+      "note": "clinical explanation returned; external citations=0",
+      "turns": [
+        {
+          "user": "Why do patients with ganglion cyst get finger swelling?",
+          "ok": true,
+          "answer": "I searched approved external medical sources but did not find a reliable answer for that question. The uploaded record documents: Nursing Initial Assessment: Patient presents with ganglionic swelling on left middle finger DIP joint..",
+          "source_class": "mixed",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Nursing Initial Assessment: Patient presents with ganglionic swelling on left middle finger DIP joint.",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "clinical",
+      "label": "CLIN-05 intracerebral bleed concern",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "passed": true,
+      "note": "clinical explanation returned; external citations=1",
+      "turns": [
+        {
+          "user": "Why is intracerebral bleed concerning?",
+          "ok": true,
+          "answer": "Patient Record: (R) thalamo capsular bleed.\n\nExternal Reference: Association between serum potassium levels and haematoma expansion in intracerebral hemorrhage: a retrospective cohort study.",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "(R) thalamo capsular bleed",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[PubMed: 41929597]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41929597/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "drug",
+      "label": "DRUG-01 mannitol use",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "passed": true,
+      "note": "drug answer returned; external citations=3",
+      "turns": [
+        {
+          "user": "What does mannitol do?",
+          "ok": true,
+          "answer": "External Reference:\nMannitol is used for the assessment of glomerular filtration rate in chronic kidney disease, as an outcome measure in asthma intervention studies, and is used in the treatment of intracerebral hemorrhage.",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "INJ MANNITOL (20%) - 100 ML IV TDS",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[PubMed: 41930677]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41930677/"
+            },
+            {
+              "label": "[PubMed: 41888951]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41888951/"
+            },
+            {
+              "label": "[PubMed: 41092697]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41092697/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "drug",
+      "label": "DRUG-02 augmentin use",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary1.cls.pdf",
+      "documentId": "6c20e0b4-4191-453f-b360-a96742a1e806",
+      "passed": false,
+      "note": "drug answer quality weak: I don't have sufficient information to answer this safely from the patient record or approved medical sources.",
+      "turns": [
+        {
+          "user": "What is Augmentin used for?",
+          "ok": true,
+          "answer": "I don't have sufficient information to answer this safely from the patient record or approved medical sources.",
+          "source_class": "internal",
+          "confidence_label": "refuse",
+          "decision_prompt": "",
+          "citations": []
+        }
+      ]
+    },
+    {
+      "category": "drug",
+      "label": "DRUG-03 pantoprazole role",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary9.cls.pdf",
+      "documentId": "54aea3fc-f114-4635-9aec-53ec6073188f",
+      "passed": true,
+      "note": "drug answer returned; external citations=1",
+      "turns": [
+        {
+          "user": "What does PAN 40 mg do?",
+          "ok": true,
+          "answer": "Patient Record: Tab Pan.\n\nExternal Reference: The modified Baveno classification for obstructive sleep apnoea: design of a pan-European prospective study.",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Tab Pan",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[PubMed: 41554237]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41554237/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "drug",
+      "label": "DRUG-04 stator purpose",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "passed": true,
+      "note": "drug answer returned; external citations=1",
+      "turns": [
+        {
+          "user": "Why do we need STATOR? What does it do?",
+          "ok": true,
+          "answer": "Patient Record: TAB STATOR 10.\n\nExternal Reference: Statins and postmenopausal breast cancer risk; results from the KARMA cohort.",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "TAB STATOR 10",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[PubMed: 41931132]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41931132/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "drug",
+      "label": "DRUG-05 cilacar composition",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary6.cls.pdf",
+      "documentId": "3996ee56-6b8b-4108-8436-4efc7e0b56e4",
+      "passed": true,
+      "note": "drug answer returned; external citations=0",
+      "turns": [
+        {
+          "user": "What is the composition for: T.CILACAR M?",
+          "ok": true,
+          "answer": "This answer is not available in the uploaded record. I can search approved medical sources to answer it. Do you want me to do that?",
+          "source_class": "internal",
+          "confidence_label": "low",
+          "decision_prompt": "Yes/No",
+          "citations": []
+        },
+        {
+          "user": "yes",
+          "ok": true,
+          "answer": "I searched approved external medical sources but did not find a reliable answer for that question. The uploaded record documents: T.CILACAR M.",
+          "source_class": "mixed",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "T.CILACAR M",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

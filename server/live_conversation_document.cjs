@@ -146,6 +146,7 @@ function normalizeTextList(items) {
 function buildClinicalNotes({
   diagnosisText,
   symptoms,
+  pastHistoryItems,
   planItems,
   followUpItems,
   transcriptText,
@@ -160,6 +161,7 @@ function buildClinicalNotes({
       author: "Live Conversation",
       date,
       summary: diagnosisText || "Clinical summary recorded during live conversation.",
+      background: pastHistoryItems.join(", "),
       assessment: symptoms.join(", "),
       recommendations: planItems.join("; "),
       pending_items: followUpItems,
@@ -179,6 +181,7 @@ function buildVoiceSourceData({ draft, linkedPatient, encounterLabel, createdAt,
   const chiefComplaint = asText(normalizedDraft.chiefComplaint);
   const hpi = asText(normalizedDraft.hpi);
   const ros = normalizeTextList(normalizedDraft.ros);
+  const pastHistoryItems = normalizeTextList(normalizedDraft.pastHistory);
   const diagnosisText = asText(normalizedDraft.diagnosis);
   const symptoms = normalizeTextList(normalizedDraft.symptoms);
   const planItems = normalizeTextList(normalizedDraft.plan);
@@ -205,6 +208,7 @@ function buildVoiceSourceData({ draft, linkedPatient, encounterLabel, createdAt,
           }
         : null,
       secondary: [],
+      comorbidities: pastHistoryItems,
       symptoms,
       icd_code: "",
     },
@@ -226,6 +230,7 @@ function buildVoiceSourceData({ draft, linkedPatient, encounterLabel, createdAt,
     clinical_notes: buildClinicalNotes({
       diagnosisText,
       symptoms,
+      pastHistoryItems,
       planItems,
       followUpItems,
       transcriptText,
@@ -325,7 +330,7 @@ function buildLiveConversationDocument(session, options = {}) {
     id: documentId,
     type: "voice",
     documentType: "voice",
-    documentSubtype: "live_conversation",
+    documentSubtype: "unknown",
     status: "processed",
     name,
     fileName: name,

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { BACKEND_ORIGIN } from "@/lib/backendConfig";
 
 export type MediaRecorderState = "idle" | "starting" | "recording" | "paused" | "stopping" | "failed";
 export type ConnectionState = "idle" | "connecting" | "connected" | "reconnecting" | "closed" | "error";
@@ -8,10 +9,10 @@ export interface LiveAudioConfig {
   audioBitsPerSecond?: number;
   chunkIntervalMs?: number;
   enableDebugLogs?: boolean;
-  onTranscriptPartial?: (transcript: any) => void;
-  onTranscriptFinal?: (segment: any) => void;
-  onDraftUpdated?: (draft: any) => void;
-  onSessionStateChange?: (status: string) => void;
+  onTranscriptPartial?: (sessionId: string, transcript: any) => void;
+  onTranscriptFinal?: (sessionId: string, segment: any) => void;
+  onDraftUpdated?: (sessionId: string, draft: any) => void;
+  onSessionStateChange?: (sessionId: string, status: string) => void;
 }
 
 const DEFAULT_CHUNK_INTERVAL = 3000; // lower latency for live transcript updates
@@ -20,17 +21,8 @@ const DEFAULT_AUDIO_BITRATE = 128000; // 128 kbps for better quality
 const MICROPHONE_GAIN_BOOST = 2.0; // Not used - keeping for reference
 const WEBSOCKET_CONNECT_TIMEOUT_MS = 10000;
 
-function isSafariBrowser() {
-  const userAgent = window.navigator.userAgent || "";
-  return /Safari/i.test(userAgent) && !/Chrome|Chromium|CriOS|Edg|OPR/i.test(userAgent);
-}
-
 function resolveLiveConversationWebSocketUrl(sessionId: string) {
-  const configuredApiRoot = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
-  const baseOrigin = configuredApiRoot
-    ? new URL(configuredApiRoot, window.location.origin).origin
-    : window.location.origin;
-  const websocketOrigin = baseOrigin.replace(/^http/i, (protocol) =>
+  const websocketOrigin = BACKEND_ORIGIN.replace(/^http/i, (protocol) =>
     protocol.toLowerCase() === "https" ? "wss" : "ws",
   );
 
@@ -270,7 +262,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
 
         switch (message.type) {
           case "session.ready":
-            onSessionStateChange?.(message.status);
+            onSessionStateChange?.(message.sessionId || sessionIdRef.current || "", message.status);
             break;
           case "session.state":
             if (message.status === "paused") {
@@ -283,16 +275,16 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
               setConnectionState("closed");
               clearPendingEnd();
             }
-            onSessionStateChange?.(message.status);
+            onSessionStateChange?.(message.sessionId || sessionIdRef.current || "", message.status);
             break;
           case "transcript.final":
-            onTranscriptFinal?.(message.segment);
+            onTranscriptFinal?.(message.sessionId || sessionIdRef.current || "", message.segment);
             break;
           case "transcript.partial":
-            onTranscriptPartial?.(message.transcript);
+            onTranscriptPartial?.(message.sessionId || sessionIdRef.current || "", message.transcript);
             break;
           case "draft.updated":
-            onDraftUpdated?.(message.draft);
+            onDraftUpdated?.(message.sessionId || sessionIdRef.current || "", message.draft);
             break;
           case "session.error":
             setError(message.error);
@@ -413,21 +405,13 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
 
       let supportedMimeType = mimeType;
       // Prioritize WebM/Opus which works best with both browsers and Whisper STT
-      const types = isSafariBrowser()
-        ? [
-            "audio/mp4",
-            "audio/webm;codecs=opus",
-            "audio/webm",
-            "audio/ogg;codecs=opus",
-            "audio/mpeg",
-          ]
-        : [
-            "audio/webm;codecs=opus",
-            "audio/webm",
-            "audio/ogg;codecs=opus",
-            "audio/mp4",
-            "audio/mpeg",
-          ];
+      const types = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+        "audio/mp4",
+        "audio/mpeg",
+      ];
 
       for (const type of types) {
         if (MediaRecorder.isTypeSupported(type)) {
@@ -454,6 +438,9 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
             log("Sending audio chunk", { size: event.data.size });
             console.log("[LiveConversationAudio] Sending audio chunk", { size: event.data.size, type: event.data.type });
             websocketRef.current.send(event.data);
+            // Local capture is clearly flowing at this point, so don't fail start
+            // just because the backend "live" state ack arrives late.
+            clearPendingStart();
           }
         }
       };
@@ -489,7 +476,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
       }
       throw err instanceof Error ? err : new Error(message);
     }
-  }, [mimeType, audioBitsPerSecond, chunkIntervalMs, log, enumerateDevices, startLevelMonitoring]);
+  }, [mimeType, audioBitsPerSecond, chunkIntervalMs, log, enumerateDevices, startLevelMonitoring, clearPendingStart]);
 
   const uploadFinalRecording = useCallback(async (sessionId: string) => {
     const recordedChunks = recordedChunksRef.current.filter((chunk) => chunk.size > 0);
@@ -723,7 +710,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
         timeoutId: window.setTimeout(() => {
           pendingEndRef.current = null;
           reject(new Error("Timed out waiting for session to finish"));
-        }, 8000),
+        }, 60000), // 60 seconds - server needs time for final hybrid reconciliation
       };
 
       websocket.send(JSON.stringify({ type: "session.end" }));

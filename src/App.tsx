@@ -9,6 +9,7 @@ import Login from "./pages/Login.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import UploadCenter from "./pages/UploadCenter.tsx";
 import Prescription from "./pages/Prescription.tsx";
+import SOAP from "./pages/SOAP.tsx";
 import { SpeakerDiarizationTest } from "./components/voice/SpeakerDiarizationTest.tsx";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/dashboard" element={<Index />} />
               <Route path="/upload" element={<UploadCenter />} />
               <Route path="/prescription/:documentId" element={<Prescription />} />
+              <Route path="/soap/:documentId" element={<SOAP />} />
               <Route path="/test/speaker-diarization" element={<SpeakerDiarizationTest />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

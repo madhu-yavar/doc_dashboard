@@ -1,0 +1,11 @@
+{
+  "exports": [
+    {
+      "id": "d8e9e338-5106-471e-911b-0fb06f591aca",
+      "documentId": "6b8ce90c-b317-4667-ac0a-e1b26c3b2dd3",
+      "chatId": "bf971ef0-2da6-48ab-92b9-9f55bf360c4a",
+      "createdAt": "2026-04-09T07:27:05.150Z",
+      "chart_note_appendix": "AI Assistant Summary for Custom.MEXX.Report.ZEN.DischargeSummary11.cls.pdf\nGenerated: 2026-04-09T07:27:05.150Z\n\nClinical Q&A\n1. Falls, DVT, and aspiration.\n2. This answer is not available in the uploaded record. I can search approved medical sources to answer it. Do you want me to do that?\n3. External search is approved. Enter a Gemini API key to use Gemini for grounded external synthesis. The key will not be stored in chat history.\n4. A blood pressure reading of 80/40 mmHg is considered low blood pressure, also known as hypotension, as it falls below the typical threshold of 90/60 mmHg. While some individuals may naturally have low blood pressure without experiencing any symptoms, for others, this level can be dangerous.\n5. Could you please specify which condition you are referring to? I can provide treatment guidelines from medical literature once the condition is identified.\n"
+    }
+  ]
+}

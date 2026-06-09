@@ -22,7 +22,11 @@ class LiveConversationWebSocket {
     // Default to storage/ subdirectory relative to server directory
     const defaultStorageDir = path.join(__dirname, "..", "server", "storage");
     this.storageDir = config.storageDir || defaultStorageDir;
-    this.store = new LiveConversationStore({ storageDir: this.storageDir });
+    this.store = new LiveConversationStore({
+      storageDir: this.storageDir,
+      transcriptsRepository: config.transcriptsRepository || null,
+      docsRepository: config.docsRepository || null,
+    });
     this.sttAgent = new LiveConversationSTTAgent({
       debug: config.debug || false,
     });
@@ -66,11 +70,25 @@ class LiveConversationWebSocket {
     }
   }
 
+  normalizeTranscriptText(value = "") {
+    return String(value || "")
+      .replace(/<\|[^>]+\|>/g, " ")
+      .replace(/<\/?s>/gi, " ")
+      .replace(/\[(?:music|silence|blank_audio|inaudible|noise)\]/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  isMeaningfulTranscriptText(value = "") {
+    const cleaned = this.normalizeTranscriptText(value);
+    return Boolean(cleaned && /[a-z0-9]/i.test(cleaned));
+  }
+
   isEmptySessionCapture(session) {
     return (session?.audio?.chunkCount || 0) === 0
       && (session?.transcript?.segments?.length || 0) === 0
-      && !(session?.transcript?.rawText || "").trim()
-      && !(session?.transcript?.normalizedText || "").trim();
+      && !this.isMeaningfulTranscriptText(session?.transcript?.rawText || "")
+      && !this.isMeaningfulTranscriptText(session?.transcript?.normalizedText || "");
   }
 
   isRecoverableLiveSession(session) {
@@ -513,8 +531,8 @@ class LiveConversationWebSocket {
           },
         });
 
-        let transcriptData = result?.data && (
-          String(result.data.normalizedText || result.data.rawText || "").trim()
+        let transcriptData = result?.data && this.isMeaningfulTranscriptText(
+          result.data.normalizedText || result.data.rawText || "",
         )
           ? result.data
           : null;
@@ -1016,7 +1034,7 @@ ${transcriptText}`;
       ? transcriptData.segments
       : Array.isArray(transcriptData.chunks)
         ? transcriptData.chunks
-          .filter((chunk) => chunk?.success && String(chunk?.transcript || "").trim())
+          .filter((chunk) => chunk?.success && this.isMeaningfulTranscriptText(chunk?.transcript || chunk?.normalizedText || ""))
           .map((chunk, index) => ({
             id: `seg-${sessionId}-${Math.round((chunk.startSeconds || 0) * 10)}-${Math.round((chunk.endSeconds || 0) * 10)}-${index}`,
             speakerId: "spk_0",
@@ -1036,8 +1054,8 @@ ${transcriptText}`;
 
     const segments = rawSegments
       .map((segment, index) => {
-        const text = String(segment?.text || segment?.normalizedText || "").trim();
-        if (!text) return null;
+        const text = this.normalizeTranscriptText(segment?.text || segment?.normalizedText || "");
+        if (!this.isMeaningfulTranscriptText(text)) return null;
 
         return {
           id: String(
@@ -1063,18 +1081,18 @@ ${transcriptText}`;
       })
       .filter(Boolean);
 
-    const rawText = String(
+    const rawText = this.normalizeTranscriptText(
       transcriptData.rawText
       || transcriptData.normalizedText
       || segments.map((segment) => segment.text).join(" ").trim(),
     );
-    const normalizedText = String(
+    const normalizedText = this.normalizeTranscriptText(
       transcriptData.normalizedText
       || transcriptData.rawText
       || rawText,
     );
 
-    if (!rawText.trim() && segments.length === 0) return null;
+    if (!this.isMeaningfulTranscriptText(rawText) && !this.isMeaningfulTranscriptText(normalizedText) && segments.length === 0) return null;
 
     return {
       segments,
@@ -1123,8 +1141,8 @@ ${transcriptText}`;
   }
 
   appendTranscriptDelta(existingTranscript = {}, deltaText = "", sessionId, nextTranscript = {}) {
-    const cleanedDelta = String(deltaText || "").replace(/\s+/g, " ").trim();
-    if (!cleanedDelta) return existingTranscript;
+    const cleanedDelta = this.normalizeTranscriptText(deltaText);
+    if (!this.isMeaningfulTranscriptText(cleanedDelta)) return existingTranscript;
 
     const existingSegments = Array.isArray(existingTranscript?.segments)
       ? existingTranscript.segments.filter(Boolean)
@@ -1251,16 +1269,30 @@ ${transcriptText}`;
           || windowTranscript.rawText
           || "",
         ).trim();
-        if (!currentWindowText) return;
+        if (!this.isMeaningfulTranscriptText(currentWindowText)) return;
 
+        const previousWindowText = this.transcriptBuffer.get(sessionId) || "";
         this.transcriptBuffer.set(sessionId, currentWindowText);
+        const deltaText = this.extractNovelTranscriptSuffix(previousWindowText, currentWindowText);
+        const existingTranscript = session.transcript || {};
+        const accumulatedTranscript = deltaText
+          ? this.appendTranscriptDelta(existingTranscript, deltaText, sessionId, windowTranscript)
+          : existingTranscript;
 
         const livePreviewTranscript = {
-          segments: [],
-          rawText: currentWindowText,
-          normalizedText: currentWindowText,
+          segments: Array.isArray(accumulatedTranscript.segments) ? accumulatedTranscript.segments : [],
+          rawText: this.isMeaningfulTranscriptText(accumulatedTranscript.rawText)
+            ? accumulatedTranscript.rawText
+            : currentWindowText,
+          normalizedText: this.isMeaningfulTranscriptText(accumulatedTranscript.normalizedText)
+            ? accumulatedTranscript.normalizedText
+            : currentWindowText,
           interimText: currentWindowText,
-          speakers: Array.isArray(windowTranscript.speakers) ? windowTranscript.speakers : [],
+          speakers: Array.isArray(windowTranscript.speakers) && windowTranscript.speakers.length > 0
+            ? windowTranscript.speakers
+            : Array.isArray(accumulatedTranscript.speakers)
+              ? accumulatedTranscript.speakers
+              : [],
           quality: windowTranscript.quality,
         };
         console.log(`[LiveConversationWS] Updating transcript for session ${sessionId}`, {
@@ -1274,6 +1306,10 @@ ${transcriptText}`;
           transcript: livePreviewTranscript,
           timestamp: new Date().toISOString(),
         });
+        await this.publishLiveDraftUpdate(sessionId, {
+          ...session,
+          transcript: livePreviewTranscript,
+        }, ws);
       } else if (result.error) {
         this.log("Transcription failed", { sessionId, error: result.error });
       }
@@ -1398,7 +1434,14 @@ ${transcriptText}`;
 
   async handlePause(sessionId) {
     const ws = this.sessions.get(sessionId);
-    await this.store.update(sessionId, { status: "paused" });
+    await this.store.update(sessionId, {
+      status: "paused",
+      transport: {
+        connectionState: "paused",
+        lastError: null,
+        lastEventAt: new Date().toISOString(),
+      },
+    });
 
     this.sendJson(ws, {
       type: "session.state",
@@ -1412,7 +1455,14 @@ ${transcriptText}`;
 
   async handleResume(sessionId) {
     const ws = this.sessions.get(sessionId);
-    await this.store.update(sessionId, { status: "live" });
+    await this.store.update(sessionId, {
+      status: "live",
+      transport: {
+        connectionState: "connected",
+        lastError: null,
+        lastEventAt: new Date().toISOString(),
+      },
+    });
 
     this.sendJson(ws, {
       type: "session.state",
@@ -1500,6 +1550,12 @@ ${transcriptText}`;
       audio: {
         ...(currentSession?.audio || {}),
         combinedPath: combinedAudioPath || currentSession?.audio?.combinedPath || null,
+        combinedSize: currentSession?.audio?.totalBytes || currentSession?.audio?.combinedSize || 0,
+      },
+      transport: {
+        connectionState: "closed",
+        lastError: null,
+        lastEventAt: new Date().toISOString(),
       },
     });
 
@@ -1523,6 +1579,7 @@ ${transcriptText}`;
     this.sessions.delete(sessionId);
     this.chunkBuffer.delete(sessionId);
     this.transcriptBuffer.delete(sessionId);
+    this.draftBuffer.delete(sessionId);
     this.transcriptionQueues.delete(sessionId);
     this.draftInFlight.delete(sessionId);
 
@@ -1609,53 +1666,67 @@ ${transcriptText}`;
         return;
       }
 
-      const transcript = String(
-        currentSession.transcript?.interimText
-        || currentSession.transcript?.normalizedText
-        || currentSession.transcript?.rawText
-        || "",
-      ).trim();
-      if (!transcript) return;
-
-      const segments = currentSession.transcript?.segments || [];
-      const stableSegmentId = segments.length > 0 ? segments[segments.length - 1]?.id : null;
-      const draftSourceText = String(
-        currentSession.transcript?.normalizedText
-        || currentSession.transcript?.rawText
-        || transcript,
-      ).trim();
-      if ((draftSourceText || transcript).length < 50) return;
-      if (this.draftInFlight.has(sessionId)) return;
-
-      this.draftInFlight.add(sessionId);
-      try {
-        const draft = await this.generateDraftExtraction(draftSourceText || transcript, currentSession);
-        if (!this.hasMeaningfulDraft(draft)) {
-          this.log("Skipping empty draft update", { sessionId });
-          return;
-        }
-
-        const mergedDraft = await this.applyDraftAndReviewRequirements(sessionId, draft, currentSession);
-        await this.store.updateDraftLastStableSegmentId(sessionId, stableSegmentId);
-
-        this.sendJson(ws, {
-          type: "draft.updated",
-          sessionId,
-          draft: mergedDraft,
-          timestamp: new Date().toISOString(),
-        });
-
-        await this.store.logEvent(sessionId, "draft_updated", {
-          segmentCount: segments.length,
-        });
-      } catch (error) {
-        this.log("Draft extraction error", { sessionId, error: error.message });
-      } finally {
-        this.draftInFlight.delete(sessionId);
-      }
-    }, Math.min(this.config.draftExtractionInterval, 5000));
+      await this.publishLiveDraftUpdate(sessionId, currentSession, ws);
+    }, Math.min(this.config.draftExtractionInterval, 2500));
 
     this.draftTimers.set(sessionId, timer);
+  }
+
+  async publishLiveDraftUpdate(sessionId, session = null, ws = null) {
+    const currentSession = session || await this.store.get(sessionId);
+    const currentWs = ws || this.sessions.get(sessionId);
+    if (!currentSession || currentSession.status !== "live" || !currentWs) return false;
+
+    const transcript = String(
+      currentSession.transcript?.interimText
+      || currentSession.transcript?.normalizedText
+      || currentSession.transcript?.rawText
+      || "",
+    ).trim();
+    if (!transcript) return false;
+
+    const draftSourceText = String(
+      currentSession.transcript?.normalizedText
+      || currentSession.transcript?.rawText
+      || transcript,
+    ).trim();
+    const normalizedDraftSource = this.normalizeDraftText(draftSourceText || transcript);
+    if (normalizedDraftSource.length < 20) return false;
+    if (this.draftInFlight.has(sessionId)) return false;
+    if (this.draftBuffer.get(sessionId) === normalizedDraftSource) return false;
+
+    const segments = currentSession.transcript?.segments || [];
+    const stableSegmentId = segments.length > 0 ? segments[segments.length - 1]?.id : null;
+
+    this.draftInFlight.add(sessionId);
+    try {
+      const draft = await this.generateDraftExtraction(normalizedDraftSource, currentSession);
+      this.draftBuffer.set(sessionId, normalizedDraftSource);
+      if (!this.hasMeaningfulDraft(draft)) {
+        this.log("Skipping empty draft update", { sessionId });
+        return false;
+      }
+
+      const mergedDraft = await this.applyDraftAndReviewRequirements(sessionId, draft, currentSession);
+      await this.store.updateDraftLastStableSegmentId(sessionId, stableSegmentId);
+
+      this.sendJson(currentWs, {
+        type: "draft.updated",
+        sessionId,
+        draft: mergedDraft,
+        timestamp: new Date().toISOString(),
+      });
+
+      await this.store.logEvent(sessionId, "draft_updated", {
+        segmentCount: segments.length,
+      });
+      return true;
+    } catch (error) {
+      this.log("Draft extraction error", { sessionId, error: error.message });
+      return false;
+    } finally {
+      this.draftInFlight.delete(sessionId);
+    }
   }
 
   async generateDraftExtraction(transcript, session) {
@@ -1664,7 +1735,7 @@ ${transcriptText}`;
 Return one compact JSON object only. Do not echo the transcript. Use empty strings, nulls, or empty arrays when unknown.
 
 Schema:
-{"chiefComplaint":"","hpi":"","ros":[],"diagnosis":"","symptoms":[],"patient":{"name":"","age":null,"gender":""},"vitals":{"latest":{"bp":{"systolic":null,"diastolic":null},"pulse":{"value":null,"unit":"bpm"},"temperature":{"value":null,"unit":"F"},"spo2":{"value":null,"unit":"%"},"weight":{"value":null,"unit":"kg"}}},"medications":[{"name":"","instruction":"","status":"draft"}],"labs":[],"radiology":[],"procedures":[],"followUp":[],"plan":[]}
+{"chiefComplaint":"","hpi":"","ros":[],"pastHistory":[],"diagnosis":"","symptoms":[],"patient":{"name":"","age":null,"gender":""},"vitals":{"latest":{"bp":{"systolic":null,"diastolic":null},"pulse":{"value":null,"unit":"bpm"},"temperature":{"value":null,"unit":"F"},"spo2":{"value":null,"unit":"%"},"weight":{"value":null,"unit":"kg"}}},"medications":[{"name":"","instruction":"","status":"draft"}],"labs":[],"radiology":[],"procedures":[],"followUp":[],"plan":[]}
 
 Transcript:
 ${transcript}`;
@@ -1672,21 +1743,7 @@ ${transcript}`;
     const parseDraft = (content = "") => {
       const jsonMatch = String(content || "").match(/\{[\s\S]*\}/);
       const extracted = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
-      return normalizeLiveDraft({
-        chiefComplaint: extracted.chiefComplaint || extracted.chief_complaint || "",
-        hpi: extracted.hpi || extracted.history_of_present_illness || extracted.historyOfPresentIllness || "",
-        ros: Array.isArray(extracted.ros) ? extracted.ros : [],
-        diagnosis: extracted.diagnosis || "",
-        symptoms: Array.isArray(extracted.symptoms) ? extracted.symptoms : [],
-        medications: Array.isArray(extracted.medications) ? extracted.medications : [],
-        labs: Array.isArray(extracted.labs) ? extracted.labs : [],
-        radiology: Array.isArray(extracted.radiology) ? extracted.radiology : [],
-        procedures: Array.isArray(extracted.procedures) ? extracted.procedures : [],
-        followUp: Array.isArray(extracted.followUp) ? extracted.followUp : [],
-        plan: Array.isArray(extracted.plan) ? extracted.plan : [],
-        patient: extracted.patient,
-        vitals: extracted.vitals,
-      });
+      return normalizeLiveDraft(extracted);
     };
 
     try {

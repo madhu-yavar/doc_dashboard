@@ -21,8 +21,11 @@ import {
   Edit3,
   ExternalLink,
   FileCheck2,
+  FileText,
+  LayoutDashboard,
   Mic,
   PauseCircle,
+  Pill,
   PlayCircle,
   Plus,
   RadioTower,
@@ -34,6 +37,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   formatLiveDuration,
   sessionTitle,
@@ -50,6 +54,12 @@ const PRIMARY_TEAL_BUTTON =
   "border-teal-600 bg-teal-600 text-white hover:border-teal-700 hover:bg-teal-700";
 const SECONDARY_TEAL_BUTTON =
   "border-teal-200 bg-teal-50 text-teal-800 hover:border-teal-300 hover:bg-teal-100";
+const ICON_ACTION_BUTTON =
+  "h-9 w-9 rounded-full border border-teal-200 bg-teal-50 text-teal-700 shadow-sm hover:border-teal-300 hover:bg-teal-100 hover:text-teal-800";
+
+function trimText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
 
 function formatTimestamp(value: string | null) {
   if (!value) return "Not started";
@@ -97,16 +107,25 @@ function speakerAccent(role: LiveTranscriptSegment["speakerRole"]) {
 
 function autoPatientLabel(session: LiveConversationSession) {
   return [session.linkedPatient, session.draft.extractedData.patient.name]
-    .map((value) => value.trim())
+    .map(trimText)
     .find(Boolean)
     || "";
 }
 
 function autoEncounterLabel(session: LiveConversationSession) {
-  const explicit = session.encounterLabel.trim();
+  const explicit = trimText(session.encounterLabel);
   if (explicit) return explicit;
   const digits = String(session.id || "").replace(/\D/g, "");
   return `EN${(digits.slice(-6) || "000001").padStart(6, "0")}`;
+}
+
+function effectiveSessionStatus(
+  session: LiveConversationSession,
+  captureState: MediaRecorderState,
+): LiveConversationSession["status"] {
+  if (captureState === "recording") return "live";
+  if (captureState === "paused") return "paused";
+  return session.status;
 }
 
 function countSetupFields(session: LiveConversationSession) {
@@ -123,6 +142,7 @@ function countDraftSections(session: LiveConversationSession) {
     draft.chiefComplaint,
     draft.hpi,
     draft.ros?.length || 0,
+    draft.pastHistory?.length || 0,
     draft.diagnosis,
     draft.symptoms.length,
     draft.patient.name || draft.patient.age || draft.patient.gender,
@@ -314,7 +334,7 @@ function RecordingIndicator({ isRecording, hasAudio }: { isRecording: boolean; h
 
 function AudioPlayer({ audioUrl }: { audioUrl: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-1">
+    <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5">
       <div className="flex items-center gap-2">
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-600">
           <PlayCircle className="h-3.5 w-3.5" />
@@ -329,10 +349,10 @@ function AudioPlayer({ audioUrl }: { audioUrl: string }) {
 
 function RecordingPanel({
   session,
-  onDeleteSession,
+  onDeleteRecording,
 }: {
   session: LiveConversationSession;
-  onDeleteSession: (sessionId: string) => Promise<void>;
+  onDeleteRecording: (sessionId: string) => Promise<void>;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const hasAudioPlayback = Boolean(
@@ -346,12 +366,12 @@ function RecordingPanel({
   const audioUrl = `/api/voice/live/sessions/${encodeURIComponent(session.id)}/audio`;
 
   const handleDelete = async () => {
-    const confirmed = window.confirm(`Delete ${sessionTitle(session.linkedPatient, session.encounterLabel)}? This will remove the saved recording and transcript draft.`);
+    const confirmed = window.confirm(`Delete the saved recording for ${sessionTitle(session.linkedPatient, session.encounterLabel)}? The transcript draft and visit will be kept.`);
     if (!confirmed) return;
 
     setIsDeleting(true);
     try {
-      await onDeleteSession(session.id);
+      await onDeleteRecording(session.id);
       toast.success("Recording deleted.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to delete recording.");
@@ -361,8 +381,8 @@ function RecordingPanel({
   };
 
   return (
-    <Card className="border-slate-200/80 bg-white shadow-sm">
-      <CardContent className="grid gap-1 px-3 py-0.5">
+    <Card className="self-start border-slate-200/80 bg-white shadow-sm">
+      <CardContent className="space-y-2 px-4 py-3">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="text-sm font-medium text-slate-900">Saved Recording</CardTitle>
           <div className="flex items-center gap-1">
@@ -537,6 +557,7 @@ function ControlBar({
   onPause,
   onResume,
   onStop,
+  onDeleteVisit,
   captureState,
   transportState,
   audioLevel,
@@ -546,66 +567,121 @@ function ControlBar({
   onPause: () => void;
   onResume: () => void;
   onStop: () => void;
+  onDeleteVisit: () => Promise<void>;
   captureState: MediaRecorderState;
   transportState: ConnectionState;
   audioLevel: number;
 }) {
   const captureCopy = liveCaptureCopy(captureState, transportState, audioLevel);
   const isRecording = captureState === "recording";
+  const resolvedStatus = effectiveSessionStatus(session, captureState);
   const hasAudio = audioLevel > 0.06;
+  const [isDeletingVisit, setIsDeletingVisit] = useState(false);
+  const canDeleteVisit = !["live", "paused", "finalizing"].includes(resolvedStatus);
+  const deleteVisitLabel = session.status === "finalized" ? "Delete finalized visit" : "Delete visit";
+  const [displayNowMs, setDisplayNowMs] = useState(() => Date.now());
+  const startedAtMs = session.startedAt ? new Date(session.startedAt).getTime() : NaN;
+  const displayedDurationMs = resolvedStatus === "live" && Number.isFinite(startedAtMs)
+    ? Math.max(Number(session.durationMs || 0), Math.max(0, displayNowMs - startedAtMs))
+    : session.durationMs;
+
+  useEffect(() => {
+    if (resolvedStatus !== "live" || !session.startedAt) return undefined;
+
+    setDisplayNowMs(Date.now());
+    const interval = window.setInterval(() => {
+      setDisplayNowMs(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [resolvedStatus, session.startedAt]);
+
+  const handleDeleteVisit = async () => {
+    const deleteMessage = session.status === "finalized"
+      ? `Delete ${sessionTitle(session.linkedPatient, session.encounterLabel)} and its finalized dashboard document?`
+      : `Delete ${sessionTitle(session.linkedPatient, session.encounterLabel)}? This will remove the visit, transcript draft, review items, and saved audio.`;
+    const confirmed = window.confirm(deleteMessage);
+    if (!confirmed) return;
+
+    setIsDeletingVisit(true);
+    try {
+      await onDeleteVisit();
+      toast.success(session.status === "finalized" ? "Finalized visit deleted." : "Visit deleted.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to delete visit.");
+    } finally {
+      setIsDeletingVisit(false);
+    }
+  };
 
   return (
-    <Card className="overflow-hidden border-slate-200/80 bg-white shadow-sm">
-      <CardContent className="grid gap-1 px-3 py-1">
+    <Card className="self-start overflow-hidden border-slate-200/80 bg-white shadow-sm">
+      <CardContent className="space-y-3 px-4 py-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-1.5">
             <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Encounter</p>
-            <h3 className="truncate text-lg font-semibold text-slate-900">{session.title}</h3>
+            <h3 className="truncate text-xl font-semibold tracking-tight text-slate-900">{session.title}</h3>
             {[autoPatientLabel(session), autoEncounterLabel(session)].filter(Boolean).length > 0 ? (
               <p className="text-sm text-slate-600">
                 {[autoPatientLabel(session), autoEncounterLabel(session)].filter(Boolean).join(" · ")}
               </p>
             ) : null}
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className={statusTone(session.status)}>{statusLabel(session.status)}</Badge>
+              <Badge className={statusTone(resolvedStatus)}>{statusLabel(resolvedStatus)}</Badge>
               <Badge variant="outline">
                 <TimerReset className="mr-1 h-3.5 w-3.5" />
-                {formatLiveDuration(session.durationMs)}
+                {formatLiveDuration(displayedDurationMs)}
               </Badge>
               <Badge variant="outline">
                 <RadioTower className="mr-1 h-3.5 w-3.5" />
-                {session.transport.connectionState}
+                {transportState !== "idle" ? transportState : session.transport.connectionState}
               </Badge>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            {(session.status === "draft" || session.status === "failed") ? (
+            {(resolvedStatus === "draft" || resolvedStatus === "failed") ? (
               <Button className={PRIMARY_TEAL_BUTTON} onClick={onStart} disabled={captureState === "starting" || captureState === "stopping"}>
                 <Mic className="mr-2 h-4 w-4" />
                 {captureState === "starting"
                   ? "Starting..."
-                  : session.status === "failed"
+                  : resolvedStatus === "failed"
                     ? "Restart"
                     : "Start"}
               </Button>
             ) : null}
-            {session.status === "live" ? (
+            {resolvedStatus === "live" ? (
               <Button className={SECONDARY_TEAL_BUTTON} onClick={onPause} disabled={captureState !== "recording"}>
                 <PauseCircle className="mr-2 h-4 w-4" />
                 Pause
               </Button>
             ) : null}
-            {session.status === "paused" ? (
+            {resolvedStatus === "paused" ? (
               <Button className={SECONDARY_TEAL_BUTTON} onClick={onResume} disabled={captureState === "stopping"}>
                 <PlayCircle className="mr-2 h-4 w-4" />
                 Resume
               </Button>
             ) : null}
-            {(session.status === "live" || session.status === "paused") ? (
+            {(resolvedStatus === "live" || resolvedStatus === "paused") ? (
               <Button className={PRIMARY_TEAL_BUTTON} onClick={onStop} disabled={captureState === "stopping"}>
                 <Square className="mr-2 h-4 w-4" />
                 {captureState === "stopping" ? "Ending..." : "End"}
+              </Button>
+            ) : null}
+            {canDeleteVisit ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                title={deleteVisitLabel}
+                aria-label={deleteVisitLabel}
+                disabled={isDeletingVisit}
+                onClick={() => {
+                  void handleDeleteVisit();
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
               </Button>
             ) : null}
           </div>
@@ -613,7 +689,7 @@ function ControlBar({
 
         {/* Recording status with visual indicator */}
         <div className={cn(
-          "rounded-2xl border p-1 transition-colors",
+          "rounded-2xl border p-3 transition-colors",
           isRecording
             ? hasAudio
               ? "border-teal-200 bg-teal-50/80"
@@ -679,7 +755,7 @@ function TranscriptPanel({
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <ScrollArea className="h-[600px] xl:h-[680px]">
+        <ScrollArea className="h-[500px] xl:h-[560px] 2xl:h-[620px]">
           <div className="space-y-3 bg-[linear-gradient(180deg,rgba(248,250,252,0.92),rgba(255,255,255,1))] p-4">
             {session.transcript.segments.length === 0 && !session.transcript.interimText ? (
               <div className={cn(
@@ -775,27 +851,85 @@ function SetupPanel({
     || (session.recorder.permission === "denied" ? "Microphone blocked" : "Browser default microphone");
   const detectedPatient = autoPatientLabel(session);
   const detectedEncounter = autoEncounterLabel(session);
+  const [patientNameInput, setPatientNameInput] = useState(detectedPatient);
+  const [encounterLabelInput, setEncounterLabelInput] = useState(detectedEncounter);
   const microphoneHelpText = session.recorder.permission === "denied"
     ? "Microphone access is blocked in the browser. Allow microphone access for this site and refresh."
     : availableDevices.length === 0
       ? "No microphone is listed yet. Press Start to grant access; the browser default microphone will still be used."
       : "You can leave this unchanged to keep using the browser default microphone.";
 
+  useEffect(() => {
+    setPatientNameInput(detectedPatient);
+  }, [detectedPatient, session.id]);
+
+  useEffect(() => {
+    setEncounterLabelInput(detectedEncounter);
+  }, [detectedEncounter, session.id]);
+
+  const commitPatientName = () => {
+    const normalizedName = patientNameInput.trim();
+    if (normalizedName === detectedPatient) return;
+    void onUpdate({
+      linkedPatient: normalizedName,
+      draftPatch: {
+        patient: {
+          ...session.draft.extractedData.patient,
+          name: normalizedName,
+        },
+      },
+    });
+  };
+
+  const commitEncounterLabel = () => {
+    const normalizedEncounter = encounterLabelInput.trim();
+    if (normalizedEncounter === detectedEncounter) return;
+    void onUpdate({ encounterLabel: normalizedEncounter });
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Patient</p>
-          <p className="mt-1 text-sm text-slate-900">
-            {detectedPatient || "-"}
-          </p>
+          <label htmlFor={`live-patient-name-${session.id}`} className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
+            Patient name
+          </label>
+          <Input
+            id={`live-patient-name-${session.id}`}
+            value={patientNameInput}
+            onChange={(event) => setPatientNameInput(event.target.value)}
+            onBlur={commitPatientName}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                commitPatientName();
+              }
+            }}
+            placeholder="Enter patient name"
+            className="mt-2 border-slate-200 bg-white"
+            disabled={isLocked}
+          />
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-          <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Encounter</p>
-          <p className="mt-1 text-sm text-slate-900">
-            {detectedEncounter}
-          </p>
+          <label htmlFor={`live-encounter-label-${session.id}`} className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
+            Encounter label
+          </label>
+          <Input
+            id={`live-encounter-label-${session.id}`}
+            value={encounterLabelInput}
+            onChange={(event) => setEncounterLabelInput(event.target.value)}
+            onBlur={commitEncounterLabel}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                commitEncounterLabel();
+              }
+            }}
+            placeholder="Enter encounter label"
+            className="mt-2 border-slate-200 bg-white"
+            disabled={isLocked}
+          />
         </div>
       </div>
 
@@ -1014,8 +1148,11 @@ function DraftPanel({
         <NoteSection title="ROS" items={(draft.ros || []).map(item =>
           typeof item === 'string' ? item : typeof item === 'object' ? JSON.stringify(item) : String(item)
         )} />
+        <NoteSection title="Past History" items={(draft.pastHistory || []).map(item =>
+          typeof item === 'string' ? item : typeof item === 'object' ? JSON.stringify(item) : String(item)
+        )} />
         <NoteSection title="Vitals" items={vitals} />
-        <NoteSection title="History" items={draft.symptoms.map(item =>
+        <NoteSection title="Symptoms" items={draft.symptoms.map(item =>
           typeof item === 'string' ? item : typeof item === 'object' ? JSON.stringify(item) : String(item)
         )} />
         <NoteSection title="Medications" items={medications} />
@@ -1099,28 +1236,74 @@ function ReviewPanel({
         </div>
         <div className="flex flex-wrap gap-2">
           {session.documentId && (
-            <Button
-              className="border-purple-600 bg-purple-600 text-white hover:border-purple-700 hover:bg-purple-700"
-              onClick={() => {
-                window.location.href = `/prescription/${session.documentId}`;
-              }}
-            >
-              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Generate Prescription
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={ICON_ACTION_BUTTON}
+                    aria-label="Generate SOAP Note"
+                    title="Generate SOAP Note"
+                    onClick={() => {
+                      window.location.href = `/soap/${session.documentId}`;
+                    }}
+                  >
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Generate SOAP Note</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
-          <Button
-            className={PRIMARY_TEAL_BUTTON}
-            onClick={() => {
-              if (session.documentId) {
-                window.location.href = `/dashboard?documentId=${session.documentId}`;
-              }
-            }}
-          >
-            Open dashboard
-          </Button>
+          {session.documentId && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={ICON_ACTION_BUTTON}
+                    aria-label="Generate Prescription"
+                    title="Generate Prescription"
+                    onClick={() => {
+                      window.location.href = `/prescription/${session.documentId}`;
+                    }}
+                  >
+                    <Pill className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Generate Prescription</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={ICON_ACTION_BUTTON}
+                  aria-label="Open Dashboard"
+                  title="Open Dashboard"
+                  onClick={() => {
+                    if (session.documentId) {
+                      window.location.href = `/dashboard?documentId=${session.documentId}`;
+                    }
+                  }}
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Open Dashboard</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button className={SECONDARY_TEAL_BUTTON} onClick={onReturnToDraft}>
             Back to voice workspace
           </Button>
@@ -1166,17 +1349,38 @@ function ReviewPanel({
 
             {item.required ? (
               <div className="mt-3 space-y-3">
-                <Input
-                  type={item.inputType === "number" ? "number" : "text"}
-                  value={requiredValue}
-                  onChange={(event) => {
-                    setRequiredEdits((current) => ({
-                      ...current,
-                      [item.id]: event.target.value,
-                    }));
-                  }}
-                  placeholder={item.placeholder || "Enter value"}
-                />
+                {item.inputType === "select" && Array.isArray(item.options) && item.options.length > 0 ? (
+                  <select
+                    value={requiredValue}
+                    onChange={(event) => {
+                      setRequiredEdits((current) => ({
+                        ...current,
+                        [item.id]: event.target.value,
+                      }));
+                    }}
+                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-100"
+                    aria-label={item.title}
+                  >
+                    <option value="">{item.placeholder || "Select value"}</option>
+                    {item.options.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <Input
+                    type={item.inputType === "number" ? "number" : "text"}
+                    value={requiredValue}
+                    onChange={(event) => {
+                      setRequiredEdits((current) => ({
+                        ...current,
+                        [item.id]: event.target.value,
+                      }));
+                    }}
+                    placeholder={item.placeholder || "Enter value"}
+                  />
+                )}
                 <div className="flex flex-wrap gap-2">
                   <Button
                     className={PRIMARY_TEAL_BUTTON}
@@ -1399,6 +1603,8 @@ export default function LiveConversationWorkspace() {
     resolveReviewItem,
     finalizeSelectedSession,
     deleteSession,
+    deleteSelectedRecording,
+    deleteSelectedFinalizedVisit,
     refreshSessions,
     captureState,
     transportState,
@@ -1437,7 +1643,7 @@ export default function LiveConversationWorkspace() {
         </div>
       )}
 
-      <div className={`grid gap-5 ${isVisitsCollapsed ? "xl:grid-cols-[0px_minmax(0,1fr)_360px]" : "xl:grid-cols-[248px_minmax(0,1fr)_360px]"}`}>
+      <div className={`grid items-start gap-5 ${isVisitsCollapsed ? "xl:grid-cols-[0px_minmax(0,1fr)_400px] 2xl:grid-cols-[0px_minmax(0,1fr)_430px]" : "xl:grid-cols-[248px_minmax(0,1fr)_400px] 2xl:grid-cols-[248px_minmax(0,1fr)_430px]"}`}>
         <SessionList
           sessions={sessions}
           selectedSessionId={selectedSessionId}
@@ -1448,18 +1654,23 @@ export default function LiveConversationWorkspace() {
           onToggleCollapse={() => setIsVisitsCollapsed(!isVisitsCollapsed)}
         />
 
-        <div className="grid gap-0.5">
+        <div className="grid content-start gap-4 self-start">
           <ControlBar
             session={selectedSession}
             onStart={startSelectedSession}
             onPause={pauseSelectedSession}
             onResume={resumeSelectedSession}
             onStop={stopSelectedSession}
+            onDeleteVisit={selectedSession.status === "finalized" ? deleteSelectedFinalizedVisit : async () => {
+              if (selectedSessionId) {
+                await deleteSession(selectedSessionId);
+              }
+            }}
             captureState={captureState}
             transportState={transportState}
             audioLevel={audioLevel}
           />
-          <RecordingPanel session={selectedSession} onDeleteSession={deleteSession} />
+          <RecordingPanel session={selectedSession} onDeleteRecording={deleteSelectedRecording} />
           <TranscriptPanel
             session={selectedSession}
             captureState={captureState}

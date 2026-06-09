@@ -2,7 +2,7 @@
 
 **Project:** Doctor Dashboard - Clinical Intelligence System
 **Version:** 3.1.0
-**Last Updated:** 2026-05-26
+**Last Updated:** 2026-06-04
 **Status:** Production
 
 ---
@@ -96,6 +96,15 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 | Skills Framework | Reusable AI skills documentation | [View](./architecture/skills-framework.md) |
 | Chatbot Architecture | Doctor Assistant chat system | [View](./architecture/chatbot-architecture.md) |
 | Chart Note React Agent | Chart note generation architecture | [View](./architecture/CHART_NOTE_REACT_AGENT.md) |
+| Postgres Persistence + Interoperability Plan | Planning-oriented canonical spec for Postgres migration, FHIR-first persistence, HL7 v2 adapter boundaries, and hybrid identity handling | [View](./architecture/postgres-persistence-interoperability-plan.md) |
+| Postgres Persistence + Interoperability Checklist | Planning-oriented execution tracker for the Postgres, HL7, and FHIR migration program | [View](./architecture/postgres-persistence-interoperability-checklist.md) |
+| Phase 3A Master Data + Identity Backfill Contract | Planning-oriented implementation contract for backfilling users, sessions, provisional patients/encounters, identifiers, and practitioner links from the real runtime stores | [View](./architecture/phase-3a-master-data-identity-backfill-contract.md) |
+| Phase 3B Documents + Extractions Backfill Contract | Planning-oriented implementation contract for backfilling canonical documents, assets, extractions, cached chart notes, and deterministic prescription artifacts | [View](./architecture/phase-3b-documents-extractions-backfill-contract.md) |
+| Phase 3C Transcripts + Reviews + Live Workflow Backfill Contract | Planning-oriented implementation contract for backfilling voice/live transcripts, segments, review items, review history, live-session rows, workflow assets, and lifecycle audit events | [View](./architecture/phase-3c-transcripts-reviews-live-workflow-backfill-contract.md) |
+| Phase 3D Chat + Audit + Alerts + Analytics Backfill Contract | Planning-oriented implementation contract for backfilling chat history, confirmed actions, chat exports, audit history, alert deliveries, and analytics metrics from the real runtime stores | [View](./architecture/phase-3d-chat-audit-alerts-analytics-backfill-contract.md) |
+| Phase 6 Legacy Store Cleanup Contract | Planning-oriented implementation contract for retiring JSON/JSONL/SQLite metadata stores after Postgres becomes authoritative | [View](./architecture/phase-6-legacy-store-cleanup-contract.md) |
+| Phase 6 Cleanup Mapping Note | Runtime-seam inventory for each remaining legacy metadata store, its Postgres owner, and cleanup action | [View](./architecture/phase-6-legacy-store-cleanup-mapping-note.md) |
+| Phase 6 Cleanup Validation + Archive Runbook | Staged execution, validation, archive, and rollback guidance for the cleanup cutover | [View](./architecture/phase-6-cleanup-validation-and-archive-runbook.md) |
 | Voice Intake Current Implementation Summary | Current-state uploaded dictation + live conversation runtime architecture | [View](./architecture/voice-intake-phase2-implementation-summary.md) |
 | Live Conversation UI + Backend Fit Plan | Current live workspace fit, implementation status, and remaining gaps | [View](./architecture/live-conversation-ui-backend-plan.md) |
 | Live Conversation STT Testing Plan | Hardening plan for chunked live transcription, VAD, reconciliation, and diarization | [View](./architecture/live-conversation-stt-testing-plan.md) |

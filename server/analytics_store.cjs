@@ -1,5 +1,6 @@
 const path = require("path");
 const { DatabaseSync } = require("node:sqlite");
+const { AnalyticsRepository } = require("./repositories/analytics_repository.cjs");
 
 const CANONICAL_DOCUMENT_TYPES = [
   "prescription",
@@ -110,102 +111,68 @@ class AnalyticsStore {
       config.databasePath ||
       path.join(config.storageDir || path.join(__dirname, "storage"), "analytics.sqlite");
     this.db = null;
+
+    // Phase 6: AnalyticsRepository is now the only source of truth
+    this.analyticsRepo = new AnalyticsRepository();
+    this.analyticsRepo.initialize().catch(err => {
+      console.error('[AnalyticsStore] Failed to initialize AnalyticsRepository:', err.message);
+    });
   }
 
   async initialize() {
-    if (this.db) return;
-
-    this.db = new DatabaseSync(this.databasePath);
-    // Enable WAL mode for better concurrency on cloud storage
-    this.db.exec('PRAGMA journal_mode = WAL;');
-    this.db.exec('PRAGMA busy_timeout = 5000;');
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS document_metrics (
-        document_id TEXT PRIMARY KEY,
-        document_name TEXT NOT NULL,
-        document_type TEXT NOT NULL,
-        processed_at TEXT,
-        uploaded_at TEXT,
-        gemma_tokens INTEGER NOT NULL DEFAULT 0,
-        gemini_tokens INTEGER NOT NULL DEFAULT 0,
-        total_tokens INTEGER NOT NULL DEFAULT 0,
-        medications_count INTEGER NOT NULL DEFAULT 0,
-        lab_tests_count INTEGER NOT NULL DEFAULT 0,
-        radiology_tests_count INTEGER NOT NULL DEFAULT 0,
-        nuclear_medicine_tests_count INTEGER NOT NULL DEFAULT 0,
-        procedures_count INTEGER NOT NULL DEFAULT 0
-      );
-    `);
+    // Phase 6: SQLite is no longer used - this is a no-op
+    // Analytics data is stored in PostgreSQL only
+    return Promise.resolve();
   }
 
   async close() {
-    if (!this.db) return;
-    this.db.close();
-    this.db = null;
+    // Phase 6: SQLite is no longer used - this is a no-op
+    return Promise.resolve();
   }
 
   async upsertDocumentMetrics(document) {
-    await this.initialize();
+    // Phase 6: Write to Postgres only (legacy SQLite writes removed)
     if (!document || document.status !== "processed") return null;
 
     const metrics = buildDocumentMetrics(document);
     if (!metrics.documentId) return null;
 
-    this.db.prepare(`
-      INSERT INTO document_metrics (
-        document_id,
-        document_name,
-        document_type,
-        processed_at,
-        uploaded_at,
-        gemma_tokens,
-        gemini_tokens,
-        total_tokens,
-        medications_count,
-        lab_tests_count,
-        radiology_tests_count,
-        nuclear_medicine_tests_count,
-        procedures_count
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(document_id) DO UPDATE SET
-        document_name = excluded.document_name,
-        document_type = excluded.document_type,
-        processed_at = excluded.processed_at,
-        uploaded_at = excluded.uploaded_at,
-        gemma_tokens = excluded.gemma_tokens,
-        gemini_tokens = excluded.gemini_tokens,
-        total_tokens = excluded.total_tokens,
-        medications_count = excluded.medications_count,
-        lab_tests_count = excluded.lab_tests_count,
-        radiology_tests_count = excluded.radiology_tests_count,
-        nuclear_medicine_tests_count = excluded.nuclear_medicine_tests_count,
-        procedures_count = excluded.procedures_count
-    `).run(
-      metrics.documentId,
-      metrics.documentName,
-      metrics.documentType,
-      metrics.processedAt,
-      metrics.uploadedAt,
-      metrics.gemmaTokens,
-      metrics.geminiTokens,
-      metrics.totalTokens,
-      metrics.medicationsCount,
-      metrics.labTestsCount,
-      metrics.radiologyTestsCount,
-      metrics.nuclearMedicineTestsCount,
-      metrics.proceduresCount,
-    );
+    try {
+      await this.analyticsRepo.initialize();
+      // Map legacy metrics structure to Postgres schema - FIXED: use upsertMetrics instead of upsertDocumentMetrics
+      await this.analyticsRepo.upsertMetrics({
+        document_id: metrics.documentId,
+        document_name: metrics.documentName,
+        document_type: metrics.documentType,
+        processed_at: metrics.processedAt,
+        uploaded_at: metrics.uploadedAt,
+        gemma_tokens: metrics.gemmaTokens,
+        gemini_tokens: metrics.geminiTokens,
+        medications_count: metrics.medicationsCount,
+        ordered_lab_count: metrics.labTestsCount,
+        ordered_radiology_count: metrics.radiologyTestsCount,
+        nuclear_medicine_count: metrics.nuclearMedicineTestsCount,
+        procedures_count: metrics.proceduresCount
+      });
+    } catch (error) {
+      console.error('[Analytics] Failed to write metrics to Postgres:', error.message);
+    }
 
     return metrics;
   }
 
   async deleteDocumentMetrics(documentId) {
-    await this.initialize();
-    this.db.prepare("DELETE FROM document_metrics WHERE document_id = ?").run(String(documentId || ""));
+    // Phase 6: Delete from Postgres only (legacy SQLite writes removed) - FIXED: use deleteMetricsByDocumentId instead of deleteDocumentMetrics
+    try {
+      await this.analyticsRepo.initialize();
+      await this.analyticsRepo.deleteMetricsByDocumentId(String(documentId || ""));
+    } catch (error) {
+      console.error('[Analytics] Failed to delete metrics from Postgres:', error.message);
+    }
   }
 
   async backfillDocuments(documents = []) {
-    await this.initialize();
+    // Phase 6: Backfill to Postgres only (legacy SQLite writes removed)
     for (const document of toArray(documents)) {
       if (document?.status === "processed") {
         await this.upsertDocumentMetrics(document);
@@ -214,24 +181,25 @@ class AnalyticsStore {
   }
 
   async listMetrics() {
-    await this.initialize();
-    return this.db.prepare(`
-      SELECT
-        document_id AS documentId,
-        document_name AS documentName,
-        document_type AS documentType,
-        processed_at AS processedAt,
-        uploaded_at AS uploadedAt,
-        gemma_tokens AS gemmaTokens,
-        gemini_tokens AS geminiTokens,
-        total_tokens AS totalTokens,
-        medications_count AS medicationsCount,
-        lab_tests_count AS labTestsCount,
-        radiology_tests_count AS radiologyTestsCount,
-        nuclear_medicine_tests_count AS nuclearMedicineTestsCount,
-        procedures_count AS proceduresCount
-      FROM document_metrics
-    `).all();
+    // Phase 6: Read from Postgres only (legacy SQLite reads removed)
+    await this.analyticsRepo.initialize();
+    const metrics = await this.analyticsRepo.getAllMetrics();
+    // Transform to legacy SQLite format for API compatibility
+    return metrics.map(metric => ({
+      documentId: metric.document_id,
+      documentName: metric.document_name,
+      documentType: metric.document_type,
+      processedAt: metric.processed_at,
+      uploadedAt: metric.uploaded_at,
+      gemmaTokens: metric.gemma_tokens,
+      geminiTokens: metric.gemini_tokens || 0, // May be 0 in Postgres data
+      totalTokens: (metric.gemma_tokens || 0) + (metric.gemini_tokens || 0),
+      medicationsCount: metric.medications_count,
+      labTestsCount: metric.ordered_lab_count,
+      radiologyTestsCount: metric.ordered_radiology_count,
+      nuclearMedicineTestsCount: metric.nuclear_medicine_count,
+      proceduresCount: metric.procedures_count
+    }));
   }
 
   async getOverview() {

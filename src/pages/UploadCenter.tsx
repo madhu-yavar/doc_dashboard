@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiFetch, createAuthenticatedEventSource, parseApiPayload } from "@/lib/apiClient";
 import { useAuth } from "@/lib/auth";
+import { BACKEND_ORIGIN } from "@/lib/backendConfig";
 import {
   API_BASE,
   getProcessedDocumentEncounterLabel,
@@ -200,6 +201,11 @@ const matchesQueueTab = (document: ProcessedDocument, tab: QueueTab) =>
   || (tab === "processed" && document.status === "processed")
   || (tab === "failed" && document.status === "failed")
   || (tab === "partial" && document.status === "partial");
+
+const hasMissingProcessedDashboardData = (document: ProcessedDocument) =>
+  document.documentType !== "voice"
+  && (document.status === "processed" || document.status === "partial" || document.status === "review_required")
+  && !document.result;
 
 const getDocumentClassifierType = (document: ProcessedDocument) => {
   if (document.documentType === "voice") {
@@ -814,7 +820,8 @@ const UploadCenter = () => {
                 const payload = await response.json();
                 const docs = payload?.documents;
                 if (docs && Array.isArray(docs)) {
-                  const currentDoc = docs.find((d: any) => d.id === document.id);
+                  const docsList = docs as ProcessedDocument[];
+                  const currentDoc = docsList.find((d) => d.id === document.id);
                   if (currentDoc) {
                     setDocuments((current) =>
                       current.map((doc) =>
@@ -858,7 +865,8 @@ const UploadCenter = () => {
                   if (!docs || !Array.isArray(docs)) {
                     return;
                   }
-                  const currentDoc = docs.find((d: any) => d.id === document.id);
+                  const docsList = docs as ProcessedDocument[];
+                  const currentDoc = docsList.find((d) => d.id === document.id);
                   // Terminal states: processed, failed, partial, review_required
                   if (currentDoc && (currentDoc.status === 'processed' || currentDoc.status === 'failed' || currentDoc.status === 'partial' || currentDoc.status === 'review_required')) {
                     logClientStage("info", `Polling observed terminal state for ${document.name}`, {
@@ -931,7 +939,7 @@ const UploadCenter = () => {
 
     try {
       setIsProcessingBatch(true);
-      logClientStage("info", `Reprocessing failed document: ${document.name}`, { documentId });
+      logClientStage("info", `Reprocessing document: ${document.name}`, { documentId });
       await processDocuments([document]);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Reprocess failed.");
@@ -1048,19 +1056,18 @@ const UploadCenter = () => {
     // Check for masked image path
     const maskedImagePath = metadata?.stage2_masking?.masked_image_path;
     // Build full URL for masked image - need to include backend origin if in dev mode
-    const backendOrigin = import.meta.env.VITE_API_URL || window.location.origin;
     const maskedImagePages = Array.isArray(metadata?.stage2_masking?.review_pages)
       ? metadata.stage2_masking.review_pages
           .map((page: { page_number?: number; image_path?: string; image_role?: "masked" | "original" }) => ({
             pageNumber: page.page_number || 0,
-            imageUrl: page.image_path ? `${backendOrigin}/storage/masked_images/${page.image_path}` : "",
+            imageUrl: page.image_path ? `${BACKEND_ORIGIN}/storage/masked_images/${page.image_path}` : "",
             imageRole: page.image_role === "original" ? "original" : "masked",
           }))
           .filter((page: { imageUrl: string }) => Boolean(page.imageUrl))
           .sort((a: { pageNumber: number }, b: { pageNumber: number }) => a.pageNumber - b.pageNumber)
       : [];
     const maskedImageUrl = maskedImagePath
-      ? `${backendOrigin}/storage/masked_images/${maskedImagePath}`
+      ? `${BACKEND_ORIGIN}/storage/masked_images/${maskedImagePath}`
       : undefined;
 
     setHandwritingDialog({
@@ -1363,6 +1370,7 @@ const UploadCenter = () => {
                         const patientName = getProcessedDocumentPatientName(document);
                         const mrn = getProcessedDocumentMrn(document);
                         const encounterLabel = getProcessedDocumentEncounterLabel(document);
+                        const missingProcessedDashboardData = hasMissingProcessedDashboardData(document);
                         const voiceSummaryLabel = patientName
                           ? `${patientName}${encounterLabel ? ` · ${encounterLabel}` : ""}`
                           : (encounterLabel ? `Encounter ${encounterLabel}` : "");
@@ -1371,8 +1379,18 @@ const UploadCenter = () => {
                           : "";
                         const voiceDashboardError = getVoiceDocumentDashboardError(document);
                         const canOpenDashboard =
+                          !missingProcessedDashboardData &&
                           (document.status === "processed" || document.status === "partial" || document.status === "review_required") &&
                           (document.documentType !== "voice" || isVoiceDocumentDashboardReady(document));
+                        const statusLabel = missingProcessedDashboardData
+                          ? "Needs Reprocess"
+                          : statusLabels[document.status];
+                        const statusClassName = missingProcessedDashboardData
+                          ? "border-transparent bg-amber-50 text-amber-700"
+                          : statusClasses[document.status];
+                        const reprocessTitle = missingProcessedDashboardData
+                          ? "Recover processed document"
+                          : "Reprocess document";
 
                         return (
                           <TableRow key={document.id} className="align-top">
@@ -1450,14 +1468,14 @@ const UploadCenter = () => {
                                 </div>
                               ) : document.status === "partial" && document.result?.meta?.user_action_prompt?.error_type ? (
                                 <div className="flex items-center gap-2">
-                                  <Badge className={statusClasses[document.status]}>{statusLabels[document.status]}</Badge>
+                                  <Badge className={statusClassName}>{statusLabel}</Badge>
                                   <span className="text-xs text-orange-600 dark:text-orange-400" title={document.result.meta.user_action_prompt.message}>
                                     {document.result.meta.user_action_prompt.error_type === "quota_exceeded" ? "⚠️ Quota" :
                                      document.result.meta.user_action_prompt.error_type === "extraction_failed" ? "⚠️ Failed" : "⚠️"}
                                   </span>
                                 </div>
                               ) : (
-                                <Badge className={statusClasses[document.status]}>{statusLabels[document.status]}</Badge>
+                                <Badge className={statusClassName}>{statusLabel}</Badge>
                               )}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">{formatDateTime(document.uploadedAt)}</TableCell>
@@ -1474,7 +1492,7 @@ const UploadCenter = () => {
                                     }
                                   />
                                 ) : null}
-                                {document.status === "partial" && (
+                                {document.status === "partial" && !missingProcessedDashboardData && (
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -1485,12 +1503,12 @@ const UploadCenter = () => {
                                     <Key className="h-4 w-4 text-purple-600" />
                                   </Button>
                                 )}
-                                {document.status === "failed" && (
+                                {(document.status === "failed" || missingProcessedDashboardData) && (
                                   <Button
                                     variant="ghost"
                                     size="icon"
                                     className={ICON_TEAL_BUTTON}
-                                    title="Reprocess document"
+                                    title={reprocessTitle}
                                     onClick={() => handleReprocess(document.id)}
                                     disabled={isProcessingBatch}
                                   >
@@ -1505,6 +1523,8 @@ const UploadCenter = () => {
                                   onClick={() => {
                                     if (canOpenDashboard) {
                                       navigate(`/dashboard?documentId=${document.id}`);
+                                    } else if (missingProcessedDashboardData) {
+                                      toast.info("This processed document is missing stored extraction data. Reprocess it once from the queue.");
                                     } else if (voiceDashboardError) {
                                       toast.error(voiceDashboardError);
                                     } else {
@@ -1516,6 +1536,7 @@ const UploadCenter = () => {
                                     document.status === "processing" ||
                                     document.status === "transcribing" ||
                                     document.status === "failed" ||
+                                    missingProcessedDashboardData ||
                                     (document.documentType === "voice" &&
                                       (document.status === "processed" || document.status === "review_required") &&
                                       !isVoiceDocumentDashboardReady(document))

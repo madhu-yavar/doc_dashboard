@@ -1,9 +1,5 @@
-import { apiFetch } from "@/lib/apiClient";
-
-const normalizeApiRoot = (value: string) => value.replace(/\/$/, "");
-
-const API_ROOT = normalizeApiRoot(import.meta.env.VITE_API_URL || "");
-export const ANALYTICS_API_BASE = `${API_ROOT}/api`;
+import { apiFetch, expectApiJson } from "@/lib/apiClient";
+import { API_BASE } from "@/lib/backendConfig";
 
 export type DocumentAnalyticsPoint = {
   documentType:
@@ -43,9 +39,6 @@ export type LandingAnalyticsOverview = {
 };
 
 export async function fetchLandingAnalyticsOverview() {
-  const response = await apiFetch(`${ANALYTICS_API_BASE}/analytics/overview`);
-  if (!response.ok) {
-    throw new Error("Unable to load processing insights.");
-  }
-  return response.json() as Promise<LandingAnalyticsOverview>;
+  const response = await apiFetch(`${API_BASE}/analytics/overview`);
+  return expectApiJson<LandingAnalyticsOverview>(response, "Unable to load processing insights.");
 }

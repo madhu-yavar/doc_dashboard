@@ -14,21 +14,22 @@ const {
 
 const TEMPLATE_DIR = path.join(__dirname, "..", "prescription_template_dev");
 const OUTPUT_DIR = path.join(__dirname, "storage", "prescriptions");
-const DOCS_FILE = path.join(__dirname, "storage", "documents.json");
-const LIVE_SESSIONS_FILE = path.join(__dirname, "storage", "live_conversation_sessions.json");
 
 // Default hospital configuration (fallback)
 const DEFAULT_HOSPITAL = {
-  name: "City Care Hospital",
-  tagline: "Your Health, Our Priority",
+  name: "Manipal Hospitals",
+  tagline: "Care • Safety • Trust",
   department: "INTERNAL MEDICINE",
   branch: "Main Branch",
-  address: "#123, Hospital Road, City Center - 560001 | Phone: 1800 987 6543"
+  address: "Manipal Hospitals | Phone: 1800 123 4567"
 };
 
 class PrescriptionService {
-  constructor() {
+  constructor(config = {}) {
     this.name = "PrescriptionService";
+    // Phase 6: Inject repositories for Postgres-only access
+    this.documentsRepository = config.documentsRepository || null;
+    this.liveSessionsRepository = config.liveSessionsRepository || null;
   }
 
   /**
@@ -39,43 +40,123 @@ class PrescriptionService {
   }
 
   /**
-   * Load document data from storage
+   * Load document data from Postgres (Phase 6: no filesystem reads)
    */
   async loadDocument(docId) {
-    const docsContent = await fs.readFile(DOCS_FILE, "utf8");
-    const docs = JSON.parse(docsContent);
-    const document = docs.documents.find((d) => d.id === docId);
+    // Phase 6: Use repository instead of direct file reads
+    if (!this.documentsRepository) {
+      throw new Error('PrescriptionService requires documentsRepository to be configured');
+    }
+
+    await this.documentsRepository.initialize();
+    const document = await this.documentsRepository.findDocumentById(docId);
+
     if (document) {
-      if (isLiveConversationDocument(document)) {
-        hydrateLiveConversationDocument(document);
+      // Transform Postgres document to legacy format for compatibility
+      const legacyDoc = await this.transformPostgresDocumentToLegacy(document);
+      if (isLiveConversationDocument(legacyDoc)) {
+        hydrateLiveConversationDocument(legacyDoc);
       }
-      return document;
+      return legacyDoc;
     }
 
     return this.loadLiveConversationDocument(docId);
   }
 
   async loadLiveConversationDocument(docId) {
+    // Phase 6: Use repository instead of direct file reads
+    if (!this.liveSessionsRepository) {
+      throw new Error('PrescriptionService requires liveSessionsRepository to be configured');
+    }
+
     try {
-      const sessionsContent = await fs.readFile(LIVE_SESSIONS_FILE, "utf8");
-      const parsed = JSON.parse(sessionsContent);
-      const sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
-      const session = sessions.find((item) => (
-        item?.documentId === docId
-        || item?.id === docId
-        || `voice-live-${item?.id || ""}` === docId
-      ));
+      await this.liveSessionsRepository.initialize();
 
-      if (!session) return null;
+      // Try to find by document_id first
+      const session = await this.liveSessionsRepository.query(`
+        SELECT * FROM ${this.liveSessionsRepository.sessionsTableName}
+        WHERE document_id = $1 OR id = $1
+        LIMIT 1
+      `, [docId.replace('voice-live-', '')]);
 
-      return buildLiveConversationDocument(session, {
-        documentId: session.documentId || docId,
-        createdAt: session.endedAt || session.updatedAt || new Date().toISOString(),
-        sttBackend: session.sttBackend,
+      if (!session || session.length === 0) return null;
+
+      const sessionData = session[0];
+
+      // Build legacy document format
+      return buildLiveConversationDocument(sessionData, {
+        documentId: sessionData.document_id || docId,
+        createdAt: sessionData.ended_at || sessionData.updated_at || new Date().toISOString(),
+        sttBackend: sessionData.stt_backend,
       });
-    } catch {
+    } catch (error) {
+      console.error('Failed to load live conversation document:', error.message);
       return null;
     }
+  }
+
+  /**
+   * Transform Postgres document to legacy format for compatibility
+   */
+  async transformPostgresDocumentToLegacy(pgDocument) {
+    // Fetch related data
+    const [assets, extraction, chartNotes] = await Promise.all([
+      this.documentsRepository.findAssetsByDocumentId(pgDocument.id).catch(() => []),
+      this.documentsRepository.findCurrentExtraction(pgDocument.id).catch(() => null),
+      this.documentsRepository.findChartNotesByDocumentId(pgDocument.id).catch(() => [])
+    ]);
+
+    // Reconstruct filePath from assets
+    let filePath = null;
+    if (assets && assets.length > 0) {
+      const primaryAsset = assets.find(a => a.asset_role === 'source_pdf' || a.asset_role === 'source_audio') || assets[0];
+      if (primaryAsset && primaryAsset.path_or_uri) {
+        filePath = primaryAsset.path_or_uri;
+      }
+    }
+
+    // Reconstruct result from extraction
+    let result = null;
+    if (extraction) {
+      result = {
+        extracted_data: extraction.extracted_data_jsonb || {},
+        meta: extraction.meta_jsonb || {},
+        processedAt: extraction.created_at
+      };
+    }
+
+    // Reconstruct chartNote
+    let chartNote = null;
+    if (chartNotes && chartNotes.length > 0) {
+      const currentChartNote = chartNotes[0];
+      chartNote = {
+        content: currentChartNote.content || '',
+        format: 'text',
+        createdAt: currentChartNote.created_at,
+        createdBy: currentChartNote.created_by_user_id || 'system'
+      };
+    }
+
+    return {
+      id: pgDocument.id,
+      status: pgDocument.status === 'completed' ? 'processed' : pgDocument.status,
+      name: pgDocument.name,
+      size: pgDocument.size_bytes,
+      uploadedAt: pgDocument.uploaded_at,
+      processedAt: pgDocument.processed_at,
+      department: pgDocument.department,
+      filePath: filePath,
+      hash: pgDocument.sha256_hash,
+      error: pgDocument.error_message,
+      documentType: pgDocument.document_type,
+      documentSubtype: pgDocument.document_subtype,
+      mimeType: pgDocument.mime_type,
+      fileName: pgDocument.original_filename,
+      linkedPatient: pgDocument.linked_patient_label,
+      encounterLabel: pgDocument.encounter_label,
+      result: result,
+      chartNote: chartNote
+    };
   }
 
   /**
@@ -327,21 +408,46 @@ class PrescriptionService {
    * Render HTML template with data
    */
   async renderPrescriptionHTML(data) {
-    let html = await fs.readFile(path.join(TEMPLATE_DIR, "prescription-template.html"), "utf8");
-    const css = await fs.readFile(path.join(TEMPLATE_DIR, "prescription-template.css"), "utf8");
-    const js = await fs.readFile(path.join(TEMPLATE_DIR, "prescription-template.js"), "utf8");
+    try {
+      // Check if template directory exists
+      try {
+        await fs.access(TEMPLATE_DIR);
+      } catch (error) {
+        throw new Error(`Prescription template directory not found: ${TEMPLATE_DIR}. Please ensure prescription_template_dev is properly deployed.`);
+      }
 
-    html = html.replace('<link rel="stylesheet" href="prescription-template.css" />', `<style>${css}</style>`);
-    html = html.replace('<script src="prescription-template.js"></script>', `<script>${js}</script>`);
-    html = html.replace(/<script>\s*\/\/ Demo binding[\s\S]*?renderPrescription\(samplePrescriptionData\);\s*<\/script>\s*/g, '');
+      // Check if template files exist
+      const templateFile = path.join(TEMPLATE_DIR, "prescription-template.html");
+      const cssFile = path.join(TEMPLATE_DIR, "prescription-template.css");
+      const jsFile = path.join(TEMPLATE_DIR, "prescription-template.js");
 
-    const dataScript = `<script>
+      for (const file of [templateFile, cssFile, jsFile]) {
+        try {
+          await fs.access(file);
+        } catch (error) {
+          throw new Error(`Prescription template file not found: ${file}. Please ensure all template files are deployed.`);
+        }
+      }
+
+      let html = await fs.readFile(templateFile, "utf8");
+      const css = await fs.readFile(cssFile, "utf8");
+      const js = await fs.readFile(jsFile, "utf8");
+
+      html = html.replace('<link rel="stylesheet" href="prescription-template.css" />', `<style>${css}</style>`);
+      html = html.replace('<script src="prescription-template.js"></script>', `<script>${js}</script>`);
+      html = html.replace(/<script>\s*\/\/ Demo binding[\s\S]*?renderPrescription\(samplePrescriptionData\);\s*<\/script>\s*/g, '');
+
+      const dataScript = `<script>
 window.prescriptionData = ${JSON.stringify(data, null, 2)};
 renderPrescription(window.prescriptionData);
     </script>`;
-    html = html.replace('</body>', dataScript + '</body>');
+      html = html.replace('</body>', dataScript + '</body>');
 
-    return html;
+      return html;
+    } catch (error) {
+      console.error('Error rendering prescription HTML:', error.message);
+      throw new Error(`Failed to render prescription: ${error.message}`);
+    }
   }
 
   /**
@@ -656,7 +762,7 @@ renderPrescription(window.prescriptionData);
     return {
       hospital: {
         name: "Manipal Hospitals",
-        tagline: "Your Health, Our Priority",
+        tagline: "Care • Safety • Trust",
         department: "Voice Dictation",
         branch: "Main Branch",
         address: "Generated from Live Voice Session"

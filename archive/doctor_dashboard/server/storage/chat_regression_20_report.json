@@ -1,0 +1,615 @@
+{
+  "summary": {
+    "total": 20,
+    "passed": 18,
+    "failed": 2
+  },
+  "results": [
+    {
+      "label": "DS11 age",
+      "documentId": "60efedf9-6a08-40c3-b4e6-5f9685d91f2b",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary11.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "Age of the patient?",
+          "ok": true,
+          "answer": "36",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Age",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS11 patient name",
+      "documentId": "60efedf9-6a08-40c3-b4e6-5f9685d91f2b",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary11.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "Name of the patient?",
+          "ok": true,
+          "answer": "Reshma R",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Patient name",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS11 principal diagnosis",
+      "documentId": "60efedf9-6a08-40c3-b4e6-5f9685d91f2b",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary11.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "What is the diagnosis?",
+          "ok": true,
+          "answer": "G2P1L1 AT 38 WEEKS 4 DAYS OF GESTATION WITH PREVIOUS LSCS",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "G2P1L1 AT 38 WEEKS 4 DAYS OF GESTATION WITH PREVIOUS LSCS",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS11 blood pressure",
+      "documentId": "60efedf9-6a08-40c3-b4e6-5f9685d91f2b",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary11.cls.pdf",
+      "passed": false,
+      "failures": [
+        {
+          "turn": 0,
+          "kind": "answer",
+          "expected": "/100\\/60|120\\/80|mmhg/i",
+          "actual": "Not documented."
+        }
+      ],
+      "turns": [
+        {
+          "user": "What is the blood pressure?",
+          "ok": true,
+          "answer": "Not documented.",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "BLOOD GROUPING",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS11 pulse",
+      "documentId": "60efedf9-6a08-40c3-b4e6-5f9685d91f2b",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary11.cls.pdf",
+      "passed": false,
+      "failures": [
+        {
+          "turn": 0,
+          "kind": "answer",
+          "expected": "/\\b86\\b|\\bbpm\\b/i",
+          "actual": "Not documented."
+        }
+      ],
+      "turns": [
+        {
+          "user": "What is the pulse?",
+          "ok": true,
+          "answer": "Not documented.",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "G2P1L1 AT 38 WEEKS 4 DAYS OF GESTATION WITH PREVIOUS LSCS",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "For elective LSCS with B/L tubal sterilization",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "NST",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "Patient admitted for elective LSCS and tubal ligation; stable vitals and IV access established.",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS12 diagnosis",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "What is the diagnosis?",
+          "ok": true,
+          "answer": "(R) thalamo capsular bleed",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "(R) thalamo capsular bleed",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS12 medicines prescribed",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "Medicines prescribed for the patient?",
+          "ok": true,
+          "answer": "INJ MANNITOL (20%) 100 ML IV TDS, INJ LASIX (20MG) IV TDS, INJ LEVERA (500MG) IV BD, INJ PAN (40MG) IV OD, INJ ZOFER (4MG) IV SOS, TAB STAMLO (5MG) OD & SOS (MAX 10MG/DAY), INJ OPTINERON 1 Amp IV OD IN DRIP, INJ HUMAN ACTRAPID SC SOS.",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "INJ MANNITOL (20%) - 100 ML IV TDS",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "INJ MANNITOL (20%)",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "INJ LASIX",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "INJ LEVERA",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS12 investigations ordered",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "What investigations were ordered?",
+          "ok": true,
+          "answer": "CBC, CRP, SODIUM, POTASSIUM, UREA, CREAT, PT, APTT, INR, SEROLOGIES",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "CBC",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "CRP",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "SODIUM",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "POTASSIUM",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS12 LASIX external consent",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "Does INJ LASIX come with 10MG?",
+          "ok": true,
+          "answer": "This answer is not available in the uploaded record. I can search approved medical sources to answer it. Do you want me to do that?",
+          "source_class": "internal",
+          "confidence_label": "low",
+          "decision_prompt": "Yes/No",
+          "citations": []
+        },
+        {
+          "user": "yes",
+          "ok": true,
+          "answer": "I searched approved external medical sources but did not find a reliable answer for that question. The uploaded record documents: INJ LASIX.",
+          "source_class": "mixed",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "INJ LASIX",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS12 why BP low",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "The patient's BP is less than reference, why?",
+          "ok": true,
+          "answer": "Patient Record:\nThe patient's recorded blood pressure is 160/80 mmHg. The documentation does not provide a reason for the blood pressure reading.\n\nExternal Reference:\nGeneral medical literature notes various causes for hypotension, including postprandial states and time-of-day-dependent variations in certain clinical settings.",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Systolic BP 160 mmHg",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[PubMed: 41901555]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41901555/"
+            },
+            {
+              "label": "[PubMed: 41927342]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41927342/"
+            },
+            {
+              "label": "[PubMed: 41918339]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41918339/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS13 patient name",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "Name of the patient?",
+          "ok": true,
+          "answer": "Prakriti MUKHOPADHYAY",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Patient name",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS13 comorbidities",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "What are the comorbidities?",
+          "ok": true,
+          "answer": "HTN, DM",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Ganglionic cyst left hand Middle finger DIP joint",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "Ganglion excision",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "Nursing Initial Assessment: Patient presents with ganglionic swelling on left middle finger DIP joint.",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS13 STATOR purpose",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "why do we need STATOR? what does it do?",
+          "ok": true,
+          "answer": "I searched approved external medical sources but did not find a reliable answer for that question. The uploaded record documents: TAB STATOR 10.",
+          "source_class": "mixed",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "TAB STATOR 10",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS13 DAPAGLIFOZOLIN syrup",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "does TAB DAPAGLIFOZOLIN 10 come in syrup?",
+          "ok": true,
+          "answer": "This answer is not available in the uploaded record. I can search approved medical sources to answer it. Do you want me to do that?",
+          "source_class": "internal",
+          "confidence_label": "low",
+          "decision_prompt": "Yes/No",
+          "citations": []
+        },
+        {
+          "user": "yes",
+          "ok": true,
+          "answer": "I searched approved external medical sources but did not find a reliable answer for that question. The uploaded record documents: TAB DAPAGLIFOZOLIN 10.",
+          "source_class": "mixed",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "TAB DAPAGLIFOZOLIN 10",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS9 diagnosis",
+      "documentId": "54aea3fc-f114-4635-9aec-53ec6073188f",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary9.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "What is the diagnosis?",
+          "ok": true,
+          "answer": "Multiple myeloma",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Multiple myeloma",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS9 comorbidities",
+      "documentId": "54aea3fc-f114-4635-9aec-53ec6073188f",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary9.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "What are the comorbidities?",
+          "ok": true,
+          "answer": "Multiple myeloma (IgA kappa monoclonal gammopathy- high risk), diabetes, and hypertension.",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Multiple myeloma",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "IgA kappa monoclonal gammopathy- high risk",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "Chemotherapy",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "Patient admitted for chemotherapy #7 under Dr. Satish Kumar.",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS6 patient name",
+      "documentId": "3996ee56-6b8b-4108-8436-4efc7e0b56e4",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary6.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "Name of the patient?",
+          "ok": true,
+          "answer": "Preetham Kumar",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Patient name",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS6 T.CILACAR M composition",
+      "documentId": "3996ee56-6b8b-4108-8436-4efc7e0b56e4",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary6.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "What is the composition for: T.CILACAR M?",
+          "ok": true,
+          "answer": "This answer is not available in the uploaded record. I can search approved medical sources to answer it. Do you want me to do that?",
+          "source_class": "internal",
+          "confidence_label": "low",
+          "decision_prompt": "Yes/No",
+          "citations": []
+        },
+        {
+          "user": "yes",
+          "ok": true,
+          "answer": "I searched approved external medical sources but did not find a reliable answer for that question. The uploaded record documents: T.CILACAR M.",
+          "source_class": "mixed",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "T.CILACAR M",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS5 diagnosis",
+      "documentId": "91f4defb-4903-42fe-a5ff-2a2b22f986ce",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary5.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "What is the diagnosis?",
+          "ok": true,
+          "answer": "Newborn",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Newborn",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "DS1 diagnosis",
+      "documentId": "6c20e0b4-4191-453f-b360-a96742a1e806",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary1.cls.pdf",
+      "passed": true,
+      "failures": [],
+      "turns": [
+        {
+          "user": "What is the diagnosis?",
+          "ok": true,
+          "answer": "B/L EAR PAIN",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "B/L EAR PAIN",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

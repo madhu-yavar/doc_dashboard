@@ -1,4 +1,4 @@
-import { API_BASE } from "@/lib/processedDocuments";
+import { API_BASE } from "@/lib/backendConfig";
 
 export class ApiError extends Error {
   status: number;

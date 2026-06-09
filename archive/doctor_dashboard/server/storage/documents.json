@@ -1,0 +1,124 @@
+{
+  "documents": [
+    {
+      "id": "0aad2a22-df9f-47eb-924e-37da88b55795",
+      "name": "Custom.MEXX.Report.ZEN.DischargeSummary9.cls.pdf",
+      "size": 199368,
+      "uploadedAt": "2026-04-14T11:27:58.232Z",
+      "status": "failed",
+      "department": "Inpatient nursing / medical",
+      "filePath": "/Users/yavar/Documents/CoE/Manipal/doctor_dashboard/server/storage/uploads/0aad2a22-df9f-47eb-924e-37da88b55795.pdf",
+      "hash": "cfc5b9b95f4d14b0c777ab5d0cdb041b6c107b6662bc0a4dd6f8e692e6fade9c",
+      "result": null,
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "id": "35b772b7-3b87-42e0-962e-7f45aa3f85f4",
+      "name": "Custom.MEXX.Report.ZEN.DischargeSummary10.cls.pdf",
+      "size": 258043,
+      "uploadedAt": "2026-04-14T11:27:58.232Z",
+      "status": "failed",
+      "department": "Inpatient nursing / medical",
+      "filePath": "/Users/yavar/Documents/CoE/Manipal/doctor_dashboard/server/storage/uploads/35b772b7-3b87-42e0-962e-7f45aa3f85f4.pdf",
+      "hash": "b484ecd170630976da2b3bd5e3a8cbfab1d19766cf871893b029aa573779708a",
+      "result": null,
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "id": "c6682eb0-1386-477f-b98e-ff36a45e18bb",
+      "name": "Custom.MEXX.Report.ZEN.DischargeSummary5.cls.pdf",
+      "size": 248500,
+      "uploadedAt": "2026-04-14T11:27:58.231Z",
+      "status": "failed",
+      "department": "Neonatal / Pediatrics",
+      "filePath": "/Users/yavar/Documents/CoE/Manipal/doctor_dashboard/server/storage/uploads/c6682eb0-1386-477f-b98e-ff36a45e18bb.pdf",
+      "hash": "859908fd15e5bdac9593665064a2cd83f219bca610491bcf967dee4e675c9fef",
+      "result": null,
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "id": "d5a8c6ed-ad4d-44d4-afd2-49b9f5e53dfe",
+      "name": "Custom.MEXX.Report.ZEN.DischargeSummary6.cls.pdf",
+      "size": 275321,
+      "uploadedAt": "2026-04-14T11:27:58.231Z",
+      "status": "failed",
+      "department": "Inpatient nursing / medical",
+      "filePath": "/Users/yavar/Documents/CoE/Manipal/doctor_dashboard/server/storage/uploads/d5a8c6ed-ad4d-44d4-afd2-49b9f5e53dfe.pdf",
+      "hash": "7962d776726ea260192e21972485ebda2995ed98a2c0fe7c679aa690f28f5e75",
+      "result": null,
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "id": "a3ed8dba-497f-4228-85e2-06f820c141b6",
+      "name": "Custom.MEXX.Report.ZEN.DischargeSummary1.cls.pdf",
+      "size": 283367,
+      "uploadedAt": "2026-04-14T11:27:58.231Z",
+      "status": "failed",
+      "department": "Inpatient nursing / medical",
+      "filePath": "/Users/yavar/Documents/CoE/Manipal/doctor_dashboard/server/storage/uploads/a3ed8dba-497f-4228-85e2-06f820c141b6.pdf",
+      "hash": "f750db81fb5be31066f9c35f26db6c223da5615ff145e138c3f91e6eeffd9737",
+      "result": null,
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "id": "3b0ffd7a-2150-4043-854c-d5e6e998c69c",
+      "name": "Custom.MEXX.Report.ZEN.DischargeSummary2.cls.pdf",
+      "size": 280464,
+      "uploadedAt": "2026-04-14T11:27:58.231Z",
+      "status": "failed",
+      "department": "Inpatient nursing / medical",
+      "filePath": "/Users/yavar/Documents/CoE/Manipal/doctor_dashboard/server/storage/uploads/3b0ffd7a-2150-4043-854c-d5e6e998c69c.pdf",
+      "hash": "e93cd7660fa91b23b15e04613f57ab0cf4ed89fc49c8f03a08e504d56db650d1",
+      "result": null,
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "id": "9445a1a4-1f46-4727-aa2a-4b8aca770c1c",
+      "name": "Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf",
+      "size": 224064,
+      "uploadedAt": "2026-04-14T11:27:58.230Z",
+      "status": "failed",
+      "department": "Cardiology / Cath Lab",
+      "filePath": "/Users/yavar/Documents/CoE/Manipal/doctor_dashboard/server/storage/uploads/9445a1a4-1f46-4727-aa2a-4b8aca770c1c.pdf",
+      "hash": "de8ed93c11ad4ea05a24a7b7d7dc9f1d4360c4b97e80861a00e6cce1e479d03a",
+      "result": null,
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "id": "a6b9ca38-d433-4662-8cf2-b7b6a012c8c3",
+      "name": "Custom.MEXX.Report.ZEN.DischargeSummary4.cls.pdf",
+      "size": 277361,
+      "uploadedAt": "2026-04-14T11:27:58.230Z",
+      "status": "failed",
+      "department": "Pediatrics / ENT",
+      "filePath": "/Users/yavar/Documents/CoE/Manipal/doctor_dashboard/server/storage/uploads/a6b9ca38-d433-4662-8cf2-b7b6a012c8c3.pdf",
+      "hash": "1148d9adb4cfe89a676629b467d150431afbd9e5d534950ba121370c45c21f62",
+      "result": null,
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "id": "3ff7ff03-7874-4772-848f-e93e28b09987",
+      "name": "sample_simplified_dashboard_escalation_test.pdf",
+      "size": 2162,
+      "uploadedAt": "2026-04-14T11:27:58.230Z",
+      "status": "failed",
+      "department": "Inpatient nursing / medical",
+      "filePath": "/Users/yavar/Documents/CoE/Manipal/doctor_dashboard/server/storage/uploads/3ff7ff03-7874-4772-848f-e93e28b09987.pdf",
+      "hash": "fdc5e03607f95994d8485ccb59be0145649606ca3cbf7a8439323c0047f648c6",
+      "result": null,
+      "error": "dischargeAgent is not defined"
+    },
+    {
+      "id": "87590ac4-7232-43e1-ad91-4d1416a5563d",
+      "name": "sample_simplified_dashboard_escalation_test_v2.pdf",
+      "size": 2168,
+      "uploadedAt": "2026-04-14T11:27:58.229Z",
+      "status": "failed",
+      "department": "Inpatient nursing / medical",
+      "filePath": "/Users/yavar/Documents/CoE/Manipal/doctor_dashboard/server/storage/uploads/87590ac4-7232-43e1-ad91-4d1416a5563d.pdf",
+      "hash": "1a4ba1326384f1dfbe2f250433dd9b139a938c7b076b31eb4957e87cf2d76db6",
+      "result": null,
+      "error": "dischargeAgent is not defined"
+    }
+  ]
+}

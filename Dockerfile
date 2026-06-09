@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY bun.lock* ./
+COPY package-lock.json ./
 
 # Install dependencies
 RUN npm ci
@@ -26,7 +26,13 @@ WORKDIR /app
 # Install runtime dependencies
 # dumb-init: proper signal handling
 # poppler-utils: pdftoppm for PDF to image conversion (classification, masking)
-RUN apk add --no-cache dumb-init poppler-utils
+# Playwright/Chromium dependencies for prescription PDF generation
+RUN apk add --no-cache dumb-init poppler-utils \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -38,6 +44,8 @@ COPY bun.lock* ./
 
 # Install production dependencies only
 RUN npm ci --only=production && \
+    npm install playwright@^1.57.0 && \
+    npx playwright install --with-deps chromium && \
     npm cache clean --force
 
 # Copy built frontend from builder
@@ -52,9 +60,11 @@ COPY skills ./skills
 COPY tools ./tools
 COPY config ./config
 COPY scripts ./scripts
+COPY prescription_template_dev ./prescription_template_dev
 
-# Create storage directory with proper permissions
-RUN mkdir -p server/storage/uploads && \
+# Create necessary directories with proper permissions
+RUN mkdir -p server/storage/uploads server/storage/prescriptions && \
+    ls -la prescription_template_dev && \
     chown -R nodejs:nodejs /app
 
 # Switch to non-root user

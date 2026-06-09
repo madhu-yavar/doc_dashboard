@@ -189,11 +189,62 @@ function getSegmentConfidenceLabel(segment: VoiceSegment) {
   return `Confidence ${formatPercent(segment.confidence)}`;
 }
 
+function normalizeReviewText(value: string | null | undefined) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function parseReviewTimeLabel(value: string | null | undefined) {
+  const text = String(value || "").trim().toLowerCase();
+  if (!text) return null;
+
+  const mmssMatch = text.match(/^(\d{1,2}):(\d{2})$/);
+  if (mmssMatch) {
+    return Number(mmssMatch[1]) * 60 + Number(mmssMatch[2]);
+  }
+
+  const secondsMatch = text.match(/^(\d+(?:\.\d+)?)s$/);
+  if (secondsMatch) {
+    return Number(secondsMatch[1]);
+  }
+
+  return null;
+}
+
+function parseReviewTimeRange(value: string | null | undefined) {
+  const text = String(value || "").trim();
+  if (!text) return null;
+
+  const [startRaw, endRaw] = text.split(/\s*-\s*/);
+  const start = parseReviewTimeLabel(startRaw);
+  const end = parseReviewTimeLabel(endRaw);
+  if (start === null || end === null) {
+    return null;
+  }
+  return { start, end };
+}
+
 function getSegmentReviewItems(session: VoiceSession, segment: VoiceSegment) {
-  return session.reviewItems.filter((item) =>
-    item.provenanceText === segment.text &&
-    item.provenanceTime === `${segment.startLabel} - ${segment.endLabel}`
-  );
+  const segmentText = normalizeReviewText(segment.text);
+  const segmentRange = parseReviewTimeRange(`${segment.startLabel} - ${segment.endLabel}`);
+
+  return session.reviewItems.filter((item) => {
+    const itemText = normalizeReviewText(item.provenanceText);
+    const textMatches =
+      Boolean(itemText) &&
+      Boolean(segmentText) &&
+      (itemText === segmentText || segmentText.includes(itemText) || itemText.includes(segmentText));
+
+    const itemRange = parseReviewTimeRange(item.provenanceTime);
+    const timeMatches =
+      !itemRange
+      || !segmentRange
+      || (Math.abs(itemRange.start - segmentRange.start) < 0.5 && Math.abs(itemRange.end - segmentRange.end) < 0.5);
+
+    return textMatches && timeMatches;
+  });
 }
 
 function sessionHasStructuredExtraction(session: VoiceSession) {
@@ -1012,7 +1063,9 @@ export default function VoiceDictationWorkspace({ onDocumentsChanged }: VoiceDic
                 {selectedSession.reviewItems.some((item) => item.resolution === "pending") && selectedSession.status !== "queued_for_extraction" && selectedSession.status !== "queued" ? (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                     <p className="font-medium">Approval required</p>
-                    <p className="text-xs">Approve this transcript, then select it above and add it to queue.</p>
+                    <p className="text-xs">
+                      {selectedSession.reviewItems.filter((item) => item.resolution === "pending").length} review item(s) are still pending. Resolve all of them before adding this dictation to the queue.
+                    </p>
                   </div>
                 ) : selectedSession.status === "queued_for_extraction" || selectedSession.status === "queued" ? (
                   <div className="rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800">

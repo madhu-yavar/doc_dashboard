@@ -17,8 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createAuthenticatedEventSource } from "@/lib/apiClient";
-
-const API_BASE = `${(import.meta.env.VITE_API_URL || "").replace(/\/$/, "")}/api`;
+import { API_BASE } from "@/lib/backendConfig";
 
 interface HandwritingCompletionDialogProps {
   open: boolean;

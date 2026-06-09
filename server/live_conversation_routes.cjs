@@ -14,8 +14,15 @@ const {
 class LiveConversationRoutes {
   constructor(config = {}) {
     this.storageDir = config.storageDir || config.storage?.storageDir;
-    this.store = new LiveConversationStore({ storageDir: this.storageDir });
+    this.store = new LiveConversationStore({
+      storageDir: this.storageDir,
+      authService: config.authService || null,
+      transcriptsRepository: config.transcriptsRepository || null,
+      docsRepository: config.docsRepository || null,
+    });
     this.documentsPath = config.documentsPath;
+    // Phase 6: Inject DocumentsRepository for Postgres-only document creation
+    this.docsRepository = config.docsRepository || null;
   }
 
   log(message, data = {}) {
@@ -28,6 +35,20 @@ class LiveConversationRoutes {
     if (normalized.includes("mpeg") || normalized.includes("mp3")) return ".mp3";
     if (normalized.includes("ogg")) return ".ogg";
     return ".webm";
+  }
+
+  normalizeTranscriptText(value = "") {
+    return String(value || "")
+      .replace(/<\|[^>]+\|>/g, " ")
+      .replace(/<\/?s>/gi, " ")
+      .replace(/\[(?:music|silence|blank_audio|inaudible|noise)\]/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  isMeaningfulTranscriptText(value = "") {
+    const cleaned = this.normalizeTranscriptText(value);
+    return Boolean(cleaned && /[a-z0-9]/i.test(cleaned));
   }
 
   async syncStructuredReviewItems(sessionId) {
@@ -57,8 +78,8 @@ class LiveConversationRoutes {
   isEmptySessionCapture(session) {
     return (session?.audio?.chunkCount || 0) === 0
       && (session?.transcript?.segments?.length || 0) === 0
-      && !(session?.transcript?.rawText || "").trim()
-      && !(session?.transcript?.normalizedText || "").trim();
+      && !this.isMeaningfulTranscriptText(session?.transcript?.rawText || "")
+      && !this.isMeaningfulTranscriptText(session?.transcript?.normalizedText || "");
   }
 
   isStaleSessionTimestamp(referenceTime) {
@@ -147,6 +168,80 @@ class LiveConversationRoutes {
     const normalizedSession = await this.normalizeRecoverableSession(session);
     const syncedSession = await this.syncStructuredReviewItems(normalizedSession.id);
     return { session: syncedSession || normalizedSession, user };
+  }
+
+  async ensureDocsRepository() {
+    if (!this.docsRepository) {
+      throw new Error("DocumentsRepository not configured");
+    }
+
+    await this.docsRepository.initialize();
+    return this.docsRepository;
+  }
+
+  async upsertLiveDocumentExtraction(documentId, result = {}) {
+    const docsRepository = await this.ensureDocsRepository();
+    const currentExtraction = await docsRepository.findCurrentExtraction(documentId).catch(() => null);
+    const allExtractions = currentExtraction
+      ? [currentExtraction]
+      : await docsRepository.findDocumentExtractions(documentId).catch(() => []);
+    const targetExtraction = currentExtraction || allExtractions[0] || null;
+
+    const extractionPayload = {
+      status: "completed",
+      agent_name: "live_conversation",
+      agent_version: "1.0",
+      extracted_data: result.extracted_data || {},
+      dashboard_payload: result || {},
+      meta: result.meta || {},
+      presentation: result.presentation || {},
+      stage1: result.stage1 || {},
+      stage3: result.stage3 || {},
+    };
+
+    if (targetExtraction) {
+      const updatedExtraction = await docsRepository.queryOne(
+        `UPDATE ${docsRepository.documentExtractionsTableName}
+         SET status = $1,
+             agent_name = $2,
+             agent_version = $3,
+             extracted_data_jsonb = $4,
+             dashboard_payload_jsonb = $5,
+             meta_jsonb = $6,
+             stage1_jsonb = $7,
+             stage3_jsonb = $8,
+             presentation_jsonb = $9
+         WHERE id = $10
+         RETURNING *`,
+        [
+          extractionPayload.status,
+          extractionPayload.agent_name,
+          extractionPayload.agent_version,
+          docsRepository.toJSONB(extractionPayload.extracted_data),
+          docsRepository.toJSONB(extractionPayload.dashboard_payload),
+          docsRepository.toJSONB(extractionPayload.meta),
+          docsRepository.toJSONB(extractionPayload.stage1),
+          docsRepository.toJSONB(extractionPayload.stage3),
+          docsRepository.toJSONB(extractionPayload.presentation),
+          targetExtraction.id,
+        ],
+      );
+
+      await docsRepository.updateDocument(documentId, {
+        current_extraction_id: updatedExtraction.id,
+      });
+      return updatedExtraction;
+    }
+
+    const createdExtraction = await docsRepository.createDocumentExtraction({
+      document_id: documentId,
+      version_no: 1,
+      ...extractionPayload,
+    });
+    await docsRepository.updateDocument(documentId, {
+      current_extraction_id: createdExtraction.id,
+    });
+    return createdExtraction;
   }
 
   registerRoutes(app, authService) {
@@ -247,6 +342,23 @@ class LiveConversationRoutes {
       }
     });
 
+    app.delete("/api/voice/live/sessions/:sessionId/audio", async (req, res) => {
+      const result = await this.loadSession(req, res, authService);
+      if (!result) return;
+
+      try {
+        const { session, user } = result;
+        const updated = await this.store.deleteAudio(session.id);
+        await this.store.logEvent(session.id, "recording_deleted", {
+          deletedBy: user.username,
+        });
+        res.json(this.store.toPublicSession(updated || session));
+      } catch (error) {
+        this.log("Delete session audio error", { error: error.message, stack: error.stack });
+        res.status(500).json({ error: error.message });
+      }
+    });
+
     app.post(
       "/api/voice/live/sessions/:sessionId/audio/final",
       express.raw({ type: () => true, limit: "100mb" }),
@@ -283,6 +395,7 @@ class LiveConversationRoutes {
               mimeType,
               combinedPath: audioPath,
               totalBytes: buffer.length,
+              combinedSize: buffer.length,
             },
           });
 
@@ -339,7 +452,15 @@ class LiveConversationRoutes {
           return;
         }
 
-        const updated = await this.store.update(session.id, { status: "paused" });
+        const updated = await this.store.update(session.id, {
+          status: "paused",
+          transport: {
+            ...(session.transport || {}),
+            connectionState: "paused",
+            lastError: null,
+            lastEventAt: new Date().toISOString(),
+          },
+        });
         await this.store.logEvent(session.id, "session_paused");
 
         res.json(this.store.toPublicSession(updated));
@@ -360,7 +481,15 @@ class LiveConversationRoutes {
           return;
         }
 
-        const updated = await this.store.update(session.id, { status: "live" });
+        const updated = await this.store.update(session.id, {
+          status: "live",
+          transport: {
+            ...(session.transport || {}),
+            connectionState: "connected",
+            lastError: null,
+            lastEventAt: new Date().toISOString(),
+          },
+        });
         await this.store.logEvent(session.id, "session_resumed");
 
         res.json(this.store.toPublicSession(updated));
@@ -447,6 +576,10 @@ class LiveConversationRoutes {
       try {
         let { session } = result;
         session = await this.syncStructuredReviewItems(session.id) || session;
+        if (session.status === "finalized" && session.documentId) {
+          res.json(this.store.toPublicSession(session));
+          return;
+        }
         if (session.status !== "review_required") {
           res.status(400).json({ error: "Session is not ready for finalization" });
           return;
@@ -482,7 +615,12 @@ class LiveConversationRoutes {
 
         res.json(this.store.toPublicSession(updated));
       } catch (error) {
-        this.log("Finalize error", { error: error.message });
+        this.log("Finalize error", {
+          sessionId: req.params.sessionId,
+          error: error.message,
+          code: error.code,
+          stack: error.stack,
+        });
         res.status(500).json({ error: error.message });
       }
     });
@@ -493,19 +631,45 @@ class LiveConversationRoutes {
 
       try {
         const { session, user } = result;
-        if (session.createdBy?.id !== user.id && user.role !== "admin") {
-          res.status(403).json({ error: "Forbidden" });
+        if (session.documentId || session.status === "finalized") {
+          res.status(400).json({
+            error: "Finalized visits require the explicit finalized delete action.",
+          });
           return;
         }
 
-        await this.store.delete(session.id);
         await this.store.logEvent(session.id, "session_deleted", {
           deletedBy: user.username,
         });
-
+        await this.store.delete(session.id);
         res.json({ success: true });
       } catch (error) {
-        this.log("Delete session error", { error: error.message });
+        this.log("Delete session error", { error: error.message, stack: error.stack });
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    app.delete("/api/voice/live/sessions/:sessionId/finalized-visit", async (req, res) => {
+      const result = await this.loadSession(req, res, authService);
+      if (!result) return;
+
+      try {
+        const { session, user } = result;
+        const deletedDocumentId = session.documentId || null;
+
+        if (deletedDocumentId) {
+          const docsRepository = await this.ensureDocsRepository();
+          await docsRepository.deleteDocument(deletedDocumentId).catch(() => false);
+        }
+
+        await this.store.logEvent(session.id, "finalized_session_deleted", {
+          deletedBy: user.username,
+          documentId: deletedDocumentId,
+        });
+        await this.store.delete(session.id);
+        res.json({ success: true, documentId: deletedDocumentId });
+      } catch (error) {
+        this.log("Delete finalized session error", { error: error.message, stack: error.stack });
         res.status(500).json({ error: error.message });
       }
     });
@@ -526,19 +690,63 @@ class LiveConversationRoutes {
   }
 
   async createDashboardDocument(session) {
-    if (!this.documentsPath) {
-      throw new Error("Documents path not configured");
-    }
+    const docsRepository = await this.ensureDocsRepository();
 
-    const documentsRaw = await fs.readFile(this.documentsPath, "utf8");
-    const documents = JSON.parse(documentsRaw);
-    const documentsList = Array.isArray(documents.documents) ? documents.documents : [];
     const now = new Date().toISOString();
     const newDocument = buildLiveConversationDocument(session, { createdAt: now });
     const documentId = newDocument.id;
+    const documentPayload = {
+      name: newDocument.name,
+      status: 'completed', // Live conversation documents are usually completed when finalized
+      document_type: 'live_conversation',
+      // The relational subtype enum does not define a live-conversation-specific subtype.
+      document_subtype: 'unknown',
+      source_kind: 'live_conversation',
+      mime_type: 'application/json',
+      size_bytes: 0, // Live conversation documents don't have a source file size
+      sha256_hash: null,
+      uploaded_at: newDocument.uploadedAt || now,
+      processed_at: now,
+      department: 'Live Conversation',
+      linked_patient_label: newDocument.linkedPatient || null,
+      encounter_label: newDocument.encounterLabel || null,
+      error_message: null,
+      error_code: null,
+    };
 
-    documentsList.unshift(newDocument);
-    await fs.writeFile(this.documentsPath, JSON.stringify({ documents: documentsList }, null, 2), "utf8");
+    const existingDocument = await docsRepository.findDocumentById(documentId).catch(() => null);
+    if (existingDocument) {
+      await docsRepository.updateDocument(documentId, documentPayload);
+    } else {
+      try {
+        await docsRepository.createDocument({
+          id: documentId,
+          ...documentPayload,
+        });
+      } catch (error) {
+        if (error?.code === "23505") {
+          await docsRepository.updateDocument(documentId, documentPayload);
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    // Store extraction data if available
+    if (newDocument.result && newDocument.result.extracted_data) {
+      await this.upsertLiveDocumentExtraction(documentId, newDocument.result);
+    }
+
+    if (typeof this.store.syncLiveSessionAudioAsset === "function") {
+      await this.store.syncLiveSessionAudioAsset(session).catch((error) => {
+        this.log("Live session audio asset sync failed during finalize", {
+          sessionId: session.id,
+          error: error.message,
+        });
+      });
+    }
+
+    this.log("Document created in Postgres", { documentId });
 
     return documentId;
   }

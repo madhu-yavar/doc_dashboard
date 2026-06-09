@@ -74,7 +74,7 @@ class LiveConversationSTTAgent {
     this.hybridReconcilerSkill = new HybridSTTReconcilerSkill({
       gemmaUrl: this.config.gemmaUrl,
       gemmaModel: this.config.gemmaModel,
-      timeout: config.hybridTimeout || 60000,
+      timeout: config.hybridTimeout || 180000, // 3 minutes for LLM reconciliation
       debug: this.config.debug,
     });
     this.validationSkill = new ConversationTranscriptValidationSkill({
@@ -151,9 +151,56 @@ class LiveConversationSTTAgent {
     return this.resolveWindowSeconds(options);
   }
 
+  normalizeTranscriptText(value = "") {
+    return String(value || "")
+      .replace(/<\|[^>]+\|>/g, " ")
+      .replace(/<\/?s>/gi, " ")
+      .replace(/\[(?:music|silence|blank_audio|inaudible|noise)\]/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  isMeaningfulTranscriptText(value = "") {
+    const cleaned = this.normalizeTranscriptText(value);
+    return Boolean(cleaned && /[a-z0-9]/i.test(cleaned));
+  }
+
+  extractTranscriptText(resultData = null) {
+    if (!resultData || typeof resultData !== "object") {
+      return "";
+    }
+
+    const directText = this.normalizeTranscriptText(
+      resultData.normalizedText || resultData.rawText || "",
+    );
+    if (this.isMeaningfulTranscriptText(directText)) {
+      return directText;
+    }
+
+    const segmentText = Array.isArray(resultData.segments)
+      ? resultData.segments
+        .map((segment) => this.normalizeTranscriptText(segment?.normalizedText || segment?.text || ""))
+        .filter((text) => this.isMeaningfulTranscriptText(text))
+        .join(" ")
+        .trim()
+      : "";
+    if (segmentText) {
+      return segmentText;
+    }
+
+    const chunkText = Array.isArray(resultData.chunks)
+      ? resultData.chunks
+        .map((chunk) => this.normalizeTranscriptText(chunk?.normalizedText || chunk?.transcript || chunk?.text || ""))
+        .filter((text) => this.isMeaningfulTranscriptText(text))
+        .join(" ")
+        .trim()
+      : "";
+
+    return chunkText;
+  }
+
   hasUsableTranscriptResult(result = null) {
-    const transcript = result?.data?.normalizedText || result?.data?.rawText || "";
-    return Boolean(result?.success && String(transcript).trim().length > 0);
+    return Boolean(result?.success && this.extractTranscriptText(result?.data));
   }
 
   buildFailureSummary({
@@ -379,26 +426,33 @@ class LiveConversationSTTAgent {
   }
 
   normalizeBrowserTranscriptChunks(segments = []) {
-    return segments.map((seg, idx) => {
-      const startSeconds = Number.isFinite(seg?.startSeconds)
+    return segments
+      .map((seg, idx) => {
+        const transcript = this.normalizeTranscriptText(seg?.text || seg?.normalizedText || "");
+        if (!this.isMeaningfulTranscriptText(transcript)) {
+          return null;
+        }
+
+        const startSeconds = Number.isFinite(seg?.startSeconds)
         ? Number(seg.startSeconds)
         : (this.parseTimeLabel(seg?.startLabel) ?? 0);
-      const endSeconds = Number.isFinite(seg?.endSeconds)
+        const endSeconds = Number.isFinite(seg?.endSeconds)
         ? Number(seg.endSeconds)
         : (this.parseTimeLabel(seg?.endLabel) ?? startSeconds);
 
-      return {
-        chunkIndex: idx,
-        startSeconds,
-        endSeconds,
-        startLabel: seg?.startLabel || "00:00",
-        endLabel: seg?.endLabel || "00:00",
-        transcript: seg?.text || seg?.normalizedText || "",
-        normalizedText: seg?.normalizedText || seg?.text || "",
-        success: true,
-        error: null,
-      };
-    });
+        return {
+          chunkIndex: idx,
+          startSeconds,
+          endSeconds,
+          startLabel: seg?.startLabel || "00:00",
+          endLabel: seg?.endLabel || "00:00",
+          transcript,
+          normalizedText: this.normalizeTranscriptText(seg?.normalizedText || seg?.text || transcript),
+          success: true,
+          error: null,
+        };
+      })
+      .filter(Boolean);
   }
 
   applyBrowserDiarizationToSegments(segments = [], annotatedChunks = []) {
@@ -423,7 +477,7 @@ class LiveConversationSTTAgent {
   }
 
   buildChunkTranscriptResult(chunks = [], meta = {}, options = {}) {
-    const successfulChunks = chunks.filter((chunk) => chunk.success && chunk.transcript);
+    const successfulChunks = chunks.filter((chunk) => chunk.success && this.isMeaningfulTranscriptText(chunk.transcript));
     const cumulativeTranscript = successfulChunks.map((chunk) => chunk.transcript).join("\n");
     const baseTranscript = this.whisperSkill.buildTranscriptResponse(
       cumulativeTranscript,
@@ -566,8 +620,9 @@ class LiveConversationSTTAgent {
       });
       const latencyMs = Date.now() - startedAt;
       const transcript = result.success
-        ? (result.data.normalizedText || result.data.rawText || "")
+        ? this.extractTranscriptText(result.data)
         : "";
+      const usableTranscript = result.success && this.isMeaningfulTranscriptText(transcript);
 
       chunks.push({
         chunkIndex: plannedChunk.chunkIndex,
@@ -577,10 +632,14 @@ class LiveConversationSTTAgent {
         startLabel: this.vadTool.formatSeconds(plannedChunk.startSeconds),
         endLabel: this.vadTool.formatSeconds(plannedChunk.endSeconds),
         latencyMs,
-        success: result.success,
+        success: usableTranscript,
         textLength: transcript.length,
         transcript,
-        error: result.success ? null : result.error || "Unknown failure",
+        error: usableTranscript
+          ? null
+          : result.success
+            ? "Transcript was empty or contained only model artifacts"
+            : result.error || "Unknown failure",
         source: plannedChunk.source,
       });
 
@@ -739,7 +798,7 @@ class LiveConversationSTTAgent {
       return null;
     }
 
-    const transcript = result?.data?.normalizedText || result?.data?.rawText || "";
+    const transcript = this.extractTranscriptText(result?.data);
     return {
       success: !!result.success,
       backend: result.backend || result?.data?.metadata?.backend || null,
@@ -775,20 +834,22 @@ class LiveConversationSTTAgent {
     if (mimeType.includes("webm") || mimeType.includes("mp4") || mimeType.includes("mpeg")) {
       this.log("Using direct Whisper transcription for browser format", { mimeType, audioPath });
       try {
-        const result = await this.whisperSkill.execute({
+        const whisperDirectResult = await this.whisperSkill.execute({
           audioPath: absoluteAudioPath,
           mimeType: mimeType,
           language: options.language || this.config.language,
           temperature: options.temperature || this.config.temperature,
         });
 
-        if (result.success && result.data) {
-          const browserSegments = Array.isArray(result.data.segments) ? result.data.segments : [];
+        if (this.hasUsableTranscriptResult(whisperDirectResult) && whisperDirectResult.data) {
+          const browserSegments = Array.isArray(whisperDirectResult.data.segments)
+            ? whisperDirectResult.data.segments.filter((segment) => this.isMeaningfulTranscriptText(segment?.text || segment?.normalizedText || ""))
+            : [];
           const browserChunks = this.normalizeBrowserTranscriptChunks(browserSegments);
           const diarization = options.enableSpeakerDiarization
             ? await this.runSpeakerDiarization(absoluteAudioPath, mimeType, {
                 ...options,
-                transcriptHint: result.data.normalizedText || result.data.rawText || "",
+                transcriptHint: this.extractTranscriptText(whisperDirectResult.data),
               })
             : null;
           const annotatedChunks = diarization?.segments
@@ -804,14 +865,16 @@ class LiveConversationSTTAgent {
               }))
             : (Array.isArray(result.data.speakers) ? result.data.speakers : []);
           const quality = {
-            ...(result.data.quality || {}),
+            ...(whisperDirectResult.data.quality || {}),
             speakerAmbiguityCount: diarizedSegments.filter((segment) => segment?.speakerRole === "unknown").length,
           };
 
           return {
             success: true,
             data: {
-              ...result.data,
+              ...whisperDirectResult.data,
+              rawText: this.extractTranscriptText(whisperDirectResult.data),
+              normalizedText: this.extractTranscriptText(whisperDirectResult.data),
               segments: diarizedSegments,
               chunks: annotatedChunks,
               speakers: diarizedSpeakers,
@@ -820,13 +883,106 @@ class LiveConversationSTTAgent {
             backend: "whisper_direct",
             model: "whisper-self-hosted",
           };
-        } else {
+        }
+
+        const medasrResult = await this.runMedASRShadowTranscription(absoluteAudioPath, mimeType, options);
+        let finalTranscriptResult = this.hasUsableTranscriptResult(medasrResult)
+          ? {
+              ...medasrResult,
+              data: {
+                ...(medasrResult.data || {}),
+                rawText: this.extractTranscriptText(medasrResult.data),
+                normalizedText: this.extractTranscriptText(medasrResult.data),
+                metadata: {
+                  ...(medasrResult.data?.metadata || {}),
+                  backend: "medasr_browser_fallback",
+                  fallbackReason: "whisper_direct_unusable",
+                },
+              },
+              backend: "medasr_browser_fallback",
+            }
+          : null;
+
+        let geminiFallbackResult = null;
+        if (!finalTranscriptResult) {
+          geminiFallbackResult = await this.runGeminiFallback(absoluteAudioPath, mimeType, options);
+          if (this.hasUsableTranscriptResult(geminiFallbackResult)) {
+            finalTranscriptResult = {
+              ...geminiFallbackResult,
+              data: {
+                ...(geminiFallbackResult.data || {}),
+                rawText: this.extractTranscriptText(geminiFallbackResult.data),
+                normalizedText: this.extractTranscriptText(geminiFallbackResult.data),
+                metadata: {
+                  ...(geminiFallbackResult.data?.metadata || {}),
+                  backend: "gemini_browser_fallback",
+                  fallbackReason: "whisper_direct_unusable",
+                },
+              },
+              backend: "gemini_browser_fallback",
+            };
+          }
+        }
+
+        if (finalTranscriptResult?.data) {
+          const transcriptHint = this.extractTranscriptText(finalTranscriptResult.data);
+          const diarization = options.enableSpeakerDiarization
+            ? await this.runSpeakerDiarization(absoluteAudioPath, mimeType, {
+                ...options,
+                transcriptHint,
+              })
+            : null;
+          const fallbackSegments = Array.isArray(finalTranscriptResult.data.segments)
+            ? finalTranscriptResult.data.segments.filter((segment) => this.isMeaningfulTranscriptText(segment?.text || segment?.normalizedText || ""))
+            : [];
+          const fallbackChunks = this.normalizeBrowserTranscriptChunks(fallbackSegments);
+          const annotatedChunks = diarization?.segments
+            ? this.annotateChunksWithDiarization(fallbackChunks, diarization)
+            : fallbackChunks;
+          const diarizedSegments = fallbackSegments.length > 0
+            ? this.applyBrowserDiarizationToSegments(fallbackSegments, annotatedChunks)
+            : [];
+          const diarizedSpeakers = Array.isArray(diarization?.speakers)
+            ? diarization.speakers.map((speaker, idx) => ({
+                id: speaker?.id || speaker?.speaker || `spk_${idx + 1}`,
+                label: speaker?.label || `Speaker ${idx + 1}`,
+                role: speaker?.role || "unknown",
+                confidence: typeof speaker?.confidence === "number" ? speaker.confidence : null,
+              }))
+            : (Array.isArray(finalTranscriptResult.data.speakers) ? finalTranscriptResult.data.speakers : []);
+
           return {
-            success: false,
-            error: result.error || "Whisper transcription failed",
-            backend: "whisper_direct",
+            ...finalTranscriptResult,
+            success: true,
+            data: {
+              ...finalTranscriptResult.data,
+              rawText: transcriptHint,
+              normalizedText: transcriptHint,
+              segments: diarizedSegments,
+              chunks: annotatedChunks,
+              speakers: diarizedSpeakers,
+              quality: {
+                ...(finalTranscriptResult.data.quality || {}),
+                speakerAmbiguityCount: diarizedSegments.filter((segment) => segment?.speakerRole === "unknown").length,
+              },
+            },
           };
         }
+
+        return {
+          success: false,
+          error: this.buildFailureSummary({
+            chunkedWhisperResult: whisperDirectResult?.success
+              ? {
+                  ...whisperDirectResult,
+                  error: "Whisper direct transcript was empty or contained only model artifacts",
+                }
+              : whisperDirectResult,
+            medasrResult,
+            geminiFallbackResult,
+          }),
+          backend: "browser_live_pipeline",
+        };
       } catch (error) {
         return {
           success: false,

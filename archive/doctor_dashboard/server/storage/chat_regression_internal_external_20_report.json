@@ -1,0 +1,715 @@
+{
+  "summary": {
+    "total": 20,
+    "internal": {
+      "total": 10,
+      "passed": 10,
+      "failed": 0
+    },
+    "external": {
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "with_external_citations": 8,
+      "attempted_without_external_result": 1
+    }
+  },
+  "results": [
+    {
+      "kind": "internal",
+      "label": "INT-01 DS12 patient name",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "note": "matched expected answer pattern",
+      "turns": [
+        {
+          "user": "What is the patient name?",
+          "ok": true,
+          "answer": "Amit kumar DUTTA",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Patient name",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "internal",
+      "label": "INT-02 DS12 patient age",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "note": "matched expected answer pattern",
+      "turns": [
+        {
+          "user": "How old is the patient?",
+          "ok": true,
+          "answer": "51",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Age",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "internal",
+      "label": "INT-03 DS12 diagnosis",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "note": "matched expected answer pattern",
+      "turns": [
+        {
+          "user": "What is the principal diagnosis?",
+          "ok": true,
+          "answer": "(R) thalamo capsular bleed",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "(R) thalamo capsular bleed",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "internal",
+      "label": "INT-04 DS12 medications",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "note": "matched expected answer pattern",
+      "turns": [
+        {
+          "user": "List the medicines prescribed.",
+          "ok": true,
+          "answer": "- INJ MANNITOL (20%)\n- INJ LASIX (20MG)\n- INJ LEVERA (500MG)\n- INJ PAN (40MG)\n- INJ ZOFER (4MG)\n- TAB STAMLO (5MG)\n- INJ OPTINERON\n- INJ HUMAN ACTRAPID",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "INJ MANNITOL (20%) - 100 ML IV TDS",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "Nurses Endorsement Checklist: Patient is oriented, stable vitals, but at risk for fall, aspiration, and pressure ulcers.",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "INJ MANNITOL (20%)",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "INJ LASIX",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "internal",
+      "label": "INT-05 DS12 investigations",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "note": "matched expected answer pattern",
+      "turns": [
+        {
+          "user": "Which investigations were ordered?",
+          "ok": true,
+          "answer": "CBC, CRP, SODIUM, POTASSIUM, UREA, CREAT, PT, APTT, INR, SEROLOGIES",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "CBC",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "CRP",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "SODIUM",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "POTASSIUM",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "internal",
+      "label": "INT-06 DS13 patient name",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "passed": true,
+      "note": "matched expected answer pattern",
+      "turns": [
+        {
+          "user": "Who is the patient?",
+          "ok": true,
+          "answer": "Prakriti MUKHOPADHYAY",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Patient name",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "internal",
+      "label": "INT-07 DS13 comorbidities",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "passed": true,
+      "note": "matched expected answer pattern",
+      "turns": [
+        {
+          "user": "What comorbidities are documented?",
+          "ok": true,
+          "answer": "HTN, DM",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Ganglionic cyst left hand Middle finger DIP joint",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "Ganglion excision",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "Nursing Initial Assessment: Patient presents with ganglionic swelling on left middle finger DIP joint.",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "internal",
+      "label": "INT-08 DS9 diagnosis",
+      "documentId": "54aea3fc-f114-4635-9aec-53ec6073188f",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary9.cls.pdf",
+      "passed": true,
+      "note": "matched expected answer pattern",
+      "turns": [
+        {
+          "user": "What cancer diagnosis is documented?",
+          "ok": true,
+          "answer": "Multiple myeloma",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Multiple myeloma",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "internal",
+      "label": "INT-09 DS6 patient name",
+      "documentId": "3996ee56-6b8b-4108-8436-4efc7e0b56e4",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary6.cls.pdf",
+      "passed": true,
+      "note": "matched expected answer pattern",
+      "turns": [
+        {
+          "user": "What is the patient's name?",
+          "ok": true,
+          "answer": "Preetham Kumar",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Patient name",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "internal",
+      "label": "INT-10 DS5 diagnosis",
+      "documentId": "91f4defb-4903-42fe-a5ff-2a2b22f986ce",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary5.cls.pdf",
+      "passed": true,
+      "note": "matched expected answer pattern",
+      "turns": [
+        {
+          "user": "What is the diagnosis?",
+          "ok": true,
+          "answer": "Newborn",
+          "source_class": "internal",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Newborn",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "external",
+      "label": "EXT-01 DS12 LASIX strength",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "note": "external evidence present (3 citations)",
+      "turns": [
+        {
+          "user": "Does INJ LASIX come with 10MG?",
+          "ok": true,
+          "answer": "This answer is not available in the uploaded record. I can search approved medical sources to answer it. Do you want me to do that?",
+          "source_class": "internal",
+          "confidence_label": "low",
+          "decision_prompt": "Yes/No",
+          "citations": []
+        },
+        {
+          "user": "yes",
+          "ok": true,
+          "answer": "Patient Record: INJ LASIX is documented in the strength of 20MG.\n\nExternal Reference: Furosemide tablets are available in strengths of 20, 40, and 80 mg.",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "INJ LASIX",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[FDA: Furosemide]",
+              "source_class": "external",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=01a5f094-b473-4e46-9e61-69d5ec6dd766"
+            },
+            {
+              "label": "[FDA: Furosemide]",
+              "source_class": "external",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=020bc039-9e99-4895-96f8-0c6a556d3e67"
+            },
+            {
+              "label": "[PubMed: 34009198]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/34009198/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "external",
+      "label": "EXT-02 DS6 T.CILACAR M composition",
+      "documentId": "3996ee56-6b8b-4108-8436-4efc7e0b56e4",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary6.cls.pdf",
+      "passed": true,
+      "note": "external evidence present (3 citations)",
+      "turns": [
+        {
+          "user": "What is the composition for: T.CILACAR M?",
+          "ok": true,
+          "answer": "This answer is not available in the uploaded record. I can search approved medical sources to answer it. Do you want me to do that?",
+          "source_class": "internal",
+          "confidence_label": "low",
+          "decision_prompt": "Yes/No",
+          "citations": []
+        },
+        {
+          "user": "yes",
+          "ok": true,
+          "answer": "This answer is not available in the uploaded record. I can search approved medical sources to answer it. Do you want me to do that?",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "T.CILACAR M",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[PubMed: 41936000]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41936000/"
+            },
+            {
+              "label": "[PubMed: 41935965]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41935965/"
+            },
+            {
+              "label": "[PubMed: 41935559]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41935559/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "external",
+      "label": "EXT-03 DS13 DAPAGLIFOZOLIN syrup",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "passed": true,
+      "note": "external evidence present (3 citations)",
+      "turns": [
+        {
+          "user": "Does TAB DAPAGLIFOZOLIN 10 come in syrup?",
+          "ok": true,
+          "answer": "This answer is not available in the uploaded record. I can search approved medical sources to answer it. Do you want me to do that?",
+          "source_class": "internal",
+          "confidence_label": "low",
+          "decision_prompt": "Yes/No",
+          "citations": []
+        },
+        {
+          "user": "yes",
+          "ok": true,
+          "answer": "External Reference: Dapagliflozin is available as film-coated tablets for oral administration (5 mg or 10 mg).",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "TAB DAPAGLIFOZOLIN 10",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[FDA: FARXIGA]",
+              "source_class": "external",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=01f90c94-71cb-4a1f-81ff-8004b850529b"
+            },
+            {
+              "label": "[FDA: DAPAGLIFLOZIN]",
+              "source_class": "external",
+              "url": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=3aba33aa-f8c6-4b10-85c8-dfa14578d07c"
+            },
+            {
+              "label": "[PubMed: 39744098]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/39744098/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "external",
+      "label": "EXT-04 DS13 STATOR purpose",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "passed": true,
+      "note": "external evidence present (3 citations)",
+      "turns": [
+        {
+          "user": "Why do we need STATOR? What does it do?",
+          "ok": true,
+          "answer": "Patient Record:\nThe patient is currently prescribed TAB STATOR 10 OD. The medical record does not explicitly document the clinical indication for this medication.\n\nExternal Reference:\nStatins are used as lipid-lowering therapy to achieve LDL-C goals and reduce the risk of cardiovascular events. They are also studied for use in primary prevention of mortality in specific populations.",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "TAB STATOR 10",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[PubMed: 41933920]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41933920/"
+            },
+            {
+              "label": "[PubMed: 41795462]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41795462/"
+            },
+            {
+              "label": "[PubMed: 41780713]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41780713/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "external",
+      "label": "EXT-05 DS13 STATOR reflux",
+      "documentId": "cca11bd5-2c9e-4d02-a240-bb368ed49961",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary13.cls.pdf",
+      "passed": true,
+      "note": "external evidence present (3 citations)",
+      "turns": [
+        {
+          "user": "Can STATOR cause acid reflux?",
+          "ok": true,
+          "answer": "This answer is not available in the uploaded record. I can search approved medical sources to answer it. Do you want me to do that?",
+          "source_class": "internal",
+          "confidence_label": "low",
+          "decision_prompt": "Yes/No",
+          "citations": []
+        },
+        {
+          "user": "yes",
+          "ok": true,
+          "answer": "Patient Record: Not documented.\n\nExternal Reference: Observational studies have investigated the prevalence of gastric reflux symptoms among statin users.",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "TAB STATOR 10",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[PubMed: 40486567]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/40486567/"
+            },
+            {
+              "label": "[PubMed: 40318905]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/40318905/"
+            },
+            {
+              "label": "[PubMed: 41624972]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41624972/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "external",
+      "label": "EXT-06 DS12 mannitol use",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "note": "external evidence present (3 citations)",
+      "turns": [
+        {
+          "user": "What does mannitol do?",
+          "ok": true,
+          "answer": "Patient Record:\nThe patient is currently prescribed Inj Mannitol (20%) 100 ml IV TDS.\n\nExternal Reference:\nMannitol is used in the assessment of glomerular filtration rate (GFR) in chronic kidney disease. It is also utilized as a test in asthma intervention studies to serve as an outcome measure.",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "INJ MANNITOL (20%) - 100 ML IV TDS",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[PubMed: 41930677]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41930677/"
+            },
+            {
+              "label": "[PubMed: 41888951]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41888951/"
+            },
+            {
+              "label": "[PubMed: 34743708]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/34743708/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "external",
+      "label": "EXT-07 DS1 augmentin use",
+      "documentId": "6c20e0b4-4191-453f-b360-a96742a1e806",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary1.cls.pdf",
+      "passed": true,
+      "note": "external evidence present (3 citations)",
+      "turns": [
+        {
+          "user": "What is Augmentin used for?",
+          "ok": true,
+          "answer": "External Reference: Augmentin (amoxicillin-clavulanic acid) is an antibiotic used in clinical settings.",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "inj augmentin 1.2gm",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[PubMed: 41915439]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41915439/"
+            },
+            {
+              "label": "[PubMed: 41914531]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41914531/"
+            },
+            {
+              "label": "[PubMed: 41909359]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41909359/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "external",
+      "label": "EXT-08 DS9 pan role",
+      "documentId": "54aea3fc-f114-4635-9aec-53ec6073188f",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary9.cls.pdf",
+      "passed": true,
+      "note": "external evidence present (3 citations)",
+      "turns": [
+        {
+          "user": "What does PAN 40 mg do?",
+          "ok": true,
+          "answer": "Patient Record:\nTab Pan 40 mg is prescribed SOS on an empty stomach for gastritis.\n\nExternal Reference:\nNo external medical information was provided regarding the pharmacological action of PAN 40 mg.",
+          "source_class": "mixed",
+          "confidence_label": "high",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Tab Pan",
+              "source_class": "internal",
+              "url": ""
+            },
+            {
+              "label": "[PubMed: 41554237]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41554237/"
+            },
+            {
+              "label": "[PubMed: 41699531]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41699531/"
+            },
+            {
+              "label": "[PubMed: 41619021]",
+              "source_class": "external",
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41619021/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "external",
+      "label": "EXT-09 DS9 ICD code",
+      "documentId": "54aea3fc-f114-4635-9aec-53ec6073188f",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary9.cls.pdf",
+      "passed": true,
+      "note": "external search attempted but no reliable external result",
+      "turns": [
+        {
+          "user": "What is the ICD code for multiple myeloma?",
+          "ok": true,
+          "answer": "I searched approved external medical sources but did not find a reliable answer for that question. The uploaded record documents: Multiple myeloma.",
+          "source_class": "mixed",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Multiple myeloma",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "external",
+      "label": "EXT-10 DS12 low BP explanation",
+      "documentId": "87870ced-5f93-40a3-92f7-e88e50c79e54",
+      "document": "Custom.MEXX.Report.ZEN.DischargeSummary12.cls.pdf",
+      "passed": true,
+      "note": "unexpected final behavior: I tried approved external medical sources, but the external search is unavailable right now. The uploaded record documents: Systolic BP 160 mmHg.",
+      "turns": [
+        {
+          "user": "Why is the patient's blood pressure low?",
+          "ok": true,
+          "answer": "I tried approved external medical sources, but the external search is unavailable right now. The uploaded record documents: Systolic BP 160 mmHg.",
+          "source_class": "mixed",
+          "confidence_label": "medium",
+          "decision_prompt": "",
+          "citations": [
+            {
+              "label": "Systolic BP 160 mmHg",
+              "source_class": "internal",
+              "url": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

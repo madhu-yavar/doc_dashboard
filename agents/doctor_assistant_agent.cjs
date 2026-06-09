@@ -595,7 +595,29 @@ class DoctorAssistantAgent {
     }
 
     const externalResult = classification.needsExternal
-      ? await this.externalAgent.execute({ query: executionMessage, classification, internalEvidence })
+      ? !this.useGeminiForExternal
+        ? {
+            success: true,
+            data: {
+              evidence: [],
+              source_class: "external",
+              error_type: "gemini_unavailable",
+              resolution: null,
+              sources: [],
+            },
+          }
+        : useGeminiWebSearch
+        ? {
+            success: true,
+            data: {
+              evidence: [],
+              source_class: "external",
+              error_type: null,
+              resolution: null,
+              sources: [],
+            },
+          }
+        : await this.externalAgent.execute({ query: executionMessage, classification, internalEvidence })
       : { success: true, data: { evidence: [], source_class: "internal" } };
     const externalEvidence = externalResult.data.evidence || [];
     const externalErrorType = externalResult.data.error_type || null;
@@ -625,6 +647,18 @@ class DoctorAssistantAgent {
       traceProvider = "rule_engine";
       this.pushTrace(trace, "comparison", "Medication Comparison", "ok", "Returned the local medication comparison fallback because external evidence was unavailable.");
     } else if (classification.needsExternal && !externalEvidence.length && !useGeminiWebSearch) {
+      if (!this.useGeminiForExternal) {
+        answerPayload = {
+          answer: "This question would require Gemini grounded web search, but Gemini external search is unavailable in this environment right now.",
+          citations: [],
+          source_class: "external",
+          llm_provider: "gemini_unavailable",
+          refused_override: false,
+          confidence_override: 60,
+          confidence_label_override: "low",
+        };
+        traceProvider = "gemini_unavailable";
+      } else {
       const resolvedSummary =
         externalResolution?.generic_name || externalResolution?.normalized_display
           ? ` I identified the medication as ${externalResolution.generic_name || externalResolution.normalized_display}, but I could not retrieve a reliable external fact for this question right now.`
@@ -643,6 +677,7 @@ class DoctorAssistantAgent {
         confidence_label_override: "low",
       };
       traceProvider = "policy_fallback";
+      }
     } else if (safety.data.refusal.refused && !allowResolvedDrugFallback && !allowExternalAnswerDespiteLowSafety) {
       answerPayload = {
         answer: safety.data.refusal.reason,

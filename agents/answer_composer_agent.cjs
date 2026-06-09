@@ -300,7 +300,7 @@ class AnswerComposerAgent {
         success: true,
         step: "answer_composer",
         data: {
-          answer: "I tried Gemini web grounding for this external question, but the grounded web search did not return a usable answer right now.",
+          answer: "Gemini grounded web search did not return a usable answer right now.",
           citations: [],
           source_class: "external",
           llm_provider: "gemini_web_failed",

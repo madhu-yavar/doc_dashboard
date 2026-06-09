@@ -520,7 +520,13 @@ class VoiceExtractorAgent {
 
     try {
       // Use the dashboard mapper to convert to the expected schema
-      const dashboardPayload = this.dashboardMapper.mapVoiceData?.(state.extractedData) || state.extractedData;
+      const mappedDashboardPayload = this.dashboardMapper.mapVoiceData?.(state.extractedData) || state.extractedData;
+      const dashboardPayload = mappedDashboardPayload?.dashboard_cards
+        ? {
+            ...mappedDashboardPayload.dashboard_cards,
+            ...mappedDashboardPayload,
+          }
+        : mappedDashboardPayload;
 
       this.logStep(stepName, "Completed");
 

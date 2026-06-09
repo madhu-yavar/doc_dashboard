@@ -21,7 +21,15 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           ws: true,
         },
+        "/storage": {
+          target: apiTarget,
+          changeOrigin: true,
+        },
         "/prescriptions": {
+          target: apiTarget,
+          changeOrigin: true,
+        },
+        "/soap-exports": {
           target: apiTarget,
           changeOrigin: true,
         },

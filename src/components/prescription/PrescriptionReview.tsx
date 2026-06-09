@@ -14,8 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FileText, Download, Edit2, Check, X, Loader2 } from "lucide-react";
+import { FileText, Download, Edit2, Check, X, Loader2, Pill } from "lucide-react";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Medication {
   srNo: string | number;
@@ -97,6 +98,9 @@ interface GeneratedPrescriptionResult {
     pdf?: string;
   };
 }
+
+const ICON_ACTION_BUTTON =
+  "h-9 w-9 rounded-full border border-teal-200 bg-teal-50 text-teal-700 shadow-sm hover:border-teal-300 hover:bg-teal-100 hover:text-teal-800";
 
 export function PrescriptionReview({ documentId, onComplete }: PrescriptionReviewProps) {
   const [data, setData] = useState<PrescriptionData | null>(null);
@@ -313,18 +317,30 @@ export function PrescriptionReview({ documentId, onComplete }: PrescriptionRevie
                     <X className="h-4 w-4 mr-1" />
                     Cancel
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={generatePrescription}
-                    disabled={generating}
-                  >
-                    {generating ? (
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    ) : (
-                      <Check className="h-4 w-4 mr-1" />
-                    )}
-                    Save & Generate
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={generatePrescription}
+                          disabled={generating}
+                          className={ICON_ACTION_BUTTON}
+                          aria-label="Save and Generate Prescription"
+                          title="Save and Generate Prescription"
+                        >
+                          {generating ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Save & Generate Prescription</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </>
               )}
               {!editing && (
@@ -350,18 +366,30 @@ export function PrescriptionReview({ documentId, onComplete }: PrescriptionRevie
                     <Edit2 className="h-4 w-4 mr-1" />
                     Edit
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={generatePrescription}
-                    disabled={generating}
-                  >
-                    {generating ? (
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    ) : (
-                      <Download className="h-4 w-4 mr-1" />
-                    )}
-                    Generate
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={generatePrescription}
+                          disabled={generating}
+                          className={ICON_ACTION_BUTTON}
+                          aria-label="Generate Prescription"
+                          title="Generate Prescription"
+                        >
+                          {generating ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Pill className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Generate Prescription</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </>
               )}
             </div>

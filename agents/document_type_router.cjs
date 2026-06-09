@@ -118,15 +118,19 @@ class DocumentTypeRouter {
     // 2. Agentic classification has low confidence
     // 3. Gemma LLM is unavailable
     // Note: This intentionally duplicates some logic from the agentic classifier for resilience
-    const fileName = (pdfName || pdfPath.split("/").pop()).toLowerCase();
+    const uploadFileName = String(pdfName || "").trim().toLowerCase();
+    const pathFileName = path.basename(String(pdfPath || "")).toLowerCase();
+    const fileNames = [uploadFileName, pathFileName].filter(Boolean);
+    const hasFilenameHint = (...needles) => fileNames.some((name) => needles.some((needle) => name.includes(needle)));
 
     // Filename-based HINTS (not absolute - content can override)
     const filenameHints = {
-      prescription: fileName.includes("prescription") || fileName.includes("rx") || fileName.includes("medication") || fileName.includes("doxper"),
-      lab_report: fileName.includes("lab") || fileName.includes("investigation") || (fileName.includes("report") && fileName.includes("lab")),
-      chart_note: fileName.includes("chart") || fileName.includes("note") || fileName.includes("progress"),
-      outpatient_record: fileName.includes("opd") || fileName.includes("outpatient") || fileName.includes("clinic"),
-      discharge_summary: fileName.includes("discharge") || fileName.includes("inpatient")
+      prescription: hasFilenameHint("prescription", "rx", "medication", "doxper"),
+      doxper: hasFilenameHint("doxper"),
+      lab_report: hasFilenameHint("lab", "investigation") || hasFilenameHint("lab-report", "lab_report"),
+      chart_note: hasFilenameHint("chart", "note", "progress", "chart-note", "chart_note"),
+      outpatient_record: hasFilenameHint("opd", "outpatient", "clinic"),
+      discharge_summary: hasFilenameHint("discharge", "inpatient")
     };
 
     // Content-based detection - read PDF content
@@ -143,8 +147,8 @@ class DocumentTypeRouter {
       if (filenameHints.prescription) return "prescription";
       if (filenameHints.lab_report) return "lab_report";
       if (filenameHints.chart_note) return "chart_note";
-      if (filenameHints.outpatient_record) return "outpatient_record";
       if (filenameHints.discharge_summary) return "discharge_summary";
+      if (filenameHints.outpatient_record) return "outpatient_record";
       return "discharge_summary"; // Default
     }
 

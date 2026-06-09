@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const fs = require("fs/promises");
 const path = require("path");
+const { AuthRepository } = require('./repositories/auth_repository.cjs');
 
 const DEFAULT_COOKIE_NAME = "dd_session";
 const DEFAULT_SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
@@ -66,83 +67,51 @@ class AuthService {
       config.cookieSecure ??
       (process.env.AUTH_COOKIE_SECURE === "true" || process.env.NODE_ENV === "production");
 
-    this.userMutationQueue = Promise.resolve();
-    this.sessionMutationQueue = Promise.resolve();
-    this.storageReadyPromise = null;
+    // Phase 6: AuthRepository is now the only source of truth.
+    // Allow injection for tests and isolated tooling.
+    this.authRepository = config.authRepository || new AuthRepository();
+    this.authRepository.initialize().catch(err => {
+      console.error('[AuthService] Failed to initialize AuthRepository:', err.message);
+    });
   }
 
   async ensureStorage() {
-    if (!this.storageReadyPromise) {
-      this.storageReadyPromise = (async () => {
-        await fs.mkdir(this.storageDir, { recursive: true });
-        await this.ensureCollectionFile(this.usersPath, { users: [] });
-        await this.ensureCollectionFile(this.sessionsPath, { sessions: [] });
-        await this.bootstrapUsersIfNeededRaw();
-      })().catch((error) => {
-        this.storageReadyPromise = null;
-        throw error;
-      });
-    }
-
-    return this.storageReadyPromise;
-  }
-
-  async ensureCollectionFile(filePath, initialValue) {
-    try {
-      await fs.access(filePath);
-    } catch {
-      await fs.writeFile(filePath, JSON.stringify(initialValue, null, 2), "utf8");
-    }
-  }
-
-  queueUserMutation(task) {
-    const run = this.userMutationQueue.then(task, task);
-    this.userMutationQueue = run.catch(() => {});
-    return run;
-  }
-
-  queueSessionMutation(task) {
-    const run = this.sessionMutationQueue.then(task, task);
-    this.sessionMutationQueue = run.catch(() => {});
-    return run;
+    // Phase 6: Bootstrap users into the primary auth repository when needed.
+    return this.bootstrapUsersIfNeeded();
   }
 
   async readUsers() {
-    await this.ensureStorage();
-    return this.readCollectionRaw(this.usersPath, "users");
-  }
-
-  async writeUsers(users) {
-    await this.ensureStorage();
-    await this.writeCollectionRaw(this.usersPath, "users", users);
-  }
-
-  async mutateUsers(mutator) {
-    return this.queueUserMutation(async () => {
-      const users = await this.readUsers();
-      const result = await mutator(users);
-      await this.writeUsers(users);
-      return result;
-    });
+    // Phase 6: Read from the primary auth repository only.
+    // Ensure bootstrap credentials are materialized before reads/login checks.
+    await this.bootstrapUsersIfNeeded();
+    const users = await this.authRepository.readUsers();
+    // Transform Postgres result to match legacy JSON structure for API compatibility
+    return users.map(user => ({
+      id: user.id,
+      username: user.username,
+      passwordHash: user.password_hash,
+      role: user.role,
+      displayName: user.display_name,
+      createdAt: user.created_at,
+      practitionerId: user.practitioner_id
+    }));
   }
 
   async readSessions() {
-    await this.ensureStorage();
-    return this.readCollectionRaw(this.sessionsPath, "sessions");
-  }
-
-  async writeSessions(sessions) {
-    await this.ensureStorage();
-    await this.writeCollectionRaw(this.sessionsPath, "sessions", sessions);
-  }
-
-  async mutateSessions(mutator) {
-    return this.queueSessionMutation(async () => {
-      const sessions = await this.readSessions();
-      const result = await mutator(sessions);
-      await this.writeSessions(sessions);
-      return result;
-    });
+    // Phase 6: Read from Postgres only (legacy filesystem reads removed)
+    await this.authRepository.initialize();
+    const sessions = await this.authRepository.readSessionsWithUsers();
+    // Transform Postgres result to match legacy JSON structure for API compatibility
+    return sessions.map(session => ({
+      sessionId: session.session_token,
+      userId: session.user_id,
+      username: session.username || null,
+      role: session.role || null,
+      displayName: session.display_name || null,
+      createdAt: session.created_at,
+      expiresAt: session.expires_at,
+      lastSeenAt: session.last_seen_at
+    }));
   }
 
   getBootstrapUserSpecs() {
@@ -160,40 +129,69 @@ class AuthService {
     ].filter((entry) => entry.username && entry.passwordHash);
   }
 
-  async readCollectionRaw(filePath, key) {
-    const raw = await fs.readFile(filePath, "utf8");
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed[key]) ? parsed[key] : [];
-  }
-
-  async writeCollectionRaw(filePath, key, items) {
-    await fs.writeFile(filePath, JSON.stringify({ [key]: items }, null, 2), "utf8");
-  }
-
-  async bootstrapUsersIfNeededRaw() {
-    const users = await this.readCollectionRaw(this.usersPath, "users");
-    if (users.length > 0) return users;
+  async bootstrapUsersIfNeeded() {
+    // Phase 6: Bootstrap users directly into Postgres (no filesystem).
+    // Keep configured bootstrap users in sync with Postgres so local/dev login
+    // remains deterministic after migrations or data refreshes.
+    await this.authRepository.initialize();
 
     const bootstrapSpecs = this.getBootstrapUserSpecs();
+    const existingUsers = await this.authRepository.readUsers();
+
     if (bootstrapSpecs.length === 0) {
+      if (existingUsers.length > 0) {
+        console.log(`[Auth] Found ${existingUsers.length} existing user(s) in Postgres, no bootstrap sync configured.`);
+        return existingUsers;
+      }
+
       console.warn(
         "[Auth] No bootstrap users configured. Set AUTH_BOOTSTRAP_* env vars to enable login."
       );
-      return users;
+      return [];
     }
 
-    const seededUsers = bootstrapSpecs.map((entry) => ({
-      id: crypto.randomUUID(),
-      username: entry.username,
-      passwordHash: entry.passwordHash,
-      role: entry.role,
-      displayName: buildDisplayName(entry.username, entry.role),
-      createdAt: new Date().toISOString(),
-    }));
+    let createdCount = 0;
+    let updatedCount = 0;
 
-    await this.writeCollectionRaw(this.usersPath, "users", seededUsers);
-    console.log(`[Auth] Bootstrapped ${seededUsers.length} user(s).`);
-    return seededUsers;
+    for (const entry of bootstrapSpecs) {
+      const displayName = buildDisplayName(entry.username, entry.role);
+      const existingUser = existingUsers.find((user) => user.username === entry.username);
+
+      try {
+        if (existingUser) {
+          await this.authRepository.updateUser(existingUser.id, {
+            password_hash: entry.passwordHash,
+            role: entry.role,
+            display_name: displayName,
+            status: "active",
+          });
+          updatedCount += 1;
+          console.log(`[Auth] Synced bootstrap user: ${entry.username} (${entry.role})`);
+          continue;
+        }
+
+        const userId = crypto.randomUUID();
+        await this.authRepository.createUser({
+          id: userId,
+          username: entry.username,
+          password_hash: entry.passwordHash,
+          role: entry.role,
+          display_name: displayName,
+          status: "active",
+        });
+
+        createdCount += 1;
+        console.log(`[Auth] Bootstrapped user: ${entry.username} (${entry.role})`);
+      } catch (pgError) {
+        console.error(`[Auth] Failed to bootstrap user ${entry.username}:`, pgError.message);
+      }
+    }
+
+    const users = await this.authRepository.readUsers();
+    console.log(
+      `[Auth] Bootstrap sync complete. Created ${createdCount}, updated ${updatedCount}, total users ${users.length}.`
+    );
+    return users;
   }
 
   buildPublicUser(user) {
@@ -248,24 +246,32 @@ class AuthService {
   }
 
   async createSession(user) {
+    // Phase 6: Create session in Postgres only
+    await this.authRepository.initialize();
+
     const now = new Date();
     const expiresAt = new Date(now.getTime() + this.sessionDurationMs).toISOString();
+    const sessionId = crypto.randomUUID();
+
+    // Create session in Postgres
+    await this.authRepository.createSession({
+      id: sessionId,
+      session_token: sessionId,
+      user_id: user.id,
+      expires_at: expiresAt,
+      last_seen_at: now.toISOString()
+    });
+
     const session = {
-      sessionId: crypto.randomUUID(),
+      sessionId: sessionId,
       userId: user.id,
       username: user.username,
       role: user.role,
       displayName: user.displayName || buildDisplayName(user.username, user.role),
       createdAt: now.toISOString(),
-      expiresAt,
+      expiresAt: expiresAt,
       lastSeenAt: now.toISOString(),
     };
-
-    await this.mutateSessions(async (sessions) => {
-      const activeSessions = sessions.filter((entry) => !isExpired(entry));
-      activeSessions.unshift(session);
-      sessions.splice(0, sessions.length, ...activeSessions);
-    });
 
     return session;
   }
@@ -284,39 +290,99 @@ class AuthService {
   async logout(sessionId) {
     if (!sessionId) return false;
 
-    let removed = false;
-    await this.mutateSessions(async (sessions) => {
-      const filtered = sessions.filter((entry) => entry.sessionId !== sessionId && !isExpired(entry));
-      removed = filtered.length !== sessions.length;
-      sessions.splice(0, sessions.length, ...filtered);
-    });
-    return removed;
+    // Phase 6: Delete session from Postgres only
+    await this.authRepository.initialize();
+
+    // Delete session from Postgres
+    const deleted = await this.authRepository.deleteSessionByToken(sessionId);
+    return deleted;
   }
 
   async getSession(sessionId, options = {}) {
     if (!sessionId) return null;
 
+    // Phase 6: Get session from Postgres only
     const { touch = true } = options;
     const now = Date.now();
 
-    return this.mutateSessions(async (sessions) => {
-      const activeSessions = sessions.filter((entry) => !isExpired(entry, now));
-      sessions.splice(0, sessions.length, ...activeSessions);
+    try {
+      await this.authRepository.initialize();
+      const pgSession = await this.authRepository.findSessionByToken(sessionId);
 
-      const session = sessions.find((entry) => entry.sessionId === sessionId);
-      if (!session) return null;
+      if (!pgSession) {
+        return null;
+      }
 
+      // Check if session is expired
+      if (pgSession.expires_at && new Date(pgSession.expires_at) < now) {
+        return null;
+      }
+
+      // Touch session if requested
       if (touch) {
         const updatedAt = new Date().toISOString();
-        session.lastSeenAt = updatedAt;
-        session.expiresAt = new Date(now + this.sessionDurationMs).toISOString();
+        const expiresAt = new Date(now + this.sessionDurationMs).toISOString();
+
+        await this.authRepository.updateSession(pgSession.id, {
+          last_seen_at: updatedAt,
+          expires_at: expiresAt
+        });
+
+        return {
+          sessionId: pgSession.session_token,
+          userId: pgSession.user_id,
+          username: pgSession.username || null,
+          role: pgSession.role || null,
+          displayName: pgSession.display_name || null,
+          createdAt: pgSession.created_at,
+          expiresAt: expiresAt,
+          lastSeenAt: updatedAt,
+          user: await this.buildPublicUserFromPostgres(pgSession)
+        };
       }
 
       return {
-        ...session,
-        user: this.buildPublicUser(session),
+        sessionId: pgSession.session_token,
+        userId: pgSession.user_id,
+        username: pgSession.username || null,
+        role: pgSession.role || null,
+        displayName: pgSession.display_name || null,
+        createdAt: pgSession.created_at,
+        expiresAt: pgSession.expires_at,
+        lastSeenAt: pgSession.last_seen_at || null,
+        user: await this.buildPublicUserFromPostgres(pgSession)
       };
-    });
+    } catch (error) {
+      console.error('[Auth] Failed to get session from Postgres:', error.message);
+      return null;
+    }
+  }
+
+  // Helper method to build public user from Postgres session data
+  async buildPublicUserFromPostgres(pgSession) {
+    // Phase 6: Get user from Postgres only
+    try {
+      const pgUser = await this.authRepository.findUserById(pgSession.user_id);
+      if (pgUser) {
+        return {
+          id: pgUser.id,
+          username: pgUser.username,
+          role: pgUser.role,
+          displayName: pgUser.display_name,
+          practitionerId: pgUser.practitioner_id
+        };
+      }
+    } catch (err) {
+      console.error('[Auth] Failed to get user from Postgres:', err.message);
+    }
+
+    // Return basic user info from session if user not found in Postgres
+    return {
+      id: pgSession.user_id,
+      username: pgSession.username || 'unknown',
+      role: pgSession.role || 'user',
+      displayName: pgSession.display_name || null
+    };
   }
 
   async getSessionFromRequest(req, options = {}) {

@@ -18,6 +18,12 @@ const SourceHealthTool = require("../tools/chat/source_health.tool.cjs");
 const STTRouterAgent = require("../agents/stt_router_agent.cjs");
 const VoiceExtractorAgent = require("../agents/voice_extractor_agent.cjs");
 const { AuthService } = require("./auth_service.cjs");
+const { DocumentsRepository } = require('./repositories/documents_repository.cjs');
+const { TranscriptsRepository } = require('./repositories/transcripts_repository.cjs');
+const { ReviewWorkflowRepository } = require('./repositories/review_workflow_repository.cjs');
+const { ChatRepository } = require('./repositories/chat_repository.cjs');
+const { AlertsRepository } = require('./repositories/alerts_repository.cjs');
+const { LiveSessionsRepository } = require('./repositories/live_sessions_repository.cjs');
 
 // Live Conversation Support
 const LiveConversationWebSocket = require("./live_conversation_websocket.cjs");
@@ -33,7 +39,10 @@ const {
 
 // Prescription Generation Support
 const { PrescriptionService } = require("./prescription_service.cjs");
-const prescriptionService = new PrescriptionService();
+const { SOAPService } = require("./soap_service.cjs");
+// Phase 6: Initialize PrescriptionService with repositories (will be configured after repositories are created)
+let prescriptionService = null;
+let soapService = null;
 
 const app = express();
 
@@ -100,14 +109,64 @@ const authService = new AuthService({
   storageDir,
 });
 
+// Phase 6: Initialize repositories (always required - no conditional initialization)
+let docsRepository = new DocumentsRepository();
+docsRepository.initialize().catch(err => {
+  console.error('[Server] Failed to initialize DocumentsRepository:', err.message);
+});
+
+let transcriptsRepository = new TranscriptsRepository();
+transcriptsRepository.initialize().catch(err => {
+  console.error('[Server] Failed to initialize TranscriptsRepository:', err.message);
+});
+
+let reviewWorkflowRepository = new ReviewWorkflowRepository();
+reviewWorkflowRepository.initialize().catch(err => {
+  console.error('[Server] Failed to initialize ReviewWorkflowRepository:', err.message);
+});
+
+let alertsRepository = new AlertsRepository();
+alertsRepository.initialize().catch(err => {
+  console.error('[Server] Failed to initialize AlertsRepository:', err.message);
+});
+
+// ChatRepository: Initialize
+let chatRepository = new ChatRepository();
+chatRepository.initialize().catch(err => {
+  console.error('[Server] Failed to initialize ChatRepository:', err.message);
+});
+
+// LiveSessionsRepository: Initialize for live conversation support
+let liveSessionsRepo = new LiveSessionsRepository();
+liveSessionsRepo.initialize().catch(err => {
+  console.error('[Server] Failed to initialize LiveSessionsRepository:', err.message);
+});
+
+// Phase 6: Initialize PrescriptionService with repositories
+prescriptionService = new PrescriptionService({
+  documentsRepository: docsRepository,
+  liveSessionsRepository: liveSessionsRepo
+});
+
+soapService = new SOAPService({
+  documentsRepository: docsRepository,
+  liveSessionsRepository: liveSessionsRepo
+});
+
 // Initialize Live Conversation components
 const liveConversationWebSocket = new LiveConversationWebSocket({
   storageDir,
+  transcriptsRepository,
+  docsRepository,
+  authService,
   debug: process.env.LIVE_CONVERSATION_DEBUG === "true",
 });
 const liveConversationRoutes = new LiveConversationRoutes({
   storageDir,
   documentsPath,
+  authService,
+  transcriptsRepository,
+  docsRepository // Phase 6: Pass docsRepository for Postgres-only document creation
 });
 
 app.use(cors({
@@ -128,7 +187,8 @@ app.get('/test-agent', (req, res) => {
 });
 
 function publicDocument(document) {
-  const { filePath, audioPath, transcriptPath, ...rest } = document;
+  // Strip internal helper fields that should never leak to API responses
+  const { filePath, audioPath, transcriptPath, _needsPgUpdate, _pgShadowPending, ...rest } = document;
 
   if (isLiveConversationDocument(rest) && !rest.result?.dashboard_cards) {
     hydrateLiveConversationDocument(rest, null);
@@ -167,6 +227,61 @@ function logVoiceDashboardValidationFailure(message, validation, details = {}) {
   });
 }
 
+function toPostgresDocumentStatus(status) {
+  switch (String(status || "").trim().toLowerCase()) {
+    case "processed":
+    case "partial":
+    case "completed":
+      return "completed";
+    case "processing":
+    case "transcribing":
+    case "extracting":
+      return "processing";
+    case "failed":
+      return "failed";
+    case "archived":
+      return "archived";
+    case "pending":
+    case "queued":
+    case "queued_for_extraction":
+    case "review_required":
+    default:
+      return "pending";
+  }
+}
+
+function fromPostgresDocumentStatus(status) {
+  switch (String(status || "").trim().toLowerCase()) {
+    case "processing":
+      return "processing";
+    case "completed":
+      return "processed";
+    case "failed":
+      return "failed";
+    case "archived":
+      return "processed";
+    case "pending":
+    default:
+      return "queued";
+  }
+}
+
+function toLegacyDocumentType(documentType, sourceKind) {
+  const normalizedDocumentType = String(documentType || "").trim().toLowerCase();
+  const normalizedSourceKind = String(sourceKind || "").trim().toLowerCase();
+
+  if (
+    normalizedSourceKind === "voice_upload"
+    || normalizedSourceKind === "live_conversation"
+    || normalizedDocumentType === "voice_dictation"
+    || normalizedDocumentType === "live_conversation"
+  ) {
+    return "voice";
+  }
+
+  return "pdf";
+}
+
 /**
  * Compute SHA-256 hash of a buffer
  * @param {Buffer} buffer - File content buffer
@@ -176,18 +291,37 @@ function computeHash(buffer) {
   return crypto.createHash("sha256").update(buffer).digest("hex");
 }
 
+function toFiniteNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
 async function ensureStorage() {
+  // Phase 6: Create only asset directories, not legacy metadata files
   await fs.mkdir(uploadsDir, { recursive: true });
   await fs.mkdir(voiceAudioDir, { recursive: true });
   await fs.mkdir(voiceTranscriptsDir, { recursive: true });
   await fs.mkdir(voiceGraphCheckpointsDir, { recursive: true });
-  await ensureCollectionFile(documentsPath, { documents: [] });
-  await ensureCollectionFile(chatSessionsPath, { sessions: [] });
-  await ensureCollectionFile(chatActionsPath, { actions: [] });
-  await ensureCollectionFile(chatExportsPath, { exports: [] });
+
+  // Keep search_cache.json (explicit Phase 6 exception)
   await ensureCollectionFile(searchCachePath, { entries: [] });
-  await ensureCollectionFile(voiceSessionsPath, { sessions: [] });
-  await ensureCollectionFile(voiceReviewsPath, { reviews: [] });
+
+  // Legacy metadata files are no longer created at runtime
+  // Auth, documents, chat, audit, and analytics data are stored in PostgreSQL only
+
   await authService.ensureStorage();
   await auditLogger.ensureStorage();
   await analyticsStore.initialize();
@@ -202,15 +336,212 @@ async function ensureCollectionFile(filePath, initialValue) {
 }
 
 async function readDocuments() {
-  await ensureStorage();
-  const raw = await fs.readFile(documentsPath, "utf8");
-  const parsed = JSON.parse(raw);
-  return Array.isArray(parsed.documents) ? parsed.documents : [];
-}
+  // Phase 6: Read from Postgres only (legacy filesystem reads removed)
+  await docsRepository.initialize();
+  const documents = await docsRepository.readDocuments();
 
-async function writeDocuments(documents) {
-  await ensureStorage();
-  await fs.writeFile(documentsPath, JSON.stringify({ documents }, null, 2), "utf8");
+  // Transform Postgres results to match legacy JSON structure with full hydration
+  const hydratedDocuments = await Promise.all(documents.map(async (doc) => {
+    // Fetch related data to reconstruct full legacy shape
+    const [assets, extraction, chartNotes, alertDeliveries] = await Promise.all([
+      docsRepository.findAssetsByDocumentId(doc.id).catch(() => []),
+      docsRepository.findCurrentExtraction(doc.id).catch(() => null),
+      docsRepository.findChartNotesByDocumentId(doc.id).catch(() => []),
+      alertsRepository ? alertsRepository.findAlertDeliveriesByDocumentId(doc.id).catch(() => []) : []
+    ]);
+
+    // Reconstruct filePath from assets or use legacy pattern
+    let filePath = null;
+    let primaryAsset = null;
+    if (assets && assets.length > 0) {
+      // Look for original source file using correct schema enum values
+      primaryAsset = assets.find(a => a.asset_role === 'source_pdf' || a.asset_role === 'source_audio') || assets[0];
+      if (primaryAsset && primaryAsset.path_or_uri) {
+        filePath = primaryAsset.path_or_uri;
+      }
+    }
+
+    // Fallback to legacy pattern if no asset found
+    if (!filePath) {
+      const extension =
+        path.extname(doc.original_filename || doc.name || "")
+        || (doc.mime_type?.includes('pdf') ? '.pdf' : '');
+      filePath = path.join(uploadsDir, `${doc.id}${extension}`);
+    }
+
+    let resolvedSize = toFiniteNumber(doc.size_bytes);
+    if (!Number.isFinite(resolvedSize) && primaryAsset) {
+      resolvedSize = toFiniteNumber(primaryAsset.size_bytes);
+    }
+    if (!Number.isFinite(resolvedSize) && filePath) {
+      try {
+        const fileStats = await fs.stat(filePath);
+        resolvedSize = fileStats.size;
+      } catch {
+        resolvedSize = null;
+      }
+    }
+
+    // Reconstruct result from extraction data with proper legacy structure
+    let result = null;
+    let agentInfo = null;
+    if (extraction) {
+      const extractedData =
+        extraction.extracted_data_jsonb && typeof extraction.extracted_data_jsonb === "object"
+          ? extraction.extracted_data_jsonb
+          : {};
+      const dashboardPayload =
+        extraction.dashboard_payload_jsonb && typeof extraction.dashboard_payload_jsonb === "object"
+          ? extraction.dashboard_payload_jsonb
+          : {};
+
+      result = Object.keys(dashboardPayload).length > 0 ? { ...dashboardPayload } : {};
+      result.extracted_data =
+        result.extracted_data && typeof result.extracted_data === "object" && Object.keys(result.extracted_data).length > 0
+          ? result.extracted_data
+          : (
+            Object.keys(extractedData).length > 0
+              ? extractedData
+              : {
+                  medications: [],
+                  labTests: [],
+                  radiologyTests: [],
+                  nuclearMedicineTests: [],
+                  procedures: [],
+                  diagnoses: [],
+                  vitalSigns: [],
+                  patientInfo: null,
+                }
+          );
+      result.meta = {
+        ...(extraction.meta_jsonb || {}),
+        ...(result.meta || {}),
+      };
+      if (!result.presentation && extraction.presentation_jsonb) {
+        result.presentation = extraction.presentation_jsonb;
+      }
+      if (!result.stage1 && extraction.stage1_jsonb) {
+        result.stage1 = extraction.stage1_jsonb;
+      }
+      if (!result.stage3 && extraction.stage3_jsonb) {
+        result.stage3 = extraction.stage3_jsonb;
+      }
+      if (!result.processedAt) {
+        result.processedAt = doc.processed_at || extraction.created_at;
+      }
+
+      // Reconstruct alert metadata from alert deliveries
+      if (alertDeliveries && alertDeliveries.length > 0) {
+        // Reconstruct pharmacy_alert
+        const pharmacyAlerts = alertDeliveries.filter(ad => ad.alert_family === 'pharmacy');
+        if (pharmacyAlerts.length > 0) {
+          const latestPharmacyAlert = pharmacyAlerts[0]; // Most recent first
+          result.pharmacy_alert = {
+            sent: latestPharmacyAlert.status === 'sent',
+            email_sent: latestPharmacyAlert.channel === 'email' && latestPharmacyAlert.status === 'sent',
+            whatsapp_sent: latestPharmacyAlert.result_jsonb?.whatsappSent || false, // Use result_jsonb for WhatsApp
+            skipped: latestPharmacyAlert.status === 'skipped',
+            skip_reason: latestPharmacyAlert.error_message || null,
+            error: latestPharmacyAlert.error_message || null,
+            medications_count: result.extracted_data.medications?.length || 0
+          };
+        }
+
+        // Reconstruct department_alerts
+        const departmentAlerts = alertDeliveries.filter(ad => ad.alert_family !== 'pharmacy');
+        if (departmentAlerts.length > 0) {
+          const departmentsMap = {};
+          let anyDepartmentSent = false;
+
+          for (const deptAlert of departmentAlerts) {
+            const targetName = deptAlert.target_name || deptAlert.alert_family;
+            departmentsMap[targetName] = {
+              sent: deptAlert.status === 'sent',
+              itemCount: deptAlert.payload_jsonb?.itemCount || 0
+            };
+            if (deptAlert.status === 'sent') {
+              anyDepartmentSent = true;
+            }
+          }
+
+          result.department_alerts = {
+            sent: anyDepartmentSent,
+            skipped: false,
+            skip_reason: null,
+            error: departmentAlerts.find(da => da.error_message)?.error_message || null,
+            departments: departmentsMap
+          };
+        }
+      }
+
+      // Reconstruct agentInfo from metadata
+      const providerTokens = extraction.provider_tokens_jsonb || {};
+      const tokensUsed = Object.values(providerTokens).reduce(
+        (sum, value) => sum + (typeof value === "number" ? value : 0),
+        0
+      );
+      agentInfo = {
+        name: extraction.agent_name || 'unknown',
+        agent: extraction.agent_name || 'unknown',
+        version: extraction.agent_version || 'unknown',
+        auditRunId: extraction.audit_run_id || null,
+        providerTokens,
+        tokensUsed,
+        latency: 0,
+        meta: extraction.meta_jsonb || {}
+      };
+    }
+
+    // Reconstruct chartNote from chart notes (fix field mapping)
+    let chartNote = null;
+    if (chartNotes && chartNotes.length > 0) {
+      const currentChartNote = chartNotes[0]; // Most recent first
+      chartNote = {
+        content: currentChartNote.content || '', // Use content field directly (no content_jsonb)
+        format: 'text', // Chart notes don't have separate format field in Postgres
+        createdAt: currentChartNote.created_at,
+        createdBy: currentChartNote.created_by_user_id || 'system'
+      };
+    }
+
+    return {
+      id: doc.id,
+      status: fromPostgresDocumentStatus(doc.status),
+      name: doc.name,
+      size: Number.isFinite(resolvedSize) ? resolvedSize : 0,
+      uploadedAt: doc.uploaded_at || doc.created_at,
+      processedAt: doc.processed_at,
+      department: doc.department,
+      filePath: filePath,
+      hash: doc.sha256_hash,
+      error: doc.error_message,
+      documentType: toLegacyDocumentType(doc.document_type, doc.source_kind),
+      documentSubtype: doc.document_subtype,
+      mimeType: doc.mime_type,
+      fileName: doc.original_filename,
+      linkedPatient: doc.linked_patient_label,
+      encounterLabel: doc.encounter_label,
+      result: result,
+      chartNote: chartNote,
+      agentInfo: agentInfo
+    };
+  }));
+
+  const voiceDocuments = hydratedDocuments.filter((document) => document.documentType === "voice");
+  if (voiceDocuments.length > 0) {
+    const voiceSessions = await readVoiceSessions().catch(() => []);
+    const voiceSessionById = new Map((Array.isArray(voiceSessions) ? voiceSessions : []).map((session) => [session.id, session]));
+
+    for (const document of voiceDocuments) {
+      const voiceSession = voiceSessionById.get(document.id);
+      if (!voiceSession) continue;
+      applyVoiceSessionToDocument(document, voiceSession, {
+        processedAt: document.processedAt,
+      });
+    }
+  }
+
+  return hydratedDocuments;
 }
 
 async function readCollection(filePath, key) {
@@ -230,81 +561,1119 @@ async function writeCollection(filePath, key, items) {
   await fs.writeFile(filePath, JSON.stringify({ [key]: items }, null, 2), "utf8");
 }
 
-let documentMutationQueue = Promise.resolve();
-let voiceSessionMutationQueue = Promise.resolve();
-
-function queueDocumentMutation(task) {
-  const run = documentMutationQueue.then(task, task);
-  documentMutationQueue = run.catch(() => {});
-  return run;
-}
-
-function queueVoiceSessionMutation(task) {
-  const run = voiceSessionMutationQueue.then(task, task);
-  voiceSessionMutationQueue = run.catch(() => {});
-  return run;
-}
-
+// Phase 6: Document mutation wrappers that use Postgres instead of filesystem
+// These maintain API compatibility while removing filesystem dependency
 async function mutateDocuments(mutator) {
-  return queueDocumentMutation(async () => {
-    const documents = await readDocuments();
-    const value = await mutator(documents);
-    await writeDocuments(documents);
-    return value;
+  // Phase 6: Read from Postgres, apply mutations, write back to Postgres
+  await docsRepository.initialize();
+  const documents = await readDocuments();
+
+  const value = await mutator(documents);
+
+  // Write mutated documents back to Postgres
+  // This is a simplified approach - in practice, individual document updates
+  // should use repository methods for better performance and concurrency
+  for (const document of documents) {
+    try {
+      await docsRepository.updateDocument(document.id, {
+        status: toPostgresDocumentStatus(document.status),
+        processed_at: document.processedAt,
+        error_code: document.error ? 'PROCESSING_ERROR' : null,
+        error_message: document.error || null
+      });
+    } catch (error) {
+      console.error(`[Documents] Failed to update document ${document.id} in Postgres:`, error.message);
+    }
+  }
+
+  return value;
+}
+
+async function persistDocumentExtraction(document) {
+  if (!document?.id || !document.result || document.documentType === "voice") {
+    return null;
+  }
+
+  await docsRepository.initialize();
+
+  let persistedAuditRunId = null;
+  const candidateAuditRunId = document.auditRunId || document.agentInfo?.auditRunId || null;
+  if (candidateAuditRunId) {
+    try {
+      const auditRun = await docsRepository.queryOne(
+        "SELECT id FROM audit_runs WHERE id = $1",
+        [candidateAuditRunId]
+      );
+      persistedAuditRunId = auditRun?.id || null;
+    } catch {
+      persistedAuditRunId = null;
+    }
+  }
+
+  const result = document.result || {};
+  const providerTokens = document.agentInfo?.providerTokens || {};
+  const existingCurrentExtraction = await docsRepository.findCurrentExtraction(document.id).catch(() => null);
+
+  const extractionPayload = {
+    status: document.status === "failed" ? "failed" : "completed",
+    agent_name: document.agentInfo?.name || document.agentInfo?.agent || null,
+    agent_version: document.agentInfo?.version || null,
+    audit_run_id: persistedAuditRunId,
+    provider_tokens: providerTokens,
+    extracted_data:
+      result.extracted_data && typeof result.extracted_data === "object"
+        ? result.extracted_data
+        : result,
+    dashboard_payload: result,
+    meta: result.meta || {},
+    stage1: result.stage1 || {},
+    stage3: result.stage3 || {},
+    presentation: result.presentation || {},
+  };
+
+  if (existingCurrentExtraction) {
+    const updatedExtraction = await docsRepository.queryOne(
+      `UPDATE ${docsRepository.documentExtractionsTableName}
+       SET status = $1,
+           agent_name = $2,
+           agent_version = $3,
+           audit_run_id = $4,
+           provider_tokens_jsonb = $5,
+           extracted_data_jsonb = $6,
+           dashboard_payload_jsonb = $7,
+           meta_jsonb = $8,
+           stage1_jsonb = $9,
+           stage3_jsonb = $10,
+           presentation_jsonb = $11
+       WHERE id = $12
+       RETURNING *`,
+      [
+        extractionPayload.status,
+        extractionPayload.agent_name,
+        extractionPayload.agent_version,
+        extractionPayload.audit_run_id,
+        docsRepository.toJSONB(extractionPayload.provider_tokens || {}),
+        docsRepository.toJSONB(extractionPayload.extracted_data || {}),
+        docsRepository.toJSONB(extractionPayload.dashboard_payload || {}),
+        docsRepository.toJSONB(extractionPayload.meta || {}),
+        docsRepository.toJSONB(extractionPayload.stage1 || {}),
+        docsRepository.toJSONB(extractionPayload.stage3 || {}),
+        docsRepository.toJSONB(extractionPayload.presentation || {}),
+        existingCurrentExtraction.id,
+      ]
+    );
+    return updatedExtraction?.id || existingCurrentExtraction.id;
+  }
+
+  const previousExtractions = await docsRepository.findDocumentExtractions(document.id).catch(() => []);
+  const latestVersionNo =
+    Array.isArray(previousExtractions) && previousExtractions.length > 0
+      ? Number(previousExtractions[0].version_no || previousExtractions.length)
+      : 0;
+
+  const createdExtraction = await docsRepository.createDocumentExtraction({
+    document_id: document.id,
+    version_no: latestVersionNo + 1,
+    ...extractionPayload,
   });
+
+  await docsRepository.updateDocument(document.id, {
+    current_extraction_id: createdExtraction.id,
+  });
+
+  return createdExtraction.id;
 }
 
 async function updateDocument(id, updater) {
-  return mutateDocuments(async (documents) => {
-    const document = documents.find((item) => item.id === id);
-    if (!document) {
-      return null;
+  // Phase 6: Update document in Postgres
+  await docsRepository.initialize();
+
+  const documents = await readDocuments();
+  const document = documents.find((item) => item.id === id);
+  if (!document) {
+    return null;
+  }
+
+  await updater(document, documents);
+
+  // Update the document in Postgres
+  try {
+    await docsRepository.updateDocument(id, {
+      status: toPostgresDocumentStatus(document.status),
+      processed_at: document.processedAt,
+      error_code: document.error ? 'PROCESSING_ERROR' : null,
+      error_message: document.error || null
+    });
+
+    const extractionId = await persistDocumentExtraction(document);
+    if (extractionId) {
+      document.currentExtractionId = extractionId;
     }
 
-    await updater(document, documents);
     return { ...document };
+  } catch (error) {
+    console.error(`[Documents] Failed to update document ${id} in Postgres:`, error.message);
+    return null;
+  }
+}
+
+// Phase 6: Voice sessions are fully hydrated from Postgres-backed documents,
+// transcript assets, transcript rows, transcript segments, and review workflow rows.
+
+function toVoiceReviewValue(value) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function toPostgresReviewResolution(resolution) {
+  switch (String(resolution || "").trim().toLowerCase()) {
+    case "approved":
+    case "edited":
+      return "approved";
+    case "rejected":
+      return "rejected";
+    case "pending":
+    default:
+      return "pending";
+  }
+}
+
+function toVoiceReviewResolution(resolution, editedValue = "") {
+  if (resolution === "approved" && editedValue) {
+    return "edited";
+  }
+  if (resolution === "approved" || resolution === "rejected" || resolution === "pending") {
+    return resolution;
+  }
+  return "pending";
+}
+
+function buildStoredVoiceTranscriptPayload(session = {}) {
+  const transcript = buildVoiceTranscriptObject(session);
+  return {
+    status: session.status || "queued",
+    transcript: {
+      rawText: transcript.rawText,
+      normalizedText: transcript.normalizedText,
+      language: transcript.language,
+      speakers: Array.isArray(session.transcript?.speakers) ? session.transcript.speakers : [],
+      segments: transcript.segments,
+    },
+    extracted_data: session.extractedData || null,
+    dashboard_payload: session.dashboardPayload || null,
+    extraction_preview: session.extractionPreview || null,
+    stt_audit: session.sttAudit || null,
+    progress: {
+      message: session.progressMessage || null,
+      stage: session.progressStage || null,
+      percent: typeof session.progressPercent === "number" ? session.progressPercent : null,
+    },
+    duration_label: session.durationLabel || null,
+    transcript_path: session.transcriptPath || null,
+    file_name: session.fileName || null,
+    mime_type: session.mimeType || null,
+    size: typeof session.size === "number" ? session.size : null,
+    hash: session.hash || null,
+  };
+}
+
+function buildVoiceSegmentForSession(segment = {}, index = 0, payloadSegment = {}) {
+  const startMs = typeof segment.start_ms === "number"
+    ? segment.start_ms
+    : (typeof segment.startMs === "number" ? segment.startMs : null);
+  const endMs = typeof segment.end_ms === "number"
+    ? segment.end_ms
+    : (typeof segment.endMs === "number" ? segment.endMs : null);
+  const confidenceValue = typeof segment.confidence_score === "number"
+    ? segment.confidence_score
+    : Number(segment.confidence);
+  const id = segment.id || payloadSegment.id || payloadSegment.segmentId || `seg_${index + 1}`;
+
+  return {
+    id,
+    speakerRole: normalizeSpeakerRole(segment.speaker_role || segment.speakerRole || payloadSegment.speakerRole),
+    speakerLabel:
+      normalizeVoiceText(segment.speaker_label || segment.speakerLabel || payloadSegment.speakerLabel || `Speaker ${index + 1}`) ||
+      `Speaker ${index + 1}`,
+    startLabel:
+      normalizeVoiceText(payloadSegment.startLabel) ||
+      (startMs !== null ? formatVoiceTimeLabel(Math.floor(startMs / 1000)) : fallbackVoiceTimeLabel(index)),
+    endLabel:
+      normalizeVoiceText(payloadSegment.endLabel) ||
+      (endMs !== null ? formatVoiceTimeLabel(Math.floor(endMs / 1000)) : fallbackVoiceTimeLabel(index + 1)),
+    text:
+      normalizeVoiceText(segment.text || segment.normalized_text || segment.normalizedText || payloadSegment.text) ||
+      "[No transcript text returned]",
+    confidence: Number.isFinite(confidenceValue) ? Math.max(0, Math.min(1, confidenceValue)) : null,
+    flags: normalizeVoiceFlags(segment.flags_jsonb || segment.flags || payloadSegment.flags || []),
+  };
+}
+
+async function loadVoiceReviewItems(documentId) {
+  if (!reviewWorkflowRepository) return [];
+
+  await reviewWorkflowRepository.initialize();
+  const items = await reviewWorkflowRepository.findReviewItemsByDocumentId(documentId);
+  const hydrated = [];
+
+  for (const item of items) {
+    const resolutions = await reviewWorkflowRepository.findReviewItemResolutionsByReviewItemId(item.id);
+    const latestResolution = resolutions[resolutions.length - 1] || null;
+    const editedValue = toVoiceReviewValue(latestResolution?.edited_value_jsonb?.value || "");
+
+    hydrated.push({
+      id: item.id,
+      category: item.category || "transcript",
+      severity: item.severity || "low",
+      reasonCode: item.reason_code || "low_confidence",
+      title: item.title || "Review item",
+      extractedValue: toVoiceReviewValue(item.extracted_value_jsonb?.value || ""),
+      suggestedValue: toVoiceReviewValue(item.suggested_value_jsonb?.value || ""),
+      provenanceText: item.provenance_text || "",
+      provenanceTime: item.provenance_range_jsonb?.provenance_time || "",
+      resolution: toVoiceReviewResolution(latestResolution?.resolution || item.current_resolution, editedValue),
+      editedValue,
+      createdAt: item.created_at,
+      resolvedAt: latestResolution?.created_at || null,
+    });
+  }
+
+  return hydrated;
+}
+
+async function upsertVoiceDocumentAsset(documentId, assetRole, assetData = {}) {
+  await docsRepository.initialize();
+
+  const assetId = assetData.id || `${documentId}:${assetRole}`;
+  const existing = await docsRepository.queryOne(
+    `SELECT * FROM ${docsRepository.documentAssetsTableName} WHERE id = $1`,
+    [assetId]
+  ).catch(() => null);
+
+  if (existing) {
+    await docsRepository.queryOne(
+      `UPDATE ${docsRepository.documentAssetsTableName}
+       SET path_or_uri = $1,
+           mime_type = $2,
+           size_bytes = $3,
+           sha256_hash = $4,
+           metadata_jsonb = $5
+       WHERE id = $6
+       RETURNING *`,
+      [
+        assetData.path_or_uri,
+        assetData.mime_type || null,
+        assetData.size_bytes || null,
+        assetData.sha256_hash || null,
+        docsRepository.toJSONB(assetData.metadata || {}),
+        assetId,
+      ]
+    );
+    return;
+  }
+
+  await docsRepository.createDocumentAsset({
+    id: assetId,
+    document_id: documentId,
+    asset_role: assetRole,
+    storage_backend: assetData.storage_backend || "filesystem",
+    path_or_uri: assetData.path_or_uri,
+    mime_type: assetData.mime_type || null,
+    size_bytes: assetData.size_bytes || null,
+    sha256_hash: assetData.sha256_hash || null,
+    metadata: assetData.metadata || {},
   });
+}
+
+async function deleteVoiceDocumentAsset(documentId, assetRole) {
+  await docsRepository.initialize();
+  await docsRepository.execute(
+    `DELETE FROM ${docsRepository.documentAssetsTableName}
+     WHERE document_id = $1 AND asset_role = $2`,
+    [documentId, assetRole]
+  );
+}
+
+function buildVoiceReviewItemRecord(sessionId, transcriptId, reviewItem = {}) {
+  return {
+    id: reviewItem.id || crypto.randomUUID(),
+    document_id: sessionId,
+    live_session_id: null,
+    transcript_id: transcriptId,
+    category: reviewItem.category || "transcript",
+    severity: reviewItem.severity || "low",
+    reason_code: reviewItem.reasonCode || null,
+    title: normalizeVoiceText(reviewItem.title) || "Review item",
+    field_path: null,
+    required_flag: false,
+    provenance_text: normalizeVoiceText(reviewItem.provenanceText) || null,
+    provenance_range: {
+      provenance_time: normalizeVoiceText(reviewItem.provenanceTime) || null,
+    },
+    extracted_value: reviewItem.extractedValue ? { value: reviewItem.extractedValue } : {},
+    suggested_value: reviewItem.suggestedValue ? { value: reviewItem.suggestedValue } : {},
+    current_resolution: toPostgresReviewResolution(reviewItem.resolution),
+  };
+}
+
+async function syncVoiceReviewItems(sessionId, transcriptId, reviewItems = []) {
+  if (!reviewWorkflowRepository) return;
+
+  await reviewWorkflowRepository.initialize();
+  const existingItems = await reviewWorkflowRepository.findReviewItemsByDocumentId(sessionId);
+  const existingById = new Map(existingItems.map((item) => [item.id, item]));
+  const nextItems = Array.isArray(reviewItems) ? reviewItems : [];
+  const nextIds = new Set(nextItems.map((item) => item.id).filter(Boolean));
+
+  for (const existingItem of existingItems) {
+    if (!nextIds.has(existingItem.id)) {
+      await reviewWorkflowRepository.execute(
+        `DELETE FROM ${reviewWorkflowRepository.reviewItemsTableName} WHERE id = $1`,
+        [existingItem.id]
+      );
+    }
+  }
+
+  for (const reviewItem of nextItems) {
+    const record = buildVoiceReviewItemRecord(sessionId, transcriptId, reviewItem);
+
+    if (!existingById.has(record.id)) {
+      await reviewWorkflowRepository.createReviewItem(record);
+      continue;
+    }
+
+    await reviewWorkflowRepository.queryOne(
+      `UPDATE ${reviewWorkflowRepository.reviewItemsTableName}
+       SET transcript_id = $1,
+           category = $2,
+           severity = $3,
+           reason_code = $4,
+           title = $5,
+           field_path = $6,
+           required_flag = $7,
+           provenance_text = $8,
+           provenance_range_jsonb = $9,
+           extracted_value_jsonb = $10,
+           suggested_value_jsonb = $11,
+           current_resolution = $12,
+           updated_at = $13
+       WHERE id = $14
+       RETURNING *`,
+      [
+        record.transcript_id,
+        record.category,
+        record.severity,
+        record.reason_code,
+        record.title,
+        record.field_path,
+        record.required_flag,
+        record.provenance_text,
+        reviewWorkflowRepository.toJSONB(record.provenance_range || {}),
+        reviewWorkflowRepository.toJSONB(record.extracted_value || {}),
+        reviewWorkflowRepository.toJSONB(record.suggested_value || {}),
+        record.current_resolution,
+        new Date().toISOString(),
+        record.id,
+      ]
+    );
+  }
+}
+
+async function appendVoiceReviewResolution(reviewItemId, resolution, editedValue, userId, notes = null) {
+  if (!reviewWorkflowRepository) return null;
+
+  await reviewWorkflowRepository.initialize();
+  return reviewWorkflowRepository.createReviewItemResolution({
+    id: crypto.randomUUID(),
+    review_item_id: reviewItemId,
+    resolved_by_user_id: userId || null,
+    resolution: toPostgresReviewResolution(resolution),
+    edited_value: resolution === "edited" ? { value: editedValue || "" } : {},
+    notes,
+  });
+}
+
+async function syncVoiceTranscriptSegments(transcriptId, segments = []) {
+  await transcriptsRepository.initialize();
+  await transcriptsRepository.execute(
+    `DELETE FROM ${transcriptsRepository.transcriptSegmentsTableName} WHERE transcript_id = $1`,
+    [transcriptId]
+  );
+
+  for (let index = 0; index < segments.length; index += 1) {
+    const segment = segments[index] || {};
+    const startMs = typeof segment.startMs === "number"
+      ? segment.startMs
+      : (typeof segment.startTime === "number" ? segment.startTime : null);
+    const endMs = typeof segment.endMs === "number"
+      ? segment.endMs
+      : (typeof segment.endTime === "number" ? segment.endTime : null);
+
+    await transcriptsRepository.createSegment({
+      id: segment.id || crypto.randomUUID(),
+      transcript_id: transcriptId,
+      segment_order: index,
+      speaker_role: normalizeSpeakerRole(segment.speakerRole),
+      speaker_label: normalizeVoiceText(segment.speakerLabel || `Speaker ${index + 1}`) || `Speaker ${index + 1}`,
+      start_ms: startMs,
+      end_ms: endMs,
+      text: normalizeVoiceText(segment.text) || "[No transcript text returned]",
+      normalized_text: normalizeVoiceText(segment.normalizedText || segment.text) || "[No transcript text returned]",
+      confidence_score: typeof segment.confidence === "number" ? segment.confidence : null,
+      flags: normalizeVoiceFlags(segment.flags || []),
+      status: "active",
+    });
+  }
+}
+
+async function persistVoiceSession(session) {
+  await docsRepository.initialize();
+  await transcriptsRepository.initialize();
+
+  const documentName = session.fileName || `voice_${session.id}`;
+  const documentUpdates = {
+    document_type: "voice_dictation",
+    document_subtype: "unknown",
+    source_kind: "voice_upload",
+    status: toPostgresDocumentStatus(session.status),
+    department: "Voice Dictation",
+    name: documentName,
+    original_filename: documentName,
+    mime_type: session.mimeType || "audio/wav",
+    size_bytes: typeof session.size === "number" ? session.size : null,
+    sha256_hash: session.hash || null,
+    linked_patient_label: session.linkedPatient || null,
+    encounter_label: session.encounterLabel || null,
+    uploaded_at: session.uploadedAt || null,
+    processed_at: session.status === "processed" ? (session.processedAt || new Date().toISOString()) : null,
+    error_code: session.error ? "PROCESSING_ERROR" : null,
+    error_message: session.error || null,
+  };
+
+  const existingDocument = await docsRepository.findDocumentById(session.id);
+  if (!existingDocument) {
+    await docsRepository.createDocument({
+      id: session.id,
+      ...documentUpdates,
+    });
+  } else {
+    await docsRepository.updateDocument(session.id, documentUpdates);
+  }
+
+  const existingTranscripts = await transcriptsRepository.findTranscriptsByDocumentId(session.id);
+  let transcript = null;
+  if (existingDocument?.current_transcript_id) {
+    transcript = await transcriptsRepository.findTranscriptById(existingDocument.current_transcript_id).catch(() => null);
+  }
+  if (!transcript) {
+    transcript = existingTranscripts[0] || null;
+  }
+
+  const transcriptPayload = buildStoredVoiceTranscriptPayload(session);
+  const transcriptObject = buildVoiceTranscriptObject(session);
+
+  if (!transcript) {
+    transcript = await transcriptsRepository.createTranscript({
+      id: crypto.randomUUID(),
+      document_id: session.id,
+      backend: session.sttBackend || null,
+      language_code: transcriptObject.language || null,
+      raw_text: transcriptObject.rawText || null,
+      normalized_text: transcriptObject.normalizedText || null,
+      quality: session.transcriptQuality || {},
+      transcript: transcriptPayload,
+    });
+  } else {
+    transcript = await transcriptsRepository.updateTranscript(transcript.id, {
+      backend: session.sttBackend || null,
+      language_code: transcriptObject.language || null,
+      raw_text: transcriptObject.rawText || null,
+      normalized_text: transcriptObject.normalizedText || null,
+      quality_jsonb: session.transcriptQuality || {},
+      transcript_jsonb: transcriptPayload,
+    });
+  }
+
+  await docsRepository.updateDocument(session.id, {
+    current_transcript_id: transcript.id,
+    status: toPostgresDocumentStatus(session.status),
+    linked_patient_label: session.linkedPatient || null,
+    encounter_label: session.encounterLabel || null,
+    error_code: session.error ? "PROCESSING_ERROR" : null,
+    error_message: session.error || null,
+    processed_at: session.status === "processed" ? (session.processedAt || new Date().toISOString()) : null,
+  });
+
+  await syncVoiceTranscriptSegments(transcript.id, Array.isArray(session.segments) ? session.segments : []);
+  await syncVoiceReviewItems(session.id, transcript.id, Array.isArray(session.reviewItems) ? session.reviewItems : []);
+
+  if (session.audioPath) {
+    await upsertVoiceDocumentAsset(session.id, "source_audio", {
+      id: `${session.id}:source_audio`,
+      path_or_uri: session.audioPath,
+      mime_type: session.mimeType || "audio/wav",
+      size_bytes: typeof session.size === "number" ? session.size : null,
+      sha256_hash: session.hash || null,
+      metadata: {
+        originalFilename: documentName,
+        durationLabel: session.durationLabel || null,
+      },
+    });
+  }
+
+  if (session.transcriptPath) {
+    await upsertVoiceDocumentAsset(session.id, "transcript_json", {
+      id: `${session.id}:transcript_json`,
+      path_or_uri: session.transcriptPath,
+      mime_type: "application/json",
+      metadata: {
+        transcriptId: transcript.id,
+      },
+    });
+  } else {
+    await deleteVoiceDocumentAsset(session.id, "transcript_json");
+  }
+
+  return transcript;
+}
+
+// ========================================
+// Phase 4: Chat Read Functions (Postgres-ready)
+// ========================================
+
+function normalizeOptionalChatState(value) {
+  if (value == null) {
+    return null;
+  }
+  if (typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0) {
+    return null;
+  }
+  return value;
+}
+
+function toLegacyChatMessage(messageRow) {
+  const citations = chatRepository.fromJSONB(messageRow.citations_jsonb) || [];
+  const proposedActions = chatRepository.fromJSONB(messageRow.proposed_actions_jsonb) || [];
+  const decisionPrompt = normalizeOptionalChatState(chatRepository.fromJSONB(messageRow.decision_prompt_jsonb));
+  const trace = normalizeOptionalChatState(chatRepository.fromJSONB(messageRow.trace_jsonb));
+
+  const baseMessage = {
+    id: messageRow.id,
+    role: messageRow.role,
+    citations,
+    createdAt: messageRow.created_at
+  };
+
+  if (messageRow.role === "assistant") {
+    return {
+      ...baseMessage,
+      content: messageRow.content,
+      answer: messageRow.content,
+      confidence: messageRow.confidence_score,
+      confidence_label: messageRow.confidence_label || undefined,
+      source_class: messageRow.source_class || undefined,
+      llm_provider: messageRow.provider || undefined,
+      proposed_actions: proposedActions,
+      decision_prompt: decisionPrompt,
+      trace: trace || undefined
+    };
+  }
+
+  return {
+    ...baseMessage,
+    content: messageRow.content,
+    trace: trace || undefined
+  };
+}
+
+function toLegacyConfirmedAction(actionRow) {
+  const payload = chatRepository.fromJSONB(actionRow.payload_jsonb) || {};
+  const citations = Array.isArray(payload.citations) ? payload.citations : [];
+
+  return {
+    id: actionRow.id,
+    chatId: actionRow.chat_session_id,
+    documentId: actionRow.document_id,
+    type: actionRow.action_type,
+    title: actionRow.title,
+    payload,
+    rationale: actionRow.rationale,
+    citations,
+    requires_confirmation: true,
+    confirmedAt: actionRow.confirmed_at,
+    confirmedBy: actionRow.confirmed_by_user_id,
+    createdAt: actionRow.created_at,
+    actionType: actionRow.action_type,
+    actionLabel: actionRow.title
+  };
+}
+
+function toLegacyChatExport(exportRow) {
+  const payload = chatRepository.fromJSONB(exportRow.export_payload_jsonb) || {};
+  const content = payload.content || payload.data || payload.chart_note_appendix || null;
+
+  return {
+    id: exportRow.id,
+    chatId: exportRow.chat_session_id,
+    documentId: exportRow.document_id,
+    exportType: payload.type || "chart_note_appendix",
+    format: payload.format || "text/plain",
+    content,
+    chart_note_appendix: payload.chart_note_appendix || content || "",
+    createdBy: exportRow.created_by_user_id,
+    createdAt: exportRow.created_at
+  };
+}
+
+function toChatMessageRecord(session, message) {
+  const messageId = message.id || crypto.randomUUID();
+  const assistantAnswer = typeof message.answer === "string" ? message.answer : "";
+  const normalizedContent =
+    typeof message.content === "string"
+      ? message.content
+      : assistantAnswer;
+
+  return {
+    id: messageId,
+    chat_session_id: session.chatId,
+    role: message.role,
+    content: normalizedContent,
+    citations: Array.isArray(message.citations) ? message.citations : [],
+    confidence_score: message.confidence ?? message.confidenceScore ?? null,
+    confidence_label: message.confidence_label ?? message.confidenceLabel ?? null,
+    source_class: message.source_class ?? message.sourceClass ?? null,
+    proposed_actions: message.proposed_actions ?? message.proposedActions ?? [],
+    decision_prompt: normalizeOptionalChatState(message.decision_prompt ?? message.decisionPrompt) || {},
+    trace: normalizeOptionalChatState(message.trace) || {},
+    provider: message.llm_provider ?? message.provider ?? null,
+    created_at: message.createdAt || new Date().toISOString()
+  };
+}
+
+function toConfirmedActionRecord(action) {
+  const payload = {
+    ...(action.payload || {}),
+    citations: Array.isArray(action.citations) ? action.citations : [],
+    requires_confirmation: true
+  };
+
+  return {
+    id: action.id || crypto.randomUUID(),
+    chat_session_id: action.chatId,
+    document_id: action.documentId,
+    action_type: action.actionType || action.type,
+    title: action.actionLabel || action.title,
+    rationale: action.rationale,
+    payload,
+    confirmed_by_user_id: action.confirmedBy || action.confirmedByUserId || action.confirmed_by_user_id || null,
+    confirmed_at: action.confirmedAt || action.confirmed_at || new Date().toISOString(),
+    created_at: action.createdAt || action.confirmedAt || action.confirmed_at || new Date().toISOString()
+  };
+}
+
+function toChatExportRecord(exp) {
+  return {
+    id: exp.id || crypto.randomUUID(),
+    chat_session_id: exp.chatId,
+    document_id: exp.documentId,
+    export_payload: {
+      type: exp.exportType || "chart_note_appendix",
+      format: exp.format || "text/plain",
+      content: exp.content || exp.data || exp.chart_note_appendix || null,
+      chart_note_appendix: exp.chart_note_appendix || exp.content || exp.data || ""
+    },
+    created_by_user_id: exp.createdBy || null,
+    created_at: exp.createdAt || new Date().toISOString()
+  };
+}
+
+async function readChatSessions() {
+  // Phase 6: Read from Postgres only (legacy filesystem reads removed)
+  await chatRepository.initialize();
+  const sessions = await chatRepository.query(`
+    SELECT * FROM ${chatRepository.chatSessionsTableName}
+    ORDER BY created_at DESC
+  `);
+
+  // Transform to legacy format with full hydration including messages and actions
+  const hydratedSessions = await Promise.all(sessions.map(async (session) => {
+    // Fetch messages for this session
+    const messages = await chatRepository.findMessagesByChatSessionId(session.id).catch(() => []);
+
+    // Fetch confirmed actions for this session
+    const confirmedActions = await chatRepository.findActionsBySessionId(session.id).catch(() => []);
+
+    const legacyMessages = messages.map(toLegacyChatMessage);
+    const legacyConfirmedActions = confirmedActions.map(toLegacyConfirmedAction);
+    const pendingExternalConsent = normalizeOptionalChatState(chatRepository.fromJSONB(session.pending_external_consent_jsonb));
+    const pendingClarification = normalizeOptionalChatState(chatRepository.fromJSONB(session.pending_clarification_jsonb));
+    const pendingGeminiKeyPrompt = normalizeOptionalChatState(chatRepository.fromJSONB(session.pending_provider_prompt_jsonb));
+
+    return {
+      chatId: session.id,
+      documentId: session.document_id,
+      userId: session.user_id,
+      status: session.status,
+      pendingExternalConsent,
+      pendingClarification,
+      pendingGeminiKeyPrompt,
+      pendingProviderPrompt: pendingGeminiKeyPrompt,
+      messages: legacyMessages,
+      confirmedActions: legacyConfirmedActions,
+      createdAt: session.created_at,
+      updatedAt: session.updated_at
+    };
+  }));
+
+  return hydratedSessions;
+}
+
+async function writeChatSessions(sessions) {
+  // Phase 6: Write to Postgres only (legacy filesystem writes removed)
+  for (const session of sessions) {
+    try {
+      // Check if session exists in Postgres
+      const existingSession = await chatRepository.findChatSessionById(session.chatId).catch(() => null);
+
+      if (existingSession) {
+        // Update existing session
+        await chatRepository.updateChatSession(session.chatId, {
+          status: session.status,
+          pending_external_consent_jsonb: normalizeOptionalChatState(session.pendingExternalConsent) || {},
+          pending_clarification_jsonb: normalizeOptionalChatState(session.pendingClarification) || {},
+          pending_provider_prompt_jsonb:
+            normalizeOptionalChatState(session.pendingGeminiKeyPrompt ?? session.pendingProviderPrompt) || {}
+        });
+      } else {
+        // Create new session
+        await chatRepository.createChatSession({
+          id: session.chatId,
+          document_id: session.documentId,
+          user_id: session.userId,
+          status: session.status,
+          pending_external_consent: normalizeOptionalChatState(session.pendingExternalConsent) || {},
+          pending_clarification: normalizeOptionalChatState(session.pendingClarification) || {},
+          pending_provider_prompt:
+            normalizeOptionalChatState(session.pendingGeminiKeyPrompt ?? session.pendingProviderPrompt) || {}
+        });
+      }
+
+      // Sync messages to Postgres (Phase 6 critical fix)
+      // Messages must be written to chat_messages table
+      if (session.messages && Array.isArray(session.messages)) {
+        // Get existing messages for this session
+        const existingMessages = await chatRepository.findMessagesByChatSessionId(session.chatId).catch(() => []);
+        const existingMessageIds = new Set(existingMessages.map(msg => msg.id));
+        const currentMessageIds = new Set();
+
+        // Create or update messages
+        for (const message of session.messages) {
+          const messageData = toChatMessageRecord(session, message);
+          message.id = messageData.id;
+          currentMessageIds.add(messageData.id);
+
+          if (existingMessageIds.has(message.id)) {
+            // Message exists, update it
+            await chatRepository.query(`
+              UPDATE ${chatRepository.chatMessagesTableName}
+              SET role = $1, content = $2, citations_jsonb = $3, confidence_score = $4,
+                  confidence_label = $5, source_class = $6, proposed_actions_jsonb = $7,
+                  decision_prompt_jsonb = $8, trace_jsonb = $9, provider = $10
+              WHERE id = $11
+            `, [
+              messageData.role, messageData.content, chatRepository.toJSONB(messageData.citations),
+              messageData.confidence_score, messageData.confidence_label, messageData.source_class,
+              chatRepository.toJSONB(messageData.proposed_actions), chatRepository.toJSONB(messageData.decision_prompt),
+              chatRepository.toJSONB(messageData.trace), messageData.provider, message.id
+            ]).catch(err => console.error('[Chat] Failed to update message:', err.message));
+          } else {
+            // Create new message
+            await chatRepository.createMessage({
+              id: message.id,
+              ...messageData
+            }).catch(err => console.error('[Chat] Failed to create message:', err.message));
+          }
+        }
+
+        // Delete messages that are no longer in the session (optional cleanup)
+        for (const existingMsg of existingMessages) {
+          if (!currentMessageIds.has(existingMsg.id)) {
+            await chatRepository.query(`
+              DELETE FROM ${chatRepository.chatMessagesTableName} WHERE id = $1
+            `, [existingMsg.id]).catch(err => console.error('[Chat] Failed to delete message:', err.message));
+          }
+        }
+      }
+    } catch (pgError) {
+      console.error('[Chat] Failed to write chat session to Postgres:', pgError.message);
+    }
+  }
+}
+
+async function readChatActions() {
+  // Phase 6: Read from Postgres only (legacy filesystem reads removed)
+  await chatRepository.initialize();
+  const actions = await chatRepository.query(`
+    SELECT * FROM ${chatRepository.chatConfirmedActionsTableName}
+    ORDER BY created_at DESC
+  `);
+  return actions.map(toLegacyConfirmedAction);
+}
+
+async function writeChatActions(actions) {
+  // Phase 6: Write to Postgres only (legacy filesystem writes removed)
+  for (const action of actions) {
+    try {
+      const actionData = toConfirmedActionRecord(action);
+
+      // Check if action exists in Postgres
+      const existingAction = await chatRepository.queryOne(`
+        SELECT * FROM ${chatRepository.chatConfirmedActionsTableName}
+        WHERE id = $1
+      `, [actionData.id]).catch(() => null);
+
+      if (!existingAction && actionData.action_type && actionData.title) {
+        await chatRepository.createConfirmedAction(actionData);
+      }
+    } catch (pgError) {
+      console.error('[Chat] Failed to write chat action to Postgres:', pgError.message);
+    }
+  }
+}
+
+async function readChatExports() {
+  // Phase 6: Read from Postgres only (legacy filesystem reads removed)
+  await chatRepository.initialize();
+  const exports = await chatRepository.query(`
+    SELECT * FROM ${chatRepository.chatExportsTableName}
+    ORDER BY created_at DESC
+  `);
+  return exports.map(toLegacyChatExport);
+}
+
+async function writeChatExports(exports) {
+  // Phase 6: Write to Postgres only (legacy filesystem writes removed)
+  for (const exp of exports) {
+    try {
+      const exportData = toChatExportRecord(exp);
+
+      // Check if export exists in Postgres
+      const existingExport = await chatRepository.queryOne(`
+        SELECT * FROM ${chatRepository.chatExportsTableName}
+        WHERE id = $1
+      `, [exportData.id]).catch(() => null);
+
+      if (!existingExport) {
+        await chatRepository.createExport(exportData);
+      }
+    } catch (pgError) {
+      console.error('[Chat] Failed to write chat export to Postgres:', pgError.message);
+    }
+  }
 }
 
 async function readVoiceSessions() {
-  return readCollection(voiceSessionsPath, "sessions");
+  await transcriptsRepository.initialize();
+  await docsRepository.initialize();
+  const voiceDocuments = await docsRepository.query(`
+    SELECT *
+    FROM ${docsRepository.documentsTableName}
+    WHERE source_kind = 'voice_upload'
+    ORDER BY COALESCE(uploaded_at, created_at) DESC
+  `);
+
+  const hydratedSessions = [];
+  for (const document of voiceDocuments) {
+    let transcript = null;
+    if (document.current_transcript_id) {
+      transcript = await transcriptsRepository.findTranscriptById(document.current_transcript_id).catch(() => null);
+    }
+    if (!transcript) {
+      const transcripts = await transcriptsRepository.findTranscriptsByDocumentId(document.id).catch(() => []);
+      transcript = transcripts[0] || null;
+    }
+
+    const transcriptPayload = transcript ? transcriptsRepository.fromJSONB(transcript.transcript_jsonb) : {};
+    const transcriptSegments = transcript
+      ? await transcriptsRepository.findSegmentsByTranscriptId(transcript.id).catch(() => [])
+      : [];
+    const payloadSegments = Array.isArray(transcriptPayload?.transcript?.segments) ? transcriptPayload.transcript.segments : [];
+    const assets = await docsRepository.findAssetsByDocumentId(document.id).catch(() => []);
+    const sourceAudioAsset = assets.find((asset) => asset.asset_role === "source_audio") || null;
+    const transcriptAsset = assets.find((asset) => asset.asset_role === "transcript_json") || null;
+    const sourceAudioMetadata = docsRepository.fromJSONB(sourceAudioAsset?.metadata_jsonb || {});
+
+    const segmentsSource = transcriptSegments.length > 0 ? transcriptSegments : payloadSegments;
+    const segments = segmentsSource.map((segment, index) => {
+      const payloadSegment = payloadSegments[index] || segment;
+      return buildVoiceSegmentForSession(segment, index, payloadSegment);
+    });
+    const reviewItems = await loadVoiceReviewItems(document.id);
+
+    const rawStatus = transcriptPayload.status || "";
+    const fallbackStatus = document.status === "completed"
+      ? (segments.length > 0 && reviewItems.some((item) => item.resolution === "pending") ? "review_required" : "processed")
+      : document.status === "processing"
+        ? "transcribing"
+        : document.status === "failed"
+          ? "failed"
+          : "queued";
+    const transcriptQuality = transcript?.quality_jsonb || {};
+    const extractedData = transcriptPayload.extracted_data || null;
+    const dashboardPayload = transcriptPayload.dashboard_payload || null;
+    const durationFromSegments = segments
+      .map((segment, index) => {
+        const source = transcriptSegments[index] || {};
+        return typeof source.end_ms === "number" ? source.end_ms : null;
+      })
+      .filter((value) => typeof value === "number")
+      .pop();
+
+    const session = {
+      id: document.id,
+      documentId: document.id,
+      documentType: "voice",
+      status: rawStatus || fallbackStatus,
+      name: document.name || `voice_${document.id}`,
+      fileName: document.original_filename || document.name || transcriptPayload.file_name || `voice_${document.id}`,
+      mimeType: document.mime_type || sourceAudioAsset?.mime_type || transcriptPayload.mime_type || "audio/wav",
+      size: Number(document.size_bytes || transcriptPayload.size || sourceAudioAsset?.size_bytes || 0),
+      uploadedAt: document.uploaded_at || document.created_at,
+      processedAt: document.processed_at || null,
+      sttBackend: transcript?.backend || "Transcription Service",
+      transcriptQuality,
+      extractedData,
+      dashboardPayload,
+      transcript: {
+        segments,
+        rawText: transcript?.raw_text || transcriptPayload?.transcript?.rawText || "",
+        normalizedText: transcript?.normalized_text || transcriptPayload?.transcript?.normalizedText || "",
+        language: transcript?.language_code || transcriptPayload?.transcript?.language || null,
+        speakers: Array.isArray(transcriptPayload?.transcript?.speakers) ? transcriptPayload.transcript.speakers : [],
+        quality: transcriptQuality,
+      },
+      segments,
+      reviewItems,
+      linkedPatient: document.linked_patient_label || "Encounter link pending",
+      encounterLabel: document.encounter_label || "Not linked",
+      durationLabel:
+        transcriptPayload.duration_label ||
+        sourceAudioMetadata.durationLabel ||
+        (typeof durationFromSegments === "number"
+          ? formatVoiceTimeLabel(Math.ceil(durationFromSegments / 1000))
+          : estimateVoiceDurationLabel(Number(document.size_bytes || 0))),
+      extractionPreview: transcriptPayload.extraction_preview || null,
+      sttAudit: transcriptPayload.stt_audit || null,
+      progressMessage: transcriptPayload.progress?.message || null,
+      progressStage: transcriptPayload.progress?.stage || null,
+      progressPercent: typeof transcriptPayload.progress?.percent === "number" ? transcriptPayload.progress.percent : null,
+      audioPath: sourceAudioAsset?.path_or_uri || null,
+      transcriptPath: transcriptAsset?.path_or_uri || transcriptPayload.transcript_path || null,
+      hash: document.sha256_hash || sourceAudioAsset?.sha256_hash || transcriptPayload.hash || null,
+      error: document.error_message || null,
+    };
+
+    if (!session.extractionPreview) {
+      session.extractionPreview = buildVoiceExtractionPreview(session, session.transcript, reviewItems);
+    }
+
+    hydratedSessions.push(session);
+  }
+
+  return hydratedSessions;
+}
+
+// ========================================
+// Phase 4: Alerts Read Functions (Postgres-ready)
+// ========================================
+
+async function readAlerts() {
+  // Phase 4 Read Cutover: Use Postgres when ENABLE_PG_READ_ALERTS=true
+  if (process.env.ENABLE_PG_READ_ALERTS === 'true' && alertsRepository) {
+    await alertsRepository.initialize();
+    const alerts = await alertsRepository.query(`
+      SELECT * FROM ${alertsRepository.alertDeliveriesTableName}
+      ORDER BY created_at DESC
+    `);
+    // Transform to legacy format for API compatibility
+    return alerts.map(alert => ({
+      id: alert.id,
+      documentId: alert.document_id,
+      alertFamily: alert.alert_family,
+      targetName: alert.target_name,
+      channel: alert.channel,
+      recipient: alert.recipient,
+      status: alert.status,
+      payload: alertsRepository.fromJSONB(alert.payload_jsonb) || {},
+      result: alertsRepository.fromJSONB(alert.result_jsonb) || {},
+      errorMessage: alert.error_message,
+      sentAt: alert.sent_at,
+      createdAt: alert.created_at
+    }));
+  }
+
+  // Legacy: Return empty array (no filesystem alerts storage exists)
+  return [];
 }
 
 async function writeVoiceSessions(sessions) {
-  return writeCollection(voiceSessionsPath, "sessions", sessions);
+  for (const session of sessions) {
+    try {
+      await persistVoiceSession(session);
+    } catch (error) {
+      console.error("[Voice] Failed to write session to Postgres:", error.message);
+    }
+  }
 }
 
 async function mutateVoiceSessions(mutator) {
-  return queueVoiceSessionMutation(async () => {
-    const sessions = await readVoiceSessions();
-    const value = await mutator(sessions);
-    await writeVoiceSessions(sessions);
-    return value;
-  });
+  const sessions = await readVoiceSessions();
+  const result = await mutator(sessions);
+  await writeVoiceSessions(sessions);
+  return result;
 }
 
 async function updateVoiceSession(id, updater) {
-  return mutateVoiceSessions(async (sessions) => {
-    const session = sessions.find((item) => item.id === id);
-    if (!session) {
-      return null;
-    }
+  const sessions = await readVoiceSessions();
+  const session = sessions.find((item) => item.id === id);
+  if (!session) {
+    return null;
+  }
 
-    await updater(session, sessions);
+  try {
+    await updater(session);
+    await persistVoiceSession(session);
     return { ...session };
-  });
+  } catch (error) {
+    console.error("[Voice] Failed to update session:", error.message);
+    return null;
+  }
 }
 
 async function removeVoiceSession(id) {
-  return mutateVoiceSessions(async (sessions) => {
-    const index = sessions.findIndex((item) => item.id === id);
-    if (index === -1) {
-      return null;
+  const sessions = await readVoiceSessions();
+  const session = sessions.find((item) => item.id === id);
+  if (!session) {
+    return null;
+  }
+
+  try {
+    const transcripts = await transcriptsRepository.findTranscriptsByDocumentId(id).catch(() => []);
+    for (const transcript of transcripts) {
+      await transcriptsRepository.deleteTranscript(transcript.id).catch(() => {});
     }
 
-    const [session] = sessions.splice(index, 1);
+    await docsRepository.deleteDocument(id);
     return session;
-  });
+  } catch (error) {
+    console.error("[Voice] Failed to remove session:", error.message);
+    return null;
+  }
 }
 
 async function removeDocument(id) {
@@ -540,8 +1909,8 @@ const doctorAssistantAgent = new DoctorAssistantAgent({
     timeout: 120000,
     apiKey: process.env.GEMINI_API_KEY || "",
   },
-  readSessions: async () => readCollection(chatSessionsPath, "sessions"),
-  writeSessions: async (sessions) => writeCollection(chatSessionsPath, "sessions", sessions),
+  readSessions: async () => readChatSessions(),
+  writeSessions: async (sessions) => writeChatSessions(sessions),
   readSearchCache: async () => readCollection(searchCachePath, "entries"),
   writeSearchCache: async (entries) => writeCollection(searchCachePath, "entries", entries),
 });
@@ -1088,6 +2457,49 @@ function buildVoiceTranscriptObject(source = {}) {
   };
 }
 
+function toIsoDateOnly(value) {
+  const fallback = new Date().toISOString().split("T")[0];
+
+  if (value == null) {
+    return fallback;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return fallback;
+    }
+
+    const parsed = new Date(trimmed);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString().split("T")[0];
+    }
+
+    return trimmed.includes("T") ? trimmed.split("T")[0] : trimmed.slice(0, 10);
+  }
+
+  if (value instanceof Date || typeof value === "number") {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString().split("T")[0];
+    }
+    return fallback;
+  }
+
+  if (typeof value === "object" && typeof value.toISOString === "function") {
+    try {
+      const isoValue = value.toISOString();
+      return typeof isoValue === "string" && isoValue
+        ? isoValue.split("T")[0]
+        : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+
+  return fallback;
+}
+
 function buildVoiceDocumentResult({
   documentId,
   uploadedAt,
@@ -1179,7 +2591,7 @@ function buildVoiceDocumentResult({
       source_type: "voice",
       voice_session_id: documentId,
       stt_backend: sttBackend || "unknown",
-      transcript_date: uploadedAt?.split("T")[0] || new Date().toISOString().split("T")[0],
+      transcript_date: toIsoDateOnly(uploadedAt),
     },
     extracted_data: extractedData || {},
   };
@@ -1268,50 +2680,8 @@ function applyVoiceSessionToDocument(document, voiceSession, options = {}) {
 
   return hasReusableExtraction;
 }
-
-async function repairVoiceDocumentsFromSessions() {
-  const voiceSessions = await readVoiceSessions();
-  const sessionById = new Map(voiceSessions.map((session) => [session.id, session]));
-  const repairedIds = [];
-
-  await mutateDocuments(async (documents) => {
-    for (const document of documents) {
-      if ((document.documentType && document.documentType !== "voice") || !sessionById.has(document.id)) {
-        continue;
-      }
-
-      const voiceSession = sessionById.get(document.id);
-      const repaired = applyVoiceSessionToDocument(document, voiceSession);
-      if (repaired) {
-        repairedIds.push(document.id);
-      }
-    }
-  });
-
-  return repairedIds;
-}
-
-async function repairLiveConversationDocuments() {
-  const liveSessions = await liveConversationRoutes.store.list();
-  const sessionByDocumentId = new Map(
-    liveSessions.map((session) => [`voice-live-${session.id}`, session]),
-  );
-  const repairedIds = [];
-
-  await mutateDocuments(async (documents) => {
-    for (const document of documents) {
-      if (!isLiveConversationDocument(document)) continue;
-
-      const liveSession = sessionByDocumentId.get(document.id) || null;
-      const repaired = hydrateLiveConversationDocument(document, liveSession);
-      if (repaired) {
-        repairedIds.push(document.id);
-      }
-    }
-  });
-
-  return repairedIds;
-}
+// Phase 6: Startup repair functions removed - no longer needed with Postgres as authoritative source
+// Voice and live conversation data is now stored in relational tables, not rebuilt from session files
 
 async function resolveVoiceDocumentProcessing(document) {
   const voiceSessions = await readVoiceSessions();
@@ -1485,12 +2855,21 @@ function buildRequestAuthMetadata(req, metadata = {}) {
 }
 
 async function logAuthEvent(type, req, details = {}, overrides = {}) {
+  const requestedStatus = String(overrides.status || "info").toLowerCase();
+  const normalizedStatus =
+    requestedStatus === "success" ? "completed" :
+    requestedStatus === "error" ? "failed" :
+    requestedStatus === "info" ? "started" :
+    requestedStatus;
+
   try {
     await auditLogger.appendEvent({
-      workflow: "auth",
+      // workflow_enum does not include an "auth" member; record auth lifecycle
+      // events under the audit workflow and preserve auth semantics in event_type/title/details.
+      workflow: "audit",
       requestId: buildAuditRequestId("auth"),
       type,
-      status: overrides.status || "info",
+      status: normalizedStatus,
       title: overrides.title || type,
       details: buildRequestAuthMetadata(req, details),
     });
@@ -1509,7 +2888,8 @@ function isPublicApiRequest(req) {
     (method === "POST" && routePath === "/api/auth/login") ||
     (method === "POST" && routePath === "/api/auth/logout") ||
     // Prescription generation routes (TODO: require auth in production)
-    (routePath.startsWith("/api/prescriptions"))
+    (routePath.startsWith("/api/prescriptions")) ||
+    (routePath.startsWith("/api/soap"))
   );
 }
 
@@ -1703,6 +3083,242 @@ app.get("/api/health", async (_req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// TEMPORARY: Disable Phase 2A dual-write health router until properly integrated
+// Phase 2A: Dual-write health endpoints
+// const dualWriteHealthRouter = require('./health_dual_write.cjs');
+// app.use('/api/health', dualWriteHealthRouter);
+
+// ============================================
+// PHASE 2A PARITY ENDPOINTS
+// ============================================
+// Add parity endpoints when dual-write is enabled
+if (process.env.ENABLE_DUAL_WRITE_PHASE_2A === 'true' && authService.authRepository) {
+  const authRepo = authService.authRepository; // Use existing initialized repository
+  authRepo.initialize().catch(err => {
+    console.error('[Parity] Failed to initialize AuthRepository:', err.message);
+  });
+
+  app.get('/api/parity/sessions', async (req, res) => {
+    try {
+      if (!authRepo) {
+        return res.status(503).json({ error: 'Dual-write is not enabled', status: 'disabled' });
+      }
+
+      // Read ACTUAL filesystem format: { sessions: [...] }
+      const fsData = JSON.parse(await fs.readFile(path.join(__dirname, 'storage', 'auth_sessions.json'), 'utf8'));
+      const fsSessions = fsData.sessions || [];
+
+      // Read Postgres sessions (note: different field names)
+      const pgSessions = await authRepo.readSessions();
+
+      // Compare by sessionId (filesystem) vs session_token (postgres)
+      const mismatches = [];
+      fsSessions.forEach(fsSession => {
+        const pgSession = pgSessions.find(s => s.session_token === fsSession.sessionId);
+        if (!pgSession) {
+          mismatches.push({
+            type: 'missing_in_postgres',
+            sessionId: fsSession.sessionId,
+            username: fsSession.username
+          });
+        } else {
+          // Compare key fields
+          if (pgSession.user_id !== fsSession.userId) {
+            mismatches.push({
+              type: 'user_id_mismatch',
+              sessionId: fsSession.sessionId,
+              fs: fsSession.userId,
+              pg: pgSession.user_id
+            });
+          }
+
+          // Compare lastSeenAt (with tolerance for timestamp differences)
+          const fsLastSeen = new Date(fsSession.lastSeenAt).getTime();
+          const pgLastSeen = new Date(pgSession.last_seen_at).getTime();
+          if (Math.abs(fsLastSeen - pgLastSeen) > 1000) { // 1 second tolerance
+            mismatches.push({
+              type: 'last_seen_at_mismatch',
+              sessionId: fsSession.sessionId,
+              fs: fsSession.lastSeenAt,
+              pg: pgSession.last_seen_at
+            });
+          }
+
+          // Compare expiresAt (with tolerance for timestamp differences)
+          const fsExpires = new Date(fsSession.expiresAt).getTime();
+          const pgExpires = new Date(pgSession.expires_at).getTime();
+          if (Math.abs(fsExpires - pgExpires) > 1000) { // 1 second tolerance
+            mismatches.push({
+              type: 'expires_at_mismatch',
+              sessionId: fsSession.sessionId,
+              fs: fsSession.expiresAt,
+              pg: pgSession.expires_at
+            });
+          }
+        }
+      });
+
+      // Check for Postgres-only sessions
+      pgSessions.forEach(pgSession => {
+        const fsSession = fsSessions.find(s => s.sessionId === pgSession.session_token);
+        if (!fsSession) {
+          mismatches.push({
+            type: 'missing_in_filesystem',
+            sessionId: pgSession.session_token,
+            userId: pgSession.user_id
+          });
+        }
+      });
+
+      res.json({
+        mismatches,
+        fsCount: fsSessions.length,
+        pgCount: pgSessions.length,
+        status: mismatches.length === 0 ? 'healthy' : 'diverged'
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/parity/documents', async (req, res) => {
+    try {
+      if (!docsRepository) {
+        return res.status(503).json({ error: 'Dual-write is not enabled', status: 'disabled' });
+      }
+
+      // Read ACTUAL filesystem format: { documents: [...] }
+      const fsData = JSON.parse(await fs.readFile(path.join(__dirname, 'storage', 'documents.json'), 'utf8'));
+      const fsDocuments = fsData.documents || [];
+
+      // Read Postgres documents
+      const pgDocuments = await docsRepository.readDocuments();
+
+      // Compare by id, but ONLY for document types that have shadow writes implemented
+      // Currently only PDF uploads have full shadow-write coverage
+      // Voice and live-conversation documents are created file-only and should be excluded from parity check
+      const mismatches = [];
+      fsDocuments.forEach(fsDoc => {
+        // Skip voice and live_conversation documents - they don't have shadow writes yet
+        if (fsDoc.documentType === 'voice' || fsDoc.documentType === 'live_conversation') {
+          return;
+        }
+
+        const pgDoc = pgDocuments.find(d => d.id === fsDoc.id);
+        if (!pgDoc) {
+          mismatches.push({
+            type: 'missing_in_postgres',
+            id: fsDoc.id,
+            name: fsDoc.name,
+            documentType: fsDoc.documentType
+          });
+        } else {
+          // Compare key fields (filesystem uses camelCase, Postgres uses snake_case)
+          if (pgDoc.name !== fsDoc.name) {
+            mismatches.push({
+              type: 'name_mismatch',
+              id: fsDoc.id,
+              fs: fsDoc.name,
+              pg: pgDoc.name
+            });
+          }
+          // Normalize filesystem status to Postgres status for comparison
+          let normalizedFsStatus = fsDoc.status;
+          if (fsDoc.status === 'queued') normalizedFsStatus = 'pending';
+          else if (fsDoc.status === 'processed' || fsDoc.status === 'partial') normalizedFsStatus = 'completed';
+
+          if (pgDoc.status !== normalizedFsStatus) {
+            mismatches.push({
+              type: 'status_mismatch',
+              id: fsDoc.id,
+              fs: fsDoc.status,
+              pg: pgDoc.status,
+              normalized_fs: normalizedFsStatus
+            });
+          }
+        }
+      });
+
+      // Check for Postgres-only documents
+      // Only compare document types that have shadow-write coverage (PDF uploads only for now)
+      pgDocuments.forEach(pgDoc => {
+        // Skip voice and live_conversation documents - they don't have shadow writes yet
+        if (pgDoc.source_kind === 'voice_upload' || pgDoc.source_kind === 'live_conversation') {
+          return;
+        }
+
+        const fsDoc = fsDocuments.find(d => d.id === pgDoc.id);
+        if (!fsDoc) {
+          mismatches.push({
+            type: 'missing_in_filesystem',
+            id: pgDoc.id,
+            name: pgDoc.name,
+            source_kind: pgDoc.source_kind
+          });
+        }
+      });
+
+      res.json({
+        mismatches,
+        fsCount: fsDocuments.length,
+        pgCount: pgDocuments.length,
+        status: mismatches.length === 0 ? 'healthy' : 'diverged'
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/parity/users', async (req, res) => {
+    try {
+      if (!authRepo) {
+        return res.status(503).json({ error: 'Dual-write is not enabled', status: 'disabled' });
+      }
+
+      // Read ACTUAL filesystem format: { users: [...] }
+      const fsData = JSON.parse(await fs.readFile(path.join(__dirname, 'storage', 'users.json'), 'utf8'));
+      const fsUsers = fsData.users || [];
+
+      // Read Postgres users
+      const pgUsers = await authRepo.readUsers();
+
+      // Compare by username
+      const mismatches = [];
+      fsUsers.forEach(fsUser => {
+        const pgUser = pgUsers.find(u => u.username === fsUser.username);
+        if (!pgUser) {
+          mismatches.push({
+            type: 'missing_in_postgres',
+            username: fsUser.username,
+            id: fsUser.id
+          });
+        }
+      });
+
+      // Check for Postgres-only users (bidirectional check)
+      pgUsers.forEach(pgUser => {
+        const fsUser = fsUsers.find(u => u.username === pgUser.username);
+        if (!fsUser) {
+          mismatches.push({
+            type: 'missing_in_filesystem',
+            username: pgUser.username,
+            id: pgUser.id
+          });
+        }
+      });
+
+      res.json({
+        mismatches,
+        fsCount: fsUsers.length,
+        pgCount: pgUsers.length,
+        status: mismatches.length === 0 ? 'healthy' : 'diverged'
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+}
 
 app.get("/api/agent/status", async (_req, res) => {
   const agentStatus = documentRouter.getStatus();
@@ -1952,7 +3568,6 @@ app.post("/api/voice/process", async (req, res) => {
   }
 
   const updated = [];
-  const reviewEvents = [];
 
   for (const id of ids) {
     const queuedSession = await updateVoiceSession(id, async (currentSession) => {
@@ -1991,13 +3606,6 @@ app.post("/api/voice/process", async (req, res) => {
 
       if (failedSession) {
         updated.push(publicVoiceSession(failedSession));
-        reviewEvents.push({
-          id: crypto.randomUUID(),
-          sessionId: failedSession.id,
-          type: "voice_transcription_failed",
-          createdAt: new Date().toISOString(),
-          error: failedSession.error,
-        });
 
         // Sync failed status to documents collection
         await mutateDocuments(async (documents) => {
@@ -2166,14 +3774,6 @@ app.post("/api/voice/process", async (req, res) => {
 
     if (session) {
       updated.push(publicVoiceSession(session));
-      reviewEvents.push({
-        id: crypto.randomUUID(),
-        sessionId: session.id,
-        type: extractionError ? "voice_extraction_failed" : "voice_transcription_completed",
-        createdAt: new Date().toISOString(),
-        model: transcriptionResult.model || voiceTranscriptionTool.model,
-        error: extractionError || undefined,
-      });
 
       // Sync with documents collection
       await mutateDocuments(async (documents) => {
@@ -2200,12 +3800,6 @@ app.post("/api/voice/process", async (req, res) => {
     }
   }
 
-  if (reviewEvents.length > 0) {
-    const reviews = await readCollection(voiceReviewsPath, "reviews");
-    reviews.unshift(...reviewEvents);
-    await writeCollection(voiceReviewsPath, "reviews", reviews);
-  }
-
   return res.json({ sessions: updated });
 });
 
@@ -2229,6 +3823,8 @@ app.post("/api/voice/:id/review", async (req, res) => {
     reviewItem.resolution = resolution;
     if (resolution === "edited") {
       reviewItem.editedValue = editedValue || reviewItem.suggestedValue || reviewItem.extractedValue;
+    } else {
+      reviewItem.editedValue = "";
     }
 
     const hasPending = session.reviewItems.some((item) => item.resolution === "pending");
@@ -2248,18 +3844,17 @@ app.post("/api/voice/:id/review", async (req, res) => {
     }
   });
 
-  const reviews = await readCollection(voiceReviewsPath, "reviews");
-  reviews.unshift({
-    id: crypto.randomUUID(),
-    sessionId: updatedSession.id,
-    reviewItemId,
-    resolution,
-    editedValue: resolution === "edited" ? editedValue : "",
-    createdAt: new Date().toISOString(),
-    username: req.user?.username || "unknown",
-    role: req.user?.role || "unknown",
-  });
-  await writeCollection(voiceReviewsPath, "reviews", reviews);
+  try {
+    await appendVoiceReviewResolution(
+      reviewItemId,
+      resolution,
+      resolution === "edited" ? editedValue : "",
+      req.user?.id || null,
+      req.user?.username ? `Resolved by ${req.user.username} (${req.user.role || "unknown"})` : null,
+    );
+  } catch (error) {
+    console.error("[Voice] Failed to append review resolution:", error.message);
+  }
 
   return res.json({ session: publicVoiceSession(updatedSession) });
 });
@@ -2344,12 +3939,6 @@ app.delete("/api/voice/:id", async (req, res) => {
     session.audioPath ? fs.rm(session.audioPath, { force: true }) : Promise.resolve(),
     session.transcriptPath ? fs.rm(session.transcriptPath, { force: true }) : Promise.resolve(),
   ]);
-
-  const reviews = await readCollection(voiceReviewsPath, "reviews");
-  const filteredReviews = reviews.filter((item) => item.sessionId !== session.id);
-  if (filteredReviews.length !== reviews.length) {
-    await writeCollection(voiceReviewsPath, "reviews", filteredReviews);
-  }
 
   return res.status(204).end();
 });
@@ -2481,7 +4070,23 @@ app.post("/api/voice/extract", async (req, res) => {
     }
   }
 
-  console.log(`📊 Voice extraction complete: ${processed.length} success, ${failed.length} failed\n`);
+  // Shadow update to Postgres AFTER filesystem commit (for successful processing)
+  if (process.env.ENABLE_DUAL_WRITE_PHASE_2A === 'true' && docsRepository) {
+    for (const id of processed) {
+      try {
+        await docsRepository.updateDocument(id, {
+          status: 'completed',
+          processed_at: new Date().toISOString(),
+          error_code: null,
+          error_message: null
+        });
+      } catch (pgError) {
+        console.error('[DualWrite] Failed to shadow update document in Postgres:', pgError.message);
+      }
+    }
+  }
+
+  console.log(`📊 Voice extraction complete: ${processed.length} succeeded, ${failed.length} failed\n`);
   return res.json({ processed, failed });
 });
 
@@ -2568,8 +4173,80 @@ app.get("/api/prescriptions/download/:filename", async (req, res) => {
   }
 });
 
+// ============================================================================
+// SOAP NOTE GENERATION API
+// ============================================================================
+
+/**
+ * GET /api/soap/data/:documentId
+ * Get SOAP note data for preview/review
+ */
+app.get("/api/soap/data/:documentId", async (req, res) => {
+  try {
+    const { documentId } = req.params;
+    const data = await soapService.getSOAPData(documentId);
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error("Error getting SOAP data:", error.message);
+    res.status(404).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/soap/generate
+ * Generate SOAP HTML/PDF from processed document
+ * Body: { documentId, format: "html" | "pdf" | "both" }
+ */
+app.post("/api/soap/generate", async (req, res) => {
+  try {
+    const { documentId, format = "pdf" } = req.body;
+
+    if (!documentId) {
+      return res.status(400).json({ success: false, error: "documentId is required" });
+    }
+
+    await soapService.initialize();
+    const result = await soapService.generateSOAP(documentId, { format });
+    res.json(result);
+  } catch (error) {
+    console.error("Error generating SOAP note:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/soap/download/:filename
+ * Download generated SOAP note file
+ */
+app.get("/api/soap/download/:filename", async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, "storage", "soap_exports", filename);
+
+    if (filename.includes("..") || filename.includes("/")) {
+      return res.status(400).json({ success: false, error: "Invalid filename" });
+    }
+
+    try {
+      await fs.access(filePath);
+    } catch {
+      return res.status(404).json({ success: false, error: "File not found" });
+    }
+
+    const ext = path.extname(filename).toLowerCase();
+    const contentType = ext === ".pdf" ? "application/pdf" : "text/html";
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error("Error downloading SOAP note:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Serve prescription files as static assets (no auth required for generated prescriptions)
 app.use('/prescriptions', express.static(path.join(__dirname, "storage", "prescriptions")));
+app.use('/soap-exports', express.static(path.join(__dirname, "storage", "soap_exports")));
 
 // Serve live conversation audio files with audio-friendly content types.
 app.use('/live-conversation-audio', express.static(path.join(__dirname, "storage", "live_conversation_audio"), {
@@ -2669,6 +4346,35 @@ app.post("/api/documents/upload", upload.array("files"), async (req, res) => {
         error: null,
       };
 
+      await docsRepository.createDocument({
+        id: document.id,
+        document_type: "unknown",
+        document_subtype: "unknown",
+        source_kind: "pdf_upload",
+        status: "pending",
+        department: document.department,
+        name: document.name,
+        original_filename: document.name,
+        mime_type: file.mimetype || "application/pdf",
+        size_bytes: document.size,
+        sha256_hash: document.hash,
+        uploaded_at: document.uploadedAt,
+      });
+
+      await docsRepository.createDocumentAsset({
+        id: `${document.id}:source_pdf`,
+        document_id: document.id,
+        asset_role: "source_pdf",
+        storage_backend: "filesystem",
+        path_or_uri: filePath,
+        mime_type: file.mimetype || "application/pdf",
+        size_bytes: document.size,
+        sha256_hash: document.hash,
+        metadata: {
+          originalFilename: file.originalname,
+        },
+      });
+
       console.log(`   ✅ Saved: ${file.originalname} -> ${id}`);
       documents.unshift(document);
       uploaded.push(publicDocument(document));
@@ -2726,6 +4432,21 @@ app.post("/api/documents/process", async (req, res) => {
 
     return selected;
   });
+
+  // NEW: Shadow write status changes to "processing" if enabled
+  if (process.env.ENABLE_DUAL_WRITE_PHASE_2A === 'true' && docsRepository) {
+    for (const doc of queuedDocuments) {
+      try {
+        await docsRepository.updateDocument(doc.id, {
+          status: 'processing',
+          error_code: null,
+          error_message: null
+        });
+      } catch (pgError) {
+        console.error(`[DualWrite] Failed to shadow update document ${doc.id} to processing:`, pgError.message);
+      }
+    }
+  }
 
   console.log(`📋 Queued ${queuedDocuments.length} document(s) for processing:`);
   queuedDocuments.forEach((doc, i) => {
@@ -2792,30 +4513,67 @@ app.post("/api/documents/process", async (req, res) => {
         currentDocument.department = result?.meta?.department_type || currentDocument.department || (document.documentType === 'voice' ? 'Voice Dictation' : undefined);
         currentDocument.result = result;
         currentDocument.agentInfo = buildAgentInfo(agentResult);
-        currentDocument.error = null;
         currentDocument.processedAt = new Date().toISOString();
-        currentDocument.auditRunId = auditRun?.runId;
+        // Clear error on successful processing (maintain existing filesystem behavior)
+        currentDocument.error = null;
       });
+
+      // NEW: Shadow update to Postgres if enabled
+      if (process.env.ENABLE_DUAL_WRITE_PHASE_2A === 'true' && updatedDocument && docsRepository) {
+        try {
+          // Map filesystem status to Postgres enum: processed/partial -> completed
+          const pgStatus = (updatedDocument.status === 'processed' || updatedDocument.status === 'partial') ? 'completed' : updatedDocument.status;
+          await docsRepository.updateDocument(document.id, {
+            status: pgStatus,
+            processed_at: updatedDocument.processedAt,
+            error_code: null,
+            error_message: null
+          });
+        } catch (pgError) {
+          console.error('[DualWrite] Failed to shadow update document in Postgres:', pgError.message);
+        }
+      }
+
       await analyticsStore.upsertDocumentMetrics(updatedDocument);
 
-      await audit.complete({
+      const auditRun = await audit.complete({
         documentId: document.id,
         agentName: agentResult.agent,
         latency: agentResult.latency,
         tokensUsed: agentResult.tokensUsed,
         stepsCount: agentResult.steps?.length || 0,
       });
+
+      // Record audit run ID in document for traceability
+      if (auditRun?.id) {
+        await updateDocument(document.id, async (currentDocument) => {
+          currentDocument.auditRunId = auditRun.id;
+        });
+      }
     } catch (error) {
       await audit.fail(error, {
         documentId: document.id,
       });
-      await updateDocument(document.id, async (currentDocument) => {
+      const failedDocument = await updateDocument(document.id, async (currentDocument) => {
         currentDocument.status = "failed";
         currentDocument.error = error instanceof Error ? error.message : "Unknown processing error";
         if (document.documentType === "voice") {
           currentDocument.result = null;
         }
       });
+
+      // NEW: Shadow update to Postgres if enabled
+      if (process.env.ENABLE_DUAL_WRITE_PHASE_2A === 'true' && failedDocument) {
+        try {
+          await docsRepository.updateDocument(document.id, {
+            status: 'failed',
+            error_code: 'PROCESSING_ERROR',
+            error_message: failedDocument.error || 'Unknown processing error'
+          });
+        } catch (pgError) {
+          console.error('[DualWrite] Failed to shadow update document in Postgres:', pgError.message);
+        }
+      }
     }
   }
 
@@ -3141,16 +4899,28 @@ app.post("/api/agent/test-pdf", upload.single("file"), async (req, res) => {
 });
 
 app.get("/api/chat/history/:documentId", async (req, res) => {
-  const sessions = await readCollection(chatSessionsPath, "sessions");
+  const sessions = await readChatSessions();
   const session = sessions.find((item) => item.documentId === req.params.documentId) || null;
   res.json({ session });
+});
+
+// Phase 4: Alerts Read Endpoint (Postgres-ready)
+app.get("/api/alerts", async (req, res) => {
+  const alerts = await readAlerts();
+  res.json({ alerts });
+});
+
+app.get("/api/alerts/:documentId", async (req, res) => {
+  const alerts = await readAlerts();
+  const documentAlerts = alerts.filter((item) => item.documentId === req.params.documentId);
+  res.json({ alerts: documentAlerts });
 });
 
 app.delete("/api/chat/history/:documentId", async (req, res) => {
   const documentId = req.params.documentId;
   const chatId = typeof req.query.chatId === "string" ? req.query.chatId : "";
 
-  const sessions = await readCollection(chatSessionsPath, "sessions");
+  const sessions = await readChatSessions();
   const sessionIndex = sessions.findIndex((item) => item.documentId === documentId && (!chatId || item.chatId === chatId));
 
   if (sessionIndex === -1) {
@@ -3158,18 +4928,27 @@ app.delete("/api/chat/history/:documentId", async (req, res) => {
   }
 
   const [removedSession] = sessions.splice(sessionIndex, 1);
-  await writeCollection(chatSessionsPath, "sessions", sessions);
+  await writeChatSessions(sessions);
 
-  const actions = await readCollection(chatActionsPath, "actions");
-  const filteredActions = actions.filter((item) => item.documentId !== documentId || item.chatId !== removedSession.chatId);
-  if (filteredActions.length !== actions.length) {
-    await writeCollection(chatActionsPath, "actions", filteredActions);
+  // Phase 4: Delete from Postgres when enabled (cascades to actions and exports)
+  if (process.env.ENABLE_PG_READ_CHAT === 'true' && chatRepository) {
+    try {
+      await chatRepository.deleteChatSession(removedSession.chatId);
+    } catch (pgError) {
+      console.error('[Chat] Failed to delete session from Postgres:', pgError.message);
+    }
   }
 
-  const exportsList = await readCollection(chatExportsPath, "exports");
+  const actions = await readChatActions();
+  const filteredActions = actions.filter((item) => item.documentId !== documentId || item.chatId !== removedSession.chatId);
+  if (filteredActions.length !== actions.length) {
+    await writeChatActions(filteredActions);
+  }
+
+  const exportsList = await readChatExports();
   const filteredExports = exportsList.filter((item) => item.documentId !== documentId || item.chatId !== removedSession.chatId);
   if (filteredExports.length !== exportsList.length) {
-    await writeCollection(chatExportsPath, "exports", filteredExports);
+    await writeChatExports(filteredExports);
   }
 
   return res.json({ cleared: true, chatId: removedSession.chatId });
@@ -3223,7 +5002,7 @@ app.post("/api/chat/action/confirm", async (req, res) => {
     return res.status(400).json({ error: "documentId, chatId, and actionId are required" });
   }
 
-  const sessions = await readCollection(chatSessionsPath, "sessions");
+  const sessions = await readChatSessions();
   const sessionIndex = sessions.findIndex((item) => item.chatId === chatId && item.documentId === documentId);
   if (sessionIndex === -1) {
     return res.status(404).json({ error: "Chat session not found" });
@@ -3258,11 +5037,11 @@ app.post("/api/chat/action/confirm", async (req, res) => {
   });
   session.updatedAt = new Date().toISOString();
   sessions[sessionIndex] = session;
-  await writeCollection(chatSessionsPath, "sessions", sessions);
+  await writeChatSessions(sessions);
 
-  const actions = await readCollection(chatActionsPath, "actions");
+  const actions = await readChatActions();
   actions.unshift(confirmedAction);
-  await writeCollection(chatActionsPath, "actions", actions);
+  await writeChatActions(actions);
 
   return res.json({ action: confirmedAction, session });
 });
@@ -3277,7 +5056,7 @@ app.post("/api/chat/export/:documentId", async (req, res) => {
     return res.status(404).json({ error: "Document not found" });
   }
 
-  const sessions = await readCollection(chatSessionsPath, "sessions");
+  const sessions = await readChatSessions();
   const session = sessions.find((item) => item.documentId === documentId && (!chatId || item.chatId === chatId));
   if (!session) {
     return res.status(404).json({ error: "Chat session not found" });
@@ -3293,9 +5072,9 @@ app.post("/api/chat/export/:documentId", async (req, res) => {
       chart_note_appendix: exportResult.data.chart_note_appendix,
     };
 
-    const exportsList = await readCollection(chatExportsPath, "exports");
+    const exportsList = await readChatExports();
     exportsList.unshift(exportRecord);
-    await writeCollection(chatExportsPath, "exports", exportsList);
+    await writeChatExports(exportsList);
 
     await updateDocument(documentId, async (currentDocument) => {
       currentDocument.chatAssistantExport = exportRecord;
@@ -4912,14 +6691,7 @@ app.post("/api/documents/:id/send-alerts", async (req, res) => {
 
 ensureStorage()
   .then(async () => {
-    const repairedVoiceDocumentIds = await repairVoiceDocumentsFromSessions();
-    if (repairedVoiceDocumentIds.length > 0) {
-      console.log(`Repaired ${repairedVoiceDocumentIds.length} voice document record(s) from saved voice sessions.`);
-    }
-    const repairedLiveConversationDocumentIds = await repairLiveConversationDocuments();
-    if (repairedLiveConversationDocumentIds.length > 0) {
-      console.log(`Repaired ${repairedLiveConversationDocumentIds.length} live conversation document record(s).`);
-    }
+    // Phase 6: Startup repair removed - Postgres is authoritative source
     const documents = await readDocuments();
     await analyticsStore.backfillDocuments(documents);
 

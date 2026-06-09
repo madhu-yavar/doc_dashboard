@@ -1,0 +1,52 @@
+{
+  "entries": [
+    {
+      "key": "medlineplus::clinical_explanation::surgical technique elective lscs and b/l tubal ligation",
+      "source": "medlineplus",
+      "intent": "clinical_explanation",
+      "query": "surgical technique elective LSCS and B/L tubal ligation",
+      "cached_at": "2026-04-13T09:39:37.782Z",
+      "payload": []
+    },
+    {
+      "key": "pubmed::clinical_explanation::surgical technique elective lscs and b/l tubal ligation",
+      "source": "pubmed",
+      "intent": "clinical_explanation",
+      "query": "surgical technique elective LSCS and B/L tubal ligation",
+      "cached_at": "2026-04-13T09:39:37.523Z",
+      "payload": []
+    },
+    {
+      "key": "pubmed::clinical_explanation::steps of elective cesarean section with tubal ligation",
+      "source": "pubmed",
+      "intent": "clinical_explanation",
+      "query": "steps of elective cesarean section with tubal ligation",
+      "cached_at": "2026-04-13T09:39:37.126Z",
+      "payload": []
+    },
+    {
+      "key": "medlineplus::clinical_explanation::steps of elective cesarean section with tubal ligation",
+      "source": "medlineplus",
+      "intent": "clinical_explanation",
+      "query": "steps of elective cesarean section with tubal ligation",
+      "cached_at": "2026-04-13T09:39:36.793Z",
+      "payload": []
+    },
+    {
+      "key": "medlineplus::clinical_explanation::elective lscs and bilateral tubal ligation procedure",
+      "source": "medlineplus",
+      "intent": "clinical_explanation",
+      "query": "elective LSCS and bilateral tubal ligation procedure",
+      "cached_at": "2026-04-13T09:39:36.066Z",
+      "payload": []
+    },
+    {
+      "key": "pubmed::clinical_explanation::elective lscs and bilateral tubal ligation procedure",
+      "source": "pubmed",
+      "intent": "clinical_explanation",
+      "query": "elective LSCS and bilateral tubal ligation procedure",
+      "cached_at": "2026-04-13T09:39:32.285Z",
+      "payload": []
+    }
+  ]
+}
