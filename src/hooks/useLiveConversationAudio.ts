@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BACKEND_ORIGIN } from "@/lib/backendConfig";
+import { BACKEND_ORIGIN, WS_ORIGIN } from "@/lib/backendConfig";
 
 export type MediaRecorderState = "idle" | "starting" | "recording" | "paused" | "stopping" | "failed";
 export type ConnectionState = "idle" | "connecting" | "connected" | "reconnecting" | "closed" | "error";
@@ -22,7 +22,9 @@ const MICROPHONE_GAIN_BOOST = 2.0; // Not used - keeping for reference
 const WEBSOCKET_CONNECT_TIMEOUT_MS = 10000;
 
 function resolveLiveConversationWebSocketUrl(sessionId: string) {
-  const websocketOrigin = BACKEND_ORIGIN.replace(/^http/i, (protocol) =>
+  // Use WS_ORIGIN which always points to configured backend (not Vite proxy)
+  // This bypasses Vite's WebSocket proxy which doesn't forward upgrades correctly
+  const websocketOrigin = WS_ORIGIN.replace(/^http/i, (protocol) =>
     protocol.toLowerCase() === "https" ? "wss" : "ws",
   );
 
@@ -67,13 +69,19 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
 
   const websocketRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const archiveRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderStateRef = useRef<MediaRecorderState>("idle");
   const chunkTimerRef = useRef<number | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const websocketSessionIdRef = useRef<string | null>(null);
+  const socketCloseErrorRef = useRef<Error | null>(null);
   const recorderMimeTypeRef = useRef<string>(mimeType);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const captureStartedAtRef = useRef<number | null>(null);
+  const pausedAtRef = useRef<number | null>(null);
+  const pausedDurationMsRef = useRef(0);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const levelAnimationFrameRef = useRef<number | null>(null);
@@ -94,6 +102,11 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
       console.log(`[LiveConversationAudio] ${message}`, data || "");
     }
   }, [enableDebugLogs]);
+
+  const syncRecorderState = useCallback((nextState: MediaRecorderState) => {
+    recorderStateRef.current = nextState;
+    setRecorderState(nextState);
+  }, []);
 
   useEffect(() => {
     recorderStateRef.current = recorderState;
@@ -223,14 +236,35 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
   const connectWebSocket = useCallback((sessionId: string) => {
     const existingSocket = websocketRef.current;
     if (existingSocket) {
+      const existingSessionId = websocketSessionIdRef.current;
       if (
-        existingSocket.readyState === WebSocket.OPEN
-        || existingSocket.readyState === WebSocket.CONNECTING
+        existingSessionId === sessionId
+        && (
+          existingSocket.readyState === WebSocket.OPEN
+          || existingSocket.readyState === WebSocket.CONNECTING
+        )
       ) {
         return existingSocket;
       }
 
+      if (existingSocket.readyState === WebSocket.OPEN) {
+        try {
+          existingSocket.close(1000, "Switching live session");
+        } catch {
+          // Ignore close failures while replacing a stale socket.
+        }
+      } else if (existingSocket.readyState === WebSocket.CONNECTING) {
+        existingSocket.addEventListener("open", () => {
+          try {
+            existingSocket.close(1000, "Switching live session");
+          } catch {
+            // Ignore close failures on a socket being abandoned.
+          }
+        }, { once: true });
+      }
+
       websocketRef.current = null;
+      websocketSessionIdRef.current = null;
     }
 
     const wsUrl = resolveLiveConversationWebSocketUrl(sessionId);
@@ -238,9 +272,11 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
 
     setConnectionState("connecting");
     setError(null);
+    socketCloseErrorRef.current = null;
 
     const ws = new WebSocket(wsUrl);
     websocketRef.current = ws;
+    websocketSessionIdRef.current = sessionId;
 
     ws.onopen = () => {
       if (websocketRef.current !== ws) return;
@@ -266,12 +302,16 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
             break;
           case "session.state":
             if (message.status === "paused") {
-              setRecorderState("paused");
+              setError(null);
+              syncRecorderState("paused");
             } else if (message.status === "live") {
-              setRecorderState("recording");
+              setError(null);
+              socketCloseErrorRef.current = null;
+              syncRecorderState("recording");
               clearPendingStart();
             } else if (message.status === "review_required") {
-              setRecorderState("idle");
+              setError(null);
+              syncRecorderState("idle");
               setConnectionState("closed");
               clearPendingEnd();
             }
@@ -281,6 +321,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
             onTranscriptFinal?.(message.sessionId || sessionIdRef.current || "", message.segment);
             break;
           case "transcript.partial":
+            setError(null);
             onTranscriptPartial?.(message.sessionId || sessionIdRef.current || "", message.transcript);
             break;
           case "draft.updated":
@@ -307,12 +348,73 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
 
     ws.onclose = (event) => {
       if (websocketRef.current !== ws) return;
-      log("WebSocket closed", { code: event.code, reason: event.reason });
+
+      // Enhanced WebSocket close reporting
+      const closeInfo = {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+        recorderState: recorderStateRef.current,
+        currentTime: new Date().toISOString()
+      };
+      log("WebSocket closed", closeInfo);
+
+      // Provide detailed error messages for common close codes
+      let closeReason = event.reason?.trim() || "";
+      if (!closeReason) {
+        switch (event.code) {
+          case 1000:
+            closeReason = "Connection closed normally";
+            break;
+          case 1001:
+            closeReason = "Endpoint going away";
+            break;
+          case 1002:
+            closeReason = "Protocol error";
+            break;
+          case 1003:
+            closeReason = "Unsupported data";
+            break;
+          case 1006:
+            closeReason = "Connection closed abnormally (network error or timeout)";
+            break;
+          case 1008:
+            closeReason = "Policy violation";
+            break;
+          case 1010:
+            closeReason = "Missing extension";
+            break;
+          case 1011:
+            closeReason = "Internal server error";
+            break;
+          default:
+            closeReason = `WebSocket closed with code ${event.code}`;
+        }
+      }
+
+      // Enhanced error context
+      const enhancedError = new Error(closeReason);
+      (enhancedError as any).code = event.code;
+      (enhancedError as any).wasClean = event.wasClean;
+      (enhancedError as any).recorderState = recorderStateRef.current;
+      (enhancedError as any).timestamp = closeInfo.currentTime;
+
+      const isActiveCapture = recorderStateRef.current === "recording" || recorderStateRef.current === "starting";
+      const isNormalClose = event.code === 1000;
+      if (!(isActiveCapture && isNormalClose)) {
+        socketCloseErrorRef.current = enhancedError;
+      }
+
       if (websocketRef.current === ws) {
         websocketRef.current = null;
+        websocketSessionIdRef.current = null;
       }
       setConnectionState("closed");
-      clearPendingStart(new Error("Microphone capture did not start"));
+      if (isActiveCapture && isNormalClose) {
+        clearPendingStart();
+      } else {
+        clearPendingStart(enhancedError);
+      }
       clearPendingEnd();
 
       if (recorderStateRef.current === "recording" && event.code !== 1000) {
@@ -329,12 +431,16 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
   }, [clearPendingEnd, clearPendingStart, log, onDraftUpdated, onSessionStateChange, onTranscriptFinal, onTranscriptPartial]);
 
   const waitForWebSocketOpen = useCallback((websocket: WebSocket) => new Promise<void>((resolve, reject) => {
+    console.log("[DEBUG waitForWebSocketOpen] Initial state:", websocket.readyState);
+
     if (websocket.readyState === WebSocket.OPEN) {
+      console.log("[DEBUG waitForWebSocketOpen] Already open, resolving");
       resolve();
       return;
     }
 
     if (websocket.readyState === WebSocket.CLOSING || websocket.readyState === WebSocket.CLOSED) {
+      console.log("[DEBUG waitForWebSocketOpen] Already closed/closing, rejecting");
       reject(new Error("WebSocket closed before the connection was established"));
       return;
     }
@@ -379,7 +485,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
 
   const startRecording = useCallback(async (deviceId?: string) => {
     try {
-      setRecorderState("starting");
+      syncRecorderState("starting");
       setError(null);
       recordedChunksRef.current = [];
 
@@ -429,17 +535,47 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
 
       mediaRecorderRef.current = recorder;
       recorderMimeTypeRef.current = recorder.mimeType || supportedMimeType || mimeType;
+      let mirrorChunkRecorderToFinalUpload = true;
+
+      try {
+        const archiveRecorder = new MediaRecorder(stream, {
+          mimeType: supportedMimeType,
+          audioBitsPerSecond: audioBitsPerSecond ?? DEFAULT_AUDIO_BITRATE,
+        });
+        archiveRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            recordedChunksRef.current.push(event.data);
+          }
+        };
+        archiveRecorder.onerror = (event) => {
+          mirrorChunkRecorderToFinalUpload = true;
+          log("Archive MediaRecorder error", event);
+        };
+        archiveRecorder.start();
+        archiveRecorderRef.current = archiveRecorder;
+        mirrorChunkRecorderToFinalUpload = false;
+      } catch (archiveError) {
+        archiveRecorderRef.current = null;
+        log("Falling back to chunk-assembled final upload", archiveError);
+      }
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
+          if (mirrorChunkRecorderToFinalUpload) {
+            recordedChunksRef.current.push(event.data);
+          }
 
           if (websocketRef.current?.readyState === WebSocket.OPEN) {
             log("Sending audio chunk", { size: event.data.size });
             console.log("[LiveConversationAudio] Sending audio chunk", { size: event.data.size, type: event.data.type });
             websocketRef.current.send(event.data);
-            // Local capture is clearly flowing at this point, so don't fail start
-            // just because the backend "live" state ack arrives late.
+            setError(null);
+            socketCloseErrorRef.current = null;
+            if (sessionIdRef.current && recorderStateRef.current !== "stopping") {
+              onSessionStateChange?.(sessionIdRef.current, "live");
+            }
+            // The server also emits session.state:live on chunk receipt; this keeps
+            // Safari from timing out if that ack is missed while audio is flowing.
             clearPendingStart();
           }
         }
@@ -448,10 +584,13 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
       recorder.onerror = (event) => {
         log("MediaRecorder error", event);
         setError("Recording error");
-        setRecorderState("failed");
+        syncRecorderState("failed");
       };
 
       recorder.start();
+      captureStartedAtRef.current = Date.now();
+      pausedAtRef.current = null;
+      pausedDurationMsRef.current = 0;
       chunkTimerRef.current = window.setInterval(() => {
         if (recorder.state === "recording") {
           try {
@@ -461,14 +600,14 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
           }
         }
       }, chunkIntervalMs);
-      setRecorderState("recording");
+      syncRecorderState("recording");
       log("Recording started", { interval: chunkIntervalMs });
 
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       log("Failed to start recording", err);
       setError(message);
-      setRecorderState("failed");
+      syncRecorderState("failed");
       if (message.toLowerCase().includes("denied") || message.toLowerCase().includes("notallowed")) {
         setPermissionState("denied");
       } else {
@@ -476,15 +615,19 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
       }
       throw err instanceof Error ? err : new Error(message);
     }
-  }, [mimeType, audioBitsPerSecond, chunkIntervalMs, log, enumerateDevices, startLevelMonitoring, clearPendingStart]);
+  }, [mimeType, audioBitsPerSecond, chunkIntervalMs, log, enumerateDevices, startLevelMonitoring, clearPendingStart, onSessionStateChange]);
 
-  const uploadFinalRecording = useCallback(async (sessionId: string) => {
+  const uploadFinalRecording = useCallback(async (sessionId: string, durationMs?: number | null) => {
     const recordedChunks = recordedChunksRef.current.filter((chunk) => chunk.size > 0);
-    if (recordedChunks.length === 0) return;
+    if (recordedChunks.length === 0) {
+      throw new Error("Final recording was not available for upload");
+    }
 
     const finalMimeType = recorderMimeTypeRef.current || mimeType;
     const finalBlob = new Blob(recordedChunks, { type: finalMimeType });
-    if (finalBlob.size === 0) return;
+    if (finalBlob.size === 0) {
+      throw new Error("Final recording was empty");
+    }
 
     log("Uploading final recording", {
       sessionId,
@@ -493,13 +636,16 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
       chunks: recordedChunks.length,
     });
 
-    const response = await fetch(`/api/voice/live/sessions/${sessionId}/audio/final`, {
+    const response = await fetch(`${BACKEND_ORIGIN}/api/voice/live/sessions/${sessionId}/audio/final`, {
       method: "POST",
       headers: {
         "Content-Type": finalMimeType,
+        ...(Number.isFinite(durationMs) && Number(durationMs) > 0
+          ? { "X-Live-Duration-Ms": String(Math.round(Number(durationMs))) }
+          : {}),
       },
       body: finalBlob,
-      credentials: "same-origin",
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -521,6 +667,9 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop();
     }
+    if (archiveRecorderRef.current && archiveRecorderRef.current.state !== "inactive") {
+      archiveRecorderRef.current.stop();
+    }
 
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -528,9 +677,13 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     }
 
     mediaRecorderRef.current = null;
+    archiveRecorderRef.current = null;
     stopLevelMonitoring();
-    setRecorderState("idle");
-  }, [log, stopLevelMonitoring]);
+    captureStartedAtRef.current = null;
+    pausedAtRef.current = null;
+    pausedDurationMsRef.current = 0;
+    syncRecorderState("idle");
+  }, [log, stopLevelMonitoring, syncRecorderState]);
 
   const flushAndStopRecording = useCallback(async () => {
     log("Flushing final audio chunk before stopping");
@@ -541,27 +694,118 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     }
 
     const recorder = mediaRecorderRef.current;
+    const archiveRecorder = archiveRecorderRef.current;
+    const stopPromises: Promise<void>[] = [];
+
+    const waitForRecorderEvent = (
+      target: MediaRecorder,
+      eventName: "dataavailable" | "stop",
+      handler: () => void,
+    ) => {
+      if (typeof target.addEventListener === "function") {
+        target.addEventListener(eventName, handler, { once: true });
+        return () => {
+          if (typeof target.removeEventListener === "function") {
+            target.removeEventListener(eventName, handler);
+          }
+        };
+      }
+
+      const propName = eventName === "stop" ? "onstop" : "ondataavailable";
+      const previousHandler = target[propName];
+      target[propName] = ((event: Event | BlobEvent) => {
+        if (typeof previousHandler === "function") {
+          previousHandler.call(target, event);
+        }
+        handler();
+        if (target[propName] === wrappedHandler) {
+          target[propName] = previousHandler;
+        }
+      }) as MediaRecorder["onstop"] & MediaRecorder["ondataavailable"];
+
+      const wrappedHandler = target[propName];
+      return () => {
+        if (target[propName] === wrappedHandler) {
+          target[propName] = previousHandler;
+        }
+      };
+    };
+
     if (recorder && recorder.state !== "inactive") {
-      await new Promise<void>((resolve) => {
+      stopPromises.push(new Promise<void>((resolve) => {
         let finished = false;
+        const cleanups: Array<() => void> = [];
 
         const finish = () => {
           if (finished) return;
           finished = true;
+          cleanups.forEach((cleanup) => cleanup());
           resolve();
         };
 
-        recorder.addEventListener("dataavailable", finish, { once: true });
-        recorder.addEventListener("stop", finish, { once: true });
+        cleanups.push(waitForRecorderEvent(recorder, "dataavailable", finish));
+        cleanups.push(waitForRecorderEvent(recorder, "stop", finish));
 
         try {
           recorder.stop();
+          if (recorder.state === "inactive") {
+            finish();
+            return;
+          }
         } catch {
           finish();
         }
 
         window.setTimeout(finish, 600);
-      });
+      }));
+    }
+
+    if (archiveRecorder && archiveRecorder.state !== "inactive") {
+      stopPromises.push(new Promise<void>((resolve) => {
+        let finished = false;
+        let sawStop = false;
+        let sawData = false;
+        const initialChunkCount = recordedChunksRef.current.length;
+        const cleanupHandlers: Array<() => void> = [];
+
+        const finish = () => {
+          if (finished) return;
+          finished = true;
+          cleanupHandlers.forEach((cleanup) => cleanup());
+          resolve();
+        };
+
+        const finishIfComplete = () => {
+          const hasNewFinalData = recordedChunksRef.current.length > initialChunkCount;
+          if (sawStop && (sawData || hasNewFinalData)) {
+            finish();
+          }
+        };
+
+        cleanupHandlers.push(waitForRecorderEvent(archiveRecorder, "dataavailable", () => {
+          sawData = true;
+          finishIfComplete();
+        }));
+        cleanupHandlers.push(waitForRecorderEvent(archiveRecorder, "stop", () => {
+          sawStop = true;
+          finishIfComplete();
+        }));
+
+        try {
+          if (typeof archiveRecorder.requestData === "function") {
+            archiveRecorder.requestData();
+          }
+          archiveRecorder.stop();
+        } catch {
+          finish();
+        }
+
+        window.setTimeout(finish, 2000);
+      }));
+    }
+
+    if (stopPromises.length > 0) {
+      await Promise.all(stopPromises);
     }
 
     if (streamRef.current) {
@@ -570,6 +814,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     }
 
     mediaRecorderRef.current = null;
+    archiveRecorderRef.current = null;
     stopLevelMonitoring();
   }, [log, stopLevelMonitoring]);
 
@@ -582,6 +827,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     const websocket = websocketRef.current;
     if (websocket) {
       websocketRef.current = null;
+      websocketSessionIdRef.current = null;
       websocket.onopen = null;
       websocket.onmessage = null;
       websocket.onerror = null;
@@ -603,6 +849,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     stopRecording();
     clearPendingStart();
     clearPendingEnd();
+    socketCloseErrorRef.current = null;
     recordedChunksRef.current = [];
     sessionIdRef.current = null;
     setConnectionState("idle");
@@ -621,23 +868,44 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     setSelectedDevice(deviceId || null);
     const websocket = connectWebSocket(sessionId);
 
+    console.log("[DEBUG] After connectWebSocket, waiting for open...");
+
     try {
       await waitForWebSocketOpen(websocket);
+      console.log("[DEBUG] WebSocket opened successfully");
     } catch (error) {
+      console.log("[DEBUG] waitForWebSocketOpen failed:", error);
       disconnect();
       throw error;
     }
 
+    console.log("[DEBUG] Starting recording...");
     try {
       await startRecording(deviceId);
+      console.log("[DEBUG] Recording started successfully");
     } catch (error) {
+      console.log("[DEBUG] startRecording failed:", error);
       disconnect();
       throw error;
     }
 
     if (!websocketRef.current || websocketRef.current !== websocket || websocket.readyState !== WebSocket.OPEN) {
+      const disconnectError = socketCloseErrorRef.current;
+      const enhancedError = disconnectError || new Error("WebSocket disconnected before recording could begin");
+
+      // Add additional context to help debugging
+      if (!disconnectError) {
+        (enhancedError as any).context = {
+          websocketRefCurrent: !!websocketRef.current,
+          isSameInstance: websocketRef.current === websocket,
+          readyState: websocket?.readyState,
+          readyStateDescription: websocket ? ["CONNECTING", "OPEN", "CLOSING", "CLOSED"][websocket.readyState - 1] || "UNKNOWN" : "NO_WEBSOCKET",
+          recorderState: recorderStateRef.current
+        };
+      }
+
       disconnect();
-      throw new Error("WebSocket disconnected before recording could begin");
+      throw enhancedError;
     }
 
     try {
@@ -669,9 +937,12 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.pause();
     }
-    setRecorderState("paused");
+    if (pausedAtRef.current === null) {
+      pausedAtRef.current = Date.now();
+    }
+    syncRecorderState("paused");
     log("Session paused");
-  }, [log]);
+  }, [log, syncRecorderState]);
 
   const resumeSession = useCallback(() => {
     if (websocketRef.current?.readyState === WebSocket.OPEN) {
@@ -680,25 +951,55 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     if (mediaRecorderRef.current?.state === "paused") {
       mediaRecorderRef.current.resume();
     }
-    setRecorderState("recording");
+    if (pausedAtRef.current !== null) {
+      pausedDurationMsRef.current += Math.max(0, Date.now() - pausedAtRef.current);
+      pausedAtRef.current = null;
+    }
+    syncRecorderState("recording");
     log("Session resumed");
-  }, [log]);
+  }, [log, syncRecorderState]);
 
   const endSession = useCallback(async () => {
-    setRecorderState("stopping");
+    syncRecorderState("stopping");
     setError(null);
 
     const sessionId = sessionIdRef.current;
+    const endedAtMs = Date.now();
+    const captureStartedAt = captureStartedAtRef.current;
+    const pausedAt = pausedAtRef.current;
+    let uploadError: Error | null = null;
     await flushAndStopRecording();
 
     if (sessionId) {
-      await uploadFinalRecording(sessionId);
+      const totalPausedMs = pausedDurationMsRef.current + (
+        pausedAt !== null
+          ? Math.max(0, endedAtMs - pausedAt)
+          : 0
+      );
+      const finalDurationMs = captureStartedAt !== null
+        ? Math.max(0, endedAtMs - captureStartedAt - totalPausedMs)
+        : null;
+      pausedAtRef.current = null;
+      pausedDurationMsRef.current = 0;
+      captureStartedAtRef.current = null;
+      try {
+        await uploadFinalRecording(sessionId, finalDurationMs);
+      } catch (error) {
+        uploadError = error instanceof Error
+          ? error
+          : new Error("Failed to upload the final recording");
+        log("Final recording upload failed; continuing with websocket end", {
+          sessionId,
+          error: uploadError.message,
+        });
+        setError(uploadError.message);
+      }
     }
 
     const websocket = websocketRef.current;
+    syncRecorderState("idle");
+    setConnectionState("closed");
     if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-      setConnectionState("closed");
-      setRecorderState("idle");
       log("Session ended without active WebSocket");
       return;
     }
@@ -717,7 +1018,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
     });
 
     log("Session ended");
-  }, [flushAndStopRecording, log, uploadFinalRecording]);
+  }, [flushAndStopRecording, log, syncRecorderState, uploadFinalRecording]);
 
   const selectDevice = useCallback((deviceId: string) => {
     setSelectedDevice(deviceId);
@@ -726,11 +1027,7 @@ export function useLiveConversationAudio(config: LiveAudioConfig = {}): UseLiveC
   useEffect(() => {
     checkPermission();
     enumerateDevices();
-
-    return () => {
-      disconnect();
-    };
-  }, [checkPermission, enumerateDevices, disconnect]);
+  }, [checkPermission, enumerateDevices]);
 
   return {
     permissionState,

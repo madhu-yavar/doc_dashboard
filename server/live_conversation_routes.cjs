@@ -14,11 +14,12 @@ const {
 class LiveConversationRoutes {
   constructor(config = {}) {
     this.storageDir = config.storageDir || config.storage?.storageDir;
-    this.store = new LiveConversationStore({
+    this.store = config.store || new LiveConversationStore({
       storageDir: this.storageDir,
       authService: config.authService || null,
       transcriptsRepository: config.transcriptsRepository || null,
       docsRepository: config.docsRepository || null,
+      liveSessionsRepository: config.liveSessionsRepository || null,
     });
     this.documentsPath = config.documentsPath;
     // Phase 6: Inject DocumentsRepository for Postgres-only document creation
@@ -63,7 +64,9 @@ class LiveConversationRoutes {
 
     const normalizedDraft = normalizeLiveDraft(currentSession.draftExtraction?.extractedData || {});
     if (JSON.stringify(currentSession.draftExtraction?.extractedData || {}) !== JSON.stringify(normalizedDraft)) {
-      await this.store.updateDraftExtraction(sessionId, normalizedDraft);
+      await this.store.updateDraftExtraction(sessionId, normalizedDraft, {
+        source: "draft.sync.normalize",
+      });
     }
 
     const requiredItems = buildRequiredReviewItems(currentSession, normalizedDraft);
@@ -71,7 +74,9 @@ class LiveConversationRoutes {
       currentSession.draftExtraction?.reviewItems || [],
       requiredItems,
     );
-    await this.store.replaceReviewItems(sessionId, mergedItems);
+    await this.store.replaceReviewItems(sessionId, mergedItems, {
+      source: "draft.sync.reviewItems",
+    });
     return this.store.get(sessionId);
   }
 
@@ -106,8 +111,27 @@ class LiveConversationRoutes {
   }
 
   async normalizeRecoverableSession(session) {
+    if (
+      session
+      && session.status === "draft"
+      && session.startedAt
+      && !session.endedAt
+      && this.isEmptySessionCapture(session)
+    ) {
+      return this.store.update(session.id, {
+        __source: "route.recoverable.draftWithStartedAt",
+        startedAt: null,
+        transport: {
+          connectionState: session.transport?.connectionState || "idle",
+          lastError: session.transport?.lastError || null,
+          lastEventAt: new Date().toISOString(),
+        },
+      });
+    }
+
     if (this.isRecoverableLiveSession(session)) {
       return this.store.update(session.id, {
+        __source: "route.recoverable.staleLive",
         status: "draft",
         startedAt: null,
         transport: {
@@ -121,6 +145,7 @@ class LiveConversationRoutes {
     if (!this.isRecoverableDraftTransportSession(session)) return session;
 
     return this.store.update(session.id, {
+      __source: "route.recoverable.draftTransport",
       transport: {
         connectionState: "idle",
         lastError: null,
@@ -165,9 +190,7 @@ class LiveConversationRoutes {
       return null;
     }
 
-    const normalizedSession = await this.normalizeRecoverableSession(session);
-    const syncedSession = await this.syncStructuredReviewItems(normalizedSession.id);
-    return { session: syncedSession || normalizedSession, user };
+    return { session, user };
   }
 
   async ensureDocsRepository() {
@@ -286,14 +309,7 @@ class LiveConversationRoutes {
         }
 
         const sessions = await this.store.list(filters);
-        const normalizedSessions = await Promise.all(
-          sessions.map(async (session) => {
-            const normalized = await this.normalizeRecoverableSession(session);
-            const synced = await this.syncStructuredReviewItems(normalized.id);
-            return synced || normalized;
-          }),
-        );
-        const publicSessions = normalizedSessions.map((s) => this.store.toPublicSession(s));
+        const publicSessions = sessions.map((s) => this.store.toPublicSession(s));
 
         res.json({ sessions: publicSessions });
       } catch (error) {
@@ -382,6 +398,7 @@ class LiveConversationRoutes {
 
           const mimeTypeHeader = String(req.headers["content-type"] || "").trim();
           const mimeType = mimeTypeHeader || session.audio?.mimeType || "audio/webm";
+          const requestedDurationMs = Number(req.headers["x-live-duration-ms"]);
           const extension = this.getAudioExtension(mimeType);
           const audioDir = path.join(this.storageDir, "live_conversation_audio");
           await fs.mkdir(audioDir, { recursive: true });
@@ -389,19 +406,30 @@ class LiveConversationRoutes {
           const audioPath = path.join(audioDir, `${session.id}${extension}`);
           await fs.writeFile(audioPath, buffer);
 
-          await this.store.update(session.id, {
-            audio: {
-              ...(session.audio || {}),
-              mimeType,
-              combinedPath: audioPath,
-              totalBytes: buffer.length,
-              combinedSize: buffer.length,
-            },
+          await this.store.setFinalAudioAsset(session.id, {
+            mimeType,
+            combinedPath: audioPath,
+            totalBytes: buffer.length,
+            combinedSize: buffer.length,
+            durationMs: Number.isFinite(requestedDurationMs) && requestedDurationMs > 0
+              ? requestedDurationMs
+              : undefined,
+          }, {
+            source: "route.audio.final",
           });
 
           await this.store.logEvent(session.id, "final_audio_uploaded", {
             mimeType,
             bytes: buffer.length,
+          });
+          console.log(`[LiveConversation][${session.id}] final_audio_uploaded`, {
+            timestamp: new Date().toISOString(),
+            mimeType,
+            bytes: buffer.length,
+            durationMs: Number.isFinite(requestedDurationMs) && requestedDurationMs > 0
+              ? Math.round(requestedDurationMs)
+              : null,
+            audioFile: path.basename(audioPath),
           });
 
           res.status(204).end();
@@ -428,10 +456,15 @@ class LiveConversationRoutes {
         if (req.body.encounterLabel !== undefined) updates.encounterLabel = req.body.encounterLabel;
 
         if (Object.keys(updates).length > 0) {
-          await this.store.update(session.id, updates);
+          await this.store.update(session.id, {
+            ...updates,
+            __source: "route.session.patch",
+          });
         }
         if (req.body.draftPatch && typeof req.body.draftPatch === "object") {
-          await this.store.updateDraftExtraction(session.id, req.body.draftPatch);
+          await this.store.updateDraftExtraction(session.id, req.body.draftPatch, {
+            source: "route.session.draftPatch",
+          });
         }
         const updated = await this.syncStructuredReviewItems(session.id);
         res.json(this.store.toPublicSession(updated));
@@ -452,14 +485,13 @@ class LiveConversationRoutes {
           return;
         }
 
-        const updated = await this.store.update(session.id, {
+        const updated = await this.store.setTransportState(session.id, {
+          connectionState: "paused",
+          lastError: null,
+          lastEventAt: new Date().toISOString(),
+        }, {
           status: "paused",
-          transport: {
-            ...(session.transport || {}),
-            connectionState: "paused",
-            lastError: null,
-            lastEventAt: new Date().toISOString(),
-          },
+          source: "route.pause",
         });
         await this.store.logEvent(session.id, "session_paused");
 
@@ -481,14 +513,13 @@ class LiveConversationRoutes {
           return;
         }
 
-        const updated = await this.store.update(session.id, {
+        const updated = await this.store.setTransportState(session.id, {
+          connectionState: "connected",
+          lastError: null,
+          lastEventAt: new Date().toISOString(),
+        }, {
           status: "live",
-          transport: {
-            ...(session.transport || {}),
-            connectionState: "connected",
-            lastError: null,
-            lastEventAt: new Date().toISOString(),
-          },
+          source: "route.resume",
         });
         await this.store.logEvent(session.id, "session_resumed");
 
@@ -542,10 +573,15 @@ class LiveConversationRoutes {
             return;
           }
           if (Object.keys(sessionPatch).length > 0) {
-            await this.store.update(session.id, sessionPatch);
+            await this.store.update(session.id, {
+              ...sessionPatch,
+              __source: "review.resolve.sessionPatch",
+            });
           }
           if (Object.keys(draftPatch).length > 0) {
-            await this.store.updateDraftExtraction(session.id, draftPatch);
+            await this.store.updateDraftExtraction(session.id, draftPatch, {
+              source: "review.resolve.draftPatch",
+            });
           }
         }
 
@@ -554,6 +590,7 @@ class LiveConversationRoutes {
           reviewItemId,
           resolution,
           editedValue,
+          { source: "review.resolve" },
         );
         const updated = await this.syncStructuredReviewItems(session.id);
 

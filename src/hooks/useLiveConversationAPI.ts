@@ -6,6 +6,24 @@ export type LiveConnectionState = "idle" | "connecting" | "connected" | "reconne
 export type LiveCaptureState = "idle" | "starting" | "recording" | "paused" | "stopping" | "failed";
 export type LiveSessionStatus = "draft" | "live" | "paused" | "review_required" | "finalizing" | "finalized" | "failed";
 export type LiveReviewResolution = "pending" | "approved" | "edited" | "rejected";
+export type LiveMedicationStatus = "draft" | "needs_review" | "current" | "prescribed" | "planned";
+
+/**
+ * Canonical UI phase for a live conversation encounter.
+ * This is the single source of truth for all UI state rendering.
+ * Derived from server session status, local recorder state, and transport state.
+ */
+export type LiveEncounterPhase =
+  | "draft_ready"           // Ready to start capturing (session is draft)
+  | "starting"             // Initializing microphone/connection
+  | "capturing"            // Actively recording
+  | "paused"               // Recording paused
+  | "ending_upload"        // Stopping and uploading final audio
+  | "transcribing"         // Processing transcript after upload
+  | "review_ready"         // Ready for clinician review
+  | "finalizing_document"  // Generating final document
+  | "finalized"            // Complete and published
+  | "failed";              // Error state
 
 export type LiveDeviceOption = {
   id: string;
@@ -45,9 +63,10 @@ export type LiveDraftExtraction = {
   hpi: string;
   ros: string[];
   pastHistory: string[];
+  assessment: string;
   diagnosis: string;
   symptoms: string[];
-  medications: Array<{ name: string; instruction: string; status: "draft" | "needs_review" }>;
+  medications: Array<{ name: string; instruction: string; status: LiveMedicationStatus }>;
   labs: string[];
   radiology: string[];
   procedures: string[];
@@ -92,6 +111,7 @@ const EMPTY_DRAFT: LiveDraftExtraction = {
   hpi: "",
   ros: [],
   pastHistory: [],
+  assessment: "",
   diagnosis: "",
   symptoms: [],
   medications: [],
@@ -228,10 +248,20 @@ function normalizeMedications(value: unknown): LiveDraftExtraction["medications"
         return name ? { name, instruction: "", status: "draft" as const } : null;
       }
       if (!item || typeof item !== "object") return null;
+      const rawStatus = normalizeText(item?.status).trim().toLowerCase();
+      const status: LiveMedicationStatus = rawStatus === "needs_review"
+        ? "needs_review"
+        : rawStatus === "current"
+          ? "current"
+          : rawStatus === "prescribed"
+            ? "prescribed"
+            : rawStatus === "planned"
+              ? "planned"
+              : "draft";
       return {
         name: normalizeText(item?.name || item?.label || item?.medicine).trim(),
         instruction: normalizeListItem(item?.instruction) || normalizeText(item?.frequency).trim(),
-        status: item?.status === "needs_review" ? "needs_review" : "draft",
+        status,
       };
     })
     .filter((item): item is LiveDraftExtraction["medications"][number] => Boolean(item?.name));
@@ -266,6 +296,7 @@ function normalizeDraftExtraction(rawDraft: unknown): LiveDraftExtraction {
       ?? (draft as any).pmh
       ?? (draft as any).comorbidities,
     ),
+    assessment: normalizeText((draft as any).assessment ?? (draft as any).diagnosis).trim(),
     diagnosis: normalizeText((draft as any).diagnosis).trim(),
     symptoms: normalizeStringList((draft as any).symptoms),
     medications: normalizeMedications((draft as any).medications),
@@ -412,6 +443,7 @@ export type LiveConversationSession = {
     mimeType: string;
     chunkCount: number;
     combinedPath?: string | null;
+    durationMs?: number;
   };
   transcript: {
     segments: LiveTranscriptSegment[];
@@ -503,6 +535,7 @@ function normalizeSession(session: any): LiveConversationSession {
       mimeType: baseSession.audio?.mimeType || "audio/webm",
       chunkCount: Number(baseSession.audio?.chunkCount || 0),
       combinedPath: baseSession.audio?.combinedPath || null,
+      durationMs: Number(baseSession.audio?.durationMs || 0),
     },
     transport: {
       connectionState: baseSession.transport?.connectionState || "idle",
@@ -557,8 +590,360 @@ export function sessionTitle(linkedPatient: string, encounterLabel: string): str
   return "New conversation";
 }
 
+/**
+ * Derive the canonical UI phase from server session status, local recorder state, and transport state.
+ * This is the single source of truth for all UI rendering - no other state interpretation should happen.
+ *
+ * Priority order:
+ * 1. Local recorder states - highest priority for user-initiated actions
+ * 2. Server status - authoritative for post-capture phases
+ * 3. Transport state refines the starting phase
+ * 4. Transitional states for proper phase progression
+ */
+export function deriveCanonicalEncounterPhase(
+  sessionStatus: LiveSessionStatus,
+  captureState: LiveCaptureState,
+  transportState: LiveConnectionState,
+): LiveEncounterPhase {
+  // Local recorder states - highest priority for user-initiated actions
+  if (captureState === "starting") {
+    return "starting";
+  }
+
+  if (captureState === "stopping") {
+    return "ending_upload";
+  }
+
+  if (captureState === "recording") {
+    return "capturing";
+  }
+
+  if (captureState === "paused") {
+    return "paused";
+  }
+
+  // Post-recording transitional states
+  // When capture is idle but we're transitioning from recording to review
+  if (captureState === "idle" && sessionStatus === "live" && transportState === "closed") {
+    return "transcribing";
+  }
+
+  // Server status - authoritative for stable post-capture phases
+  if (sessionStatus === "failed") {
+    return "failed";
+  }
+
+  if (sessionStatus === "finalized") {
+    return "finalized";
+  }
+
+  if (sessionStatus === "review_required") {
+    return "review_ready";
+  }
+
+  if (sessionStatus === "finalizing") {
+    return "finalizing_document";
+  }
+
+  // Live status with idle recorder
+  if (sessionStatus === "live" && captureState === "idle") {
+    // If transport is connecting/reconnecting, we're starting
+    if (transportState === "connecting" || transportState === "reconnecting") {
+      return "starting";
+    }
+    // If we were connected but now idle, we're in transcribing phase
+    if (transportState === "closed") {
+      return "transcribing";
+    }
+    // FIX: If recorder is idle but status is live, we're transitioning (not capturing)
+    // This happens during session end when we've uploaded but backend hasn't responded yet
+    return "transcribing";
+  }
+
+  // Paused status with idle recorder means externally paused
+  if (sessionStatus === "paused") {
+    return "paused";
+  }
+
+  // Transport state refines starting phase - must come before draft check
+  // This handles the bootstrap edge case where transport is connecting but session is still draft
+  if ((sessionStatus === "draft" || sessionStatus === "live") &&
+      (transportState === "connecting" || transportState === "reconnecting")) {
+    return "starting";
+  }
+
+  // Draft status with idle recorder and disconnected transport = ready to start
+  if (sessionStatus === "draft" && captureState === "idle" && transportState === "idle") {
+    return "draft_ready";
+  }
+
+  // Default fallback
+  return "draft_ready";
+}
+
+/**
+ * Get human-readable display copy for the current encounter phase.
+ * This replaces the multiple independent copy functions.
+ */
+export function getEncounterPhaseCopy(phase: LiveEncounterPhase, audioLevel: number) {
+  switch (phase) {
+    case "draft_ready":
+      return {
+        title: "Ready to capture",
+        detail: "Press Start to let the browser use your default microphone, then speak normally.",
+      };
+    case "starting":
+      return {
+        title: "Connecting microphone",
+        detail: "Preparing the stream. This takes a moment when a live visit starts.",
+      };
+    case "capturing":
+      return {
+        title: audioLevel > 0.06 ? "Listening. Voice detected." : "Listening to your microphone",
+        detail: "Audio is being recorded. Transcript and note sections are generated after you end.",
+      };
+    case "paused":
+      return {
+        title: "Recording paused",
+        detail: "Resume when you are ready to continue capturing audio.",
+      };
+    case "ending_upload":
+      return {
+        title: "Ending recording",
+        detail: "Processing the final audio chunk and moving this visit into review.",
+      };
+    case "transcribing":
+      return {
+        title: "Processing transcript",
+        detail: "Final audio is being processed before the review step opens.",
+      };
+    case "review_ready":
+      return {
+        title: "Recording complete",
+        detail: "Transcript ready for review.",
+      };
+    case "finalizing_document":
+      return {
+        title: "Finalizing document",
+        detail: "Generating final document and publishing to dashboard.",
+      };
+    case "finalized":
+      return {
+        title: "Published",
+        detail: "Document has been published to the dashboard.",
+      };
+    case "failed":
+      return {
+        title: "Capture failed",
+        detail: "An error occurred. Try starting a new session.",
+      };
+    default:
+      return {
+        title: "Ready to capture",
+        detail: "Press Start to begin.",
+      };
+  }
+}
+
+/**
+ * Get transcript panel empty state copy based on canonical phase.
+ */
+export function getTranscriptEmptyStateCopy(phase: LiveEncounterPhase, audioLevel: number) {
+  switch (phase) {
+    case "draft_ready":
+      return {
+        title: "Transcript will appear here",
+        detail: "Press Start and speak. The transcript is generated after you end the recording.",
+      };
+    case "starting":
+      return {
+        title: "Preparing transcript",
+        detail: "The transcript panel will stay empty until recording ends.",
+      };
+    case "capturing":
+      return {
+        title: audioLevel > 0.06 ? "Listening now" : "Waiting for speech",
+        detail: "Audio is being captured. Transcript generation starts after End.",
+      };
+    case "paused":
+      return {
+        title: "Transcript paused",
+        detail: "Resume recording to continue audio capture.",
+      };
+    case "ending_upload":
+    case "transcribing":
+      return {
+        title: "Finishing transcript",
+        detail: "Final audio is being processed before the review step opens.",
+      };
+    case "review_ready":
+      return {
+        title: "Transcript ready",
+        detail: "Review the transcript and note sections before finalizing.",
+      };
+    default:
+      return {
+        title: "Transcript will appear here",
+        detail: "Press Start and speak.",
+      };
+  }
+}
+
+/**
+ * Check if recording is currently active (capturing or paused).
+ */
+export function isRecordingActive(phase: LiveEncounterPhase): boolean {
+  return phase === "capturing" || phase === "paused";
+}
+
+/**
+ * Check if session is in a post-recording phase (review, finalized).
+ * Note: transcribing is NOT included - it's still processing without proper diarization.
+ */
+export function isPostRecording(phase: LiveEncounterPhase): boolean {
+  return ["review_ready", "finalizing_document", "finalized"].includes(phase);
+}
+
+/**
+ * Check if session can be deleted (not actively recording or finalizing).
+ */
+export function canDeleteVisit(phase: LiveEncounterPhase): boolean {
+  return !["capturing", "paused", "ending_upload", "finalizing_document"].includes(phase);
+}
+
 function isActiveCaptureState(captureState: LiveCaptureState): boolean {
   return ["starting", "recording", "paused", "stopping"].includes(captureState);
+}
+
+function transcriptSignalScore(transcript: LiveConversationSession["transcript"] | undefined | null): number {
+  if (!transcript) return 0;
+  return String(transcript.normalizedText || transcript.rawText || "").trim().length
+    + (Array.isArray(transcript.segments) ? transcript.segments.length * 120 : 0);
+}
+
+function draftSignalScore(draftExtraction: LiveConversationSession["draftExtraction"] | undefined | null): number {
+  const draft = normalizeDraftExtraction(draftExtraction?.extractedData);
+  return [
+    draft.chiefComplaint,
+    draft.hpi,
+    draft.assessment,
+    draft.diagnosis,
+    draft.patient.name,
+    draft.patient.gender,
+    ...draft.ros,
+    ...draft.pastHistory,
+    ...draft.symptoms,
+    ...draft.labs,
+    ...draft.radiology,
+    ...draft.procedures,
+    ...draft.followUp,
+    ...draft.plan,
+    ...draft.medications.map((item) => `${item.name} ${item.instruction}`.trim()),
+  ].reduce((score, value) => score + String(value || "").trim().length, 0)
+    + (draft.patient.age ? 5 : 0)
+    + (draft.vitals.latest.bp.systolic ? 5 : 0)
+    + (draft.vitals.latest.bp.diastolic ? 5 : 0)
+    + (draft.vitals.latest.pulse.value ? 5 : 0)
+    + (draft.vitals.latest.temperature.value ? 5 : 0)
+    + (draft.vitals.latest.spo2.value ? 5 : 0)
+    + (draft.vitals.latest.weight.value ? 5 : 0)
+    + (Array.isArray(draftExtraction?.reviewItems) ? draftExtraction.reviewItems.length * 20 : 0);
+}
+
+function draftContentSignalScore(draftExtraction: LiveConversationSession["draftExtraction"] | undefined | null): number {
+  const draft = normalizeDraftExtraction(draftExtraction?.extractedData);
+  return [
+    draft.chiefComplaint,
+    draft.hpi,
+    draft.assessment,
+    draft.diagnosis,
+    draft.patient.name,
+    draft.patient.gender,
+    ...draft.ros,
+    ...draft.pastHistory,
+    ...draft.symptoms,
+    ...draft.labs,
+    ...draft.radiology,
+    ...draft.procedures,
+    ...draft.followUp,
+    ...draft.plan,
+    ...draft.medications.map((item) => `${item.name} ${item.instruction}`.trim()),
+  ].reduce((score, value) => score + String(value || "").trim().length, 0)
+    + (draft.patient.age ? 5 : 0)
+    + (draft.vitals.latest.bp.systolic ? 5 : 0)
+    + (draft.vitals.latest.bp.diastolic ? 5 : 0)
+    + (draft.vitals.latest.pulse.value ? 5 : 0)
+    + (draft.vitals.latest.temperature.value ? 5 : 0)
+    + (draft.vitals.latest.spo2.value ? 5 : 0)
+    + (draft.vitals.latest.weight.value ? 5 : 0);
+}
+
+function hasPostEndBackfillSignal(session: LiveConversationSession | undefined | null): boolean {
+  if (!session) return false;
+  return transcriptSignalScore(session.transcript) > 0
+    || draftContentSignalScore(session.draftExtraction) > 0
+    || session.status === "finalized"
+    || session.status === "failed";
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function mergeLoadedSessionWithLocal(
+  normalized: LiveConversationSession,
+  existing: LiveConversationSession | undefined,
+  captureState: LiveCaptureState,
+): LiveConversationSession {
+  if (!existing) {
+    return normalized;
+  }
+
+  const shouldPreserveLocalStatus = (
+    existing.status === "finalizing"
+    && !["review_required", "finalized", "failed"].includes(normalized.status)
+  ) || (
+    isActiveCaptureState(captureState)
+    && ["draft", "live", "paused"].includes(existing.status)
+    && normalized.status === "draft"
+  );
+
+  const nextTranscript = transcriptSignalScore(existing.transcript) > transcriptSignalScore(normalized.transcript)
+    ? existing.transcript
+    : normalized.transcript;
+  const nextDraftExtraction = draftSignalScore(existing.draftExtraction) > draftSignalScore(normalized.draftExtraction)
+    ? existing.draftExtraction
+    : normalized.draftExtraction;
+  const nextDraft = {
+    extractedData: nextDraftExtraction.extractedData,
+    reviewItems: nextDraftExtraction.reviewItems,
+  };
+  const shouldPreserveLocalStartedAt = Boolean(existing.startedAt) && (
+    isActiveCaptureState(captureState)
+    || ["live", "paused", "finalizing"].includes(existing.status)
+  );
+
+  return {
+    ...normalized,
+    status: shouldPreserveLocalStatus ? existing.status : normalized.status,
+    startedAt: normalized.startedAt || (shouldPreserveLocalStartedAt ? existing.startedAt : null),
+    endedAt: normalized.endedAt || existing.endedAt,
+    durationMs: Math.max(Number(normalized.durationMs || 0), Number(existing.durationMs || 0)),
+    audio: {
+      ...normalized.audio,
+      durationMs: Math.max(Number(normalized.audio?.durationMs || 0), Number(existing.audio?.durationMs || 0)),
+    },
+    transcript: nextTranscript,
+    draftExtraction: nextDraftExtraction,
+    draft: nextDraft,
+    transport: (
+      shouldPreserveLocalStatus
+      && normalized.transport.connectionState === "idle"
+      && existing.transport.connectionState !== "idle"
+    )
+      ? existing.transport
+      : normalized.transport,
+  };
 }
 
 export function useLiveConversationAPI() {
@@ -568,11 +953,21 @@ export function useLiveConversationAPI() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const startActionInProgressRef = useRef(false);
+  const postEndRefreshTokensRef = useRef(new Map<string, { cancelled: boolean }>());
 
   // Keep sessionsRef in sync with sessions state for polling interval
   useEffect(() => {
     sessionsRef.current = sessions;
   }, [sessions]);
+
+  useEffect(() => () => {
+    for (const token of postEndRefreshTokensRef.current.values()) {
+      token.cancelled = true;
+    }
+    postEndRefreshTokensRef.current.clear();
+  }, []);
 
   const applyRealtimeSessionUpdate = useCallback(
     (sessionId: string, updater: (session: LiveConversationSession) => LiveConversationSession) => {
@@ -587,6 +982,7 @@ export function useLiveConversationAPI() {
   const audio = useLiveConversationAudio({
     enableDebugLogs: process.env.NODE_ENV === "development",
     onTranscriptPartial: (sessionId, transcript) => {
+      setError(null);
       applyRealtimeSessionUpdate(sessionId, (session) => ({
         ...session,
         transcript: normalizeTranscriptState(transcript),
@@ -627,13 +1023,27 @@ export function useLiveConversationAPI() {
     },
     onSessionStateChange: (sessionId, status) => {
       const now = new Date().toISOString();
+      if (status === "live" || status === "paused" || status === "review_required") {
+        setError(null);
+      }
       applyRealtimeSessionUpdate(sessionId, (session) => ({
         ...session,
-        status: (["draft", "live", "paused", "review_required", "finalizing", "finalized", "failed"].includes(status)
-          ? status
-          : session.status) as LiveSessionStatus,
+        status: (
+          session.status === "finalizing"
+          && (status === "live" || status === "paused")
+            ? "finalizing"
+            : ["draft", "live", "paused", "review_required", "finalizing", "finalized", "failed"].includes(status)
+              ? status
+              : session.status
+        ) as LiveSessionStatus,
         startedAt: status === "live" ? (session.startedAt || now) : session.startedAt,
         endedAt: status === "review_required" ? (session.endedAt || now) : session.endedAt,
+        durationMs: status === "review_required" && session.startedAt
+          ? Math.max(
+            Number(session.durationMs || 0),
+            Math.max(0, new Date(now).getTime() - new Date(session.startedAt).getTime()),
+          )
+          : session.durationMs,
         transport: {
           ...session.transport,
           connectionState:
@@ -650,12 +1060,17 @@ export function useLiveConversationAPI() {
       }));
 
       if (status === "review_required") {
-        void loadSessions();
+        void pollSessionBackfill(sessionId);
       }
     },
   });
 
   const selectedSession = sessions.find((s) => s.id === selectedSessionId) || null;
+
+  // Derive canonical phase for the selected session
+  const selectedSessionPhase = selectedSession
+    ? deriveCanonicalEncounterPhase(selectedSession.status, audio.recorderState, audio.connectionState)
+    : "draft_ready";
 
   const resolveRecorderState = useCallback((currentRecorder?: LiveConversationSession["recorder"]) => {
     const deviceLabel = audio.selectedDevice && audio.devices.length > 0
@@ -702,7 +1117,7 @@ export function useLiveConversationAPI() {
     });
   }, [applyRealtimeSessionUpdate]);
 
-  const loadSessions = useCallback(async () => {
+  const loadSessions = useCallback(async (): Promise<LiveConversationSession[]> => {
     const requestSeq = ++loadSessionsRequestSeq.current;
     setIsLoading(true);
     setError(null);
@@ -711,25 +1126,26 @@ export function useLiveConversationAPI() {
       const normalizedSessions = (data.sessions || []).map((session: any) => {
         const normalized = normalizeSession(session);
         const existing = sessionsRef.current.find((currentSession) => currentSession.id === normalized.id);
+        const merged = mergeLoadedSessionWithLocal(normalized, existing, audio.recorderState);
 
         if (normalized.id === selectedSessionId) {
           return {
-            ...normalized,
+            ...merged,
             recorder: resolveRecorderState(existing?.recorder),
           };
         }
 
         if (existing) {
           return {
-            ...normalized,
+            ...merged,
             recorder: existing.recorder,
           };
         }
 
-        return normalized;
+        return merged;
       });
       if (requestSeq !== loadSessionsRequestSeq.current) {
-        return;
+        return [];
       }
       setSessions(normalizedSessions);
       setSelectedSessionId((currentSelectedSessionId) => {
@@ -738,16 +1154,74 @@ export function useLiveConversationAPI() {
         }
         return normalizedSessions[0]?.id || null;
       });
+      return normalizedSessions;
     } catch (err) {
       if (requestSeq === loadSessionsRequestSeq.current) {
         setError(err instanceof Error ? err.message : "Failed to load sessions");
       }
+      return [];
     } finally {
       if (requestSeq === loadSessionsRequestSeq.current) {
         setIsLoading(false);
       }
     }
-  }, [resolveRecorderState, selectedSessionId]);
+  }, [audio.recorderState, resolveRecorderState, selectedSessionId]);
+
+  const pollSessionBackfill = useCallback(async (sessionId: string) => {
+    if (!sessionId) return;
+
+    const previousToken = postEndRefreshTokensRef.current.get(sessionId);
+    if (previousToken) {
+      previousToken.cancelled = true;
+    }
+
+    const token = { cancelled: false };
+    postEndRefreshTokensRef.current.set(sessionId, token);
+
+    const startedAt = Date.now();
+    const timeoutMs = 120000;
+    const intervalMs = 2500;
+
+    try {
+      while (!token.cancelled && Date.now() - startedAt <= timeoutMs) {
+        const loadedSessions = await loadSessions();
+        const refreshedSession = loadedSessions.find((session) => session.id === sessionId)
+          || sessionsRef.current.find((session) => session.id === sessionId);
+
+        if (hasPostEndBackfillSignal(refreshedSession)) {
+          break;
+        }
+
+        await wait(intervalMs);
+      }
+    } finally {
+      if (postEndRefreshTokensRef.current.get(sessionId) === token) {
+        postEndRefreshTokensRef.current.delete(sessionId);
+      }
+    }
+  }, [loadSessions]);
+
+  const applyServerSession = useCallback((sessionPayload: any) => {
+    if (!sessionPayload?.id) return null;
+
+    const normalized = normalizeSession(sessionPayload);
+    setSessions((prevSessions) => {
+      const existing = prevSessions.find((session) => session.id === normalized.id);
+      const nextSession = {
+        ...normalized,
+        recorder: normalized.id === selectedSessionId
+          ? resolveRecorderState(existing?.recorder)
+          : existing?.recorder || normalized.recorder,
+      };
+
+      if (prevSessions.some((session) => session.id === normalized.id)) {
+        return prevSessions.map((session) => (session.id === normalized.id ? nextSession : session));
+      }
+      return [nextSession, ...prevSessions];
+    });
+
+    return normalized;
+  }, [audio.recorderState, resolveRecorderState, selectedSessionId]);
 
   const createSession = useCallback(async (params?: { linkedPatient?: string; encounterLabel?: string }) => {
     setIsLoading(true);
@@ -789,10 +1263,11 @@ export function useLiveConversationAPI() {
     setIsLoading(true);
     setError(null);
     try {
-      await apiFetch(`/sessions/${sessionId}`, {
+      const data = await apiFetch(`/sessions/${sessionId}`, {
         method: "PATCH",
         body: JSON.stringify(updates),
       });
+      applyServerSession(data);
       await loadSessions();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update session");
@@ -800,7 +1275,7 @@ export function useLiveConversationAPI() {
     } finally {
       setIsLoading(false);
     }
-  }, [loadSessions]);
+  }, [applyServerSession, loadSessions]);
 
   const pauseSession = useCallback(async (sessionId: string) => {
     setIsLoading(true);
@@ -834,18 +1309,18 @@ export function useLiveConversationAPI() {
     setIsLoading(true);
     setError(null);
     try {
-      await apiFetch(`/sessions/${sessionId}/review`, {
+      const data = await apiFetch(`/sessions/${sessionId}/review`, {
         method: "POST",
         body: JSON.stringify({ reviewItemId, resolution, editedValue }),
       });
-      await loadSessions();
+      applyServerSession(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to resolve review item");
       throw err;
     } finally {
       setIsLoading(false);
     }
-  }, [loadSessions]);
+  }, [applyServerSession]);
 
   const finalizeSession = useCallback(async (sessionId: string) => {
     setIsLoading(true);
@@ -969,10 +1444,14 @@ export function useLiveConversationAPI() {
               && !["review_required", "finalizing", "finalized"].includes(s.status);
             const shouldForcePaused = audio.recorderState === "paused"
               && !["review_required", "finalizing", "finalized"].includes(s.status);
+            const shouldForceFinalizing = audio.recorderState === "stopping"
+              && !["review_required", "finalized"].includes(s.status);
             const nextStatus = shouldForceLive
               ? "live"
               : shouldForcePaused
                 ? "paused"
+                : shouldForceFinalizing
+                  ? "finalizing"
                 : s.status;
             const startedAt = shouldForceLive ? (s.startedAt || new Date().toISOString()) : s.startedAt;
             const startedAtMs = startedAt ? new Date(startedAt).getTime() : NaN;
@@ -1008,7 +1487,14 @@ export function useLiveConversationAPI() {
   }, [selectedSessionId, audio.permissionState, audio.selectedDevice, audio.devices, audio.connectionState, audio.recorderState]);
 
   useEffect(() => {
-    if (!selectedSessionId || (!isActiveCaptureState(audio.recorderState) && selectedSession?.status !== "live")) {
+    if (
+      !selectedSessionId
+      || !(
+        selectedSession?.status === "live"
+        || audio.recorderState === "recording"
+        || audio.recorderState === "starting"
+      )
+    ) {
       return;
     }
 
@@ -1024,7 +1510,6 @@ export function useLiveConversationAPI() {
             session.status !== "live"
             && audio.recorderState !== "recording"
             && audio.recorderState !== "starting"
-            && audio.recorderState !== "stopping"
           ) {
             return session;
           }
@@ -1047,6 +1532,7 @@ export function useLiveConversationAPI() {
     sessions,
     selectedSession,
     selectedSessionId,
+    selectedSessionPhase,
     hasPendingReview,
     availableDevices: audio.devices.map((d) => ({ id: d.deviceId, label: d.label || d.deviceId })),
     createDraftSession: createSession,
@@ -1059,12 +1545,34 @@ export function useLiveConversationAPI() {
         createSession();
       }
     },
-    updateSelectedSession: async (patch: { linkedPatient?: string; encounterLabel?: string; deviceId?: string; draftPatch?: Partial<LiveDraftExtraction> }) => {
-      // Wire device selection to audio hook
-      if (patch.deviceId !== undefined) {
-        audio.selectDevice(patch.deviceId);
+    updateSelectedSession: async (patch: Partial<LiveConversationSession> & { draftPatch?: Partial<LiveDraftExtraction>; deviceId?: string }) => {
+      if (selectedSessionId) {
+        applyRealtimeSessionUpdate(selectedSessionId, (session) => {
+          const derivedPatientName = session.draftExtraction?.extractedData?.patient?.name;
+          const nextLinkedPatient = patch.linkedPatient !== undefined ? patch.linkedPatient : session.linkedPatient;
+          const nextEncounterLabel = patch.encounterLabel !== undefined ? patch.encounterLabel : session.encounterLabel;
+          return {
+            ...session,
+            linkedPatient: nextLinkedPatient,
+            encounterLabel: nextEncounterLabel,
+            title: sessionTitle(nextLinkedPatient || derivedPatientName, nextEncounterLabel),
+            recorder: patch.deviceId !== undefined ? {
+              ...session.recorder,
+              deviceId: patch.deviceId,
+            } : session.recorder,
+            draftExtraction: patch.draftPatch
+              ? {
+                ...session.draftExtraction,
+                extractedData: {
+                  ...session.draftExtraction?.extractedData,
+                  ...patch.draftPatch,
+                },
+              }
+              : session.draftExtraction,
+          };
+        });
       }
-      // Update server metadata or draft fields when needed.
+
       if (
         selectedSessionId
         && (
@@ -1082,23 +1590,40 @@ export function useLiveConversationAPI() {
       }
     },
     startSelectedSession: async () => {
+      if (startActionInProgressRef.current) return;
+
       if (selectedSessionId) {
-        const now = new Date().toISOString();
-        applyRealtimeSessionUpdate(selectedSessionId, (session) => ({
-          ...session,
-          status: "live",
-          startedAt: session.startedAt || now,
-          endedAt: null,
-          transport: {
-            ...session.transport,
-            connectionState: "connected",
-            lastError: null,
-            lastEventAt: now,
-          },
-        }));
-        const deviceId = audio.selectedDevice || undefined;
-        await startSession(selectedSessionId, deviceId);
-        await loadSessions();
+        startActionInProgressRef.current = true;
+        try {
+          const now = new Date().toISOString();
+          applyRealtimeSessionUpdate(selectedSessionId, (session) => ({
+            ...session,
+            endedAt: null,
+            transport: {
+              ...session.transport,
+              connectionState: "connecting",
+              lastError: null,
+              lastEventAt: now,
+            },
+          }));
+          // Prefer session's selected device over audio hook's device
+          const deviceId = selectedSession?.recorder?.deviceId || audio.selectedDevice || undefined;
+          await startSession(selectedSessionId, deviceId);
+          applyRealtimeSessionUpdate(selectedSessionId, (session) => ({
+            ...session,
+            status: "live",
+            startedAt: session.startedAt || new Date().toISOString(),
+            transport: {
+              ...session.transport,
+              connectionState: "connected",
+              lastError: null,
+              lastEventAt: new Date().toISOString(),
+            },
+          }));
+          await loadSessions();
+        } finally {
+          startActionInProgressRef.current = false;
+        }
       }
     },
     pauseSelectedSession: async () => {
@@ -1114,16 +1639,41 @@ export function useLiveConversationAPI() {
       }
     },
     stopSelectedSession: async () => {
+      if (selectedSessionId) {
+        const now = new Date().toISOString();
+        applyRealtimeSessionUpdate(selectedSessionId, (session) => {
+          const startedAtMs = session.startedAt ? new Date(session.startedAt).getTime() : NaN;
+          const durationMs = Number.isFinite(startedAtMs)
+            ? Math.max(Number(session.durationMs || 0), Math.max(0, new Date(now).getTime() - startedAtMs))
+            : Number(session.durationMs || 0);
+          return {
+            ...session,
+            // Set to review_required immediately when user clicks stop
+            status: "review_required",
+            endedAt: now,
+            durationMs,
+            transport: {
+              ...session.transport,
+              lastError: null,
+              lastEventAt: now,
+            },
+          };
+        });
+      }
       await endRecording();
-      await loadSessions();
+      if (selectedSessionId) {
+        void pollSessionBackfill(selectedSessionId);
+      } else {
+        await loadSessions();
+      }
     },
     captureState: audio.recorderState,
     transportState: audio.connectionState,
     audioLevel: audio.audioLevel,
     disconnectAudio,
-    resolveReviewItem: (reviewItemId: string, resolution: LiveReviewResolution, editedValue?: string) => {
+    resolveReviewItem: async (reviewItemId: string, resolution: LiveReviewResolution, editedValue?: string) => {
       if (selectedSessionId) {
-        resolveReviewItem(selectedSessionId, reviewItemId, resolution, editedValue);
+        await resolveReviewItem(selectedSessionId, reviewItemId, resolution, editedValue);
       }
     },
     finalizeSelectedSession: async () => {
