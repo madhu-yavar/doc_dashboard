@@ -23,6 +23,7 @@ import {
   FileCheck2,
   FileText,
   LayoutDashboard,
+  Loader2,
   Mic,
   PauseCircle,
   Pill,
@@ -42,11 +43,17 @@ import {
   formatLiveDuration,
   sessionTitle,
   useLiveConversationAPI,
+  getEncounterPhaseCopy,
+  getTranscriptEmptyStateCopy,
+  isRecordingActive,
+  isPostRecording,
+  canDeleteVisit,
   type LiveDraftExtraction,
   type LiveConversationSession,
   type LiveReviewItem,
   type LiveReviewResolution,
   type LiveTranscriptSegment,
+  type LiveEncounterPhase,
 } from "@/hooks/useLiveConversationAPI";
 import type { ConnectionState, MediaRecorderState } from "@/hooks/useLiveConversationAudio";
 
@@ -87,6 +94,37 @@ function statusLabel(status: LiveConversationSession["status"]) {
   return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+/**
+ * Get display label and tone for the canonical encounter phase.
+ * This replaces the raw session.status badge with phase-aware UI.
+ */
+function phaseDisplay(phase: LiveEncounterPhase): { label: string; tone: string } {
+  switch (phase) {
+    case "draft_ready":
+      return { label: "Draft", tone: "border-transparent bg-slate-100 text-slate-700" };
+    case "starting":
+      return { label: "Starting", tone: "border-transparent bg-sky-50 text-sky-700" };
+    case "capturing":
+      return { label: "Live", tone: "border-transparent bg-teal-50 text-teal-700" };
+    case "paused":
+      return { label: "Paused", tone: "border-transparent bg-sky-50 text-sky-700" };
+    case "ending_upload":
+      return { label: "Ending", tone: "border-transparent bg-indigo-50 text-indigo-700" };
+    case "transcribing":
+      return { label: "Processing", tone: "border-transparent bg-indigo-50 text-indigo-700" };
+    case "review_ready":
+      return { label: "Review", tone: "border-transparent bg-amber-50 text-amber-800" };
+    case "finalizing_document":
+      return { label: "Finalizing", tone: "border-transparent bg-indigo-50 text-indigo-700" };
+    case "finalized":
+      return { label: "Published", tone: "border-transparent bg-emerald-50 text-emerald-700" };
+    case "failed":
+      return { label: "Failed", tone: "border-transparent bg-rose-50 text-rose-700" };
+    default:
+      return { label: "Unknown", tone: "border-transparent bg-slate-100 text-slate-700" };
+  }
+}
+
 function speakerTone(role: LiveTranscriptSegment["speakerRole"]) {
   if (role === "doctor") return "border-transparent bg-teal-50 text-teal-700";
   if (role === "patient") return "border-transparent bg-sky-50 text-sky-700";
@@ -119,15 +157,6 @@ function autoEncounterLabel(session: LiveConversationSession) {
   return `EN${(digits.slice(-6) || "000001").padStart(6, "0")}`;
 }
 
-function effectiveSessionStatus(
-  session: LiveConversationSession,
-  captureState: MediaRecorderState,
-): LiveConversationSession["status"] {
-  if (captureState === "recording") return "live";
-  if (captureState === "paused") return "paused";
-  return session.status;
-}
-
 function countSetupFields(session: LiveConversationSession) {
   return [
     autoPatientLabel(session).length > 0,
@@ -143,7 +172,7 @@ function countDraftSections(session: LiveConversationSession) {
     draft.hpi,
     draft.ros?.length || 0,
     draft.pastHistory?.length || 0,
-    draft.diagnosis,
+    draft.assessment,
     draft.symptoms.length,
     draft.patient.name || draft.patient.age || draft.patient.gender,
     draft.vitals.latest.bp.systolic || draft.vitals.latest.pulse.value || draft.vitals.latest.temperature.value || draft.vitals.latest.spo2.value || draft.vitals.latest.weight.value,
@@ -199,7 +228,7 @@ function liveCaptureCopy(captureState: MediaRecorderState, transportState: Conne
   if (captureState === "recording" && transportState === "connected") {
     return {
       title: audioLevel > 0.06 ? "Listening. Voice detected." : "Listening to your microphone",
-      detail: "Transcript and note updates keep streaming while you speak.",
+      detail: "Audio is being recorded. Transcript and notes are generated after you end.",
     };
   }
 
@@ -220,27 +249,27 @@ function transcriptEmptyCopy(captureState: MediaRecorderState, transportState: C
   if (captureState === "paused") {
     return {
       title: "Transcript paused",
-      detail: "Resume recording to continue transcript capture.",
+      detail: "Resume recording to continue audio capture.",
     };
   }
 
   if (captureState === "starting" || transportState === "connecting" || transportState === "reconnecting") {
     return {
       title: "Preparing transcript",
-      detail: "The transcript panel will start updating after recording begins.",
+      detail: "The transcript panel will stay empty until recording ends.",
     };
   }
 
   if (captureState === "recording" && transportState === "connected") {
     return {
       title: audioLevel > 0.06 ? "Listening now" : "Waiting for speech",
-      detail: "Transcript keeps updating live every few seconds while you speak.",
+      detail: "Audio is being captured. Transcript generation starts after End.",
     };
   }
 
   return {
     title: "Transcript will appear here",
-    detail: "Press Start and speak. The live transcript begins after the first processed chunk.",
+    detail: "Press Start and speak. The transcript is generated after you end the recording.",
   };
 }
 
@@ -279,6 +308,52 @@ function AudioLevelMeter({
           style={{ height: `${12 + (index * 3)}px` }}
         />
       ))}
+    </div>
+  );
+}
+
+function ProcessingProgressState({
+  title,
+  detail,
+  steps,
+}: {
+  title: string;
+  detail: string;
+  steps: string[];
+}) {
+  return (
+    <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
+      <div className="flex items-start gap-3">
+        <div className="relative mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-indigo-200 bg-white text-indigo-700 shadow-sm">
+          <span className="absolute h-10 w-10 animate-ping rounded-full bg-indigo-200 opacity-40" />
+          <Loader2 className="relative h-4.5 w-4.5 animate-spin" />
+        </div>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div>
+            <p className="text-sm font-medium text-slate-900">{title}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">{detail}</p>
+          </div>
+          <div className="grid gap-2">
+            {steps.map((step, index) => (
+              <div key={step} className="flex items-center gap-2">
+                <span
+                  className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-indigo-500"
+                  style={{ animationDelay: `${index * 180}ms` }}
+                />
+                <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-white">
+                  <span
+                    className="block h-full w-2/3 animate-pulse rounded-full bg-indigo-300"
+                    style={{ animationDelay: `${index * 180}ms` }}
+                  />
+                </div>
+                <span className="w-24 shrink-0 truncate text-xs font-medium text-indigo-800 sm:w-32">
+                  {step}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -332,14 +407,38 @@ function RecordingIndicator({ isRecording, hasAudio }: { isRecording: boolean; h
   );
 }
 
-function AudioPlayer({ audioUrl }: { audioUrl: string }) {
+function AudioPlayer({
+  audioUrl,
+  onDurationChange,
+}: {
+  audioUrl: string;
+  onDurationChange?: (durationMs: number) => void;
+}) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5">
       <div className="flex items-center gap-2">
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-100 text-teal-600">
           <PlayCircle className="h-3.5 w-3.5" />
         </div>
-        <audio key={audioUrl} controls className="h-8 flex-1 min-w-0" preload="metadata" src={audioUrl}>
+        <audio
+          key={audioUrl}
+          controls
+          className="h-8 flex-1 min-w-0"
+          preload="metadata"
+          src={audioUrl}
+          onLoadedMetadata={(event) => {
+            const durationSeconds = event.currentTarget.duration;
+            if (Number.isFinite(durationSeconds) && durationSeconds > 0) {
+              onDurationChange?.(Math.round(durationSeconds * 1000));
+            }
+          }}
+          onDurationChange={(event) => {
+            const durationSeconds = event.currentTarget.duration;
+            if (Number.isFinite(durationSeconds) && durationSeconds > 0) {
+              onDurationChange?.(Math.round(durationSeconds * 1000));
+            }
+          }}
+        >
           Your browser does not support audio playback.
         </audio>
       </div>
@@ -350,9 +449,11 @@ function AudioPlayer({ audioUrl }: { audioUrl: string }) {
 function RecordingPanel({
   session,
   onDeleteRecording,
+  onAudioDurationDetected,
 }: {
   session: LiveConversationSession;
   onDeleteRecording: (sessionId: string) => Promise<void>;
+  onAudioDurationDetected?: (sessionId: string, durationMs: number) => void;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const hasAudioPlayback = Boolean(
@@ -412,7 +513,12 @@ function RecordingPanel({
             </Button>
           </div>
         </div>
-        <AudioPlayer audioUrl={audioUrl} />
+        <AudioPlayer
+          audioUrl={audioUrl}
+          onDurationChange={(durationMs) => {
+            onAudioDurationDetected?.(session.id, durationMs);
+          }}
+        />
       </CardContent>
     </Card>
   );
@@ -553,40 +659,50 @@ function SessionList({
 
 function ControlBar({
   session,
+  resolvedAudioDurationMs,
   onStart,
   onPause,
   onResume,
   onStop,
   onDeleteVisit,
-  captureState,
-  transportState,
+  phase,
   audioLevel,
 }: {
   session: LiveConversationSession;
+  resolvedAudioDurationMs?: number | null;
   onStart: () => void;
   onPause: () => void;
   onResume: () => void;
   onStop: () => void;
   onDeleteVisit: () => Promise<void>;
-  captureState: MediaRecorderState;
-  transportState: ConnectionState;
+  phase: LiveEncounterPhase;
   audioLevel: number;
 }) {
-  const captureCopy = liveCaptureCopy(captureState, transportState, audioLevel);
-  const isRecording = captureState === "recording";
-  const resolvedStatus = effectiveSessionStatus(session, captureState);
+  const captureCopy = getEncounterPhaseCopy(phase, audioLevel);
+  const isRecording = isRecordingActive(phase);
   const hasAudio = audioLevel > 0.06;
   const [isDeletingVisit, setIsDeletingVisit] = useState(false);
-  const canDeleteVisit = !["live", "paused", "finalizing"].includes(resolvedStatus);
+  const canDeleteCurrentVisit = canDeleteVisit(phase);
   const deleteVisitLabel = session.status === "finalized" ? "Delete finalized visit" : "Delete visit";
   const [displayNowMs, setDisplayNowMs] = useState(() => Date.now());
   const startedAtMs = session.startedAt ? new Date(session.startedAt).getTime() : NaN;
-  const displayedDurationMs = resolvedStatus === "live" && Number.isFinite(startedAtMs)
-    ? Math.max(Number(session.durationMs || 0), Math.max(0, displayNowMs - startedAtMs))
-    : session.durationMs;
+  const endedAtMs = session.endedAt ? new Date(session.endedAt).getTime() : NaN;
+  const stabilizedDurationMs = Number.isFinite(startedAtMs) && Number.isFinite(endedAtMs)
+    ? Math.max(Number(session.durationMs || 0), Math.max(0, endedAtMs - startedAtMs))
+    : Number(session.durationMs || 0);
+  const persistedAudioDurationMs = Number(session.audio?.durationMs || 0);
+  const completedAudioDurationMs = Number.isFinite(Number(resolvedAudioDurationMs)) && Number(resolvedAudioDurationMs) > 0
+    ? Number(resolvedAudioDurationMs)
+    : persistedAudioDurationMs > 0
+      ? persistedAudioDurationMs
+      : null;
+  const displayedDurationMs = phase === "capturing" && Number.isFinite(startedAtMs) && !Number.isFinite(endedAtMs)
+    ? Math.max(stabilizedDurationMs, Math.max(0, displayNowMs - startedAtMs))
+    : completedAudioDurationMs ?? stabilizedDurationMs;
 
   useEffect(() => {
-    if (resolvedStatus !== "live" || !session.startedAt) return undefined;
+    // Only run timer during active recording, not during upload/transcript processing
+    if (phase !== "capturing" || !session.startedAt) return undefined;
 
     setDisplayNowMs(Date.now());
     const interval = window.setInterval(() => {
@@ -594,7 +710,7 @@ function ControlBar({
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [resolvedStatus, session.startedAt]);
+  }, [phase, session.startedAt]);
 
   const handleDeleteVisit = async () => {
     const deleteMessage = session.status === "finalized"
@@ -627,48 +743,50 @@ function ControlBar({
               </p>
             ) : null}
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className={statusTone(resolvedStatus)}>{statusLabel(resolvedStatus)}</Badge>
+              {/* Use canonical phase for status badge instead of raw session.status */}
+              {phase === "ending_upload" || phase === "finalizing_document" || phase === "transcribing" ? (
+                <Badge className={`gap-1.5 ${phaseDisplay(phase).tone}`}>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {phaseDisplay(phase).label}
+                </Badge>
+              ) : (
+                <Badge className={phaseDisplay(phase).tone}>
+                  {phaseDisplay(phase).label}
+                </Badge>
+              )}
               <Badge variant="outline">
                 <TimerReset className="mr-1 h-3.5 w-3.5" />
                 {formatLiveDuration(displayedDurationMs)}
-              </Badge>
-              <Badge variant="outline">
-                <RadioTower className="mr-1 h-3.5 w-3.5" />
-                {transportState !== "idle" ? transportState : session.transport.connectionState}
               </Badge>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-            {(resolvedStatus === "draft" || resolvedStatus === "failed") ? (
-              <Button className={PRIMARY_TEAL_BUTTON} onClick={onStart} disabled={captureState === "starting" || captureState === "stopping"}>
+            {(phase === "draft_ready" || phase === "failed") ? (
+              <Button className={PRIMARY_TEAL_BUTTON} onClick={onStart} disabled={phase === "starting"}>
                 <Mic className="mr-2 h-4 w-4" />
-                {captureState === "starting"
-                  ? "Starting..."
-                  : resolvedStatus === "failed"
-                    ? "Restart"
-                    : "Start"}
+                {phase === "starting" ? "Starting..." : phase === "failed" ? "Restart" : "Start"}
               </Button>
             ) : null}
-            {resolvedStatus === "live" ? (
-              <Button className={SECONDARY_TEAL_BUTTON} onClick={onPause} disabled={captureState !== "recording"}>
+            {phase === "capturing" ? (
+              <Button className={SECONDARY_TEAL_BUTTON} onClick={onPause}>
                 <PauseCircle className="mr-2 h-4 w-4" />
                 Pause
               </Button>
             ) : null}
-            {resolvedStatus === "paused" ? (
-              <Button className={SECONDARY_TEAL_BUTTON} onClick={onResume} disabled={captureState === "stopping"}>
+            {phase === "paused" ? (
+              <Button className={SECONDARY_TEAL_BUTTON} onClick={onResume}>
                 <PlayCircle className="mr-2 h-4 w-4" />
                 Resume
               </Button>
             ) : null}
-            {(resolvedStatus === "live" || resolvedStatus === "paused") ? (
-              <Button className={PRIMARY_TEAL_BUTTON} onClick={onStop} disabled={captureState === "stopping"}>
+            {phase === "capturing" || phase === "paused" ? (
+              <Button className={PRIMARY_TEAL_BUTTON} onClick={onStop} disabled={phase === "ending_upload"}>
                 <Square className="mr-2 h-4 w-4" />
-                {captureState === "stopping" ? "Ending..." : "End"}
+                {phase === "ending_upload" ? "Ending..." : "End"}
               </Button>
             ) : null}
-            {canDeleteVisit ? (
+            {canDeleteCurrentVisit ? (
               <Button
                 type="button"
                 variant="ghost"
@@ -720,17 +838,17 @@ function ControlBar({
 
 function TranscriptPanel({
   session,
-  captureState,
-  transportState,
+  phase,
   audioLevel,
 }: {
   session: LiveConversationSession;
-  captureState: MediaRecorderState;
-  transportState: ConnectionState;
+  phase: LiveEncounterPhase;
   audioLevel: number;
 }) {
-  const emptyTranscriptCopy = transcriptEmptyCopy(captureState, transportState, audioLevel);
-  const isLiveCapture = captureState === "recording";
+  const emptyTranscriptCopy = getTranscriptEmptyStateCopy(phase, audioLevel);
+  const isLiveCapture = phase === "capturing";
+  const isFinalizingCapture = phase === "ending_upload" || phase === "finalizing_document";
+  const isPreparingTranscript = phase === "ending_upload" || phase === "transcribing";
   const hasAudio = audioLevel > 0.06;
 
   return (
@@ -748,6 +866,18 @@ function TranscriptPanel({
                 Recording
               </Badge>
             )}
+            {isFinalizingCapture ? (
+              <Badge className="border-transparent bg-indigo-100 text-indigo-800">
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                {phase === "ending_upload" ? "Processing" : "Finalizing"}
+              </Badge>
+            ) : null}
+            {phase === "transcribing" ? (
+              <Badge className="border-transparent bg-indigo-100 text-indigo-800">
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Transcribing
+              </Badge>
+            ) : null}
             {session.transcript.hasGap ? (
               <Badge className="border-transparent bg-amber-50 text-amber-800">Gap</Badge>
             ) : null}
@@ -759,24 +889,43 @@ function TranscriptPanel({
           <div className="space-y-3 bg-[linear-gradient(180deg,rgba(248,250,252,0.92),rgba(255,255,255,1))] p-4">
             {session.transcript.segments.length === 0 && !session.transcript.interimText ? (
               <div className={cn(
-                "flex min-h-[140px] items-center justify-center rounded-xl border p-6 transition-colors",
-                isLiveCapture
+                "flex min-h-[140px] items-center justify-center rounded-xl border transition-colors",
+                isPreparingTranscript
+                  ? "border-indigo-100 bg-white p-4"
+                  : isLiveCapture
                   ? hasAudio
-                    ? "border-teal-200 bg-teal-50/50"
-                    : "border-slate-200 bg-white"
-                  : "border-dashed border-slate-200 bg-white"
+                    ? "border-teal-200 bg-teal-50/50 p-6"
+                    : "border-slate-200 bg-white p-6"
+                  : "border-dashed border-slate-200 bg-white p-6"
               )}>
-                <div className="space-y-4 text-center">
-                  {isLiveCapture && (
-                    <div className="mx-auto flex justify-center">
-                      <RecordingIndicator isRecording={isLiveCapture} hasAudio={hasAudio} />
-                    </div>
-                  )}
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-slate-700">{emptyTranscriptCopy.title}</p>
-                    <p className="text-sm text-slate-500">{emptyTranscriptCopy.detail}</p>
+                {isPreparingTranscript ? (
+                  <div className="w-full">
+                    <ProcessingProgressState
+                      title="Preparing transcript"
+                      detail="Final audio is being processed. Transcript and note sections will appear here as soon as they are ready."
+                      steps={["Audio upload", "Transcription", "Clinical extraction"]}
+                    />
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-4 text-center">
+                    {isLiveCapture && (
+                      <div className="mx-auto flex justify-center">
+                        <RecordingIndicator isRecording={isLiveCapture} hasAudio={hasAudio} />
+                      </div>
+                    )}
+                    {isFinalizingCapture ? (
+                      <div className="mx-auto flex justify-center">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-indigo-200 bg-indigo-50 text-indigo-700">
+                          <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-slate-700">{emptyTranscriptCopy.title}</p>
+                      <p className="text-sm text-slate-500">{emptyTranscriptCopy.detail}</p>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : null}
 
@@ -793,7 +942,12 @@ function TranscriptPanel({
                   <div className={`w-1.5 shrink-0 ${speakerAccent(segment.speakerRole)}`} />
                   <div className="min-w-0 flex-1 p-4">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge className={speakerTone(segment.speakerRole)}>{segment.speakerLabel}</Badge>
+                      {/* Hide Unknown speaker chips during live preview (capturing, paused, ending, transcribing)
+                          Show Doctor/Patient chips during review/finalized
+                          Condition: show badge if post-recording phase OR role is not unknown */}
+                      {(isPostRecording(phase) || segment.speakerRole !== "unknown") && (
+                        <Badge className={speakerTone(segment.speakerRole)}>{segment.speakerLabel}</Badge>
+                      )}
                       <span className="text-xs font-medium text-slate-500">
                         <Clock3 className="mr-1 inline h-3.5 w-3.5" />
                         {segment.startLabel} - {segment.endLabel}
@@ -866,6 +1020,38 @@ function SetupPanel({
   useEffect(() => {
     setEncounterLabelInput(detectedEncounter);
   }, [detectedEncounter, session.id]);
+
+  useEffect(() => {
+    if (isLocked) return undefined;
+    const normalizedName = patientNameInput.trim();
+    if (normalizedName === detectedPatient) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      void onUpdate({
+        linkedPatient: normalizedName,
+        draftPatch: {
+          patient: {
+            ...session.draft.extractedData.patient,
+            name: normalizedName,
+          },
+        },
+      });
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [detectedPatient, isLocked, onUpdate, patientNameInput, session.draft.extractedData.patient]);
+
+  useEffect(() => {
+    if (isLocked) return undefined;
+    const normalizedEncounter = encounterLabelInput.trim();
+    if (normalizedEncounter === detectedEncounter) return undefined;
+
+    const timeoutId = window.setTimeout(() => {
+      void onUpdate({ encounterLabel: normalizedEncounter });
+    }, 350);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [detectedEncounter, encounterLabelInput, isLocked, onUpdate]);
 
   const commitPatientName = () => {
     const normalizedName = patientNameInput.trim();
@@ -970,13 +1156,17 @@ function SetupPanel({
 
 function DraftPanel({
   session,
+  phase,
   onSaveOptionalVitals,
 }: {
   session: LiveConversationSession;
+  phase: LiveEncounterPhase;
   onSaveOptionalVitals: (draftPatch: Partial<LiveDraftExtraction>) => Promise<void> | void;
 }) {
   const draft = session.draft.extractedData;
   const pendingReview = countPendingReview(session);
+  const draftCount = countDraftSections(session);
+  const isPreparingNotes = (phase === "ending_upload" || phase === "transcribing") && draftCount === 0;
   const medications = draft.medications.map((item) => {
     const instruction = typeof item.instruction === 'string'
       ? item.instruction
@@ -1124,6 +1314,16 @@ function DraftPanel({
     </div>
   );
 
+  if (isPreparingNotes) {
+    return (
+      <ProcessingProgressState
+        title="Building note draft"
+        detail="The transcript is being converted into clinical sections. Extracted findings will fill this panel automatically."
+        steps={["Transcript", "Problem list", "Orders and plan"]}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
@@ -1138,7 +1338,7 @@ function DraftPanel({
         </div>
         <div className="mt-3 border-t border-slate-200/80 pt-3">
           <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">Assessment</p>
-          <p className="mt-2 text-sm text-slate-900">{draft.diagnosis || "-"}</p>
+          <p className="mt-2 text-sm text-slate-900">{draft.assessment || "Assessment pending clinician review"}</p>
         </div>
       </div>
       <div className="rounded-2xl border border-slate-200/80 bg-white p-4">
@@ -1384,8 +1584,8 @@ function ReviewPanel({
                 <div className="flex flex-wrap gap-2">
                   <Button
                     className={PRIMARY_TEAL_BUTTON}
-                    onClick={() => {
-                      onResolveReviewItem(item.id, "edited", requiredValue);
+                    onClick={async () => {
+                      await onResolveReviewItem(item.id, "edited", requiredValue);
                       setRequiredEdits((current) => {
                         const next = { ...current };
                         delete next[item.id];
@@ -1409,8 +1609,8 @@ function ReviewPanel({
                 <div className="flex flex-wrap gap-2">
                   <Button
                     className={PRIMARY_TEAL_BUTTON}
-                    onClick={() => {
-                      onResolveReviewItem(item.id, "edited", editingValue);
+                    onClick={async () => {
+                      await onResolveReviewItem(item.id, "edited", editingValue);
                       setEditingItemId(null);
                       setEditingValue("");
                     }}
@@ -1460,6 +1660,7 @@ function ReviewPanel({
 
 function ContextPanel({
   session,
+  phase,
   onUpdateSession,
   hasPendingReview,
   onResolveReviewItem,
@@ -1468,9 +1669,10 @@ function ContextPanel({
   availableDevices,
 }: {
   session: LiveConversationSession;
+  phase: LiveEncounterPhase;
   onUpdateSession: (patch: { linkedPatient?: string; encounterLabel?: string; deviceId?: string; draftPatch?: Partial<LiveDraftExtraction> }) => void | Promise<void>;
   hasPendingReview: boolean;
-  onResolveReviewItem: (reviewItemId: string, resolution: LiveReviewResolution, editedValue?: string) => void;
+  onResolveReviewItem: (reviewItemId: string, resolution: LiveReviewResolution, editedValue?: string) => Promise<void> | void;
   onFinalize: () => void;
   onReturnToDraft: () => void;
   availableDevices: Array<{ id: string; label: string }>;
@@ -1478,10 +1680,13 @@ function ContextPanel({
   const setupCount = countSetupFields(session);
   const draftCount = countDraftSections(session);
   const pendingReviewCount = countPendingReview(session);
+  const isReviewSectionVisible = session.status === "finalized"
+    || session.status === "finalizing"
+    || (session.status === "review_required" && phase !== "ending_upload" && phase !== "transcribing");
   const openSections = [
     "setup",
     "draft",
-    ...(session.status === "review_required" || session.status === "finalizing" || session.status === "finalized"
+    ...(isReviewSectionVisible
       ? ["review"]
       : []),
   ];
@@ -1548,6 +1753,7 @@ function ContextPanel({
             <AccordionContent className="pt-0">
               <DraftPanel
                 session={session}
+                phase={phase}
                 onSaveOptionalVitals={async (draftPatch) => {
                   await onUpdateSession({ draftPatch });
                 }}
@@ -1555,7 +1761,7 @@ function ContextPanel({
             </AccordionContent>
           </AccordionItem>
 
-          {(session.status === "review_required" || session.status === "finalizing" || session.status === "finalized") ? (
+          {isReviewSectionVisible ? (
             <AccordionItem value="review" className="border-slate-200/80">
               <AccordionTrigger className="py-4 hover:no-underline">
                 <SectionTrigger
@@ -1584,10 +1790,12 @@ function ContextPanel({
 
 export default function LiveConversationWorkspace() {
   const [isVisitsCollapsed, setIsVisitsCollapsed] = useState(false);
+  const [audioDurationMsBySessionId, setAudioDurationMsBySessionId] = useState<Record<string, number>>({});
   const {
     sessions,
     selectedSession,
     selectedSessionId,
+    selectedSessionPhase,
     hasPendingReview,
     isLoading,
     error,
@@ -1610,6 +1818,25 @@ export default function LiveConversationWorkspace() {
     transportState,
     audioLevel,
   } = useLiveConversationAPI();
+
+  const handleAudioDurationDetected = (sessionId: string, durationMs: number) => {
+    if (!sessionId || !Number.isFinite(durationMs) || durationMs <= 0) return;
+    setAudioDurationMsBySessionId((current) => {
+      if (current[sessionId] === durationMs) return current;
+      return {
+        ...current,
+        [sessionId]: durationMs,
+      };
+    });
+  };
+
+  const runSessionAction = async (action: () => Promise<void>, fallbackMessage: string) => {
+    try {
+      await action();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : fallbackMessage);
+    }
+  };
 
   if (!selectedSession) {
     return (
@@ -1657,34 +1884,48 @@ export default function LiveConversationWorkspace() {
         <div className="grid content-start gap-4 self-start">
           <ControlBar
             session={selectedSession}
-            onStart={startSelectedSession}
-            onPause={pauseSelectedSession}
-            onResume={resumeSelectedSession}
-            onStop={stopSelectedSession}
+            resolvedAudioDurationMs={audioDurationMsBySessionId[selectedSession.id] || selectedSession.audio?.durationMs || null}
+            onStart={() => {
+              void runSessionAction(startSelectedSession, "Unable to start live conversation.");
+            }}
+            onPause={() => {
+              void runSessionAction(pauseSelectedSession, "Unable to pause live conversation.");
+            }}
+            onResume={() => {
+              void runSessionAction(resumeSelectedSession, "Unable to resume live conversation.");
+            }}
+            onStop={() => {
+              void runSessionAction(stopSelectedSession, "Unable to end live conversation.");
+            }}
             onDeleteVisit={selectedSession.status === "finalized" ? deleteSelectedFinalizedVisit : async () => {
               if (selectedSessionId) {
                 await deleteSession(selectedSessionId);
               }
             }}
-            captureState={captureState}
-            transportState={transportState}
+            phase={selectedSessionPhase}
             audioLevel={audioLevel}
           />
-          <RecordingPanel session={selectedSession} onDeleteRecording={deleteSelectedRecording} />
+          <RecordingPanel
+            session={selectedSession}
+            onDeleteRecording={deleteSelectedRecording}
+            onAudioDurationDetected={handleAudioDurationDetected}
+          />
           <TranscriptPanel
             session={selectedSession}
-            captureState={captureState}
-            transportState={transportState}
+            phase={selectedSessionPhase}
             audioLevel={audioLevel}
           />
         </div>
 
         <ContextPanel
           session={selectedSession}
+          phase={selectedSessionPhase}
           onUpdateSession={updateSelectedSession}
           hasPendingReview={hasPendingReview}
           onResolveReviewItem={resolveReviewItem}
-          onFinalize={finalizeSelectedSession}
+          onFinalize={() => {
+            void runSessionAction(finalizeSelectedSession, "Unable to finalize the visit.");
+          }}
           onReturnToDraft={returnToDraft}
           availableDevices={availableDevices}
         />
