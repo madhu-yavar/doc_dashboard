@@ -221,7 +221,7 @@ export function SOAPReview({ documentId, onComplete }: SOAPReviewProps) {
         <div className="border-b-2 border-teal-700 bg-white px-6 py-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex items-center gap-4">
-              <img src="/manipal-logo.png" alt="Manipal Hospitals" className="h-7 w-auto" />
+              <img src="/manipal-logo.png" alt="Manipal Hospitals" className="h-7 w-auto blur-lg select-none" />
               <div>
                 <h1 className="text-xl font-semibold text-teal-800">SOAP Clinical Note</h1>
               </div>

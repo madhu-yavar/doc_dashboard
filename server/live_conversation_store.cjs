@@ -278,7 +278,7 @@ class LiveConversationStore {
     this.legacySessionsSnapshot = null;
 
     // Phase 6: LiveSessionsRepository is now the only source of truth
-    this.liveSessionsRepo = new LiveSessionsRepository();
+    this.liveSessionsRepo = config.liveSessionsRepository || new LiveSessionsRepository();
     this.liveSessionsRepo.initialize().catch(err => {
       console.error('[LiveConversationStore] Failed to initialize LiveSessionsRepository:', err.message);
     });
@@ -286,6 +286,170 @@ class LiveConversationStore {
 
   log(message, data = {}) {
     console.log(`[LiveConversationStore] ${message}`, data);
+  }
+
+  buildMutationTraceSnapshot(session = null) {
+    if (!session || typeof session !== "object") {
+      return {
+        id: null,
+        status: null,
+        startedAt: null,
+        endedAt: null,
+        durationMs: null,
+        transcriptLength: 0,
+        segmentCount: 0,
+        chunkCount: 0,
+        totalBytes: 0,
+        transportState: null,
+        workflowStatus: null,
+        backend: null,
+      };
+    }
+
+    return {
+      id: session.id || null,
+      status: session.status || null,
+      startedAt: session.startedAt || null,
+      endedAt: session.endedAt || null,
+      durationMs: Number(session.durationMs || 0),
+      transcriptLength: String(
+        session.transcript?.normalizedText
+        || session.transcript?.rawText
+        || "",
+      ).trim().length,
+      segmentCount: Array.isArray(session.transcript?.segments) ? session.transcript.segments.length : 0,
+      chunkCount: Number(session.audio?.chunkCount || 0),
+      totalBytes: Number(session.audio?.totalBytes || 0),
+      audioDurationMs: Number(session.audio?.durationMs || 0),
+      transportState: session.transport?.connectionState || null,
+      workflowStatus: session.transport?.workflowStatus || null,
+      backend: session.sttBackend
+        || session.transcript?.metadata?.backend
+        || session.transcript?.quality?.backend
+        || null,
+    };
+  }
+
+  logMutationTrace(source, beforeSession, afterSession, extra = {}) {
+    this.log("Session mutation trace", {
+      source,
+      sessionId: afterSession?.id || beforeSession?.id || null,
+      before: this.buildMutationTraceSnapshot(beforeSession),
+      after: this.buildMutationTraceSnapshot(afterSession),
+      ...extra,
+    });
+  }
+
+  async queueMutation(source, sessionId, mutator) {
+    const run = this.mutationQueue.then(async () => {
+      const currentSession = sessionId ? await this.get(sessionId) : null;
+      return mutator(currentSession);
+    }, (err) => {
+      this.log("Mutation queue error", { error: err.message, source, sessionId });
+      throw err;
+    });
+
+    this.mutationQueue = run.catch(() => {});
+    return run;
+  }
+
+  mergeSessionPatch(currentSession = {}, updates = {}) {
+    const nextStatus = updates.status || currentSession.status || "draft";
+    const nextTransport = updates.transport
+      ? normalizeTransportState({
+          ...(currentSession.transport || {}),
+          ...updates.transport,
+        }, nextStatus)
+      : normalizeTransportState(currentSession.transport, nextStatus);
+
+    return {
+      ...currentSession,
+      ...updates,
+      status: nextStatus,
+      audio: updates.audio
+        ? {
+            ...(currentSession.audio || {}),
+            ...updates.audio,
+          }
+        : currentSession.audio,
+      transport: nextTransport,
+      draftExtraction: updates.draftExtraction
+        ? {
+            ...(currentSession.draftExtraction || {}),
+            ...updates.draftExtraction,
+          }
+        : currentSession.draftExtraction,
+      transcript: updates.transcript
+        ? {
+            ...(currentSession.transcript || {}),
+            ...updates.transcript,
+          }
+        : currentSession.transcript,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  buildPersistedTransportStateForSession(session = {}) {
+    const captureStats = {
+      chunkCount: Number(session.audio?.chunkCount || 0),
+      totalBytes: Number(session.audio?.totalBytes || 0),
+      combinedSize: Number(session.audio?.combinedSize || session.audio?.totalBytes || 0),
+      durationMs: Number(session.audio?.durationMs || 0),
+      mimeType: session.audio?.mimeType || "audio/webm",
+    };
+
+    return buildPersistedTransportState({
+      ...(session.transport || {}),
+      captureStats,
+    }, session.status);
+  }
+
+  async persistSessionState(nextSession, previousSession = null, source = "store.persist") {
+    if (!nextSession?.id) {
+      return null;
+    }
+
+    await this.liveSessionsRepo.initialize();
+    const existingSession = previousSession === null
+      ? null
+      : (previousSession || await this.get(nextSession.id));
+    const transcriptId = await this.syncSessionTranscript(nextSession);
+    const persistedFields = {
+      status: mapUiStatusToDbStatus(nextSession.status),
+      linked_patient_label: nextSession.linkedPatient || null,
+      encounter_label: nextSession.encounterLabel || null,
+      started_at: nextSession.startedAt || null,
+      ended_at: nextSession.endedAt || null,
+      document_id: nextSession.documentId || null,
+      duration_ms: Number(nextSession.durationMs || 0),
+      transport_state_jsonb: this.buildPersistedTransportStateForSession(nextSession),
+      draft_extraction_jsonb: nextSession.draftExtraction || {},
+      current_transcript_id: transcriptId || nextSession.currentTranscriptId || null,
+    };
+
+    if (existingSession) {
+      await this.liveSessionsRepo.updateSession(nextSession.id, persistedFields);
+    } else {
+      await this.liveSessionsRepo.createSession({
+        id: nextSession.id,
+        created_by_user_id: nextSession.createdBy?.id || null,
+        ...persistedFields,
+      });
+    }
+
+    if (nextSession.audio?.combinedPath) {
+      await this.syncLiveSessionAudioAsset(nextSession);
+    }
+
+    const canReloadPersistedSession = typeof this.liveSessionsRepo?.query === "function";
+    const persistedSession = canReloadPersistedSession
+      ? await this.get(nextSession.id)
+      : nextSession;
+    this.logMutationTrace(source, existingSession, persistedSession || nextSession, {
+      transcriptId: transcriptId || nextSession.currentTranscriptId || null,
+      selectedBackend: nextSession.sttBackend || null,
+    });
+    return persistedSession || nextSession;
   }
 
   getAudioExtensionFromMimeType(mimeType = "audio/webm") {
@@ -356,6 +520,7 @@ class LiveConversationStore {
       combinedPath: null,
       totalBytes: 0,
       combinedSize: 0,
+      durationMs: 0,
       ...(audioMetadata && typeof audioMetadata === "object" ? audioMetadata : {}),
     };
 
@@ -371,6 +536,7 @@ class LiveConversationStore {
           Number(legacySession.audio.totalBytes || 0),
           Number(legacySession.audio.combinedSize || 0),
         ),
+        durationMs: Math.max(merged.durationMs || 0, Number(legacySession.audio.durationMs || 0)),
       };
     }
 
@@ -395,6 +561,7 @@ class LiveConversationStore {
               Number(sourceAudioAsset.size_bytes || 0),
               Number(metadata.combinedSize || 0),
             ),
+            durationMs: Math.max(merged.durationMs || 0, Number(metadata.durationMs || 0)),
           };
         }
       } catch (error) {
@@ -560,6 +727,7 @@ class LiveConversationStore {
       metadata: {
         chunkCount: Number(session.audio.chunkCount || 0),
         combinedSize: Number(session.audio.combinedSize || session.audio.totalBytes || 0),
+        durationMs: Number(session.audio.durationMs || 0),
       },
     });
   }
@@ -611,7 +779,8 @@ class LiveConversationStore {
         chunkCount: 0,
         combinedPath: null,
         totalBytes: 0,
-        combinedSize: 0
+        combinedSize: 0,
+        durationMs: 0,
       };
 
       // Try to read audio directory for this session to get actual metadata
@@ -720,6 +889,18 @@ class LiveConversationStore {
       const persistedReviewItems = draftExtraction?.reviewItems || [];
       const hasReviewItems = persistedReviewItems.length > 0;
       const transportState = normalizeTransportState(session.transport_state_jsonb);
+      const captureStats = transportState?.captureStats && typeof transportState.captureStats === "object"
+        ? transportState.captureStats
+        : {};
+      audioMetadata = {
+        ...audioMetadata,
+        mimeType: captureStats.mimeType || audioMetadata.mimeType,
+        chunkCount: Math.max(audioMetadata.chunkCount || 0, Number(captureStats.chunkCount || 0)),
+        totalBytes: Math.max(audioMetadata.totalBytes || 0, Number(captureStats.totalBytes || 0)),
+        combinedSize: Math.max(audioMetadata.combinedSize || 0, Number(captureStats.combinedSize || 0)),
+        durationMs: Math.max(audioMetadata.durationMs || 0, Number(captureStats.durationMs || 0)),
+      };
+
       const uiStatus = resolveSessionUiStatus({
         status: session.status,
         transport: transportState,
@@ -849,7 +1030,7 @@ class LiveConversationStore {
       linkedPatient: params.linkedPatient || "",
       encounterLabel: params.encounterLabel || "",
       createdBy: params.createdBy || { id: "unknown", username: "unknown", role: "doctor" },
-      startedAt: now,
+      startedAt: null,
       updatedAt: now,
       endedAt: null,
       documentId: null,
@@ -861,6 +1042,7 @@ class LiveConversationStore {
         chunkCount: 0,
         combinedPath: null,
         totalBytes: 0,
+        durationMs: 0,
       },
       transcript: {
         segments: [],
@@ -891,34 +1073,12 @@ class LiveConversationStore {
   }
 
   async create(params = {}) {
-    const run = this.mutationQueue.then(async () => {
+    return this.queueMutation("store.create", null, async () => {
       const session = this.createSession(params);
-
-      await this.liveSessionsRepo.initialize();
-      await this.liveSessionsRepo.createSession({
-        id: session.id,
-        status: mapUiStatusToDbStatus(session.status),
-        linked_patient_label: session.linkedPatient || null,
-        encounter_label: session.encounterLabel || null,
-        document_id: session.documentId || null,
-        duration_ms: session.durationMs || 0,
-        transport_state_jsonb: buildPersistedTransportState(session.transport, session.status),
-        draft_extraction_jsonb: session.draftExtraction || {},
-        started_at: session.startedAt || null,
-        ended_at: session.endedAt || null,
-        created_by_user_id: session.createdBy?.id || null,
-        current_transcript_id: null,
-      });
-
+      const createdSession = await this.persistSessionState(session, null, "store.create");
       this.log("Session created", { id: session.id });
-      return session;
-    }, (err) => {
-      this.log("Mutation queue error", { error: err.message });
-      throw err;
+      return createdSession;
     });
-
-    this.mutationQueue = run.catch(() => {});
-    return run;
   }
 
   async get(sessionId) {
@@ -941,43 +1101,253 @@ class LiveConversationStore {
     return filtered.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }
 
-  async update(sessionId, updates = {}) {
-    return this.mutateSessions((sessions) => {
-      const index = sessions.findIndex((s) => s.id === sessionId);
-      if (index === -1) {
-        return null;
+  hasCapturedSessionData(session = null) {
+    if (!session || typeof session !== "object") return false;
+    if (Number(session?.audio?.chunkCount || 0) > 0) return true;
+    if (Number(session?.audio?.totalBytes || 0) > 0) return true;
+    if (Number(session?.durationMs || 0) > 0) return true;
+    if ((session?.transcript?.segments?.length || 0) > 0) return true;
+    return isMeaningfulTranscriptString(
+      session?.transcript?.normalizedText
+      || session?.transcript?.rawText
+      || "",
+    );
+  }
+
+  isStaleActiveSession(session = null, staleMs = 120000) {
+    if (!session || typeof session !== "object") return false;
+    if (session.endedAt || session.documentId) return false;
+
+    const workflowStatus = String(session?.transport?.workflowStatus || "").trim().toLowerCase();
+    const connectionState = String(session?.transport?.connectionState || "").trim().toLowerCase();
+    const isPersistedLive = session.status === "live"
+      || workflowStatus === "live"
+      || connectionState === "connected";
+    if (!isPersistedLive) return false;
+
+    const referenceTime = session?.transport?.lastEventAt || session?.updatedAt || session?.startedAt;
+    const referenceTimeMs = referenceTime ? new Date(referenceTime).getTime() : NaN;
+    if (!Number.isFinite(referenceTimeMs)) return true;
+    return (Date.now() - referenceTimeMs) > Math.max(1000, Number(staleMs || 0));
+  }
+
+  inferEndedAtForStaleSession(session = null) {
+    if (!session || typeof session !== "object") {
+      return new Date().toISOString();
+    }
+
+    const startedAtMs = session.startedAt ? new Date(session.startedAt).getTime() : NaN;
+    const durationMs = Number(session.durationMs || 0);
+    if (Number.isFinite(startedAtMs) && Number.isFinite(durationMs) && durationMs > 0) {
+      return new Date(startedAtMs + durationMs).toISOString();
+    }
+
+    return session.updatedAt || new Date().toISOString();
+  }
+
+  async reconcileStaleActiveSessions(options = {}) {
+    const staleMs = Number(options.staleMs || 120000);
+    const source = options.source || "store.reconcileStaleActiveSessions";
+    const sessions = await this.list();
+    const repaired = [];
+
+    for (const session of sessions) {
+      if (!this.isStaleActiveSession(session, staleMs)) continue;
+
+      if (this.hasCapturedSessionData(session)) {
+        const endedAt = this.inferEndedAtForStaleSession(session);
+        const updated = await this.setEndedState(session.id, {
+          status: "review_required",
+          endedAt,
+          durationMs: Number(session.durationMs || 0),
+          transport: {
+            workflowStatus: "review_required",
+          },
+        }, {
+          source,
+        });
+        repaired.push({
+          id: session.id,
+          action: "ended",
+          status: updated?.status || "review_required",
+        });
+        continue;
       }
 
-      const session = sessions[index];
-      Object.assign(session, {
-        ...updates,
-        updatedAt: new Date().toISOString(),
+      const updated = await this.update(session.id, {
+        __source: source,
+        status: "draft",
+        startedAt: null,
+        endedAt: null,
+        durationMs: 0,
+        transport: {
+          connectionState: "idle",
+          workflowStatus: "draft",
+          lastError: null,
+          lastEventAt: new Date().toISOString(),
+        },
+      });
+      repaired.push({
+        id: session.id,
+        action: "reset_to_draft",
+        status: updated?.status || "draft",
+      });
+    }
+
+    return repaired;
+  }
+
+  async createDraftSession(params = {}) {
+    return this.create(params);
+  }
+
+  async setSessionStarted(sessionId, {
+    startedAt = null,
+    mimeType = null,
+    transport = null,
+    source = "ws.begin",
+  } = {}) {
+    return this.queueMutation(source, sessionId, async (currentSession) => {
+      if (!currentSession) return null;
+      const nextSession = this.mergeSessionPatch(currentSession, {
+        status: "live",
+        startedAt: currentSession.startedAt || startedAt || new Date().toISOString(),
+        endedAt: null,
+        error: null,
+        audio: mimeType ? { mimeType } : undefined,
+        transport: {
+          connectionState: "connected",
+          lastError: null,
+          lastEventAt: new Date().toISOString(),
+          ...(transport || {}),
+        },
+      });
+      return this.persistSessionState(nextSession, currentSession, source);
+    });
+  }
+
+  async setTransportState(sessionId, transportPatch = {}, {
+    status,
+    source = "store.transport",
+  } = {}) {
+    return this.queueMutation(source, sessionId, async (currentSession) => {
+      if (!currentSession) return null;
+      const nextSession = this.mergeSessionPatch(currentSession, {
+        ...(status ? { status } : {}),
+        transport: {
+          ...(transportPatch || {}),
+          lastEventAt: transportPatch?.lastEventAt || new Date().toISOString(),
+        },
+      });
+      return this.persistSessionState(nextSession, currentSession, source);
+    });
+  }
+
+  async incrementAudioStats(sessionId, chunkInfo = {}, source = "ws.chunk") {
+    return this.queueMutation(source, sessionId, async (currentSession) => {
+      if (!currentSession) return null;
+
+      const nowIso = new Date(chunkInfo.recordedAt || Date.now()).toISOString();
+      const startedAt = currentSession.startedAt || (!currentSession.endedAt ? nowIso : null);
+      const nextAudio = {
+        ...(currentSession.audio || {}),
+        chunkCount: Number(currentSession.audio?.chunkCount || 0) + 1,
+        totalBytes: Number(currentSession.audio?.totalBytes || 0) + Number(chunkInfo.bytes || 0),
+      };
+      const nextSession = this.mergeSessionPatch(currentSession, {
+        status: currentSession.status === "draft" && currentSession.transport?.connectionState === "connected"
+          ? "live"
+          : currentSession.status,
+        startedAt,
+        audio: nextAudio,
       });
 
-      this.log("Session updated", { id: sessionId, status: session.status });
-      return { ...session };
+      if ((nextSession.status === "live" || nextSession.transport?.connectionState === "connected") && nextSession.startedAt) {
+        nextSession.durationMs = Math.max(
+          Number(nextSession.durationMs || 0),
+          Math.max(0, Date.now() - new Date(nextSession.startedAt).getTime()),
+        );
+      }
+      nextSession.updatedAt = nowIso;
+
+      return this.persistSessionState(nextSession, currentSession, source);
+    });
+  }
+
+  async setFinalAudioAsset(sessionId, audioPatch = {}, {
+    source = "route.audio.final",
+  } = {}) {
+    return this.queueMutation(source, sessionId, async (currentSession) => {
+      if (!currentSession) return null;
+      const nextSession = this.mergeSessionPatch(currentSession, {
+        durationMs: Number.isFinite(Number(audioPatch.durationMs)) && Number(audioPatch.durationMs) > 0
+          ? Number(audioPatch.durationMs)
+          : currentSession.durationMs,
+        audio: {
+          ...(audioPatch || {}),
+        },
+      });
+      return this.persistSessionState(nextSession, currentSession, source);
+    });
+  }
+
+  async setEndedState(sessionId, patch = {}, {
+    source = "ws.end",
+  } = {}) {
+    return this.queueMutation(source, sessionId, async (currentSession) => {
+      if (!currentSession) return null;
+      const nextSession = this.mergeSessionPatch(currentSession, {
+        status: patch.status || "review_required",
+        endedAt: currentSession.endedAt || patch.endedAt || new Date().toISOString(),
+        durationMs: Number.isFinite(Number(patch.durationMs))
+          ? Number(patch.durationMs)
+          : currentSession.durationMs,
+        audio: patch.audio || undefined,
+        transport: {
+          connectionState: "closed",
+          lastError: null,
+          lastEventAt: new Date().toISOString(),
+          ...(patch.transport || {}),
+        },
+      });
+      return this.persistSessionState(nextSession, currentSession, source);
+    });
+  }
+
+  async setFinalizedState(sessionId, documentId, {
+    source = "store.finalize",
+  } = {}) {
+    return this.queueMutation(source, sessionId, async (currentSession) => {
+      if (!currentSession) return null;
+      const nextSession = this.mergeSessionPatch(currentSession, {
+        status: "finalized",
+        documentId,
+        endedAt: currentSession.endedAt || new Date().toISOString(),
+        transport: {
+          connectionState: "closed",
+          lastError: null,
+          lastEventAt: new Date().toISOString(),
+        },
+      });
+      return this.persistSessionState(nextSession, currentSession, source);
+    });
+  }
+
+  async update(sessionId, updates = {}) {
+    const source = updates?.__source || "store.update";
+    const sanitizedUpdates = { ...(updates || {}) };
+    delete sanitizedUpdates.__source;
+    return this.queueMutation(source, sessionId, async (currentSession) => {
+      if (!currentSession) return null;
+      const nextSession = this.mergeSessionPatch(currentSession, sanitizedUpdates);
+      const persistedSession = await this.persistSessionState(nextSession, currentSession, source);
+      this.log("Session updated", { id: sessionId, status: persistedSession?.status || nextSession.status, source });
+      return persistedSession;
     });
   }
 
   async updateAudioChunk(sessionId, chunkInfo) {
-    return this.mutateSessions((sessions) => {
-      const index = sessions.findIndex((s) => s.id === sessionId);
-      if (index === -1) return null;
-
-      const session = sessions[index];
-      session.audio.chunkCount = (session.audio.chunkCount || 0) + 1;
-      session.audio.totalBytes = (session.audio.totalBytes || 0) + (chunkInfo.bytes || 0);
-      session.updatedAt = new Date().toISOString();
-
-      if (session.status === "live") {
-        const now = Date.now();
-        if (session.startedAt) {
-          session.durationMs = now - new Date(session.startedAt).getTime();
-        }
-      }
-
-      return { ...session };
-    });
+    return this.incrementAudioStats(sessionId, chunkInfo, "ws.chunk");
   }
 
   async appendTranscriptSegment(sessionId, segment) {
@@ -1007,12 +1377,10 @@ class LiveConversationStore {
     });
   }
 
-  async replaceTranscript(sessionId, transcriptData = {}) {
-    return this.mutateSessions((sessions) => {
-      const index = sessions.findIndex((s) => s.id === sessionId);
-      if (index === -1) return null;
-
-      const session = sessions[index];
+  async replaceTranscript(sessionId, transcriptData = {}, options = {}) {
+    const source = options?.source || "store.replaceTranscript";
+    return this.queueMutation(source, sessionId, async (currentSession) => {
+      if (!currentSession) return null;
       const segments = Array.isArray(transcriptData.segments)
         ? transcriptData.segments
           .map((segment, segmentIndex) => {
@@ -1048,8 +1416,8 @@ class LiveConversationStore {
         || transcriptData.rawText
         || rawText,
       );
-
-      session.transcript = {
+      const nextSession = this.mergeSessionPatch(currentSession, {
+        transcript: {
         segments,
         rawText,
         normalizedText,
@@ -1071,52 +1439,58 @@ class LiveConversationStore {
           ),
           overlappingSpeechSuspected: Boolean(transcriptData.quality?.overlappingSpeechSuspected),
         },
-      };
+        },
+        sttBackend: transcriptData.backend || transcriptData.metadata?.backend || currentSession.sttBackend || null,
+      });
 
-      session.lastTranscriptEventAt = rawText.trim() ? new Date().toISOString() : session.lastTranscriptEventAt;
-      session.updatedAt = new Date().toISOString();
-      return { ...session };
+      nextSession.lastTranscriptEventAt = rawText.trim()
+        ? new Date().toISOString()
+        : currentSession.lastTranscriptEventAt;
+
+      return this.persistSessionState(nextSession, currentSession, source);
     });
   }
 
-  async updateDraftExtraction(sessionId, draftData) {
-    return this.mutateSessions((sessions) => {
-      const index = sessions.findIndex((s) => s.id === sessionId);
-      if (index === -1) return null;
-
-      const session = sessions[index];
-      // Merge draft data with existing data to avoid race conditions
-      session.draftExtraction = session.draftExtraction || {
+  async updateDraftExtraction(sessionId, draftData, options = {}) {
+    const source = options?.source || "store.updateDraftExtraction";
+    return this.queueMutation(source, sessionId, async (currentSession) => {
+      if (!currentSession) return null;
+      const currentDraftExtraction = currentSession.draftExtraction || {
         extractedData: null,
         reviewItems: [],
         lastStableSegmentId: null,
       };
-      session.draftExtraction.extractedData = mergeLiveDraft(
-        session.draftExtraction.extractedData || {},
+      const nextDraftExtraction = {
+        ...currentDraftExtraction,
+      };
+      nextDraftExtraction.extractedData = mergeLiveDraft(
+        currentDraftExtraction.extractedData || {},
         draftData && typeof draftData === "object" ? draftData : {},
       );
-      session.lastDraftEventAt = new Date().toISOString();
-      session.updatedAt = new Date().toISOString();
-
-      return { ...session };
+      const nextSession = this.mergeSessionPatch(currentSession, {
+        draftExtraction: nextDraftExtraction,
+      });
+      nextSession.lastDraftEventAt = new Date().toISOString();
+      return this.persistSessionState(nextSession, currentSession, source);
     });
   }
 
-  async updateDraftLastStableSegmentId(sessionId, lastStableSegmentId) {
-    return this.mutateSessions((sessions) => {
-      const index = sessions.findIndex((s) => s.id === sessionId);
-      if (index === -1) return null;
-
-      const session = sessions[index];
-      session.draftExtraction = session.draftExtraction || {
+  async updateDraftLastStableSegmentId(sessionId, lastStableSegmentId, options = {}) {
+    const source = options?.source || "store.updateDraftLastStableSegmentId";
+    return this.queueMutation(source, sessionId, async (currentSession) => {
+      if (!currentSession) return null;
+      const nextDraftExtraction = {
+        ...(currentSession.draftExtraction || {
         extractedData: null,
         reviewItems: [],
         lastStableSegmentId: null,
+        }),
       };
-      session.draftExtraction.lastStableSegmentId = lastStableSegmentId;
-      session.updatedAt = new Date().toISOString();
-
-      return { ...session };
+      nextDraftExtraction.lastStableSegmentId = lastStableSegmentId;
+      const nextSession = this.mergeSessionPatch(currentSession, {
+        draftExtraction: nextDraftExtraction,
+      });
+      return this.persistSessionState(nextSession, currentSession, source);
     });
   }
 
@@ -1138,62 +1512,61 @@ class LiveConversationStore {
     });
   }
 
-  async replaceReviewItems(sessionId, reviewItems = []) {
-    return this.mutateSessions((sessions) => {
-      const index = sessions.findIndex((s) => s.id === sessionId);
-      if (index === -1) return null;
-
-      const session = sessions[index];
-      session.draftExtraction = session.draftExtraction || {
+  async replaceReviewItems(sessionId, reviewItems = [], options = {}) {
+    const source = options?.source || "store.replaceReviewItems";
+    return this.queueMutation(source, sessionId, async (currentSession) => {
+      if (!currentSession) return null;
+      const nextDraftExtraction = {
+        ...(currentSession.draftExtraction || {
         extractedData: null,
         reviewItems: [],
         lastStableSegmentId: null,
+        }),
       };
-      session.draftExtraction.reviewItems = Array.isArray(reviewItems) ? reviewItems : [];
-      session.updatedAt = new Date().toISOString();
-      return { ...session };
+      nextDraftExtraction.reviewItems = Array.isArray(reviewItems) ? reviewItems : [];
+      const nextSession = this.mergeSessionPatch(currentSession, {
+        draftExtraction: nextDraftExtraction,
+      });
+      return this.persistSessionState(nextSession, currentSession, source);
     });
   }
 
-  async resolveReviewItem(sessionId, reviewItemId, resolution, editedValue) {
-    return this.mutateSessions((sessions) => {
-      const index = sessions.findIndex((s) => s.id === sessionId);
-      if (index === -1) return null;
-
-      const session = sessions[index];
-      const item = session.draftExtraction.reviewItems.find((r) => r.id === reviewItemId);
+  async resolveReviewItem(sessionId, reviewItemId, resolution, editedValue, options = {}) {
+    const source = options?.source || "review.resolve";
+    return this.queueMutation(source, sessionId, async (currentSession) => {
+      if (!currentSession) return null;
+      const nextDraftExtraction = {
+        ...(currentSession.draftExtraction || {
+          extractedData: null,
+          reviewItems: [],
+          lastStableSegmentId: null,
+        }),
+        reviewItems: Array.isArray(currentSession.draftExtraction?.reviewItems)
+          ? currentSession.draftExtraction.reviewItems.map((item) => ({ ...item }))
+          : [],
+      };
+      const item = nextDraftExtraction.reviewItems.find((reviewItem) => reviewItem.id === reviewItemId);
       if (item) {
         item.resolution = resolution;
         if (resolution === "edited" && editedValue) {
           item.editedValue = editedValue;
         }
       }
-
-      session.updatedAt = new Date().toISOString();
-      return { ...session };
+      const nextSession = this.mergeSessionPatch(currentSession, {
+        draftExtraction: nextDraftExtraction,
+      });
+      return this.persistSessionState(nextSession, currentSession, source);
     });
   }
 
   async finalize(sessionId, documentId) {
-    return this.mutateSessions((sessions) => {
-      const index = sessions.findIndex((s) => s.id === sessionId);
-      if (index === -1) return null;
-
-      const session = sessions[index];
-      session.status = "finalized";
-      session.documentId = documentId;
-      session.endedAt = new Date().toISOString();
-      session.transport = normalizeTransportState({
-        ...(session.transport || {}),
-        connectionState: "closed",
-        lastError: null,
-        lastEventAt: new Date().toISOString(),
-      }, "finalized");
-      session.updatedAt = new Date().toISOString();
-
-      this.log("Session finalized", { id: sessionId, documentId });
-      return { ...session };
+    const finalizedSession = await this.setFinalizedState(sessionId, documentId, {
+      source: "store.finalize",
     });
+    if (finalizedSession) {
+      this.log("Session finalized", { id: sessionId, documentId });
+    }
+    return finalizedSession;
   }
 
   async deleteSessionArtifacts(session) {
@@ -1222,30 +1595,29 @@ class LiveConversationStore {
   }
 
   async deleteAudio(sessionId) {
-    return this.mutateSessions(async (sessions) => {
-      const index = sessions.findIndex((s) => s.id === sessionId);
-      if (index === -1) return null;
+    return this.queueMutation("store.deleteAudio", sessionId, async (currentSession) => {
+      if (!currentSession) return null;
 
-      const session = sessions[index];
-      await this.deleteSessionArtifacts(session);
-      await this.deleteLiveSessionAudioAssets(session.id);
+      await this.deleteSessionArtifacts(currentSession);
+      await this.deleteLiveSessionAudioAssets(currentSession.id);
 
-      session.audio = {
-        ...(session.audio || {}),
-        combinedPath: null,
-        totalBytes: 0,
-        combinedSize: 0,
-        chunkCount: 0,
-      };
-      session.updatedAt = new Date().toISOString();
-
+      const nextSession = this.mergeSessionPatch(currentSession, {
+        audio: {
+          combinedPath: null,
+          totalBytes: 0,
+          combinedSize: 0,
+          chunkCount: 0,
+        },
+      });
+      const persistedSession = await this.persistSessionState(nextSession, currentSession, "store.deleteAudio");
       this.log("Session audio deleted", { id: sessionId });
-      return { ...session };
+      return persistedSession;
     });
   }
 
   async setError(sessionId, error) {
     return this.update(sessionId, {
+      __source: "store.error",
       status: "failed",
       error: String(error),
       transport: {
@@ -1257,26 +1629,53 @@ class LiveConversationStore {
   }
 
   async delete(sessionId) {
-    return this.mutateSessions(async (sessions) => {
-      const index = sessions.findIndex((s) => s.id === sessionId);
-      if (index === -1) return null;
+    return this.queueMutation("store.delete", sessionId, async (currentSession) => {
+      if (!currentSession) return null;
 
-      const [deleted] = sessions.splice(index, 1);
-      await this.deleteSessionArtifacts(deleted);
-      await this.deleteLiveSessionAudioAssets(deleted.id);
+      await this.deleteSessionArtifacts(currentSession);
+      await this.deleteLiveSessionAudioAssets(currentSession.id);
       if (this.liveSessionsRepo?.deleteSession) {
         await this.liveSessionsRepo.initialize();
-        await this.liveSessionsRepo.deleteSession(deleted.id);
+        await this.liveSessionsRepo.deleteSession(currentSession.id);
       }
+      this.logMutationTrace("store.delete", currentSession, null);
       this.log("Session deleted", { id: sessionId });
-      return deleted;
+      return currentSession;
     });
+  }
+
+  async hasEventsColumn() {
+    if (typeof this._hasEventsColumn === "boolean") {
+      return this._hasEventsColumn;
+    }
+
+    try {
+      await this.liveSessionsRepo.initialize();
+      const result = await this.liveSessionsRepo.queryOne(`
+        SELECT EXISTS (
+          SELECT 1
+          FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name = $1
+            AND column_name = 'events_jsonb'
+        ) AS has_events_column
+      `, [this.liveSessionsRepo.sessionsTableName]);
+      this._hasEventsColumn = Boolean(result?.has_events_column);
+    } catch (error) {
+      this._hasEventsColumn = false;
+      this.log("Failed to inspect live session events column", { error: error.message });
+    }
+
+    return this._hasEventsColumn;
   }
 
   async logEvent(sessionId, eventType, data = {}) {
     // Phase 6: Store events in session.events_jsonb array (not audit_events to avoid FK issues)
     try {
       await this.liveSessionsRepo.initialize();
+      if (!(await this.hasEventsColumn())) {
+        return;
+      }
 
       const eventData = {
         timestamp: new Date().toISOString(),
@@ -1301,6 +1700,9 @@ class LiveConversationStore {
     // Phase 6: Retrieve events from session.events_jsonb array
     try {
       await this.liveSessionsRepo.initialize();
+      if (!(await this.hasEventsColumn())) {
+        return [];
+      }
 
       // Get the session's events
       const sessions = await this.liveSessionsRepo.query(`
@@ -1369,6 +1771,7 @@ class LiveConversationStore {
         chunkCount: session.audio?.chunkCount || 0,
         combinedPath: session.audio?.combinedPath || null,
         totalBytes: session.audio?.totalBytes || 0,
+        durationMs: session.audio?.durationMs || 0,
       },
       transcript: session.transcript || {
         segments: [],

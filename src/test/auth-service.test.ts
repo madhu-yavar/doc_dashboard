@@ -16,6 +16,84 @@ const originalEnv = {
   AUTH_BOOTSTRAP_DOCTOR_PASSWORD_HASH: process.env.AUTH_BOOTSTRAP_DOCTOR_PASSWORD_HASH,
 };
 
+class InMemoryAuthRepository {
+  users: Array<Record<string, any>> = [];
+  sessions: Array<Record<string, any>> = [];
+
+  async initialize() {
+    return;
+  }
+
+  async readUsers() {
+    return [...this.users].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+  }
+
+  async createUser(user: Record<string, any>) {
+    const created = {
+      ...user,
+      practitioner_id: user.practitioner_id ?? null,
+      status: user.status || "active",
+      created_at: user.created_at || new Date().toISOString(),
+      updated_at: user.updated_at || new Date().toISOString(),
+    };
+    this.users.push(created);
+    return created;
+  }
+
+  async readSessionsWithUsers() {
+    return this.sessions
+      .map((session) => {
+        const user = this.users.find((entry) => entry.id === session.user_id);
+        return {
+          ...session,
+          username: user?.username || null,
+          role: user?.role || null,
+          display_name: user?.display_name || null,
+        };
+      })
+      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  }
+
+  async createSession(session: Record<string, any>) {
+    const created = {
+      ...session,
+      created_at: session.created_at || new Date().toISOString(),
+    };
+    this.sessions.push(created);
+    return created;
+  }
+
+  async deleteSessionByToken(sessionToken: string) {
+    const index = this.sessions.findIndex((session) => session.session_token === sessionToken);
+    if (index === -1) return false;
+    this.sessions.splice(index, 1);
+    return true;
+  }
+
+  async findSessionByToken(sessionToken: string) {
+    const session = this.sessions.find((entry) => entry.session_token === sessionToken);
+    if (!session) return null;
+    const user = this.users.find((entry) => entry.id === session.user_id);
+    return {
+      ...session,
+      username: user?.username || null,
+      role: user?.role || null,
+      display_name: user?.display_name || null,
+    };
+  }
+
+  async updateSession(sessionId: string, updates: Record<string, any>) {
+    const session = this.sessions.find((entry) => entry.id === sessionId);
+    if (!session) return null;
+    Object.assign(session, updates);
+    return session;
+  }
+
+  async findUserById(userId: string) {
+    return this.users.find((entry) => entry.id === userId) || null;
+  }
+}
+
 async function makeAuthService(sessionDurationMs = 8 * 60 * 60 * 1000) {
   const { AuthService } = await authModulePromise;
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "doctor-dashboard-auth-"));
@@ -24,6 +102,7 @@ async function makeAuthService(sessionDurationMs = 8 * 60 * 60 * 1000) {
     storageDir: dir,
     sessionDurationMs,
     cookieSecure: false,
+    authRepository: new InMemoryAuthRepository(),
   });
 }
 

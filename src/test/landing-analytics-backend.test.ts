@@ -6,6 +6,45 @@ import path from "path";
 import express from "express";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+// Mock the real Postgres repository before importing the store
+vi.mock("../../server/repositories/analytics_repository.cjs", () => {
+  return {
+    AnalyticsRepository: class MockAnalyticsRepository {
+      constructor() {
+        this.metrics = new Map();
+      }
+      async initialize() {}
+      async ingestDocumentMetrics(doc) {
+        this.metrics.set(doc.document_id, doc);
+      }
+      async deleteDocumentMetrics(id) {
+        this.metrics.delete(id);
+      }
+      async getOverviewMetrics() {
+        let docs = 0;
+        let gemma = 0;
+        let gemini = 0;
+        const types = new Map();
+        
+        for (const m of this.metrics.values()) {
+          docs++;
+          gemma += m.provider_tokens_gemma || 0;
+          gemini += m.provider_tokens_gemini || 0;
+          const type = m.document_type || "unknown";
+          if (!types.has(type)) types.set(type, { documentType: type, count: 0 });
+          types.get(type).count++;
+        }
+        
+        return {
+          summary: { includedDocuments: docs },
+          tokensByProvider: { gemma, gemini },
+          documentsByType: Array.from(types.values())
+        };
+      }
+    }
+  };
+});
+
 const analyticsModulePromise = import("../../server/analytics_store.cjs");
 
 function createDocument(overrides: Record<string, unknown> = {}) {

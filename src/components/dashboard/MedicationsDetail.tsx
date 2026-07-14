@@ -1,6 +1,7 @@
 import type { DashboardPatientData } from "@/data/patientData";
 import StatusBadge from "./StatusBadge";
 import PharmacyAlertBadge from "./PharmacyAlertBadge";
+import ItemMasterInfo from "./ItemMasterInfo";
 import { ArrowLeft, Pill, AlertTriangle } from "lucide-react";
 import ProvenancePanel from "./ProvenancePanel";
 import SectionProvenanceBadge from "./SectionProvenanceBadge";
@@ -174,21 +175,29 @@ const MedicationsDetail = ({ onBack, data }: MedicationsDetailProps) => {
               </thead>
               <tbody>
                 {medicationList.map((med, i) => (
-                  <tr key={i} className={`border-t ${med.is_uncertain || med.verification_confidence === "low" ? "bg-status-warning/5" : ""}`}>
-                    <td className="p-3 font-medium text-foreground">
-                      {med.name}
-                      {(med.is_uncertain || med.verification_confidence === "low") && (
-                        <span className="ml-2 text-xs text-status-warning" title={med.verification_uncertain_reason || "Low confidence extraction"}>
-                          ⚠️ Needs review
-                        </span>
-                      )}
-                    </td>
-                    <td className="p-3 text-foreground">{med.dose}</td>
-                    <td className="p-3 text-foreground">{expandFrequency(med.frequency)}</td>
-                    <td className="p-3 text-foreground">{getRoute(med)}</td>
-                    {showStartColumn ? <td className="p-3 text-muted-foreground">{med.start}</td> : null}
-                    <td className="p-3 text-muted-foreground text-xs">{med.instructions}</td>
-                  </tr>
+                  <>
+                    <tr key={i} className={`border-t ${med.is_uncertain || med.verification_confidence === "low" ? "bg-status-warning/5" : ""}`}>
+                      <td className="p-3 font-medium text-foreground">
+                        {med.name}
+                        {(med.is_uncertain || med.verification_confidence === "low") && (
+                          <span className="ml-2 text-xs text-status-warning" title={med.verification_uncertain_reason || "Low confidence extraction"}>
+                            ⚠️ Needs review
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3 text-foreground">{med.dose}</td>
+                      <td className="p-3 text-foreground">{expandFrequency(med.frequency)}</td>
+                      <td className="p-3 text-foreground">{getRoute(med)}</td>
+                      {showStartColumn ? <td className="p-3 text-muted-foreground">{med.start}</td> : null}
+                      <td className="p-3 text-muted-foreground text-xs">{med.instructions}</td>
+                    </tr>
+                    {/* Item Master Info Row */}
+                    <tr key={`item-master-${i}`} className="border-t border-border/50">
+                      <td colSpan={showStartColumn ? 6 : 5} className="p-2 bg-muted/30">
+                        <ItemMasterInfo data={(med as any)._itemMaster} itemName={med.name} />
+                      </td>
+                    </tr>
+                  </>
                 ))}
               </tbody>
             </table>

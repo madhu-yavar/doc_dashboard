@@ -22,6 +22,6 @@ describe("MedicationsDetail", () => {
     render(<MedicationsDetail onBack={vi.fn()} data={data} />);
 
     expect(screen.queryByText("Medication Changes During Stay")).not.toBeInTheDocument();
-    expect(screen.getByText("Discharge Medication List")).toBeInTheDocument();
+    expect(screen.getByText("Medication List")).toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
-import { LogOut } from "lucide-react";
+import { Database, LogOut } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
@@ -13,7 +14,7 @@ export default function AppShellHeader() {
           <img
             src="/manipal-logo.png"
             alt="Manipal Hospitals"
-            className="h-8 w-auto shrink-0 object-contain"
+            className="h-8 w-auto shrink-0 object-contain blur-lg select-none"
           />
         </div>
 
@@ -25,6 +26,19 @@ export default function AppShellHeader() {
           />
           <div className="flex items-center gap-2">
             <p className="text-sm text-slate-600">{welcomeLabel}</p>
+            {user?.role === "admin" ? (
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="rounded-full px-3 text-slate-600 hover:text-slate-900"
+              >
+                <Link to="/admin/item-service-master">
+                  <Database className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.8} />
+                  Item master
+                </Link>
+              </Button>
+            ) : null}
             <Button
               variant="ghost"
               size="sm"

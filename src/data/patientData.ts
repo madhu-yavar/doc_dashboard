@@ -92,7 +92,7 @@ export const patientData = {
   },
   medications: {
     active: [
-      { name: "Aspirin", dose: "100mg", frequency: "OD", route: "Oral", start: "Mar 15", instructions: "Take with food" },
+      { name: "Aspirin", dose: "100mg", frequency: "OD", route: "Oral", start: "Mar 15", instructions: "Take with food", _itemMaster: { itemCode: "1000001234", itemDesc: "ASPIRIN 100 MG TABLET", bgCode: "M", bgDesc: "Pharmacy", bsgCode: "MPHY-C", bsgDesc: "PHARMACY", category: "Service", confidence: "high", score: 0.99, matched: true } },
       { name: "Metoprolol Tartrate", dose: "50mg", frequency: "BID", route: "Oral", start: "Mar 15", instructions: "Take as prescribed" },
       { name: "Atorvastatin", dose: "20mg", frequency: "Nocte", route: "Oral", start: "Mar 16", instructions: "Take at bedtime" },
       { name: "Ramipril", dose: "5mg", frequency: "OD", route: "Oral", start: "Mar 15", instructions: "Morning" },

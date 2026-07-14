@@ -5,6 +5,7 @@ export type LiveConnectionState = "idle" | "connecting" | "connected" | "reconne
 export type LiveCaptureState = "idle" | "starting" | "recording" | "paused" | "stopping" | "failed";
 export type LiveSessionStatus = "draft" | "live" | "paused" | "review_required" | "finalizing" | "finalized" | "failed";
 export type LiveReviewResolution = "pending" | "approved" | "edited" | "rejected";
+export type LiveMedicationStatus = "draft" | "needs_review" | "current" | "prescribed" | "planned";
 
 export type LiveDeviceOption = {
   id: string;
@@ -37,7 +38,7 @@ export type LiveReviewItem = {
 export type LiveDraftExtraction = {
   diagnosis: string;
   symptoms: string[];
-  medications: Array<{ name: string; instruction: string; status: "draft" | "needs_review" }>;
+  medications: Array<{ name: string; instruction: string; status: LiveMedicationStatus }>;
   labs: string[];
   radiology: string[];
   procedures: string[];

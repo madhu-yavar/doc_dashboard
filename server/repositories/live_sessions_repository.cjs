@@ -48,7 +48,7 @@ class LiveSessionsRepository extends BaseRepository {
     const updatedAt = sessionData.updated_at || now;
     const transportState = sessionData.transport_state_jsonb ?? sessionData.transport_state ?? {};
     const draftExtraction = sessionData.draft_extraction_jsonb ?? sessionData.draft_extraction ?? {};
-    const startedAt = sessionData.started_at ?? now;
+    const startedAt = sessionData.started_at ?? null;
 
     const query = `
       INSERT INTO ${this.sessionsTableName} (

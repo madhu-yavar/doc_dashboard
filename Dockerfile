@@ -1,7 +1,7 @@
 # Multi-stage build for Doctor Dashboard
 
 # Stage 1: Build the React frontend
-FROM node:22-alpine AS builder
+FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -19,24 +19,25 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Production image with Node.js backend
-FROM node:22-alpine
+FROM node:22-bookworm-slim
 
 WORKDIR /app
 
-# Install runtime dependencies
+# Install runtime dependencies.
 # dumb-init: proper signal handling
 # poppler-utils: pdftoppm for PDF to image conversion (classification, masking)
-# Playwright/Chromium dependencies for prescription PDF generation
-RUN apk add --no-cache dumb-init poppler-utils \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont
+# fonts-freefont-ttf: basic fonts for generated prescription/SOAP PDFs
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      ca-certificates \
+      dumb-init \
+      fonts-freefont-ttf \
+      poppler-utils && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+RUN groupadd --gid 1001 nodejs && \
+    useradd --uid 1001 --gid nodejs --create-home --shell /usr/sbin/nologin nodejs
 
 # Copy package files
 COPY package*.json ./

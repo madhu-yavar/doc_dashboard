@@ -56,7 +56,7 @@ const SCHEMA_DEFINITION = {
     `CREATE TYPE asset_role_enum AS ENUM ('source_pdf', 'source_audio', 'transcript_json', 'masked_image', 'chart_note_pdf', 'prescription_html', 'prescription_pdf', 'other');`,
     `CREATE TYPE storage_backend_enum AS ENUM ('filesystem', 's3', 'azure_blob', 'gcs', 'unknown');`,
     `CREATE TYPE speaker_role_enum AS ENUM ('physician', 'patient', 'nurse', 'family', 'other', 'unknown');`,
-    `CREATE TYPE segment_status_enum AS ENUM ('active', 'edited', 'deleted');`,
+    `CREATE TYPE segment_status_enum AS ENUM ('interim', 'active', 'edited', 'deleted', 'final');`,
     `CREATE TYPE alert_family_enum AS ENUM ('pharmacy', 'department', 'system', 'external');`,
     `CREATE TYPE channel_enum AS ENUM ('email', 'sms', 'websocket', 'http', 'internal');`,
     `CREATE TYPE workflow_enum AS ENUM ('document_processing', 'voice_upload', 'live_conversation', 'chat', 'audit', 'external_sync');`
@@ -367,7 +367,7 @@ const SCHEMA_DEFINITION = {
       draft_extraction_jsonb JSONB DEFAULT '{}',
       events_jsonb JSONB DEFAULT '[]',
       current_transcript_id TEXT,
-      started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      started_at TIMESTAMPTZ DEFAULT NOW(),
       ended_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

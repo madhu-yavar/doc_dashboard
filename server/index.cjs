@@ -40,6 +40,9 @@ const {
 // Prescription Generation Support
 const { PrescriptionService } = require("./prescription_service.cjs");
 const { SOAPService } = require("./soap_service.cjs");
+const { registerAbdmRoutes } = require("./abdm/routes.cjs");
+const { registerItemServiceMasterRoutes } = require("./item_service_master_routes.cjs");
+const { runEnrichmentJob } = require("./item_master_enrichment.cjs");
 // Phase 6: Initialize PrescriptionService with repositories (will be configured after repositories are created)
 let prescriptionService = null;
 let soapService = null;
@@ -80,8 +83,13 @@ const voiceGraphCheckpointsDir = path.join(storageDir, "voice_graph_checkpoints"
 const frontendOrigins = new Set(
   [
     process.env.FRONTEND_ORIGIN,
+    process.env.FRONTEND_URL,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
     "http://localhost:8081",
     "http://127.0.0.1:8081",
+    "http://localhost:8001",
+    "http://127.0.0.1:8001",
   ].filter(Boolean)
 );
 
@@ -662,6 +670,18 @@ async function persistDocumentExtraction(document) {
         existingCurrentExtraction.id,
       ]
     );
+
+    // Trigger item master enrichment in background (non-blocking)
+    if (updatedExtraction?.id) {
+      setImmediate(async () => {
+        try {
+          await runEnrichmentJob(docsRepository.client.pool, document.id);
+        } catch (error) {
+          console.error(`[ItemMasterEnrichment] Background job failed for document ${document.id}:`, error.message);
+        }
+      });
+    }
+
     return updatedExtraction?.id || existingCurrentExtraction.id;
   }
 
@@ -680,6 +700,17 @@ async function persistDocumentExtraction(document) {
   await docsRepository.updateDocument(document.id, {
     current_extraction_id: createdExtraction.id,
   });
+
+  // Trigger item master enrichment in background (non-blocking)
+  if (createdExtraction.id) {
+    setImmediate(async () => {
+      try {
+        await runEnrichmentJob(docsRepository.client.pool, document.id);
+      } catch (error) {
+        console.error(`[ItemMasterEnrichment] Background job failed for document ${document.id}:`, error.message);
+      }
+    });
+  }
 
   return createdExtraction.id;
 }
@@ -1677,13 +1708,38 @@ async function removeVoiceSession(id) {
 }
 
 async function removeDocument(id) {
+  // First delete from PostgreSQL (primary storage)
+  let pgDeleted = false;
+  let pgDocument = null;
+  try {
+    await docsRepository.initialize();
+    // Try to get the document first for cleanup
+    const docs = await docsRepository.readDocuments({ where: { id } });
+    if (docs && docs.length > 0) {
+      pgDocument = docs[0];
+    }
+    pgDeleted = await docsRepository.deleteDocument(id);
+    if (pgDeleted) {
+      console.log(`[removeDocument] Deleted ${id} from PostgreSQL`);
+    }
+  } catch (error) {
+    console.error(`[removeDocument] Failed to delete from PostgreSQL:`, error.message);
+  }
+
+  // Also clean up from legacy JSON storage for compatibility
   return mutateDocuments(async (documents) => {
     const index = documents.findIndex((item) => item.id === id);
     if (index === -1) {
+      // Return PostgreSQL document if JSON doesn't have it
+      if (pgDocument) {
+        console.log(`[removeDocument] Document ${id} not in JSON, returning PG document`);
+        return publicDocument(pgDocument);
+      }
       return null;
     }
 
     const [document] = documents.splice(index, 1);
+    console.log(`[removeDocument] Deleted ${id} from documents.json`);
     return document;
   });
 }
@@ -2887,6 +2943,7 @@ function isPublicApiRequest(req) {
     (method === "GET" && routePath === "/api/auth/session") ||
     (method === "POST" && routePath === "/api/auth/login") ||
     (method === "POST" && routePath === "/api/auth/logout") ||
+    (method === "GET" && routePath === "/api/abdm/callbacks/health") ||
     // Prescription generation routes (TODO: require auth in production)
     (routePath.startsWith("/api/prescriptions")) ||
     (routePath.startsWith("/api/soap"))
@@ -2897,6 +2954,13 @@ function isAdminOnlyApiRequest(req) {
   const method = String(req.method || "GET").toUpperCase();
   const routePath = req.path;
 
+  if (
+    (method === "GET" && routePath === "/api/abdm/status") ||
+    (method === "POST" && routePath === "/api/abdm/session/verify")
+  ) {
+    return true;
+  }
+
   if ((method === "GET" && routePath === "/api/agent/status") || (method === "POST" && routePath === "/api/agent/test-pdf")) {
     return true;
   }
@@ -2904,6 +2968,7 @@ function isAdminOnlyApiRequest(req) {
   if (
     (method === "GET" && routePath === "/api/chat/source-health") ||
     (method === "GET" && routePath === "/api/analytics/overview") ||
+    routePath.startsWith("/api/item-service-master") ||
     routePath.startsWith("/api/audit/")
   ) {
     return true;
@@ -3051,7 +3116,16 @@ app.use(async (req, res, next) => {
   }
 });
 
+registerAbdmRoutes(app);
+
 registerAnalyticsRoutes(app, analyticsStore, readDocuments);
+
+registerItemServiceMasterRoutes(app, {
+  upload,
+  storageDir,
+  readDocuments,
+  repoRoot: path.join(__dirname, ".."),
+});
 
 // Register Live Conversation routes
 liveConversationRoutes.registerRoutes(app, authService);

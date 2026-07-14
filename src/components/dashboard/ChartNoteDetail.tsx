@@ -87,13 +87,14 @@ const ChartNoteDetail = ({ onBack, data, chartNoteContent, documentId }: ChartNo
               pre { white-space: pre-wrap; font-family: Arial, sans-serif; font-size: 14px; }
               .logos { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #003087; }
               .logo { height: 50px; }
+              .blur-manipal { filter: blur(12px); user-select: none; }
               .header { text-align: center; margin-bottom: 20px; }
               .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ccc; font-size: 12px; color: #666; }
             </style>
           </head>
           <body>
             <div class="logos">
-              <img src="/manipal-logo.png" alt="Manipal Hospitals" class="logo" />
+              <img src="/manipal-logo.png" alt="Manipal Hospitals" class="logo blur-manipal" />
               <img src="/yavar-logo.png" alt="Powered by Yavar.ai" class="logo" style="height: 30px;" />
             </div>
             <pre>${chartNoteContent}</pre>
@@ -157,7 +158,7 @@ const ChartNoteDetail = ({ onBack, data, chartNoteContent, documentId }: ChartNo
       {/* Header with logos */}
       <div className="flex items-center justify-between border-b pb-4">
         <div className="flex items-center gap-4">
-          <img src="/manipal-logo.png" alt="Manipal Hospitals" className="h-8" />
+          <img src="/manipal-logo.png" alt="Manipal Hospitals" className="h-8 blur-lg select-none" />
         </div>
         <img src="/yavar-logo.png" alt="Powered by Yavar.ai" className="h-8 opacity-70" />
       </div>

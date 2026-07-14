@@ -8,6 +8,7 @@ const EMPTY_LIVE_DRAFT = Object.freeze({
   ros: [],
   pastHistory: [],
   diagnosis: "",
+  assessment: "",
   symptoms: [],
   medications: [],
   labs: [],
@@ -47,6 +48,7 @@ const EMPTY_LIVE_DRAFT = Object.freeze({
 });
 
 const SUPPORTED_PATIENT_SEX_OPTIONS = Object.freeze(["Male", "Female", "Other"]);
+const SUPPORTED_MEDICATION_STATUSES = Object.freeze(["draft", "needs_review", "current", "prescribed", "planned"]);
 
 const REQUIRED_REVIEW_FIELDS = Object.freeze([
   {
@@ -104,6 +106,40 @@ function normalizeGender(value, { strict = false } = {}) {
 
 function withArray(value) {
   return Array.isArray(value) ? value : [];
+}
+
+function normalizeMedicationStatus(value) {
+  const normalized = asText(value).toLowerCase();
+  if (!normalized) return "draft";
+  if (SUPPORTED_MEDICATION_STATUSES.includes(normalized)) return normalized;
+  if (["review", "uncertain", "unknown"].includes(normalized)) return "needs_review";
+  if (["home", "existing", "ongoing"].includes(normalized)) return "current";
+  if (["new", "ordered", "started"].includes(normalized)) return "prescribed";
+  if (["continue", "continued"].includes(normalized)) return "planned";
+  return "draft";
+}
+
+function normalizeMedicationEntries(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        const name = asText(item);
+        return name ? { name, instruction: "", status: "draft" } : null;
+      }
+      if (!item || typeof item !== "object") return null;
+
+      const name = asText(item.name || item.label || item.medicine);
+      if (!name) return null;
+
+      return {
+        ...item,
+        name,
+        instruction: asText(item.instruction || item.frequency || item.note),
+        status: normalizeMedicationStatus(item.status),
+      };
+    })
+    .filter(Boolean);
 }
 
 function normalizeListItem(item) {
@@ -199,8 +235,9 @@ function normalizeLiveDraft(rawDraft = {}) {
     "past history",
   );
   base.diagnosis = asText(draft.diagnosis);
+  base.assessment = asText(draft.assessment);
   base.symptoms = normalizeTextList(draft.symptoms, "symptoms");
-  base.medications = withArray(draft.medications);
+  base.medications = normalizeMedicationEntries(draft.medications);
   base.labs = normalizeTextList(draft.labs, "labs");
   base.radiology = normalizeTextList(draft.radiology, "radiology");
   base.procedures = normalizeTextList(draft.procedures, "procedures");
@@ -283,6 +320,7 @@ function mergeLiveDraft(existingDraft = {}, incomingDraft = {}) {
     ros: preferArray(incoming.ros, existing.ros),
     pastHistory: preferArray(incoming.pastHistory, existing.pastHistory),
     diagnosis: preferText(incoming.diagnosis, existing.diagnosis),
+    assessment: preferText(incoming.assessment, existing.assessment),
     symptoms: preferArray(incoming.symptoms, existing.symptoms),
     medications: preferArray(incoming.medications, existing.medications),
     labs: preferArray(incoming.labs, existing.labs),
@@ -403,6 +441,7 @@ function parseRequiredFieldPatch(fieldPath, rawValue, currentDraft = {}) {
   switch (fieldPath) {
     case "linkedPatient":
       sessionPatch.linkedPatient = value;
+      draftPatch.patient = { name: value };
       return { sessionPatch, draftPatch };
     case "patient.age": {
       const age = Math.round(toNumber(value) || 0);

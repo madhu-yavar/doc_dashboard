@@ -104,10 +104,11 @@ class DepartmentAlertFormatter {
     return investigations
       .filter(item => item.status === 'ordered')
       .map(item => ({
-        name: item.type,
+        name: this.textFromValue(item.test_name || item.name || item.type || item.label),
         priority: item.priority || 'routine',
         isUncertain: item.is_uncertain || false
-      }));
+      }))
+      .filter(item => item.name);
   }
 
   /**
@@ -118,9 +119,10 @@ class DepartmentAlertFormatter {
     return radiology
       .filter(item => item.status === 'ordered')
       .map(item => ({
-        name: item.type,
+        name: this.textFromValue(item.study_name || item.name || item.type || item.label),
         isUncertain: item.is_uncertain || false
-      }));
+      }))
+      .filter(item => item.name);
   }
 
   /**
@@ -131,9 +133,10 @@ class DepartmentAlertFormatter {
     return nuclear
       .filter(item => item.status === 'ordered')
       .map(item => ({
-        name: item.type,
+        name: this.textFromValue(item.study_name || item.name || item.type || item.label),
         isUncertain: item.is_uncertain || false
-      }));
+      }))
+      .filter(item => item.name);
   }
 
   /**
@@ -156,7 +159,7 @@ class DepartmentAlertFormatter {
    */
   extractDiagnosis(data) {
     const diagnosis = data?.diagnosis || {};
-    return this.cleanText(diagnosis.principal) || null;
+    return this.cleanText(this.textFromValue(diagnosis.principal)) || null;
   }
 
   /**
@@ -199,7 +202,7 @@ class DepartmentAlertFormatter {
    * Determine urgency level
    */
   determineUrgency(data) {
-    const diagnosis = (data?.diagnosis?.principal || '').toLowerCase();
+    const diagnosis = this.textFromValue(data?.diagnosis?.principal).toLowerCase();
     const urgentKeywords = ['emergency', 'urgent', 'stat', 'immediately', 'critical', 'severe'];
 
     if (urgentKeywords.some(kw => diagnosis.includes(kw))) {
@@ -214,6 +217,22 @@ class DepartmentAlertFormatter {
   cleanText(text) {
     if (!text || typeof text !== 'string') return null;
     return text.trim().replace(/\s+/g, ' ') || null;
+  }
+
+  textFromValue(value) {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    if (!value || typeof value !== 'object') return '';
+
+    return this.cleanText(
+      value.name ||
+      value.description ||
+      value.label ||
+      value.text ||
+      value.value ||
+      value.summary ||
+      ''
+    ) || '';
   }
 }
 

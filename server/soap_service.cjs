@@ -482,8 +482,11 @@ class SOAPService {
     const patient = extracted.patient_info || extracted.patient || {};
     const hospital = buildVoiceHospital(extracted, document);
     const diagnosis = extracted.diagnosis || {};
-    const diagnosisText = firstText(
-      typeof diagnosis === "string" ? diagnosis : "",
+
+    // PR-3: Use assessment field for live conversations, fall back to diagnosis for backward compatibility
+    const assessmentText = firstText(
+      extracted.assessment, // New assessment field from live draft
+      typeof diagnosis === "string" ? diagnosis : "", // Backward compatibility
       diagnosis.principal?.name,
       diagnosis.principal?.description,
       dashboardCards.diagnosis_card?.principal_diagnosis,
@@ -540,7 +543,7 @@ class SOAPService {
       procedures.length > 0 ? `Procedures: ${procedures.join(", ")}` : "",
     ]);
     const assessment = dedupe([
-      diagnosisText ? `Primary diagnosis: ${diagnosisText}` : "",
+      assessmentText ? `Assessment: ${assessmentText}` : "",
       pastHistory.length > 0 ? `Comorbidities: ${pastHistory.join(", ")}` : "",
     ]);
     const plan = dedupe([

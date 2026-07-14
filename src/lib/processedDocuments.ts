@@ -3091,7 +3091,12 @@ export const transformProcessedDocument = (document: ProcessedDocument): Dashboa
             : "Oral",
         start: "",
         instructions: "",
-      })),
+        // Preserve item master mapping if present
+        ...(med._itemMaster ? { _itemMaster: med._itemMaster } : {}),
+        ...(med.category ? { category: med.category } : {}),
+        ...(med.is_uncertain !== undefined ? { is_uncertain: med.is_uncertain } : {}),
+        ...(med.verification_confidence ? { verification_confidence: med.verification_confidence } : {}),
+        })),
       allergies,
       changes: {
         added: [],

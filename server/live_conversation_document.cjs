@@ -162,7 +162,7 @@ function buildClinicalNotes({
       date,
       summary: diagnosisText || "Clinical summary recorded during live conversation.",
       background: pastHistoryItems.join(", "),
-      assessment: symptoms.join(", "),
+      assessment: diagnosisText || "Assessment pending clinician review",
       recommendations: planItems.join("; "),
       pending_items: followUpItems,
       risk_flags: [],
@@ -182,7 +182,9 @@ function buildVoiceSourceData({ draft, linkedPatient, encounterLabel, createdAt,
   const hpi = asText(normalizedDraft.hpi);
   const ros = normalizeTextList(normalizedDraft.ros);
   const pastHistoryItems = normalizeTextList(normalizedDraft.pastHistory);
-  const diagnosisText = asText(normalizedDraft.diagnosis);
+
+  // PR-3: Use assessment field for clinical summary, fall back to diagnosis for backward compatibility
+  const assessmentText = asText(normalizedDraft.assessment) || asText(normalizedDraft.diagnosis);
   const symptoms = normalizeTextList(normalizedDraft.symptoms);
   const planItems = normalizeTextList(normalizedDraft.plan);
   const followUpItems = normalizeTextList(normalizedDraft.followUp || normalizedDraft.follow_up);
@@ -200,10 +202,10 @@ function buildVoiceSourceData({ draft, linkedPatient, encounterLabel, createdAt,
       hospital_no: asText(encounterLabel),
     },
     diagnosis: {
-      principal: diagnosisText
+      principal: assessmentText
         ? {
-            name: diagnosisText,
-            description: diagnosisText,
+            name: assessmentText,
+            description: assessmentText,
             status: "active",
           }
         : null,
@@ -228,7 +230,7 @@ function buildVoiceSourceData({ draft, linkedPatient, encounterLabel, createdAt,
       items: followUpItems,
     },
     clinical_notes: buildClinicalNotes({
-      diagnosisText,
+      diagnosisText: assessmentText, // PR-3: Use assessment text
       symptoms,
       pastHistoryItems,
       planItems,

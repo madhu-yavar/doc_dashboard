@@ -266,6 +266,7 @@ class GeminiSTTSkill {
     return [
       "Transcribe this clinical dictation audio into structured JSON.",
       "The audio may contain physician dictation for a clinical dashboard workflow.",
+      "CRITICAL: If the audio is silent, unintelligible, or contains only background noise, you MUST return empty strings for the text fields. DO NOT fabricate or hallucinate any clinical data (like 'Dr. Adams' or 'Jane Doe').",
       "Return valid JSON only with this exact top-level shape:",
       "{",
       '  "language": string | null,',

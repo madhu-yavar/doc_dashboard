@@ -657,8 +657,8 @@ const UploadCenter = () => {
       return;
     }
 
-    // Gemma 31B is currently stable only when inpatient/discharge runs are serialized.
-    const MAX_CONCURRENT = 1;
+    // Process up to 3 documents concurrently
+    const MAX_CONCURRENT = 3;
     const chunks = [];
     for (let i = 0; i < allDocs.length; i += MAX_CONCURRENT) {
       chunks.push(allDocs.slice(i, i + MAX_CONCURRENT));
@@ -829,7 +829,7 @@ const UploadCenter = () => {
                       ),
                     );
                     // Clear progress if document is in terminal state
-                    if (currentDoc.status === 'processed' || currentDoc.status === 'failed' || currentDoc.status === 'partial' || currentDoc.status === 'review_required') {
+                    if (currentDoc.status === 'completed' || currentDoc.status === 'processed' || currentDoc.status === 'failed' || currentDoc.status === 'partial' || currentDoc.status === 'review_required') {
                       setProcessingProgress(prev => {
                         const newProgress = { ...prev };
                         delete newProgress[document.id];

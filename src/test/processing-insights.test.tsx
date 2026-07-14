@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import ProcessingInsights from "@/components/dashboard/ProcessingInsights";
@@ -104,6 +104,7 @@ describe("ProcessingInsights", () => {
 
     expect(screen.getByText(/processing insights/i)).toBeInTheDocument();
     expect(screen.getByText("1,540")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /show detail/i }));
     expect(screen.getByText("1,200")).toBeInTheDocument();
     expect(screen.getByText("340")).toBeInTheDocument();
 

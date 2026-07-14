@@ -1,0 +1,43 @@
+{
+  "timestamp": "2026-06-16T12:52:37.178Z",
+  "results": {
+    "websocket": true,
+    "sessionFlow": false,
+    "database": true,
+    "transcription": false,
+    "logs": true
+  },
+  "summary": {
+    "WebSocket Connection": "✅ PASS",
+    "Session Flow": "❌ FAIL",
+    "Database State": "✅ PASS",
+    "Transcription Quality": "❌ FAIL",
+    "Server Logs": "✅ PASS (no errors)"
+  },
+  "testResults": {
+    "websocket": {
+      "passed": true,
+      "details": [
+        "✅ WebSocket connection established"
+      ]
+    },
+    "audioTransmission": {
+      "passed": false,
+      "details": []
+    },
+    "transcription": {
+      "passed": false,
+      "details": []
+    },
+    "extraction": {
+      "passed": false,
+      "details": []
+    },
+    "sessionEnd": {
+      "passed": false,
+      "details": [
+        "❌ Session did not end"
+      ]
+    }
+  }
+}

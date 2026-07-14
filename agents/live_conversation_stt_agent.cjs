@@ -165,6 +165,29 @@ class LiveConversationSTTAgent {
     return Boolean(cleaned && /[a-z0-9]/i.test(cleaned));
   }
 
+  isClinicalNoteArtifact(resultData = null) {
+    const text = this.normalizeTranscriptText(this.extractTranscriptText(resultData)).toLowerCase();
+    if (!text) return false;
+
+    const sectionHits = [
+      /\bsubjective\s*:/i,
+      /\bobjective\s*:/i,
+      /\bassessment\s*(?:and|&)?\s*plan\s*:/i,
+      /\bassessment\s*:/i,
+      /\bplan\s*:/i,
+    ].filter((pattern) => pattern.test(text)).length;
+
+    const notePhraseHits = [
+      /\bpatient\s+is\s+a\s+\d{1,3}[-\s]?year[-\s]?old\b/i,
+      /\bpresents\s+for\s+follow[-\s]?up\b/i,
+      /\bvital signs are stable\b/i,
+      /\bphysical exam is unremarkable\b/i,
+      /\bfollow up in \d+\s+(?:days?|weeks?|months?)\b/i,
+    ].filter((pattern) => pattern.test(text)).length;
+
+    return sectionHits >= 2 || (sectionHits >= 1 && notePhraseHits >= 2);
+  }
+
   extractTranscriptText(resultData = null) {
     if (!resultData || typeof resultData !== "object") {
       return "";
@@ -201,6 +224,199 @@ class LiveConversationSTTAgent {
 
   hasUsableTranscriptResult(result = null) {
     return Boolean(result?.success && this.extractTranscriptText(result?.data));
+  }
+
+  resolveExpectedDurationSeconds(options = {}) {
+    const expectedDurationMs = Number(options.expectedDurationMs);
+    if (Number.isFinite(expectedDurationMs) && expectedDurationMs > 0) {
+      return expectedDurationMs / 1000;
+    }
+
+    const expectedDurationSeconds = Number(options.expectedDurationSeconds);
+    if (Number.isFinite(expectedDurationSeconds) && expectedDurationSeconds > 0) {
+      return expectedDurationSeconds;
+    }
+
+    return null;
+  }
+
+  extractTranscriptMaxEndSeconds(resultData = null) {
+    const segments = Array.isArray(resultData?.segments) ? resultData.segments : [];
+    return segments.reduce((maxValue, segment) => {
+      const directEnd = Number(segment?.endSeconds);
+      if (Number.isFinite(directEnd) && directEnd > maxValue) {
+        return directEnd;
+      }
+
+      const startSeconds = Number(segment?.startSeconds);
+      const text = this.normalizeTranscriptText(segment?.normalizedText || segment?.text || "");
+      if (!Number.isFinite(startSeconds) || !text) {
+        return maxValue;
+      }
+
+      const inferredDuration = Math.max(1, Math.ceil(text.split(/\s+/).filter(Boolean).length / 3));
+      return Math.max(maxValue, startSeconds + inferredDuration);
+    }, 0);
+  }
+
+  isLowCoverageBrowserTranscript(resultData = null, options = {}) {
+    const expectedDurationSeconds = this.resolveExpectedDurationSeconds(options);
+    if (!Number.isFinite(expectedDurationSeconds) || expectedDurationSeconds < 45) {
+      return false;
+    }
+
+    const transcriptText = this.extractTranscriptText(resultData);
+    if (!this.isMeaningfulTranscriptText(transcriptText)) {
+      return true;
+    }
+
+    const maxEndSeconds = this.extractTranscriptMaxEndSeconds(resultData);
+    const timedCoverageTooLow = maxEndSeconds > 0 && maxEndSeconds < (expectedDurationSeconds * 0.65);
+    const charsPerSecond = transcriptText.length / expectedDurationSeconds;
+    const textCoverageTooLow = charsPerSecond < 8;
+
+    return timedCoverageTooLow || textCoverageTooLow;
+  }
+
+  scoreBrowserTranscriptCandidate(resultData = null, options = {}) {
+    const transcriptText = this.extractTranscriptText(resultData);
+    const maxEndSeconds = this.extractTranscriptMaxEndSeconds(resultData);
+    const expectedDurationSeconds = this.resolveExpectedDurationSeconds(options);
+    const coverageRatio = Number.isFinite(expectedDurationSeconds) && expectedDurationSeconds > 0 && maxEndSeconds > 0
+      ? Math.min(1, maxEndSeconds / expectedDurationSeconds)
+      : 0;
+
+    return transcriptText.length
+      + Math.round(maxEndSeconds * 8)
+      + Math.round(coverageRatio * 500)
+      + Math.min(Array.isArray(resultData?.segments) ? resultData.segments.length : 0, 20) * 10;
+  }
+
+  isFragmentaryBrowserTranscript(resultData = null, options = {}) {
+    const transcriptText = this.extractTranscriptText(resultData);
+    const cleaned = this.normalizeTranscriptText(transcriptText);
+    if (!cleaned) {
+      return true;
+    }
+
+    const words = cleaned.split(/\s+/).filter(Boolean);
+    const firstWord = words[0] || "";
+    const lastWord = words[words.length - 1] || "";
+    const expectedDurationSeconds = this.resolveExpectedDurationSeconds(options);
+    const charsPerSecond = Number.isFinite(expectedDurationSeconds) && expectedDurationSeconds > 0
+      ? cleaned.length / expectedDurationSeconds
+      : null;
+    const edgeFragment = words.length >= 4 && (firstWord.length <= 2 || lastWord.length <= 2);
+    const shortSparseTranscript = cleaned.length < 35 && words.length < 8;
+
+    if (Number.isFinite(expectedDurationSeconds) && expectedDurationSeconds >= 10) {
+      if (cleaned.length < 35 || words.length < 8) {
+        return true;
+      }
+      if (Number.isFinite(charsPerSecond) && charsPerSecond < 2.4) {
+        return true;
+      }
+    }
+
+    return shortSparseTranscript && edgeFragment;
+  }
+
+  async runWhisperDirectBrowserTranscription(audioPath, mimeType, options = {}) {
+    const expectedDurationSeconds = this.resolveExpectedDurationSeconds(options);
+    const configuredAttempts = Number(options.browserWhisperAttempts);
+    const attempts = Number.isFinite(configuredAttempts) && configuredAttempts > 0
+      ? Math.max(1, Math.floor(configuredAttempts))
+      : Number.isFinite(expectedDurationSeconds) && expectedDurationSeconds >= 45
+        ? 3
+        : 1;
+
+    let lastResult = null;
+    let bestResult = null;
+    let bestScore = -Infinity;
+
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      const result = await this.whisperSkill.execute({
+        audioPath,
+        mimeType,
+        language: options.language || this.config.language,
+        temperature: options.temperature || this.config.temperature,
+      });
+      lastResult = result;
+
+      if (!this.hasUsableTranscriptResult(result)) {
+        continue;
+      }
+
+      const score = this.scoreBrowserTranscriptCandidate(result.data, options);
+      if (!bestResult || score > bestScore) {
+        bestResult = result;
+        bestScore = score;
+      }
+
+      if (
+        !this.isLowCoverageBrowserTranscript(result.data, options)
+        && !this.isFragmentaryBrowserTranscript(result.data, options)
+      ) {
+        break;
+      }
+    }
+
+    return bestResult || lastResult;
+  }
+
+  prepareBrowserTranscriptCandidate(result = null, backendName = "", fallbackReason = null) {
+    if (!this.hasUsableTranscriptResult(result)) {
+      return null;
+    }
+
+    const transcriptText = this.extractTranscriptText(result.data);
+    return {
+      ...result,
+      success: true,
+      data: {
+        ...(result.data || {}),
+        rawText: transcriptText,
+        normalizedText: transcriptText,
+        metadata: {
+          ...(result.data?.metadata || {}),
+          backend: backendName,
+          ...(fallbackReason ? { fallbackReason } : {}),
+        },
+      },
+      backend: backendName,
+    };
+  }
+
+  selectBestBrowserTranscriptCandidate(candidates = [], options = {}) {
+    const usableCandidates = candidates.filter((candidate) => {
+      if (!this.hasUsableTranscriptResult(candidate)) return false;
+      if (options.rejectClinicalNoteArtifacts && this.isClinicalNoteArtifact(candidate.data)) {
+        this.log("Rejected clinical-note-shaped STT candidate", {
+          backend: candidate.backend || candidate?.data?.metadata?.backend || null,
+          textLength: this.extractTranscriptText(candidate.data).length,
+        });
+        return false;
+      }
+      return true;
+    });
+    if (usableCandidates.length === 0) {
+      return null;
+    }
+
+    const nonFragmentaryCandidates = usableCandidates.filter(
+      (candidate) => !this.isFragmentaryBrowserTranscript(candidate.data, options),
+    );
+    const rankedCandidates = nonFragmentaryCandidates.length > 0
+      ? nonFragmentaryCandidates
+      : usableCandidates;
+
+    return rankedCandidates.reduce((bestCandidate, candidate) => {
+      if (!bestCandidate) return candidate;
+      return this.scoreBrowserTranscriptCandidate(candidate.data, options)
+        > this.scoreBrowserTranscriptCandidate(bestCandidate.data, options)
+        ? candidate
+        : bestCandidate;
+    }, null);
   }
 
   buildFailureSummary({
@@ -834,97 +1050,45 @@ class LiveConversationSTTAgent {
     if (mimeType.includes("webm") || mimeType.includes("mp4") || mimeType.includes("mpeg")) {
       this.log("Using direct Whisper transcription for browser format", { mimeType, audioPath });
       try {
-        const whisperDirectResult = await this.whisperSkill.execute({
-          audioPath: absoluteAudioPath,
-          mimeType: mimeType,
-          language: options.language || this.config.language,
-          temperature: options.temperature || this.config.temperature,
-        });
+        const whisperDirectResult = await this.runWhisperDirectBrowserTranscription(absoluteAudioPath, mimeType, options);
+        const whisperCandidate = this.prepareBrowserTranscriptCandidate(whisperDirectResult, "whisper_direct");
+        const whisperCoverageLow = whisperCandidate
+          ? (
+            this.isLowCoverageBrowserTranscript(whisperCandidate.data, options)
+            || this.isFragmentaryBrowserTranscript(whisperCandidate.data, options)
+          )
+          : false;
 
-        if (this.hasUsableTranscriptResult(whisperDirectResult) && whisperDirectResult.data) {
-          const browserSegments = Array.isArray(whisperDirectResult.data.segments)
-            ? whisperDirectResult.data.segments.filter((segment) => this.isMeaningfulTranscriptText(segment?.text || segment?.normalizedText || ""))
-            : [];
-          const browserChunks = this.normalizeBrowserTranscriptChunks(browserSegments);
-          const diarization = options.enableSpeakerDiarization
-            ? await this.runSpeakerDiarization(absoluteAudioPath, mimeType, {
-                ...options,
-                transcriptHint: this.extractTranscriptText(whisperDirectResult.data),
-              })
-            : null;
-          const annotatedChunks = diarization?.segments
-            ? this.annotateChunksWithDiarization(browserChunks, diarization)
-            : browserChunks;
-          const diarizedSegments = this.applyBrowserDiarizationToSegments(browserSegments, annotatedChunks);
-          const diarizedSpeakers = Array.isArray(diarization?.speakers)
-            ? diarization.speakers.map((speaker, idx) => ({
-                id: speaker?.id || speaker?.speaker || `spk_${idx + 1}`,
-                label: speaker?.label || `Speaker ${idx + 1}`,
-                role: speaker?.role || "unknown",
-                confidence: typeof speaker?.confidence === "number" ? speaker.confidence : null,
-              }))
-            : (Array.isArray(result.data.speakers) ? result.data.speakers : []);
-          const quality = {
-            ...(whisperDirectResult.data.quality || {}),
-            speakerAmbiguityCount: diarizedSegments.filter((segment) => segment?.speakerRole === "unknown").length,
-          };
-
-          return {
-            success: true,
-            data: {
-              ...whisperDirectResult.data,
-              rawText: this.extractTranscriptText(whisperDirectResult.data),
-              normalizedText: this.extractTranscriptText(whisperDirectResult.data),
-              segments: diarizedSegments,
-              chunks: annotatedChunks,
-              speakers: diarizedSpeakers,
-              quality,
-            },
-            backend: "whisper_direct",
-            model: "whisper-self-hosted",
-          };
+        let medasrResult = null;
+        let medasrCandidate = null;
+        if (!whisperCandidate || whisperCoverageLow) {
+          medasrResult = await this.runMedASRShadowTranscription(absoluteAudioPath, mimeType, options);
+          medasrCandidate = this.prepareBrowserTranscriptCandidate(
+            medasrResult,
+            "medasr_browser_fallback",
+            whisperCandidate ? "whisper_direct_low_coverage" : "whisper_direct_unusable",
+          );
         }
-
-        const medasrResult = await this.runMedASRShadowTranscription(absoluteAudioPath, mimeType, options);
-        let finalTranscriptResult = this.hasUsableTranscriptResult(medasrResult)
-          ? {
-              ...medasrResult,
-              data: {
-                ...(medasrResult.data || {}),
-                rawText: this.extractTranscriptText(medasrResult.data),
-                normalizedText: this.extractTranscriptText(medasrResult.data),
-                metadata: {
-                  ...(medasrResult.data?.metadata || {}),
-                  backend: "medasr_browser_fallback",
-                  fallbackReason: "whisper_direct_unusable",
-                },
-              },
-              backend: "medasr_browser_fallback",
-            }
-          : null;
-
         let geminiFallbackResult = null;
-        if (!finalTranscriptResult) {
+        let geminiCandidate = null;
+        if (!whisperCandidate || whisperCoverageLow) {
           geminiFallbackResult = await this.runGeminiFallback(absoluteAudioPath, mimeType, options);
-          if (this.hasUsableTranscriptResult(geminiFallbackResult)) {
-            finalTranscriptResult = {
-              ...geminiFallbackResult,
-              data: {
-                ...(geminiFallbackResult.data || {}),
-                rawText: this.extractTranscriptText(geminiFallbackResult.data),
-                normalizedText: this.extractTranscriptText(geminiFallbackResult.data),
-                metadata: {
-                  ...(geminiFallbackResult.data?.metadata || {}),
-                  backend: "gemini_browser_fallback",
-                  fallbackReason: "whisper_direct_unusable",
-                },
-              },
-              backend: "gemini_browser_fallback",
-            };
-          }
+          geminiCandidate = this.prepareBrowserTranscriptCandidate(
+            geminiFallbackResult,
+            "gemini_browser_fallback",
+            whisperCandidate ? "whisper_direct_low_coverage" : "whisper_direct_unusable",
+          );
         }
 
-        if (finalTranscriptResult?.data) {
+        const finalTranscriptResult = this.selectBestBrowserTranscriptCandidate(
+          [whisperCandidate, medasrCandidate, geminiCandidate].filter(Boolean),
+          options,
+        );
+
+        if (
+          finalTranscriptResult?.data
+          && !this.isFragmentaryBrowserTranscript(finalTranscriptResult.data, options)
+        ) {
           const transcriptHint = this.extractTranscriptText(finalTranscriptResult.data);
           const diarization = options.enableSpeakerDiarization
             ? await this.runSpeakerDiarization(absoluteAudioPath, mimeType, {

@@ -96,6 +96,8 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 | Skills Framework | Reusable AI skills documentation | [View](./architecture/skills-framework.md) |
 | Chatbot Architecture | Doctor Assistant chat system | [View](./architecture/chatbot-architecture.md) |
 | Chart Note React Agent | Chart note generation architecture | [View](./architecture/CHART_NOTE_REACT_AGENT.md) |
+| ABDM ABHA + EHR API Integration Plan | Planning-oriented real API integration plan for ABHA identity, ABDM HIP/HIU workflows, HPR/HFR, callbacks, and FHIR EHR exchange | [View](./architecture/abdm-ehr-api-integration-plan.md) |
+| ABDM ABHA + EHR API Integration Checklist | Execution tracker for ABDM sandbox, backend, frontend, callback, FHIR, consent, and production certification work | [View](./architecture/abdm-ehr-api-integration-checklist.md) |
 | Postgres Persistence + Interoperability Plan | Planning-oriented canonical spec for Postgres migration, FHIR-first persistence, HL7 v2 adapter boundaries, and hybrid identity handling | [View](./architecture/postgres-persistence-interoperability-plan.md) |
 | Postgres Persistence + Interoperability Checklist | Planning-oriented execution tracker for the Postgres, HL7, and FHIR migration program | [View](./architecture/postgres-persistence-interoperability-checklist.md) |
 | Phase 3A Master Data + Identity Backfill Contract | Planning-oriented implementation contract for backfilling users, sessions, provisional patients/encounters, identifiers, and practitioner links from the real runtime stores | [View](./architecture/phase-3a-master-data-identity-backfill-contract.md) |

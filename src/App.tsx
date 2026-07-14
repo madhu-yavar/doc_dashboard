@@ -11,6 +11,8 @@ import UploadCenter from "./pages/UploadCenter.tsx";
 import Prescription from "./pages/Prescription.tsx";
 import SOAP from "./pages/SOAP.tsx";
 import { SpeakerDiarizationTest } from "./components/voice/SpeakerDiarizationTest.tsx";
+import AbdmIntegrationPage from "./abdm/AbdmIntegrationPage.jsx";
+import ItemServiceMasterAdmin from "./pages/ItemServiceMasterAdmin.tsx";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,10 @@ const App = () => (
               <Route path="/prescription/:documentId" element={<Prescription />} />
               <Route path="/soap/:documentId" element={<SOAP />} />
               <Route path="/test/speaker-diarization" element={<SpeakerDiarizationTest />} />
+              <Route element={<ProtectedRoute roles={["admin"]} />}>
+                <Route path="/abdm" element={<AbdmIntegrationPage />} />
+                <Route path="/admin/item-service-master" element={<ItemServiceMasterAdmin />} />
+              </Route>
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

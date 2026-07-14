@@ -175,7 +175,7 @@ describe("PrescriptionReview", () => {
     fireEvent.change(screen.getByDisplayValue("TELMA 40MG"), {
       target: { value: "AMOXICILLIN 500MG" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /save & generate/i }));
+    fireEvent.click(screen.getByRole("button", { name: /save and generate/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(3);

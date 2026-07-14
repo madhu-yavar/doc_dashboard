@@ -1,13 +1,21 @@
 class GeminiClientTool {
   constructor(config = {}) {
     this.name = "Gemini LLM Client";
-    this.version = "1.0.0";
+    this.version = "1.1.0"; // Bumped for model fallback support
     this.baseUrl = config.baseUrl || process.env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta/models";
     this.model = config.model || process.env.GEMINI_MODEL || "gemini-2.5-flash";
     this.timeout = config.timeout || 120000;
     this.apiKey = config.apiKey || process.env.GEMINI_API_KEY || "";
     this.apiKeyFallback = config.apiKeyFallback || process.env.GEMINI_API_KEY_FALLBACK || "";
     this.apiKeys = [this.apiKey, this.apiKeyFallback].filter(Boolean);
+
+    // Model fallback chain
+    this.models = [
+      this.model,
+      process.env.GEMINI_MODEL_FALLBACK_1,
+      process.env.GEMINI_MODEL_FALLBACK_2,
+      process.env.GEMINI_MODEL_FALLBACK_3
+    ].filter(Boolean);
   }
 
   sleep(ms) {
@@ -128,9 +136,18 @@ class GeminiClientTool {
     // Try each API key with retries before moving to the next key
     for (let keyIndex = 0; keyIndex < availableKeys.length; keyIndex++) {
       const apiKey = availableKeys[keyIndex];
-      const isFallback = keyIndex > 0;
+      const isKeyFallback = keyIndex > 0;
 
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      // Try each model in the fallback chain
+      for (let modelIndex = 0; modelIndex < this.models.length; modelIndex++) {
+        const currentModel = this.models[modelIndex];
+        const isModelFallback = modelIndex > 0;
+
+        if (isModelFallback) {
+          console.log(`[Gemini] Trying fallback model ${modelIndex}: ${currentModel}`);
+        }
+
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -204,7 +221,7 @@ class GeminiClientTool {
           }
         }
 
-        const response = await fetch(`${this.baseUrl}/${this.model}:generateContent`, {
+        const response = await fetch(`${this.baseUrl}/${currentModel}:generateContent`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -242,15 +259,20 @@ class GeminiClientTool {
         if (!response.ok) {
           const text = await response.text();
 
-          // Try next API key if this is a non-retryable error or we've exhausted retries
+          // Try next model if this is a non-retryable error or we've exhausted retries
           const isRetryable = this.isRetryableStatus(response.status);
           if (!isRetryable || attempt >= maxRetries) {
+            // If we have more models to try, continue to next model
+            if (modelIndex < this.models.length - 1) {
+              console.warn(`[Gemini] Model ${currentModel} failed with HTTP ${response.status}. Trying fallback model...`);
+              break; // Break out of retry loop, continue to next model
+            }
             // If we have more API keys to try, continue to next key
             if (keyIndex < availableKeys.length - 1) {
-              console.warn(`[Gemini] API key ${keyIndex + 1} failed with HTTP ${response.status}. Trying fallback key...`);
+              console.warn(`[Gemini] API key ${keyIndex + 1} failed with HTTP ${response.status}. Trying fallback API key...`);
               break; // Break out of retry loop, continue to next API key
             }
-            // No more keys to try, return final error
+            // No more keys/models to try, return final error
             return {
               success: false,
               error: `Gemini request failed (${response.status}): ${text}`,
@@ -273,15 +295,15 @@ class GeminiClientTool {
           console.warn(`[Gemini] Response not complete: finishReason=${finishReason}`);
         }
 
-        // Success - return immediately
-        if (isFallback) {
-          console.log(`[Gemini] Request succeeded with fallback API key`);
+        // Success - return immediately with model info
+        if (isKeyFallback || isModelFallback) {
+          console.log(`[Gemini] Request succeeded with ${isModelFallback ? `model: ${currentModel}` : `fallback API key`}`);
         }
         return {
           success: true,
           content: this.extractText(payload),
           usage: this.normalizeUsage(payload.usageMetadata || {}),
-          model: this.model,
+          model: currentModel,
           finishReason: finishReason,
           rawPayload: payload,
         };
@@ -290,12 +312,17 @@ class GeminiClientTool {
 
         const isRetryable = this.isRetryableError(error);
         if (!isRetryable || attempt >= maxRetries) {
+          // If we have more models to try, continue to next model
+          if (modelIndex < this.models.length - 1 && error.name !== "AbortError") {
+            console.warn(`[Gemini] Model ${currentModel} failed with error: ${error.message}. Trying fallback model...`);
+            break; // Break out of retry loop, continue to next model
+          }
           // If we have more API keys to try, continue to next key
           if (keyIndex < availableKeys.length - 1 && error.name !== "AbortError") {
-            console.warn(`[Gemini] API key ${keyIndex + 1} failed with error: ${error.message}. Trying fallback key...`);
+            console.warn(`[Gemini] API key ${keyIndex + 1} failed with error: ${error.message}. Trying fallback API key...`);
             break; // Break out of retry loop, continue to next API key
           }
-          // No more keys to try or it's a timeout, return final error
+          // No more keys/models to try or it's a timeout, return final error
           if (error.name === "AbortError") {
             return {
               success: false,
@@ -315,6 +342,7 @@ class GeminiClientTool {
         console.warn(`[Gemini] Retry ${attempt + 1}/${maxRetries} after transient error: ${error.message}. Waiting ${delayMs}ms.`);
         await this.sleep(delayMs);
         continue;
+      }
       }
       }
     }
@@ -351,7 +379,7 @@ class GeminiClientTool {
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
         try {
-          const response = await fetch(`${this.baseUrl}/${this.model}:generateContent`, {
+          const response = await fetch(`${this.baseUrl}/${currentModel}:generateContent`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

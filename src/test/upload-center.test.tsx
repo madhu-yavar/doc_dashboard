@@ -211,17 +211,16 @@ describe("UploadCenter", () => {
   it("renders the intake page with the process action disabled initially", async () => {
     renderPage();
 
-    expect(await screen.findByText(/documents queue/i)).toBeInTheDocument();
+    expect(await screen.findByText(/document queue/i)).toBeInTheDocument();
     expect(await screen.findByText(/no documents found/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /process selected/i })).toBeDisabled();
-    // Select PDFs button exists (there are multiple - nav + content)
-    expect(screen.getAllByRole("button", { name: /select pdfs/i }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /select pdfs/i })).not.toBeInTheDocument();
   }, 15000);
 
   it("adds uploaded pdfs to the queue and processes them", async () => {
-    const { container } = renderPage();
+    const { container } = renderPage("/upload?tab=prescription");
 
-    await screen.findByText(/no documents found/i);
+    await screen.findByText(/prescription queue/i);
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(["dummy"], "Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf", {
@@ -231,6 +230,10 @@ describe("UploadCenter", () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     expect(await screen.findByText("Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("checkbox", {
+      name: /select custom\.mexx\.report/i,
+    }));
 
     const processButton = screen.getByRole("button", { name: /process selected/i });
     expect(processButton).toBeEnabled();
@@ -244,9 +247,9 @@ describe("UploadCenter", () => {
   }, 20000);
 
   it("searches processed records by patient name and MRN", async () => {
-    const { container } = renderPage();
+    const { container } = renderPage("/upload?tab=prescription");
 
-    await screen.findByText(/no documents found/i);
+    await screen.findByText(/prescription queue/i);
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(["dummy"], "Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf", {
@@ -254,6 +257,9 @@ describe("UploadCenter", () => {
     });
 
     fireEvent.change(input, { target: { files: [file] } });
+    fireEvent.click(await screen.findByRole("checkbox", {
+      name: /select custom\.mexx\.report/i,
+    }));
     fireEvent.click(await screen.findByRole("button", { name: /process selected/i }));
 
     // Wait for processed status first
@@ -262,7 +268,8 @@ describe("UploadCenter", () => {
     }, { timeout: 8000 });
 
     // Then wait for patient info to appear
-    await screen.findByText(/sample patient · mrn mrn-1/i, {}, { timeout: 4000 });
+    await screen.findByText(/sample patient/i, {}, { timeout: 4000 });
+    expect(screen.getByText(/mrn mrn-1/i)).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText(/search by pdf, patient, or mrn/i), {
       target: { value: "MRN-1" },
@@ -278,9 +285,9 @@ describe("UploadCenter", () => {
   }, 20000);
 
   it("supports selecting and deleting queued documents", async () => {
-    const { container } = renderPage();
+    const { container } = renderPage("/upload?tab=prescription");
 
-    await screen.findByText(/no documents found/i);
+    await screen.findByText(/prescription queue/i);
 
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(["dummy"], "Custom.MEXX.Report.ZEN.DischargeSummary3.cls.pdf", {
@@ -301,15 +308,15 @@ describe("UploadCenter", () => {
     fireEvent.click(screen.getByRole("button", { name: /delete selected/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/no documents found/i)).toBeInTheDocument();
+      expect(screen.getByText(/no prescription documents found/i)).toBeInTheDocument();
     });
   }, 20000);
 
   it("hides admin-only controls for doctor logins", async () => {
     role = "doctor";
-    const { container } = renderPage();
+    const { container } = renderPage("/upload?tab=prescription");
 
-    await screen.findByText(/documents queue/i);
+    await screen.findByText(/prescription queue/i);
     // Admin-only controls should not be visible for doctor role
     expect(screen.queryByRole("button", { name: /delete selected/i })).not.toBeInTheDocument();
 
@@ -327,11 +334,12 @@ describe("UploadCenter", () => {
   it("renders the live conversation UI shell without disturbing the dictation workspace", async () => {
     const firstView = renderPage("/upload?workspace=voice");
     expect(await screen.findByText(/dictation review queue/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /switch voice mode/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /^dictation$/i })).toHaveAttribute("aria-selected", "true");
 
     firstView.unmount();
 
     renderPage("/upload?workspace=voice&mode=live");
+    expect(screen.getByRole("tab", { name: /^live$/i })).toHaveAttribute("aria-selected", "true");
     expect(await screen.findByText(/no session selected/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /new session/i }));
 
@@ -411,7 +419,7 @@ describe("UploadCenter", () => {
     fireEvent.click(screen.getByRole("button", { name: /create new visit/i }));
 
     expect(await screen.findByRole("button", { name: /^start$/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /new conversation/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^(new conversation|en\d{6})$/i })).toBeInTheDocument();
   }, 15000);
 
   it("shows finalized live conversations as processed live records with the encounter label in the queue", async () => {
@@ -528,8 +536,8 @@ describe("UploadCenter", () => {
     renderPage();
 
     expect(await screen.findByText("Madhu - EN001")).toBeInTheDocument();
-    expect(screen.getByText(/^processed$/i)).toBeInTheDocument();
-    expect(screen.getByText(/^live$/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/^processed$/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^live$/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/madhu · en001/i)).toBeInTheDocument();
   }, 15000);
 });

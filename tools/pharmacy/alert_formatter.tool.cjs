@@ -77,7 +77,7 @@ class AlertFormatter {
         dose: med.dose || med.dosage || null,
         frequency: med.frequency || null,
         duration: med.duration || null,
-        instructions: med.instructions || null
+        instructions: med.instructions || med.instruction || null
       }));
   }
 
@@ -88,11 +88,11 @@ class AlertFormatter {
     const diagnosis = data?.diagnosis || {};
 
     // Primary diagnosis
-    const principal = this.cleanText(diagnosis.principal);
+    const principal = this.cleanText(this.textFromValue(diagnosis.principal));
 
     // If no principal, try to build from symptoms
     if (!principal && diagnosis.symptoms && diagnosis.symptoms.length > 0) {
-      return diagnosis.symptoms.slice(0, 3).join(', ');
+      return diagnosis.symptoms.slice(0, 3).map((item) => this.textFromValue(item)).filter(Boolean).join(', ');
     }
 
     return principal;
@@ -158,7 +158,7 @@ class AlertFormatter {
    */
   determineUrgency(data) {
     const medications = data?.medications || [];
-    const diagnosis = (data?.diagnosis?.principal || '').toLowerCase();
+    const diagnosis = this.textFromValue(data?.diagnosis?.principal).toLowerCase();
 
     // High urgency keywords
     const urgentKeywords = [
@@ -194,6 +194,22 @@ class AlertFormatter {
   cleanText(text) {
     if (!text || typeof text !== 'string') return null;
     return text.trim().replace(/\s+/g, ' ') || null;
+  }
+
+  textFromValue(value) {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return String(value);
+    if (!value || typeof value !== 'object') return '';
+
+    return this.cleanText(
+      value.name ||
+      value.description ||
+      value.label ||
+      value.text ||
+      value.value ||
+      value.summary ||
+      ''
+    ) || '';
   }
 }
 
