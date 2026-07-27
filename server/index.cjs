@@ -28,6 +28,7 @@ const { LiveSessionsRepository } = require('./repositories/live_sessions_reposit
 // Live Conversation Support
 const LiveConversationWebSocket = require("./live_conversation_websocket.cjs");
 const LiveConversationRoutes = require("./live_conversation_routes.cjs");
+const VoiceDailyNotesRoutes = require("./voice_daily_notes_routes.cjs");
 const {
   hydrateLiveConversationDocument,
   isLiveConversationDocument,
@@ -175,6 +176,12 @@ const liveConversationRoutes = new LiveConversationRoutes({
   authService,
   transcriptsRepository,
   docsRepository // Phase 6: Pass docsRepository for Postgres-only document creation
+});
+
+// Voice Daily Notes Routes
+const voiceDailyNotesRoutes = new VoiceDailyNotesRoutes({
+  storageDir: path.join(storageDir, 'voice_daily_notes'),
+  uploadDir: path.join(storageDir, 'voice_daily_notes', 'uploads')
 });
 
 app.use(cors({
@@ -3129,6 +3136,9 @@ registerItemServiceMasterRoutes(app, {
 
 // Register Live Conversation routes
 liveConversationRoutes.registerRoutes(app, authService);
+
+// Register Voice Daily Notes routes
+voiceDailyNotesRoutes.registerRoutes(app, authService);
 
 async function requireAuthenticatedAssetAccess(req, res, next) {
   try {
