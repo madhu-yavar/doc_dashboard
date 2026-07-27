@@ -8,6 +8,7 @@ import {
   FileText,
   Key,
   Mic,
+  Plus,
   RadioTower,
   RefreshCw,
   Search,
@@ -15,6 +16,7 @@ import {
   Stethoscope,
   Trash2,
   Upload,
+  Users,
 } from "lucide-react";
 
 import AppShellHeader from "@/components/auth/AppShellHeader";
@@ -1544,6 +1546,29 @@ const UploadCenter = () => {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
+                                {getDocumentBucket(document, documentUploadHints) === "inpatient" && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="border-purple-200 bg-purple-50 text-purple-600 hover:bg-purple-100"
+                                    title="View Inpatient Journey"
+                                    onClick={() => {
+                                      if (canOpenDashboard) {
+                                        navigate(`/inpatient-journey/${document.id}`);
+                                      } else {
+                                        toast.info("Process this document first to access journey management.");
+                                      }
+                                    }}
+                                    disabled={
+                                      document.status === "queued" ||
+                                      document.status === "processing" ||
+                                      document.status === "transcribing" ||
+                                      document.status === "failed"
+                                    }
+                                  >
+                                    <Users className="h-4 w-4" />
+                                  </Button>
+                                )}
                                 {isAdmin ? (
                                   <Button
                                     variant="ghost"
@@ -1627,6 +1652,17 @@ function IntakeTabBar({
                   </TabsTrigger>
                 );
               })}
+              <Button
+                size="sm"
+                onClick={() => {
+                  const newJourneyId = `journey_${Date.now()}`;
+                  window.location.href = `/inpatient-journey/${newJourneyId}`;
+                }}
+                className="rounded-xl border border-transparent px-4 py-2.5 text-slate-600 hover:border-teal-600 hover:bg-teal-600 hover:text-white shadow-none"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                <span>New Journey</span>
+              </Button>
             </TabsList>
           </div>
         </Tabs>

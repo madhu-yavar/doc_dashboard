@@ -59,7 +59,15 @@ const SCHEMA_DEFINITION = {
     `CREATE TYPE segment_status_enum AS ENUM ('interim', 'active', 'edited', 'deleted', 'final');`,
     `CREATE TYPE alert_family_enum AS ENUM ('pharmacy', 'department', 'system', 'external');`,
     `CREATE TYPE channel_enum AS ENUM ('email', 'sms', 'websocket', 'http', 'internal');`,
-    `CREATE TYPE workflow_enum AS ENUM ('document_processing', 'voice_upload', 'live_conversation', 'chat', 'audit', 'external_sync');`
+    `CREATE TYPE workflow_enum AS ENUM ('document_processing', 'voice_upload', 'live_conversation', 'chat', 'audit', 'external_sync');`,
+
+    // Inpatient journey states
+    `CREATE TYPE journey_status_enum AS ENUM ('admitted', 'in_progress', 'discharged', 'cancelled');`,
+    `CREATE TYPE daily_note_type_enum AS ENUM ('admission', 'progress', 'rounds', 'nursing', 'discharge');`,
+    `CREATE TYPE daily_note_source_enum AS ENUM ('manual', 'voice_upload', 'live_voice', 'dictation_batch');`,
+    `CREATE TYPE daily_note_status_enum AS ENUM ('draft', 'pending_review', 'approved', 'superseded');`,
+    `CREATE TYPE dept_integration_enum AS ENUM ('lab', 'radiology', 'pharmacy', 'billing');`,
+    `CREATE TYPE integration_status_enum AS ENUM ('pending', 'sent', 'received', 'completed', 'failed');`
   ],
 
   // Master data tables
@@ -803,7 +811,27 @@ const SCHEMA_DEFINITION = {
     // Identity reconciliation
     'CREATE INDEX idx_identity_reconciliation_cases_status ON identity_reconciliation_cases(case_status);',
     'CREATE INDEX idx_identity_reconciliation_cases_assigned ON identity_reconciliation_cases(assigned_to_user_id);',
-    'CREATE INDEX idx_identity_reconciliation_cases_entity ON identity_reconciliation_cases(entity_type);'
+    'CREATE INDEX idx_identity_reconciliation_cases_entity ON identity_reconciliation_cases(entity_type);',
+
+    // Inpatient journeys
+    'CREATE INDEX idx_inpatient_journeys_encounter ON inpatient_journeys(encounter_id);',
+    'CREATE INDEX idx_inpatient_journeys_patient ON inpatient_journeys(patient_id);',
+    'CREATE INDEX idx_inpatient_journeys_status_ward ON inpatient_journeys(status, current_ward);',
+    'CREATE INDEX idx_inpatient_journeys_physician ON inpatient_journeys(attending_physician_id);',
+    'CREATE INDEX idx_inpatient_journeys_admitted ON inpatient_journeys(admitted_at);',
+
+    // Daily progress notes
+    'CREATE INDEX idx_daily_notes_journey ON daily_progress_notes(journey_id);',
+    'CREATE INDEX idx_daily_notes_patient_date ON daily_progress_notes(patient_id, note_date);',
+    'CREATE INDEX idx_daily_notes_type_date ON daily_progress_notes(note_type, note_date);',
+    'CREATE INDEX idx_daily_notes_status ON daily_progress_notes(status);',
+    'CREATE INDEX idx_daily_notes_created_by ON daily_progress_notes(created_by_user_id);',
+
+    // Department integrations
+    'CREATE INDEX idx_dept_integrations_journey ON department_integrations(journey_id);',
+    'CREATE INDEX idx_dept_integrations_type_status ON department_integrations(integration_type, status);',
+    'CREATE INDEX idx_dept_integrations_patient_type ON department_integrations(patient_id, integration_type);',
+    'CREATE INDEX idx_dept_integrations_daily_note ON department_integrations(daily_note_id);'
   ],
 
   // Analytics table
@@ -838,6 +866,109 @@ const SCHEMA_DEFINITION = {
       metadata_jsonb JSONB DEFAULT '{}',
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       CONSTRAINT fk_analytics_document_metrics_document FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
+    );`
+  ],
+
+  // Inpatient journey tables
+  inpatientJourney: [
+    // Inpatient journeys table - tracks complete patient journey from admission to discharge
+    `CREATE TABLE inpatient_journeys (
+      id TEXT PRIMARY KEY,
+      encounter_id TEXT NOT NULL,
+      patient_id TEXT NOT NULL,
+      status journey_status_enum NOT NULL DEFAULT 'admitted',
+      admission_type TEXT,
+      admission_reason TEXT,
+      attending_physician_id TEXT,
+      current_location_id TEXT,
+      current_ward TEXT,
+      current_bed TEXT,
+      admitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expected_discharge_at TIMESTAMPTZ,
+      discharged_at TIMESTAMPTZ,
+      discharge_type TEXT,
+      discharge_diagnosis TEXT,
+      discharge_summary_jsonb JSONB DEFAULT '{}',
+      discharge_medications_jsonb JSONB DEFAULT '{}',
+      length_of_stay_days INT,
+      current_daily_note_id TEXT,
+      total_daily_notes INT DEFAULT 0,
+      journey_metadata_jsonb JSONB DEFAULT '{}',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CONSTRAINT fk_inpatient_journeys_encounter FOREIGN KEY (encounter_id) REFERENCES encounters(id) ON DELETE RESTRICT,
+      CONSTRAINT fk_inpatient_journeys_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT,
+      CONSTRAINT fk_inpatient_journeys_location FOREIGN KEY (current_location_id) REFERENCES locations(id) ON DELETE SET NULL,
+      CONSTRAINT fk_inpatient_journeys_physician FOREIGN KEY (attending_physician_id) REFERENCES practitioners(id) ON DELETE SET NULL
+    );`,
+
+    // Daily progress notes table - day-by-day clinical documentation
+    `CREATE TABLE daily_progress_notes (
+      id TEXT PRIMARY KEY,
+      journey_id TEXT NOT NULL,
+      encounter_id TEXT NOT NULL,
+      patient_id TEXT NOT NULL,
+      note_type daily_note_type_enum NOT NULL,
+      note_day_sequence INT NOT NULL,
+      source daily_note_source_enum NOT NULL DEFAULT 'manual',
+      status daily_note_status_enum NOT NULL DEFAULT 'draft',
+      note_date DATE NOT NULL,
+      note_time TIME,
+      chief_complaint TEXT,
+      history_of_present_illness TEXT,
+      subjective_notes TEXT,
+      objective_notes_jsonb JSONB DEFAULT '{}',
+      assessment TEXT,
+      plan TEXT,
+      medications_jsonb JSONB DEFAULT '{}',
+      orders_jsonb JSONB DEFAULT '{}',
+      vitals_jsonb JSONB DEFAULT '{}',
+      lab_results_jsonb JSONB DEFAULT '{}',
+      radiology_results_jsonb JSONB DEFAULT '{}',
+      procedures_jsonb JSONB DEFAULT '{}',
+      nursing_notes_jsonb JSONB DEFAULT '{}',
+      transcript_id TEXT,
+      voice_session_id TEXT,
+      created_by_user_id TEXT NOT NULL,
+      review_required_by_user_id TEXT,
+      reviewed_by_user_id TEXT,
+      reviewed_at TIMESTAMPTZ,
+      review_notes_jsonb JSONB DEFAULT '[]',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CONSTRAINT fk_daily_notes_journey FOREIGN KEY (journey_id) REFERENCES inpatient_journeys(id) ON DELETE CASCADE,
+      CONSTRAINT fk_daily_notes_encounter FOREIGN KEY (encounter_id) REFERENCES encounters(id) ON DELETE RESTRICT,
+      CONSTRAINT fk_daily_notes_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT,
+      CONSTRAINT fk_daily_notes_transcript FOREIGN KEY (transcript_id) REFERENCES transcripts(id) ON DELETE SET NULL,
+      CONSTRAINT fk_daily_notes_voice_session FOREIGN KEY (voice_session_id) REFERENCES live_conversation_sessions(id) ON DELETE SET NULL,
+      CONSTRAINT fk_daily_notes_created_by FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
+      CONSTRAINT fk_daily_notes_reviewer FOREIGN KEY (review_required_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+    );`,
+
+    // Department integrations table - tracks lab/radiology/pharmacy integrations
+    `CREATE TABLE department_integrations (
+      id TEXT PRIMARY KEY,
+      journey_id TEXT NOT NULL,
+      daily_note_id TEXT,
+      encounter_id TEXT NOT NULL,
+      patient_id TEXT NOT NULL,
+      integration_type dept_integration_enum NOT NULL,
+      direction TEXT NOT NULL,
+      external_order_id TEXT,
+      external_result_id TEXT,
+      order_payload_jsonb JSONB DEFAULT '{}',
+      result_payload_jsonb JSONB DEFAULT '{}',
+      normalized_payload_jsonb JSONB DEFAULT '{}',
+      status integration_status_enum NOT NULL DEFAULT 'pending',
+      ordered_at TIMESTAMPTZ,
+      completed_at TIMESTAMPTZ,
+      error_message TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CONSTRAINT fk_dept_integrations_journey FOREIGN KEY (journey_id) REFERENCES inpatient_journeys(id) ON DELETE CASCADE,
+      CONSTRAINT fk_dept_integrations_daily_note FOREIGN KEY (daily_note_id) REFERENCES daily_progress_notes(id) ON DELETE SET NULL,
+      CONSTRAINT fk_dept_integrations_encounter FOREIGN KEY (encounter_id) REFERENCES encounters(id) ON DELETE RESTRICT,
+      CONSTRAINT fk_dept_integrations_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE RESTRICT
     );`
   ]
 };
@@ -1096,6 +1227,34 @@ class PostgresSchema {
   }
 
   /**
+   * Create inpatient journey tables
+   */
+  async createInpatientJourneyTables() {
+    console.log('Creating inpatient journey tables...');
+    const created = [];
+
+    for (const tableSql of this.schemaDefinition.inpatientJourney) {
+      const tableName = tableSql.match(/CREATE TABLE (\w+)/)[1];
+
+      if (await this.tableExists(tableName)) {
+        console.log(`- Table already exists: ${tableName}`);
+        continue;
+      }
+
+      try {
+        await this.client.query(tableSql);
+        created.push(tableName);
+        console.log(`✓ Created table: ${tableName}`);
+      } catch (error) {
+        console.error(`✗ Failed to create table ${tableName}: ${error.message}`);
+        throw error;
+      }
+    }
+
+    return created;
+  }
+
+  /**
    * Create migration tracking table
    */
   async createMigrationTrackingTable() {
@@ -1260,6 +1419,7 @@ class PostgresSchema {
       additionalTables: [],
       interopInfrastructure: [],
       analytics: [],
+      inpatientJourney: [],
       migrationTracking: [],
       indexes: [],
       deferredFKs: []
@@ -1278,6 +1438,7 @@ class PostgresSchema {
       results.additionalTables = await this.createAdditionalTables();
       results.interopInfrastructure = await this.createInteropInfrastructureTables();
       results.analytics = await this.createAnalyticsTable();
+      results.inpatientJourney = await this.createInpatientJourneyTables();
       results.migrationTracking = await this.createMigrationTrackingTable();
       console.log('');
 
@@ -1337,6 +1498,9 @@ class PostgresSchema {
     const tablesInOrder = [
       'schema_migrations',  // Migration tracking table (drop first as it has no dependencies)
       'analytics_document_metrics',
+      'department_integrations',
+      'daily_progress_notes',
+      'inpatient_journeys',
       'identity_reconciliation_cases',
       'interop_resource_links',
       'interop_message_events',
@@ -1392,7 +1556,9 @@ class PostgresSchema {
       'entity_type_enum', 'user_role_enum', 'user_status_enum',
       'document_type_enum', 'document_subtype_enum', 'source_kind_enum',
       'asset_role_enum', 'storage_backend_enum', 'speaker_role_enum',
-      'segment_status_enum', 'alert_family_enum', 'channel_enum', 'workflow_enum'
+      'segment_status_enum', 'alert_family_enum', 'channel_enum', 'workflow_enum',
+      'journey_status_enum', 'daily_note_type_enum', 'daily_note_source_enum',
+      'daily_note_status_enum', 'dept_integration_enum', 'integration_status_enum'
     ];
 
     for (const enumName of enums) {

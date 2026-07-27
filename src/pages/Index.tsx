@@ -29,7 +29,7 @@ import {
   isCardActive,
   type ProcessedDocument,
 } from "@/lib/processedDocuments";
-import { ArrowLeft, Bell, ChevronLeft, ChevronRight, Printer, Mail, FileDown, FileText, Search, Key, Shield, Eye } from "lucide-react";
+import { ArrowLeft, Bell, ChevronLeft, ChevronRight, Printer, Mail, FileDown, FileText, Search, Key, Shield, Eye, Users, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -715,16 +715,38 @@ const Index = () => {
               </Button>
             </>
           )}
+          <Button
+            size="sm"
+            className="rounded-full bg-teal-600 text-white hover:bg-teal-700"
+            onClick={() => {
+              const newJourneyId = `journey_${Date.now()}`;
+              navigate(`/inpatient-journey/${newJourneyId}`);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Journey
+          </Button>
           {documentId ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-              onClick={() => navigate(`/soap/${documentId}`)}
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              SOAP
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                onClick={() => navigate(`/soap/${documentId}`)}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                SOAP
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                onClick={() => navigate(`/inpatient-journey/${documentId}`)}
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Journey
+              </Button>
+            </>
           ) : null}
           <Popover open={recordSearchOpen} onOpenChange={setRecordSearchOpen}>
             <PopoverTrigger asChild>
@@ -945,6 +967,26 @@ const Index = () => {
 
       <div className="mt-5 grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:auto-rows-[156px] xl:grid-cols-3">
+          <SectionCard
+            icon={<span className="text-base">🏥</span>}
+            title="New Patient Journey"
+            colorClass="bg-teal-100"
+            onClick={() => {
+              const newJourneyId = `journey_${Date.now()}`;
+              navigate(`/inpatient-journey/${newJourneyId}`);
+            }}
+          >
+            <div className="flex h-full flex-col justify-between gap-2">
+              <div>
+                <p className="text-[13px] font-semibold text-teal-900">Create New Journey</p>
+                <p className="text-[11px] text-teal-700 mt-1">Start managing a new patient admission journey</p>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] text-teal-600">
+                <Plus className="h-3 w-3" />
+                <span>Click to create</span>
+              </div>
+            </div>
+          </SectionCard>
           {visibleSummaryCards.map((key) => {
             const config = SUMMARY_CARD_CONFIG[key];
             const card = summaryCards[key];

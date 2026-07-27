@@ -115,6 +115,7 @@ The Doctor Dashboard is an **AI-powered clinical intelligence system** that tran
 | Voice Intake Implementation Checklist | Historical execution tracker; use the Phase 2 summary for current runtime behavior | [View](./architecture/voice-intake-implementation-checklist.md) |
 | **Prescription Generation Plan** | **Implementation plan for generating prescriptions from live conversations** | [View](./architecture/prescription-generation-plan.md) |
 | **Prescription Generation Architecture** | **Architecture diagrams and data flow for prescription generation** | [View](./architecture/prescription-generation-architecture.md) |
+| **Inpatient Journey System Implementation Plan** | **Complete inpatient management system with daily notes, voice dictation, and paper digitization** | [View](./architecture/inpatient-journey-system-implementation-plan.md) |
 
 ### 2. Project Planning & Research
 

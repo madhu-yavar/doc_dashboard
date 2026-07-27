@@ -13,6 +13,7 @@ import SOAP from "./pages/SOAP.tsx";
 import { SpeakerDiarizationTest } from "./components/voice/SpeakerDiarizationTest.tsx";
 import AbdmIntegrationPage from "./abdm/AbdmIntegrationPage.jsx";
 import ItemServiceMasterAdmin from "./pages/ItemServiceMasterAdmin.tsx";
+import { InpatientJourney } from "./pages/InpatientJourney.tsx";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/upload" element={<UploadCenter />} />
               <Route path="/prescription/:documentId" element={<Prescription />} />
               <Route path="/soap/:documentId" element={<SOAP />} />
+              <Route path="/inpatient-journey/:journeyId" element={<InpatientJourney />} />
               <Route path="/test/speaker-diarization" element={<SpeakerDiarizationTest />} />
               <Route element={<ProtectedRoute roles={["admin"]} />}>
                 <Route path="/abdm" element={<AbdmIntegrationPage />} />

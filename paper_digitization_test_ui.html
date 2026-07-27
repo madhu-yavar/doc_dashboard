@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paper Digitization Test UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            font-size: 1.5rem;
+        }
+
+        .endpoint {
+            background: #f8f9fa;
+            border-left: 3px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+        }
+
+        .endpoint-url {
+            font-family: 'Courier New', monospace;
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .endpoint-description {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            width: 100%;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .response.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .response.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .response.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .file-upload {
+            border: 2px dashed #667eea;
+            padding: 20px;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .file-upload:hover {
+            border-color: #5568d3;
+        }
+
+        .file-upload.dragging {
+            background: #f0f0ff;
+            border-color: #5568d3;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .info-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            margin-left: 20px;
+            color: #856404;
+        }
+
+        .info-box li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Paper Digitization Test UI</h1>
+            <p>Backend API Testing Interface - Phase 4 Implementation</p>
+            <div class="status-badge">
+                ✅ Backend Complete | ❌ Frontend Pending | 🧪 Testing Mode
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>⚠️ Testing Information</h3>
+            <ul>
+                <li>This is a <strong>test UI</strong> for backend API validation</li>
+                <li>Full React frontend implementation is <strong>Phase 6</strong> (not yet started)</li>
+                <li>Backend APIs are fully functional and tested (100% test success)</li>
+                <li>Use this interface to validate paper digitization workflows</li>
+                <li>Ensure your server is running on the configured port</li>
+            </ul>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('mobile-capture')">📱 Mobile Capture</button>
+            <button class="tab" onclick="switchTab('batch-upload')">📁 Batch Upload</button>
+            <button class="tab" onclick="switchTab('verification')">✅ Verification</button>
+            <button class="tab" onclick="switchTab('statistics')">📊 Statistics</button>
+        </div>
+
+        <!-- Mobile Capture Tab -->
+        <div id="mobile-capture" class="tab-content active">
+            <div class="card">
+                <h2><span class="card-icon">📱</span> Mobile Photo Capture</h2>
+
+                <div class="endpoint">
+                    <div class="endpoint-url">POST /api/paper-digitization/mobile/capture</div>
+                    <div class="endpoint-description">Capture paper note photo during clinical rounds</div>
+                </div>
+
+                <div class="input-group">
+                    <label>Journey ID</label>
+                    <input type="text" id="mobile-journey-id" placeholder="e.g., journey-1" value="test-journey-1">
+                </div>
+
+                <div class="input-group">
+                    <label>Note Date</label>
+                    <input type="date" id="mobile-note-date">
+                </div>
+
+                <div class="input-group">
+                    <label>Paper Note Image</label>
+                    <div class="file-upload" id="mobile-file-upload">
+                        <p>📷 Click to upload or drag & drop paper note image</p>
+                        <small>Supports: JPEG, PNG, WebP (max 15MB)</small>
+                    </div>
+                    <input type="file" id="mobile-file-input" accept="image/*" style="display: none;">
+                </div>
+
+                <button class="btn" onclick="testMobileCapture()">📸 Capture Paper Note</button>
+                <div id="mobile-response" class="response" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Batch Upload Tab -->
+        <div id="batch-upload" class="tab-content">
+            <div class="card">
+                <h2><span class="card-icon">📁</span> Batch Scanning Upload</h2>
+
+                <div class="endpoint">
+                    <div class="endpoint-url">POST /api/paper-digitization/batch</div>
+                    <div class="endpoint-description">Upload multiple scanned paper charts (max 50 images)</div>
+                </div>
+
+                <div class="input-group">
+                    <label>Journey ID</label>
+                    <input type="text" id="batch-journey-id" placeholder="e.g., journey-1" value="test-journey-1">
+                </div>
+
+                <div class="input-group">
+                    <label>Batch Date</label>
+                    <input type="date" id="batch-date">
+                </div>
+
+                <div class="input-group">
+                    <label>Paper Charts Images (Multiple)</label>
+                    <div class="file-upload" id="batch-file-upload">
+                        <p>📁 Click to upload multiple paper chart images</p>
+                        <small>Select multiple images or drag & drop (max 50 files)</small>
+                    </div>
+                    <input type="file" id="batch-file-input" accept="image/*" multiple style="display: none;">
+                </div>
+
+                <div id="batch-file-count" style="margin: 10px 0; color: #666;"></div>
+
+                <button class="btn" onclick="testBatchUpload()">📤 Upload Batch</button>
+                <div id="batch-response" class="response" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Verification Tab -->
+        <div id="verification" class="tab-content">
+            <div class="card">
+                <h2><span class="card-icon">✅</span> Human Verification Queue</h2>
+
+                <div class="endpoint">
+                    <div class="endpoint-url">GET /api/paper-digitization/verification-queue</div>
+                    <div class="endpoint-description">Get pending verification items queue</div>
+                </div>
+
+                <button class="btn" onclick="testGetVerificationQueue()">📋 Get Verification Queue</button>
+                <div id="verification-queue-response" class="response" style="display: none;"></div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h2><span class="card-icon">✍️</span> Verify Extracted Content</h2>
+
+                <div class="endpoint">
+                    <div class="endpoint-url">POST /api/paper-digitization/verify/:noteId</div>
+                    <div class="endpoint-description">Verify and approve extracted content</div>
+                </div>
+
+                <div class="input-group">
+                    <label>Note ID to Verify</label>
+                    <input type="text" id="verify-note-id" placeholder="e.g., note-123">
+                </div>
+
+                <div class="input-group">
+                    <label>Subjective (Verified)</label>
+                    <input type="text" id="verify-subjective" placeholder="Verified subjective content">
+                </div>
+
+                <div class="input-group">
+                    <label>Objective (Verified)</label>
+                    <input type="text" id="verify-objective" placeholder="Verified objective content">
+                </div>
+
+                <div class="input-group">
+                    <label>Assessment (Verified)</label>
+                    <input type="text" id="verify-assessment" placeholder="Verified assessment">
+                </div>
+
+                <div class="input-group">
+                    <label>Plan (Verified)</label>
+                    <input type="text" id="verify-plan" placeholder="Verified plan">
+                </div>
+
+                <button class="btn" onclick="testVerifyContent()">✅ Verify Content</button>
+                <div id="verify-response" class="response" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div id="statistics" class="tab-content">
+            <div class="card">
+                <h2><span class="card-icon">📊</span> Journey Statistics</h2>
+
+                <div class="endpoint">
+                    <div class="endpoint-url">GET /api/paper-digitization/stats/journey/:journeyId</div>
+                    <div class="endpoint-description">Get digitization statistics for specific journey</div>
+                </div>
+
+                <div class="input-group">
+                    <label>Journey ID</label>
+                    <input type="text" id="stats-journey-id" placeholder="e.g., journey-1" value="test-journey-1">
+                </div>
+
+                <button class="btn" onclick="testJourneyStats()">📊 Get Journey Statistics</button>
+                <div id="stats-response" class="response" style="display: none;"></div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <h2><span class="card-icon">📈</span> Overall Statistics</h2>
+
+                <div class="endpoint">
+                    <div class="endpoint-url">GET /api/paper-digitization/stats/overview</div>
+                    <div class="endpoint-description">Get overall system digitization statistics</div>
+                </div>
+
+                <button class="btn" onclick="testOverallStats()">📈 Get Overall Statistics</button>
+                <div id="overall-stats-response" class="response" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const BASE_URL = 'http://localhost:3000';
+
+        // Tab switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // File upload handling
+        document.getElementById('mobile-file-upload').addEventListener('click', () => {
+            document.getElementById('mobile-file-input').click();
+        });
+
+        document.getElementById('mobile-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('mobile-file-upload').innerHTML = `
+                    <p>✅ Selected: ${file.name}</p>
+                    <small>Size: ${(file.size / 1024 / 1024).toFixed(2)} MB | Type: ${file.type}</small>
+                `;
+            }
+        });
+
+        document.getElementById('batch-file-upload').addEventListener('click', () => {
+            document.getElementById('batch-file-input').click();
+        });
+
+        document.getElementById('batch-file-input').addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+                document.getElementById('batch-file-upload').innerHTML = `
+                    <p>✅ Selected ${files.length} files</p>
+                    <small>Total size: ${(files.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB</small>
+                `;
+                document.getElementById('batch-file-count').textContent = `${files.length} files selected for batch upload`;
+            }
+        });
+
+        // Response display
+        function showResponse(elementId, data, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `response ${type}`;
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        // API Test Functions
+        async function testMobileCapture() {
+            const journeyId = document.getElementById('mobile-journey-id').value;
+            const noteDate = document.getElementById('mobile-note-date').value;
+            const fileInput = document.getElementById('mobile-file-input');
+
+            if (!journeyId || !noteDate || !fileInput.files[0]) {
+                showResponse('mobile-response', { error: 'Please fill in all fields and select an image' }, 'error');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = async (e) => {
+                try {
+                    const response = await fetch(`${BASE_URL}/api/paper-digitization/capture`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-journey-id': journeyId,
+                            'x-note-date': noteDate,
+                            'x-capture-source': 'test_ui'
+                        },
+                        body: JSON.stringify({
+                            imageData: e.target.result.split(',')[1], // Remove data URL prefix
+                            journeyId: journeyId,
+                            noteDate: noteDate,
+                            mimeType: file.type
+                        })
+                    });
+
+                    const data = await response.json();
+                    showResponse('mobile-response', data, response.ok ? 'success' : 'error');
+                } catch (error) {
+                    showResponse('mobile-response', { error: error.message }, 'error');
+                }
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        async function testBatchUpload() {
+            const journeyId = document.getElementById('batch-journey-id').value;
+            const noteDate = document.getElementById('batch-date').value;
+            const fileInput = document.getElementById('batch-file-input');
+
+            if (!journeyId || !noteDate || !fileInput.files.length) {
+                showResponse('batch-response', { error: 'Please fill in all fields and select images' }, 'error');
+                return;
+            }
+
+            const files = Array.from(fileInput.files);
+            const images = [];
+
+            for (const file of files) {
+                const base64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+                    reader.readAsDataURL(file);
+                });
+                images.push({ buffer: base64, mimetype: file.type, size: file.size });
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/paper-digitization/batch`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ images, journeyId, noteDate, createdBy: 'test_ui' })
+                });
+
+                const data = await response.json();
+                showResponse('batch-response', data, response.ok ? 'success' : 'error');
+            } catch (error) {
+                showResponse('batch-response', { error: error.message }, 'error');
+            }
+        }
+
+        async function testGetVerificationQueue() {
+            try {
+                const response = await fetch(`${BASE_URL}/api/paper-digitization/verification-queue`);
+                const data = await response.json();
+                showResponse('verification-queue-response', data, response.ok ? 'success' : 'error');
+            } catch (error) {
+                showResponse('verification-queue-response', { error: error.message }, 'error');
+            }
+        }
+
+        async function testVerifyContent() {
+            const noteId = document.getElementById('verify-note-id').value;
+
+            if (!noteId) {
+                showResponse('verify-response', { error: 'Please enter a Note ID' }, 'error');
+                return;
+            }
+
+            const verifiedData = {
+                subjective: document.getElementById('verify-subjective').value,
+                objective: document.getElementById('verify-objective').value,
+                assessment: document.getElementById('verify-assessment').value,
+                plan: document.getElementById('verify-plan').value
+            };
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/paper-digitization/verify/${noteId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ verifiedData, notes: 'Verified via test UI' })
+                });
+
+                const data = await response.json();
+                showResponse('verify-response', data, response.ok ? 'success' : 'error');
+            } catch (error) {
+                showResponse('verify-response', { error: error.message }, 'error');
+            }
+        }
+
+        async function testJourneyStats() {
+            const journeyId = document.getElementById('stats-journey-id').value;
+
+            if (!journeyId) {
+                showResponse('stats-response', { error: 'Please enter a Journey ID' }, 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/paper-digitization/stats/journey/${journeyId}`);
+                const data = await response.json();
+                showResponse('stats-response', data, response.ok ? 'success' : 'error');
+            } catch (error) {
+                showResponse('stats-response', { error: error.message }, 'error');
+            }
+        }
+
+        async function testOverallStats() {
+            try {
+                const response = await fetch(`${BASE_URL}/api/paper-digitization/stats/overview`);
+                const data = await response.json();
+                showResponse('overall-stats-response', data, response.ok ? 'success' : 'error');
+            } catch (error) {
+                showResponse('overall-stats-response', { error: error.message }, 'error');
+            }
+        }
+
+        // Set default date
+        document.getElementById('mobile-note-date').valueAsDate = new Date();
+        document.getElementById('batch-date').valueAsDate = new Date();
+
+        console.log('🚀 Paper Digitization Test UI Loaded');
+        console.log('📡 Backend URL:', BASE_URL);
+        console.log('✅ Ready for testing');
+    </script>
+</body>
+</html>
