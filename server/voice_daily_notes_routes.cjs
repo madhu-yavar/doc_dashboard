@@ -14,7 +14,7 @@
 
 const express = require('express');
 const path = require('path');
-const { DailyNotesVoiceProcessor } = require('./daily_notes_voice_processor.cjs');
+const DailyNotesVoiceProcessor = require('./daily_notes_voice_processor.cjs');
 
 class VoiceDailyNotesRoutes {
   constructor(config = {}) {
