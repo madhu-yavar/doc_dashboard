@@ -226,10 +226,18 @@ export const VoiceNoteCapture: React.FC<VoiceNoteCaptureProps> = ({
           <div className="setup-step">
             <div className="setup-icon">🎤</div>
             <h4>Ready to Record</h4>
-            <p>Speak clearly to create a daily note from your voice</p>
+            <p>Tap the button below to start recording your daily note</p>
+
+            <button
+              className="record-start-btn"
+              onClick={startRecording}
+            >
+              <span className="btn-icon">🎙️</span>
+              <span className="btn-text">Start Recording</span>
+            </button>
 
             <div className="setup-tips">
-              <h5>Tips for best results:</h5>
+              <h5>💡 Tips for best results:</h5>
               <ul>
                 <li>Speak clearly and at a moderate pace</li>
                 <li>Use SOAP structure: Subjective, Objective, Assessment, Plan</li>
@@ -244,14 +252,6 @@ export const VoiceNoteCapture: React.FC<VoiceNoteCaptureProps> = ({
                 <p>{error}</p>
               </div>
             )}
-
-            <button
-              className="record-start-btn"
-              onClick={startRecording}
-            >
-              <span className="btn-icon">🎙️</span>
-              <span className="btn-text">Start Recording</span>
-            </button>
           </div>
         )}
 
