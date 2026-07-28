@@ -28,7 +28,7 @@ export const VoiceNoteCapture: React.FC<VoiceNoteCaptureProps> = ({
   patientId,
   onClose,
   onComplete,
-  apiBaseUrl = 'http://localhost:3000'
+  apiBaseUrl = 'http://localhost:8001'
 }) => {
   const [step, setStep] = useState<'setup' | 'recording' | 'processing' | 'result'>('setup');
   const [isRecording, setIsRecording] = useState(false);
