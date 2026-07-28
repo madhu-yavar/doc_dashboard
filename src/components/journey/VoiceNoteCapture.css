@@ -191,7 +191,7 @@
 }
 
 .record-start-btn {
-  background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #dc2626 100%);
+  background: #ef4444;
   color: white;
   border: none;
   padding: 24px 56px;
@@ -202,13 +202,9 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 12px 35px rgba(220, 38, 38, 0.3);
-  letter-spacing: 0.8px;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
   margin: 20px 0;
-  animation: button-pulse 2s ease-in-out infinite;
 }
 
 .record-start-btn::before {
@@ -223,13 +219,12 @@
 }
 
 .record-start-btn:hover {
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: 0 16px 40px rgba(220, 38, 38, 0.4);
-  animation: none;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(239, 68, 68, 0.4);
 }
 
 .record-start-btn:active {
-  transform: translateY(-2px) scale(1.02);
+  transform: translateY(0);
 }
 
 @keyframes button-pulse {
