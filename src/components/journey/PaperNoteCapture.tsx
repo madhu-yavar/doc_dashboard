@@ -215,7 +215,13 @@ export const PaperNoteCapture: React.FC<PaperNoteCaptureProps> = ({
           <button
             className="back-nav-btn"
             onClick={() => {
-              window.location.href = '/upload';
+              if (onClose) {
+                onClose();
+              } else if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                window.location.href = '/upload';
+              }
             }}
           >
             ← Back

@@ -171,7 +171,11 @@ export const HumanVerificationDashboard: React.FC<HumanVerificationDashboardProp
           <button
             className="back-nav-btn"
             onClick={() => {
-              window.location.href = '/upload';
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                window.location.href = '/upload';
+              }
             }}
           >
             ← Back

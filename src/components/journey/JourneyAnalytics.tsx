@@ -247,7 +247,11 @@ export const JourneyAnalytics: React.FC<JourneyAnalyticsProps> = ({
           <button
             className="back-nav-btn"
             onClick={() => {
-              window.location.href = '/upload';
+              if (window.history.length > 1) {
+                window.history.back();
+              } else {
+                window.location.href = '/upload';
+              }
             }}
           >
             ← Back

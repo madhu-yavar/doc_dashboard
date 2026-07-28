@@ -116,10 +116,14 @@ export const JourneyHeader: React.FC<JourneyHeaderProps> = ({
         <button
           className="back-nav-btn"
           onClick={() => {
-            window.location.href = '/upload';
+            if (window.history.length > 1) {
+              window.history.back();
+            } else {
+              window.location.href = '/upload';
+            }
           }}
         >
-          ← Back to Upload Center
+          ← Back
         </button>
       </div>
       <div className="journey-header-main">
