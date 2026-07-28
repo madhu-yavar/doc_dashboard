@@ -28,7 +28,7 @@ export const PaperNoteCapture: React.FC<PaperNoteCaptureProps> = ({
   patientId,
   onClose,
   onComplete,
-  apiBaseUrl = 'http://localhost:3000'
+  apiBaseUrl = 'http://localhost:8001'
 }) => {
   const [step, setStep] = useState<'capture' | 'preview' | 'processing' | 'result'>('capture');
   const [images, setImages] = useState<string[]>([]);
